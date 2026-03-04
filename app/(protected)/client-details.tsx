@@ -1,228 +1,145 @@
+import { supabase } from "@/lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
-import { supabase } from "../../lib/supabase";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+
+type Client = {
+  id: string;
+  name: string;
+  birth_date: string;
+  height_cm: number;
+};
+
+type Assessment = {
+  id: string;
+  created_at: string;
+  anthropometry: {
+    weight: number | null;
+    body_fat: number | null;
+    muscle_mass_percentage: number | null;
+  }[] | null;
+};
 
 export default function ClientDetails() {
-  const router = useRouter();
-  const { session } = useAuth();
   const { id } = useLocalSearchParams();
-  const clientId = Array.isArray(id) ? id[0] : id;
+  const router = useRouter();
 
+  const [client, setClient] = useState<Client | null>(null);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [client, setClient] = useState<any>(null);
-  const [form, setForm] = useState<any>({});
-  const [assessments, setAssessments] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (!clientId) return;
+  const clientId = id as string;
 
-    async function load() {
-      setLoading(true);
-
-      const { data } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("id", clientId)
-        .single();
-
-      setClient(data);
-      setForm(data);
-
-      const { data: assessmentsData } = await supabase
-        .from("physical_assessments")
-        .select(`
-          id,
-          created_at,
-          anthropometry (
-            weight,
-            body_fat,
-            muscle_mass_percentage
-          )
-        `)
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false });
-
-      setAssessments(assessmentsData ?? []);
-
-      setLoading(false);
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
     }
+    return age;
+  };
 
-    load();
-  }, [clientId]);
-
-  function handleChange(field: string, value: string) {
-    setForm((prev: any) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSave() {
-    const { error } = await supabase
+  const loadClient = useCallback(async () => {
+    const { data, error } = await supabase
       .from("clients")
-      .update({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        birth_date: form.birth_date,
-        gender: form.gender,
-        height_cm: form.height_cm
-          ? Number(form.height_cm)
-          : null,
-      })
-      .eq("id", clientId);
-
-    if (error) {
-      Alert.alert("Erro", error.message);
-      return;
-    }
-
-    setClient(form);
-    setEditing(false);
-    Alert.alert("Sucesso", "Dados atualizados.");
-  }
-
-  async function handleDelete() {
-    Alert.alert("Excluir Cliente", "Tem certeza?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Excluir",
-        style: "destructive",
-        onPress: async () => {
-          await supabase.from("clients").delete().eq("id", clientId);
-          router.replace("/(protected)/dashboard");
-        },
-      },
-    ]);
-  }
-
-  async function handleNewAssessment() {
-    if (!session?.user) return;
-
-    const { data: trainer } = await supabase
-      .from("trainers")
-      .select("id")
-      .eq("user_id", session.user.id)
+      .select("*")
+      .eq("id", clientId)
       .single();
 
-    if (!trainer) return;
+    if (!error && data) {
+      setClient(data);
+    }
+  }, [clientId]);
 
-    const { data } = await supabase
+  const loadAssessments = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("physical_assessments")
+      .select(`
+        id,
+        created_at,
+        anthropometry (
+          weight,
+          body_fat,
+          muscle_mass_percentage
+        )
+      `)
+      .eq("client_id", clientId)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setAssessments(data as Assessment[]);
+    }
+  }, [clientId]);
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    await loadClient();
+    await loadAssessments();
+    setLoading(false);
+  }, [loadClient, loadAssessments]);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  const handleNewAssessment = async () => {
+    const { data, error } = await supabase
       .from("physical_assessments")
       .insert([
         {
           client_id: clientId,
-          trainer_id: trainer.id,
         },
       ])
       .select()
       .single();
 
-    if (!data) return;
+    if (error || !data) {
+      Alert.alert("Erro ao criar avaliação");
+      return;
+    }
 
-    router.push({
-      pathname: "/(protected)/anthropometry-form",
-      params: { assessmentId: data.id },
-    });
-  }
+    router.push(
+      `/(protected)/anthropometry-form?assessment_id=${data.id}`
+    );
+  };
 
-  if (loading) {
+  if (loading || !client) {
     return (
-      <View style={{ marginTop: 50 }}>
-        <ActivityIndicator />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>Carregando...</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
-        Detalhes do Cliente
-      </Text>
-
-      {["name", "email", "phone", "birth_date", "gender", "height_cm"].map(
-        (field) => (
-          <View key={field} style={{ marginBottom: 12 }}>
-            <Text style={{ marginBottom: 4 }}>{field}</Text>
-            <TextInput
-              value={form?.[field]?.toString() ?? ""}
-              editable={editing}
-              onChangeText={(v) => handleChange(field, v)}
-              style={{
-                borderWidth: 1,
-                borderColor: "#ddd",
-                borderRadius: 8,
-                padding: 10,
-                backgroundColor: editing ? "#fff" : "#eee",
-              }}
-            />
-          </View>
-        )
-      )}
-
-      <View style={{ flexDirection: "row", marginTop: 10 }}>
-        {!editing ? (
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: "#000",
-              padding: 12,
-              borderRadius: 8,
-              marginRight: 10,
-            }}
-            onPress={() => setEditing(true)}
-          >
-            <Text style={{ color: "#fff", textAlign: "center" }}>
-              Alterar
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: "green",
-              padding: 12,
-              borderRadius: 8,
-              marginRight: 10,
-            }}
-            onPress={handleSave}
-          >
-            <Text style={{ color: "#fff", textAlign: "center" }}>
-              Salvar
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        <TouchableOpacity
-          style={{
-            flex: 1,
-            backgroundColor: "red",
-            padding: 12,
-            borderRadius: 8,
-          }}
-          onPress={handleDelete}
-        >
-          <Text style={{ color: "#fff", textAlign: "center" }}>
-            Excluir
-          </Text>
-        </TouchableOpacity>
+    <ScrollView style={{ flex: 1, padding: 16 }}>
+      {/* CARD CLIENTE */}
+      <View
+        style={{
+          padding: 16,
+          borderWidth: 1,
+          borderColor: "#ddd",
+          borderRadius: 10,
+          marginBottom: 20,
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+          {client.name}
+        </Text>
+        <Text>Idade: {calculateAge(client.birth_date)} anos</Text>
+        <Text>Altura: {client.height_cm} cm</Text>
       </View>
 
+      {/* BOTÃO NOVA AVALIAÇÃO */}
       <TouchableOpacity
         onPress={handleNewAssessment}
         style={{
           backgroundColor: "#000",
-          padding: 14,
+          padding: 12,
           borderRadius: 8,
-          marginTop: 30,
+          marginBottom: 20,
         }}
       >
         <Text style={{ color: "#fff", textAlign: "center" }}>
@@ -230,19 +147,48 @@ export default function ClientDetails() {
         </Text>
       </TouchableOpacity>
 
-      <Text style={{ marginTop: 30, fontWeight: "bold" }}>
+      {/* HISTÓRICO */}
+      <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
         Histórico de Avaliações
       </Text>
 
-      {assessments.map((item) => {
-        const data = item.anthropometry?.[0];
+      {assessments.length === 0 && (
+        <Text style={{ color: "#999" }}>
+          Nenhuma avaliação registrada.
+        </Text>
+      )}
+
+      {assessments.map((assessment) => {
+        const anthro = assessment.anthropometry?.[0];
+
         return (
-          <View key={item.id} style={{ marginTop: 10 }}>
-            <Text>
-              {new Date(item.created_at).toLocaleDateString("pt-BR")}
+          <View
+            key={assessment.id}
+            style={{
+              marginBottom: 12,
+              padding: 12,
+              borderWidth: 1,
+              borderColor: "#ddd",
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ fontWeight: "bold", marginBottom: 6 }}>
+              {new Date(assessment.created_at).toLocaleDateString("pt-BR")}
             </Text>
-            {data?.weight && <Text>Peso: {data.weight} kg</Text>}
-            {data?.body_fat && <Text>Gordura: {data.body_fat}%</Text>}
+
+            {anthro ? (
+              <>
+                <Text>Peso: {anthro.weight ?? "-"} kg</Text>
+                <Text>% Gordura: {anthro.body_fat ?? "-"}</Text>
+                <Text>
+                  % Massa Muscular: {anthro.muscle_mass_percentage ?? "-"}
+                </Text>
+              </>
+            ) : (
+              <Text style={{ color: "#999" }}>
+                Sem dados antropométricos
+              </Text>
+            )}
           </View>
         );
       })}
