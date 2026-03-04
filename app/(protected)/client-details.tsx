@@ -1,20 +1,51 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function ClientDetails() {
   const { id } = useLocalSearchParams();
-  const router = useRouter();
   const { session } = useAuth();
 
   const clientId = id as string;
 
   const [client, setClient] = useState<any>(null);
-  const [assessments, setAssessments] = useState<any[]>([]);
   const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    weight: "",
+    height: "",
+    body_fat: "",
+    waist: "",
+    hip: "",
+    chest: "",
+    abdomen: "",
+    arm_right: "",
+    arm_left: "",
+    thigh_right: "",
+    thigh_left: "",
+    calf_right: "",
+    calf_left: "",
+    muscle_mass_percentage: "",
+    basal_metabolic_rate: "",
+    body_fat_index: "",
+    metabolic_age: "",
+  });
 
   useEffect(() => {
     async function loadTrainer() {
@@ -82,13 +113,15 @@ export default function ClientDetails() {
     loadAll();
   }, [loadAll]);
 
-  async function handleNewAssessment() {
+  async function handleSaveAssessment() {
     if (!trainerId) {
       Alert.alert("Erro", "Treinador não identificado.");
       return;
     }
 
-    const { data, error } = await supabase
+    setSaving(true);
+
+    const { data: assessment, error: assessmentError } = await supabase
       .from("physical_assessments")
       .insert([
         {
@@ -101,13 +134,90 @@ export default function ClientDetails() {
       .select()
       .single();
 
-    if (error || !data) {
-      Alert.alert("Erro ao criar avaliação", error?.message);
+    if (assessmentError || !assessment) {
+      setSaving(false);
+      Alert.alert("Erro ao criar avaliação", assessmentError?.message);
       return;
     }
 
-    router.push(
-      `/(protected)/anthropometry-form?assessment_id=${data.id}&client_id=${clientId}`
+    const payload = {
+      assessment_id: assessment.id,
+      weight: form.weight ? Number(form.weight) : null,
+      height: form.height ? Number(form.height) : null,
+      body_fat: form.body_fat ? Number(form.body_fat) : null,
+      waist: form.waist ? Number(form.waist) : null,
+      hip: form.hip ? Number(form.hip) : null,
+      chest: form.chest ? Number(form.chest) : null,
+      abdomen: form.abdomen ? Number(form.abdomen) : null,
+      arm_right: form.arm_right ? Number(form.arm_right) : null,
+      arm_left: form.arm_left ? Number(form.arm_left) : null,
+      thigh_right: form.thigh_right ? Number(form.thigh_right) : null,
+      thigh_left: form.thigh_left ? Number(form.thigh_left) : null,
+      calf_right: form.calf_right ? Number(form.calf_right) : null,
+      calf_left: form.calf_left ? Number(form.calf_left) : null,
+      muscle_mass_percentage: form.muscle_mass_percentage
+        ? Number(form.muscle_mass_percentage)
+        : null,
+      basal_metabolic_rate: form.basal_metabolic_rate
+        ? Number(form.basal_metabolic_rate)
+        : null,
+      body_fat_index: form.body_fat_index
+        ? Number(form.body_fat_index)
+        : null,
+      metabolic_age: form.metabolic_age
+        ? Number(form.metabolic_age)
+        : null,
+    };
+
+    const { error: anthropometryError } = await supabase
+      .from("anthropometry")
+      .insert(payload);
+
+    setSaving(false);
+
+    if (anthropometryError) {
+      Alert.alert("Erro ao salvar dados", anthropometryError.message);
+      return;
+    }
+
+    Alert.alert("Sucesso", "Avaliação salva.");
+
+    setForm({
+      weight: "",
+      height: "",
+      body_fat: "",
+      waist: "",
+      hip: "",
+      chest: "",
+      abdomen: "",
+      arm_right: "",
+      arm_left: "",
+      thigh_right: "",
+      thigh_left: "",
+      calf_right: "",
+      calf_left: "",
+      muscle_mass_percentage: "",
+      basal_metabolic_rate: "",
+      body_fat_index: "",
+      metabolic_age: "",
+    });
+
+    await loadAssessments();
+  }
+
+  function renderInput(label: string, key: keyof typeof form) {
+    return (
+      <View style={{ marginBottom: 14 }}>
+        <Text style={{ marginBottom: 4 }}>{label}</Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={form[key]}
+          onChangeText={(text) =>
+            setForm({ ...form, [key]: text })
+          }
+        />
+      </View>
     );
   }
 
@@ -120,83 +230,128 @@ export default function ClientDetails() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, padding: 16 }}>
-      <View
-        style={{
-          padding: 16,
-          borderWidth: 1,
-          borderColor: "#ddd",
-          borderRadius: 10,
-          marginBottom: 20,
-        }}
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-          {client.name}
-        </Text>
-        <Text>Idade: {calculateAge(client.birth_date)} anos</Text>
-        <Text>Altura: {client.height_cm} cm</Text>
-      </View>
-
-      <TouchableOpacity
-        onPress={handleNewAssessment}
-        style={{
-          backgroundColor: "#000",
-          padding: 12,
-          borderRadius: 8,
-          marginBottom: 20,
-        }}
-      >
-        <Text style={{ color: "#fff", textAlign: "center" }}>
-          Incluir Avaliação
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={{ fontWeight: "bold", marginBottom: 10 }}>
-        Histórico de Avaliações
-      </Text>
-
-      {assessments.length === 0 && (
-        <Text style={{ color: "#999" }}>
-          Nenhuma avaliação registrada.
-        </Text>
-      )}
-
-      {assessments.map((assessment) => {
-        const anthro = assessment.anthropometry?.[0];
-
-        return (
-          <View
-            key={assessment.id}
-            style={{
-              marginBottom: 12,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: "#ddd",
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ fontWeight: "bold", marginBottom: 6 }}>
-              {assessment.date
-                ? new Date(assessment.date).toLocaleDateString("pt-BR")
-                : "-"}
-            </Text>
-
-            {anthro ? (
-              <>
-                <Text>Peso: {anthro.weight ?? "-"} kg</Text>
-                <Text>% Gordura: {anthro.body_fat ?? "-"}</Text>
-                <Text>
-                  % Massa Muscular: {anthro.muscle_mass_percentage ?? "-"}
-                </Text>
-              </>
-            ) : (
-              <Text style={{ color: "#999" }}>
-                Sem dados antropométricos
-              </Text>
-            )}
+        <ScrollView
+          contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.card}>
+            <Text style={styles.name}>{client.name}</Text>
+            <Text>Idade: {calculateAge(client.birth_date)} anos</Text>
+            <Text>Altura: {client.height_cm} cm</Text>
           </View>
-        );
-      })}
-    </ScrollView>
+
+          <Text style={styles.sectionTitle}>Nova Avaliação</Text>
+
+          {renderInput("Peso (kg)", "weight")}
+          {renderInput("Altura (cm)", "height")}
+          {renderInput("% Gordura", "body_fat")}
+          {renderInput("Cintura", "waist")}
+          {renderInput("Quadril", "hip")}
+          {renderInput("Peitoral", "chest")}
+          {renderInput("Abdômen", "abdomen")}
+          {renderInput("Braço Direito", "arm_right")}
+          {renderInput("Braço Esquerdo", "arm_left")}
+          {renderInput("Coxa Direita", "thigh_right")}
+          {renderInput("Coxa Esquerda", "thigh_left")}
+          {renderInput("Panturrilha Direita", "calf_right")}
+          {renderInput("Panturrilha Esquerda", "calf_left")}
+          {renderInput("% Massa Muscular", "muscle_mass_percentage")}
+          {renderInput("Taxa Metabólica Basal", "basal_metabolic_rate")}
+          {renderInput("Índice Gordura Corporal", "body_fat_index")}
+          {renderInput("Idade Metabólica", "metabolic_age")}
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleSaveAssessment}
+            disabled={saving}
+          >
+            <Text style={{ color: "#fff", textAlign: "center" }}>
+              {saving ? "Salvando..." : "Salvar Avaliação"}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.sectionTitle}>Histórico de Avaliações</Text>
+
+          {assessments.length === 0 && (
+            <Text style={{ color: "#999" }}>
+              Nenhuma avaliação registrada.
+            </Text>
+          )}
+
+          {assessments.map((assessment) => {
+            const anthro = assessment.anthropometry?.[0];
+
+            return (
+              <View key={assessment.id} style={styles.historyCard}>
+                <Text style={{ fontWeight: "bold", marginBottom: 6 }}>
+                  {assessment.date
+                    ? new Date(assessment.date).toLocaleDateString("pt-BR")
+                    : "-"}
+                </Text>
+
+                {anthro ? (
+                  <>
+                    <Text>Peso: {anthro.weight ?? "-"} kg</Text>
+                    <Text>% Gordura: {anthro.body_fat ?? "-"}</Text>
+                    <Text>
+                      % Massa Muscular:{" "}
+                      {anthro.muscle_mass_percentage ?? "-"}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={{ color: "#999" }}>
+                    Sem dados antropométricos
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 10,
+    borderRadius: 6,
+  },
+  button: {
+    backgroundColor: "#000",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  historyCard: {
+    marginBottom: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+  },
+});
