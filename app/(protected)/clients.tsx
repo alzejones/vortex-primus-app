@@ -13,7 +13,7 @@ import { supabase } from "../../lib/supabase";
 
 export default function Clients() {
   const { session } = useAuth();
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [trainerId, setTrainerId] = useState<string | null>(null);
 
   async function loadTrainer() {
@@ -93,21 +93,24 @@ export default function Clients() {
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }: any) => (
           <View style={styles.card}>
+            {/* Clique no nome abre ClientDetails */}
             <TouchableOpacity
               onPress={() =>
                 router.push(
-                  `/(protected)/assessments-list?clientId=${item.id}`
+                  `/(protected)/client-details?id=${item.id}`
                 )
               }
             >
               <Text style={styles.name}>{item.name}</Text>
             </TouchableOpacity>
 
+            {/* Ações */}
             <View style={styles.actions}>
+              {/* Editar agora abre a mesma tela de detalhes */}
               <TouchableOpacity
                 onPress={() =>
                   router.push(
-                    `/(protected)/client-edit?clientId=${item.id}`
+                    `/(protected)/client-details?id=${item.id}`
                   )
                 }
               >
