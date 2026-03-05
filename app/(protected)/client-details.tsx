@@ -18,7 +18,6 @@ import {
 export default function ClientDetails() {
   const { id } = useLocalSearchParams();
   const { session } = useAuth();
-
   const clientId = id as string;
 
   const [client, setClient] = useState<any>(null);
@@ -66,11 +65,15 @@ export default function ClientDetails() {
   const calculateAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
+
     let age = today.getFullYear() - birth.getFullYear();
+
     const m = today.getMonth() - birth.getMonth();
+
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
       age--;
     }
+
     return age;
   };
 
@@ -112,6 +115,61 @@ export default function ClientDetails() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  function getEvolution() {
+    if (assessments.length < 2) return null;
+
+    const latest = assessments[0]?.anthropometry?.[0];
+    const previous = assessments[1]?.anthropometry?.[0];
+    const first = assessments[assessments.length - 1]?.anthropometry?.[0];
+
+    if (!latest || !previous || !first) return null;
+
+    const diffRecentWeight =
+      latest.weight && previous.weight
+        ? (latest.weight - previous.weight).toFixed(1)
+        : null;
+
+    const diffRecentFat =
+      latest.body_fat && previous.body_fat
+        ? (latest.body_fat - previous.body_fat).toFixed(1)
+        : null;
+
+    const diffRecentMuscle =
+      latest.muscle_mass_percentage && previous.muscle_mass_percentage
+        ? (
+            latest.muscle_mass_percentage -
+            previous.muscle_mass_percentage
+          ).toFixed(1)
+        : null;
+
+    const diffTotalWeight =
+      latest.weight && first.weight
+        ? (latest.weight - first.weight).toFixed(1)
+        : null;
+
+    const diffTotalFat =
+      latest.body_fat && first.body_fat
+        ? (latest.body_fat - first.body_fat).toFixed(1)
+        : null;
+
+    const diffTotalMuscle =
+      latest.muscle_mass_percentage && first.muscle_mass_percentage
+        ? (
+            latest.muscle_mass_percentage -
+            first.muscle_mass_percentage
+          ).toFixed(1)
+        : null;
+
+    return {
+      diffRecentWeight,
+      diffRecentFat,
+      diffRecentMuscle,
+      diffTotalWeight,
+      diffTotalFat,
+      diffTotalMuscle,
+    };
+  }
 
   async function handleSaveAssessment() {
     if (!trainerId) {
@@ -213,13 +271,13 @@ export default function ClientDetails() {
           style={styles.input}
           keyboardType="numeric"
           value={form[key]}
-          onChangeText={(text) =>
-            setForm({ ...form, [key]: text })
-          }
+          onChangeText={(text) => setForm({ ...form, [key]: text })}
         />
       </View>
     );
   }
+
+  const evolution = getEvolution();
 
   if (loading || !client) {
     return (
@@ -244,6 +302,50 @@ export default function ClientDetails() {
             <Text>Idade: {calculateAge(client.birth_date)} anos</Text>
             <Text>Altura: {client.height_cm} cm</Text>
           </View>
+
+          {evolution && (
+            <View style={styles.evolutionCard}>
+              <Text style={styles.sectionTitle}>Evolução</Text>
+
+              <View style={styles.evolutionRow}>
+                <View style={styles.evolutionCol}>
+                  <Text style={styles.evolutionTitle}>
+                    Última vs Anterior
+                  </Text>
+
+                  {evolution.diffRecentWeight && (
+                    <Text>Δ Peso: {evolution.diffRecentWeight} kg</Text>
+                  )}
+                  {evolution.diffRecentFat && (
+                    <Text>Δ % Gordura: {evolution.diffRecentFat}</Text>
+                  )}
+                  {evolution.diffRecentMuscle && (
+                    <Text>
+                      Δ % Massa Muscular: {evolution.diffRecentMuscle}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.evolutionCol}>
+                  <Text style={styles.evolutionTitle}>
+                    Acumulado no período
+                  </Text>
+
+                  {evolution.diffTotalWeight && (
+                    <Text>Δ Peso: {evolution.diffTotalWeight} kg</Text>
+                  )}
+                  {evolution.diffTotalFat && (
+                    <Text>Δ % Gordura: {evolution.diffTotalFat}</Text>
+                  )}
+                  {evolution.diffTotalMuscle && (
+                    <Text>
+                      Δ % Massa Muscular: {evolution.diffTotalMuscle}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </View>
+          )}
 
           <Text style={styles.sectionTitle}>Nova Avaliação</Text>
 
@@ -325,6 +427,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 20,
   },
+  evolutionCard: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 10,
+    marginBottom: 20,
+    backgroundColor: "#f7f7f7",
+  },
+  evolutionRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  evolutionCol: {
+    flex: 1,
+  },
+  evolutionTitle: {
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
   name: {
     fontSize: 18,
     fontWeight: "bold",
@@ -332,7 +453,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    marginTop: 20,
     marginBottom: 12,
   },
   input: {
