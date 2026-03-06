@@ -88,22 +88,23 @@ export default function ClientDetails() {
   }, [clientId]);
 
   const loadAssessments = useCallback(async () => {
-    const { data } = await supabase
-      .from("physical_assessments")
-      .select(`
-        id,
-        date,
-        anthropometry (
-          weight,
-          body_fat,
-          muscle_mass_percentage
-        )
-      `)
-      .eq("client_id", clientId)
-      .order("date", { ascending: false });
+  const { data } = await supabase
+    .from("physical_assessments")
+    .select(`
+      id,
+      date,
+      anthropometry (
+        weight,
+        body_fat,
+        muscle_mass_percentage
+      )
+    `)
+    .eq("client_id", clientId)
+    .order("date", { ascending: false })
+    .order("id", { ascending: false });
 
-    if (data) setAssessments(data);
-  }, [clientId]);
+  if (data) setAssessments(data);
+}, [clientId]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -116,61 +117,63 @@ export default function ClientDetails() {
     loadAll();
   }, [loadAll]);
 
-  function getEvolution() {
-    if (assessments.length < 2) return null;
+  function calc(current: any, compare: any, field: string) {
+    if (!current || !compare) return null;
 
-    const latest = assessments[0]?.anthropometry?.[0];
-    const previous = assessments[1]?.anthropometry?.[0];
-    const first = assessments[assessments.length - 1]?.anthropometry?.[0];
+    const currentValue = Number(current[field] ?? 0);
+    const compareValue = Number(compare[field] ?? 0);
 
-    if (!latest || !previous || !first) return null;
-
-    const diffRecentWeight =
-      latest.weight && previous.weight
-        ? (latest.weight - previous.weight).toFixed(1)
-        : null;
-
-    const diffRecentFat =
-      latest.body_fat && previous.body_fat
-        ? (latest.body_fat - previous.body_fat).toFixed(1)
-        : null;
-
-    const diffRecentMuscle =
-      latest.muscle_mass_percentage && previous.muscle_mass_percentage
-        ? (
-            latest.muscle_mass_percentage -
-            previous.muscle_mass_percentage
-          ).toFixed(1)
-        : null;
-
-    const diffTotalWeight =
-      latest.weight && first.weight
-        ? (latest.weight - first.weight).toFixed(1)
-        : null;
-
-    const diffTotalFat =
-      latest.body_fat && first.body_fat
-        ? (latest.body_fat - first.body_fat).toFixed(1)
-        : null;
-
-    const diffTotalMuscle =
-      latest.muscle_mass_percentage && first.muscle_mass_percentage
-        ? (
-            latest.muscle_mass_percentage -
-            first.muscle_mass_percentage
-          ).toFixed(1)
-        : null;
-
-    return {
-      diffRecentWeight,
-      diffRecentFat,
-      diffRecentMuscle,
-      diffTotalWeight,
-      diffTotalFat,
-      diffTotalMuscle,
-    };
+    return currentValue - compareValue;
   }
 
+  function getColor(value: number | null, type: "peso" | "gordura" | "musculo") {
+    if (value === null) return "#444";
+
+    if (type === "gordura") {
+      return value < 0 ? "green" : "red";
+    }
+
+    if (type === "musculo") {
+      return value > 0 ? "green" : "red";
+    }
+
+    if (type === "peso") {
+      return value < 0 ? "green" : "red";
+    }
+
+    return "#444";
+  }
+
+  function getEvolution() {
+  if (assessments.length < 2) return null;
+
+  const latestAssessment = assessments[0];
+  const previousAssessment = assessments[1];
+  const firstAssessment = assessments[assessments.length - 1];
+
+  const latest = latestAssessment?.anthropometry?.[0];
+  const previous = previousAssessment?.anthropometry?.[0];
+  const first = firstAssessment?.anthropometry?.[0];
+
+  if (!latest || !previous || !first) return null;
+
+  const diffRecentWeight = calc(latest, previous, "weight");
+  const diffRecentFat = calc(latest, previous, "body_fat");
+  const diffRecentMuscle = calc(latest, previous, "muscle_mass_percentage");
+
+  const diffTotalWeight = calc(latest, first, "weight");
+  const diffTotalFat = calc(latest, first, "body_fat");
+  const diffTotalMuscle = calc(latest, first, "muscle_mass_percentage");
+
+  return {
+    diffRecentWeight,
+    diffRecentFat,
+    diffRecentMuscle,
+    diffTotalWeight,
+    diffTotalFat,
+    diffTotalMuscle,
+  };
+}
   async function handleSaveAssessment() {
     if (!trainerId) {
       Alert.alert("Erro", "Treinador não identificado.");
@@ -313,17 +316,30 @@ export default function ClientDetails() {
                     Última vs Anterior
                   </Text>
 
-                  {evolution.diffRecentWeight && (
-                    <Text>Δ Peso: {evolution.diffRecentWeight} kg</Text>
-                  )}
-                  {evolution.diffRecentFat && (
-                    <Text>Δ % Gordura: {evolution.diffRecentFat}</Text>
-                  )}
-                  {evolution.diffRecentMuscle && (
-                    <Text>
-                      Δ % Massa Muscular: {evolution.diffRecentMuscle}
-                    </Text>
-                  )}
+                  <Text
+                    style={{
+                      color: getColor(evolution.diffRecentWeight, "peso"),
+                    }}
+                  >
+                    Δ Peso: {evolution.diffRecentWeight?.toFixed(1)} kg
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: getColor(evolution.diffRecentFat, "gordura"),
+                    }}
+                  >
+                    Δ % Gordura: {evolution.diffRecentFat?.toFixed(1)}
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: getColor(evolution.diffRecentMuscle, "musculo"),
+                    }}
+                  >
+                    Δ % Massa Muscular:{" "}
+                    {evolution.diffRecentMuscle?.toFixed(1)}
+                  </Text>
                 </View>
 
                 <View style={styles.evolutionCol}>
@@ -331,17 +347,30 @@ export default function ClientDetails() {
                     Acumulado no período
                   </Text>
 
-                  {evolution.diffTotalWeight && (
-                    <Text>Δ Peso: {evolution.diffTotalWeight} kg</Text>
-                  )}
-                  {evolution.diffTotalFat && (
-                    <Text>Δ % Gordura: {evolution.diffTotalFat}</Text>
-                  )}
-                  {evolution.diffTotalMuscle && (
-                    <Text>
-                      Δ % Massa Muscular: {evolution.diffTotalMuscle}
-                    </Text>
-                  )}
+                  <Text
+                    style={{
+                      color: getColor(evolution.diffTotalWeight, "peso"),
+                    }}
+                  >
+                    Δ Peso: {evolution.diffTotalWeight?.toFixed(1)} kg
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: getColor(evolution.diffTotalFat, "gordura"),
+                    }}
+                  >
+                    Δ % Gordura: {evolution.diffTotalFat?.toFixed(1)}
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: getColor(evolution.diffTotalMuscle, "musculo"),
+                    }}
+                  >
+                    Δ % Massa Muscular:{" "}
+                    {evolution.diffTotalMuscle?.toFixed(1)}
+                  </Text>
                 </View>
               </View>
             </View>
