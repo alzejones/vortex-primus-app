@@ -1,10 +1,10 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useLocalSearchParams } from "expo-router";
-import * as Sharing from "expo-sharing";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Alert, Dimensions, KeyboardAvoidingView,
+  Alert,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -15,10 +15,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
-import { LineChart } from "react-native-chart-kit";
-import { captureRef } from "react-native-view-shot";
 
 export default function ClientDetails() {
   const { id } = useLocalSearchParams();
@@ -33,54 +31,6 @@ export default function ClientDetails() {
 
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [editingAnthropometryId, setEditingAnthropometryId] = useState<string | null>(null);
-
-  // 1. A "Lente" da câmera
-  const viewRef = useRef(null);
-
-  // 2. O "Gatilho" para tirar a foto e compartilhar
-  async function handleShareImage() {
-    try {
-      // Tira a foto da área que vamos marcar no próximo passo
-      const uri = await captureRef(viewRef, {
-        format: "jpg",
-        quality: 0.9,
-      });
-      
-      // Abre a janelinha de partilha (WhatsApp, etc)
-      await Sharing.shareAsync(uri, {
-        dialogTitle: 'Compartilhar Evolução - Vortex Primus',
-        mimeType: 'image/jpeg',
-      });
-    } catch (error) {
-      console.error("Erro ao gerar imagem:", error);
-      Alert.alert("Erro", "Não foi possível gerar a imagem da evolução.");
-    }
-  }
-
- // --- LÓGICA DO GRÁFICO (Gordura vs Músculo) ---
-  // Invertemos o array para ordem cronológica (da mais antiga para a atual)
-  const chronologicalAssessments = [...(assessments || [])].reverse();
-  
-  // Filtramos para garantir que só entram avaliações que tenham dados preenchidos
-  const chartAssessments = chronologicalAssessments.filter(a => a.anthropometry && a.anthropometry.length > 0);
-
-  // Eixo X (Quantidade de avaliações: Av 1, Av 2, Av 3...)
-  const chartLabels = chartAssessments.length > 0 
-    ? chartAssessments.map((_, index) => `Av ${index + 1}`) 
-    : ["-"];
-
-  // Eixo Y (Linha da Gordura e Linha do Músculo)
-  const fatData = chartAssessments.length > 0 
-    ? chartAssessments.map(a => Number(a.anthropometry[0].body_fat) || 0)
-    : [0];
-
-  const muscleData = chartAssessments.length > 0 
-    ? chartAssessments.map(a => Number(a.anthropometry[0].muscle_mass_percentage) || 0)
-    : [0];
-
-  // Largura da tela menos as margens para o gráfico encaixar perfeito
-  const screenWidth = Dimensions.get("window").width - 60; 
-
 
   // Estados para o Modal de "Consultar"
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -606,64 +556,6 @@ _Att, Coach Alzejones_`;
                 </View>
               </View>
             )}
-<View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
-  <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>Evolução: Gordura vs Músculo</Text>
-  
-  <LineChart
-    data={{
-      labels: chartLabels,
-      datasets: [
-        {
-          data: fatData,
-          color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`, // Vermelho para Gordura
-          strokeWidth: 2
-        },
-        {
-          data: muscleData,
-          color: (opacity = 1) => `rgba(0, 128, 0, ${opacity})`, // Verde para Músculo
-          strokeWidth: 2
-        }
-      ],
-      legend: ["% Gordura", "% Músculo"]
-    }}
-    width={screenWidth}
-    height={220}
-    chartConfig={{
-      backgroundColor: "#fff",
-      backgroundGradientFrom: "#fff",
-      backgroundGradientTo: "#fff",
-      decimalPlaces: 1,
-      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-      labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-      propsForDots: {
-        r: "6",
-        strokeWidth: "2",
-        stroke: "#ffa726"
-      }
-    }}
-    bezier // Deixa a linha curvada e elegante
-    style={{
-      marginVertical: 8,
-      borderRadius: 16
-    }}
-    renderDotContent={({ x, y, index, indexData }) => (
-      <Text
-        key={`dot-${index}-${x}-${y}`} // Usamos as coordenadas X e Y para garantir que a chave seja única
-        style={{
-          position: 'absolute',
-          top: y - 25,
-          left: x - 10,
-          fontSize: 10,
-          fontWeight: 'bold',
-          color: '#000'
-        }}
-      >
-        {indexData}%
-      </Text>
-    )}
-  />
-</View>
-
 
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
             {assessments.map((assessment, index) => {
@@ -726,17 +618,9 @@ _Att, Coach Alzejones_`;
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              
-         {/* 1. INÍCIO DO EMBRULHO (A View que a lente vai focar) */}
-  <View 
-    ref={viewRef} 
-    collapsable={false} 
-    style={{ backgroundColor: '#fff', padding: 10, borderRadius: 8 }}
-  >
-    {/* Título que aparecerá no topo da imagem para o aluno */}
-    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#000', textAlign: 'center', marginBottom: 15 }}>
-      Vortex Primus - Evolução de {client?.name.split(' ')[0]}
-    </Text>          
+              {/* CABEÇALHO DE EVOLUÇÃO RELATIVA DENTRO DO MODAL */}
+        
+                  
                    {/* CABEÇALHO DE EVOLUÇÃO RELATIVA DENTRO DO MODAL */}
               {relativeEvolution && (
                 <View style={{ marginBottom: 20 }}>
@@ -829,26 +713,7 @@ _Att, Coach Alzejones_`;
                   </View>
                 );
               })()}
-          </View>
             </ScrollView>
-
-{/* 3. BOTÕES DE AÇÃO (Ficam abaixo do ScrollView, fora da foto) */}
-<View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
-  <TouchableOpacity 
-    style={[styles.button, { flex: 1, backgroundColor: '#16a34a' }]} 
-    onPress={handleShareImage}
-  >
-    <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Gerar Imagem</Text>
-  </TouchableOpacity>
-  
-  <TouchableOpacity 
-    style={[styles.button, { flex: 1, backgroundColor: '#000' }]} 
-    onPress={() => setViewModalVisible(false)}
-  >
-    <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Fechar</Text>
-  </TouchableOpacity>
-</View>
-
 
             <TouchableOpacity style={styles.button} onPress={() => setViewModalVisible(false)}>
               <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Fechar Consulta</Text>
