@@ -4,8 +4,7 @@ import { useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
+  Alert, Dimensions, KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -16,8 +15,9 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { LineChart } from "react-native-chart-kit";
 import { captureRef } from "react-native-view-shot";
 
 export default function ClientDetails() {
@@ -56,6 +56,31 @@ export default function ClientDetails() {
       Alert.alert("Erro", "Não foi possível gerar a imagem da evolução.");
     }
   }
+
+ // --- LÓGICA DO GRÁFICO (Gordura vs Músculo) ---
+  // Invertemos o array para ordem cronológica (da mais antiga para a atual)
+  const chronologicalAssessments = [...(assessments || [])].reverse();
+  
+  // Filtramos para garantir que só entram avaliações que tenham dados preenchidos
+  const chartAssessments = chronologicalAssessments.filter(a => a.anthropometry && a.anthropometry.length > 0);
+
+  // Eixo X (Quantidade de avaliações: Av 1, Av 2, Av 3...)
+  const chartLabels = chartAssessments.length > 0 
+    ? chartAssessments.map((_, index) => `Av ${index + 1}`) 
+    : ["-"];
+
+  // Eixo Y (Linha da Gordura e Linha do Músculo)
+  const fatData = chartAssessments.length > 0 
+    ? chartAssessments.map(a => Number(a.anthropometry[0].body_fat) || 0)
+    : [0];
+
+  const muscleData = chartAssessments.length > 0 
+    ? chartAssessments.map(a => Number(a.anthropometry[0].muscle_mass_percentage) || 0)
+    : [0];
+
+  // Largura da tela menos as margens para o gráfico encaixar perfeito
+  const screenWidth = Dimensions.get("window").width - 60; 
+
 
   // Estados para o Modal de "Consultar"
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -581,6 +606,64 @@ _Att, Coach Alzejones_`;
                 </View>
               </View>
             )}
+<View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
+  <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>Evolução: Gordura vs Músculo</Text>
+  
+  <LineChart
+    data={{
+      labels: chartLabels,
+      datasets: [
+        {
+          data: fatData,
+          color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`, // Vermelho para Gordura
+          strokeWidth: 2
+        },
+        {
+          data: muscleData,
+          color: (opacity = 1) => `rgba(0, 128, 0, ${opacity})`, // Verde para Músculo
+          strokeWidth: 2
+        }
+      ],
+      legend: ["% Gordura", "% Músculo"]
+    }}
+    width={screenWidth}
+    height={220}
+    chartConfig={{
+      backgroundColor: "#fff",
+      backgroundGradientFrom: "#fff",
+      backgroundGradientTo: "#fff",
+      decimalPlaces: 1,
+      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+      propsForDots: {
+        r: "6",
+        strokeWidth: "2",
+        stroke: "#ffa726"
+      }
+    }}
+    bezier // Deixa a linha curvada e elegante
+    style={{
+      marginVertical: 8,
+      borderRadius: 16
+    }}
+    renderDotContent={({ x, y, index, indexData }) => (
+      <Text
+        key={`dot-${index}-${x}-${y}-${Math.random()}`} // O fator Math.random() garante que o RG do ponto seja sempre único
+        style={{
+          position: 'absolute',
+          top: y - 25,
+          left: x - 10,
+          fontSize: 10,
+          fontWeight: 'bold',
+          color: '#000'
+        }}
+      >
+        {indexData}%
+      </Text>
+    )}
+  />
+</View>
+
 
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
             {assessments.map((assessment, index) => {
@@ -626,153 +709,181 @@ _Att, Coach Alzejones_`;
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* MODAL DE CONSULTA COMPLETA */}
       <Modal
-        visible={viewModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setViewModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-              <Text style={styles.pageTitle}>Detalhes da Avaliação</Text>
-              <TouchableOpacity onPress={() => setViewModalVisible(false)}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#888' }}>X</Text>
-              </TouchableOpacity>
-            </View>
+  visible={viewModalVisible}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={() => setViewModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+        <Text style={styles.pageTitle}>Detalhes da Avaliação</Text>
+        <TouchableOpacity onPress={() => setViewModalVisible(false)}>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#888' }}>X</Text>
+        </TouchableOpacity>
+      </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              
-         {/* 1. INÍCIO DO EMBRULHO (A View que a lente vai focar) */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+  {/* 1. INÍCIO DO EMBRULHO (Área da Foto - viewRef) */}
   <View 
     ref={viewRef} 
     collapsable={false} 
     style={{ backgroundColor: '#fff', padding: 10, borderRadius: 8 }}
   >
-    {/* Título que aparecerá no topo da imagem para o aluno */}
+    {/* Título da Imagem */}
     <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#000', textAlign: 'center', marginBottom: 15 }}>
       Vortex Primus - Evolução de {client?.name.split(' ')[0]}
-    </Text>          
-                   {/* CABEÇALHO DE EVOLUÇÃO RELATIVA DENTRO DO MODAL */}
-              {relativeEvolution && (
-                <View style={{ marginBottom: 20 }}>
-                  
-                  {/* Títulos com os Períodos e Dias (No topo das colunas) */}
-                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 8 }}>
-                    <Text style={{ flex: 1, fontSize: 11, fontWeight: "bold", color: "#666", textAlign: 'center' }}>
-                      ÚLTIMA VS ANTERIOR{'\n'}{relativeEvolution.labelRecent} ({relativeEvolution.daysRecent})
-                    </Text>
-                    <Text style={{ flex: 1, fontSize: 11, fontWeight: "bold", color: "#666", textAlign: 'center' }}>
-                      EVOLUÇÃO TOTAL{'\n'}{relativeEvolution.labelTotal} ({relativeEvolution.daysTotal})
-                    </Text>
-                  </View>
+    </Text> 
 
-                  {/* 1. LINHA: BIOIMPEDÂNCIA */}
-                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-                    <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
-                      <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#2563eb' }]}>Bioimpedância</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentWeight, "weight"), fontSize: 12 }}>Peso: {formatValue(relativeEvolution.diffRecentWeight)} kg</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentFat, "fat"), fontSize: 12 }}>% Gord: {formatValue(relativeEvolution.diffRecentFat)}</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentMuscle, "muscle"), fontSize: 12 }}>% Musc: {formatValue(relativeEvolution.diffRecentMuscle)}</Text>
-                    </View>
-                    <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
-                      <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#2563eb' }]}>Bioimpedância</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalWeight, "weight"), fontSize: 12 }}>Peso: {formatValue(relativeEvolution.diffTotalWeight)} kg</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalFat, "fat"), fontSize: 12 }}>% Gord: {formatValue(relativeEvolution.diffTotalFat)}</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalMuscle, "muscle"), fontSize: 12 }}>% Musc: {formatValue(relativeEvolution.diffTotalMuscle)}</Text>
-                    </View>
-                  </View>
+    {/* --- GRÁFICO DE EVOLUÇÃO --- */}
+    <View style={{ alignItems: 'center', marginBottom: 20 }}>
+      <LineChart
+        data={{
+          labels: chartLabels,
+          datasets: [
+            { data: fatData, color: (opacity = 1) => `rgba(220, 38, 38, ${opacity})`, strokeWidth: 2 },
+            { data: muscleData, color: (opacity = 1) => `rgba(22, 163, 74, ${opacity})`, strokeWidth: 2 }
+          ],
+          legend: ["% Gordura", "% Músculo"]
+        }}
+        width={screenWidth - 20}
+        height={180}
+        chartConfig={{
+          backgroundColor: "#fff",
+          backgroundGradientFrom: "#fff",
+          backgroundGradientTo: "#fff",
+          decimalPlaces: 1,
+          color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          propsForDots: { r: "4", strokeWidth: "2", stroke: "#fbbf24" }
+        }}
+        bezier
+        renderDotContent={({ x, y, index, indexData }) => (
+          <Text
+            key={`dot-full-${index}-${x}-${y}-${Math.random()}`}
+            style={{ position: 'absolute', top: y - 20, left: x - 10, fontSize: 9, fontWeight: 'bold', color: '#000' }}
+          >
+            {indexData}%
+          </Text>
+        )}
+      />
+    </View>
 
-                  {/* 2. LINHA: TRONCO */}
-                  <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
-                    <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
-                      <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#ea580c' }]}>Tronco</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentChest, "weight"), fontSize: 12 }}>Peitoral: {formatValue(relativeEvolution.diffRecentChest)} cm</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentAbdomen, "fat"), fontSize: 12 }}>Abdômen: {formatValue(relativeEvolution.diffRecentAbdomen)} cm</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentWaist, "fat"), fontSize: 12 }}>Cintura: {formatValue(relativeEvolution.diffRecentWaist)} cm</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffRecentHip, "weight"), fontSize: 12 }}>Quadril: {formatValue(relativeEvolution.diffRecentHip)} cm</Text>
-                    </View>
-                    <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
-                      <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#ea580c' }]}>Tronco</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalChest, "weight"), fontSize: 12 }}>Peitoral: {formatValue(relativeEvolution.diffTotalChest)} cm</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalAbdomen, "fat"), fontSize: 12 }}>Abdômen: {formatValue(relativeEvolution.diffTotalAbdomen)} cm</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalWaist, "fat"), fontSize: 12 }}>Cintura: {formatValue(relativeEvolution.diffTotalWaist)} cm</Text>
-                      <Text style={{ color: getColor(relativeEvolution.diffTotalHip, "weight"), fontSize: 12 }}>Quadril: {formatValue(relativeEvolution.diffTotalHip)} cm</Text>
-                    </View>
-                  </View>
+    {/* --- CARDS DE EVOLUÇÃO RELATIVA (COMPLETO) --- */}
+    {relativeEvolution && (
+      <View style={{ marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 8 }}>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: "bold", color: "#666", textAlign: 'center' }}>
+            ÚLTIMA VS ANTERIOR{'\n'}{relativeEvolution.labelRecent} ({relativeEvolution.daysRecent})
+          </Text>
+          <Text style={{ flex: 1, fontSize: 11, fontWeight: "bold", color: "#666", textAlign: 'center' }}>
+            EVOLUÇÃO TOTAL{'\n'}{relativeEvolution.labelTotal} ({relativeEvolution.daysTotal})
+          </Text>
+        </View>
 
-                  {/* 3. LINHA: MEMBROS */}
-                  <View style={{ flexDirection: "row", gap: 10 }}>
-                    <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
-                      <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#16a34a' }]}>Membros (Esq/Dir)</Text>
-                      <Text style={{ fontSize: 12, color: '#444' }}>Braço: <Text style={{ color: getColor(relativeEvolution.diffRecentArmL, "muscle") }}>{formatValue(relativeEvolution.diffRecentArmL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffRecentArmR, "muscle") }}>{formatValue(relativeEvolution.diffRecentArmR)}</Text></Text>
-                      <Text style={{ fontSize: 12, color: '#444' }}>Coxa: <Text style={{ color: getColor(relativeEvolution.diffRecentThighL, "muscle") }}>{formatValue(relativeEvolution.diffRecentThighL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffRecentThighR, "muscle") }}>{formatValue(relativeEvolution.diffRecentThighR)}</Text></Text>
-                      <Text style={{ fontSize: 12, color: '#444' }}>Pant: <Text style={{ color: getColor(relativeEvolution.diffRecentCalfL, "muscle") }}>{formatValue(relativeEvolution.diffRecentCalfL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffRecentCalfR, "muscle") }}>{formatValue(relativeEvolution.diffRecentCalfR)}</Text></Text>
-                    </View>
-                    <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
-                      <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#16a34a' }]}>Membros (Esq/Dir)</Text>
-                      <Text style={{ fontSize: 12, color: '#444' }}>Braço: <Text style={{ color: getColor(relativeEvolution.diffTotalArmL, "muscle") }}>{formatValue(relativeEvolution.diffTotalArmL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffTotalArmR, "muscle") }}>{formatValue(relativeEvolution.diffTotalArmR)}</Text></Text>
-                      <Text style={{ fontSize: 12, color: '#444' }}>Coxa: <Text style={{ color: getColor(relativeEvolution.diffTotalThighL, "muscle") }}>{formatValue(relativeEvolution.diffTotalThighL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffTotalThighR, "muscle") }}>{formatValue(relativeEvolution.diffTotalThighR)}</Text></Text>
-                      <Text style={{ fontSize: 12, color: '#444' }}>Pant: <Text style={{ color: getColor(relativeEvolution.diffTotalCalfL, "muscle") }}>{formatValue(relativeEvolution.diffTotalCalfL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffTotalCalfR, "muscle") }}>{formatValue(relativeEvolution.diffTotalCalfR)}</Text></Text>
-                    </View>
-                  </View>
-
-                </View>
-              )}
-
-              {selectedAssessment?.anthropometry?.[0] && (() => {
-                const data = selectedAssessment.anthropometry[0];
-                return (
-                  <View style={{ gap: 10 }}>
-                    <Text style={styles.cardTitle}>Bioimpedância</Text>
-                    <Text>• Peso: {data.weight || "-"} kg</Text>
-                    <Text>• % Gordura: {data.body_fat || "-"} %</Text>
-                    <Text>• % M. Muscular: {data.muscle_mass_percentage || "-"} %</Text>
-                    <Text>• Idade Metabólica: {data.metabolic_age || "-"} anos</Text>
-                    <Text>• Metab. Basal: {data.basal_metabolic_rate || "-"} kcal</Text>
-                    <Text>• Gord. Visceral: {data.body_fat_index || "-"}</Text>
-
-                    <Text style={[styles.cardTitle, { marginTop: 15 }]}>Tronco</Text>
-                    <Text>• Peitoral: {data.chest || "-"} cm</Text>
-                    <Text>• Abdômen: {data.abdomen || "-"} cm</Text>
-                    <Text>• Cintura: {data.waist || "-"} cm</Text>
-                    <Text>• Quadril: {data.hip || "-"} cm</Text>
-
-                    <Text style={[styles.cardTitle, { marginTop: 15 }]}>Membros</Text>
-                    <Text>• Braço Esq/Dir: {data.arm_left || "-"} cm / {data.arm_right || "-"} cm</Text>
-                    <Text>• Panturrilha Esq/Dir: {data.calf_left || "-"} cm / {data.calf_right || "-"} cm</Text>
-                    <Text>• Coxa Esq/Dir: {data.thigh_left || "-"} cm / {data.thigh_right || "-"} cm</Text>
-                  </View>
-                );
-              })()}
+        {/* 1. LINHA: BIOIMPEDÂNCIA */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+          <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
+            <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#2563eb' }]}>Bioimpedância</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentWeight, "weight"), fontSize: 12 }}>Peso: {formatValue(relativeEvolution.diffRecentWeight)} kg</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentFat, "fat"), fontSize: 12 }}>% Gord: {formatValue(relativeEvolution.diffRecentFat)}</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentMuscle, "muscle"), fontSize: 12 }}>% Musc: {formatValue(relativeEvolution.diffRecentMuscle)}</Text>
           </View>
-            </ScrollView>
-
-{/* 3. BOTÕES DE AÇÃO (Ficam abaixo do ScrollView, fora da foto) */}
-<View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
-  <TouchableOpacity 
-    style={[styles.button, { flex: 1, backgroundColor: '#16a34a' }]} 
-    onPress={handleShareImage}
-  >
-    <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Gerar Imagem</Text>
-  </TouchableOpacity>
-  
-  <TouchableOpacity 
-    style={[styles.button, { flex: 1, backgroundColor: '#000' }]} 
-    onPress={() => setViewModalVisible(false)}
-  >
-    <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Fechar</Text>
-  </TouchableOpacity>
-</View>
-
-
-            <TouchableOpacity style={styles.button} onPress={() => setViewModalVisible(false)}>
-              <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Fechar Consulta</Text>
-            </TouchableOpacity>
+          <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
+            <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#2563eb' }]}>Bioimpedância</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalWeight, "weight"), fontSize: 12 }}>Peso: {formatValue(relativeEvolution.diffTotalWeight)} kg</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalFat, "fat"), fontSize: 12 }}>% Gord: {formatValue(relativeEvolution.diffTotalFat)}</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalMuscle, "muscle"), fontSize: 12 }}>% Musc: {formatValue(relativeEvolution.diffTotalMuscle)}</Text>
           </View>
         </View>
-      </Modal>
+
+        {/* 2. LINHA: TRONCO */}
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
+          <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
+            <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#ea580c' }]}>Tronco</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentChest, "weight"), fontSize: 12 }}>Peitoral: {formatValue(relativeEvolution.diffRecentChest)} cm</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentAbdomen, "fat"), fontSize: 12 }}>Abdômen: {formatValue(relativeEvolution.diffRecentAbdomen)} cm</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentWaist, "fat"), fontSize: 12 }}>Cintura: {formatValue(relativeEvolution.diffRecentWaist)} cm</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffRecentHip, "weight"), fontSize: 12 }}>Quadril: {formatValue(relativeEvolution.diffRecentHip)} cm</Text>
+          </View>
+          <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
+            <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#ea580c' }]}>Tronco</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalChest, "weight"), fontSize: 12 }}>Peitoral: {formatValue(relativeEvolution.diffTotalChest)} cm</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalAbdomen, "fat"), fontSize: 12 }}>Abdômen: {formatValue(relativeEvolution.diffTotalAbdomen)} cm</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalWaist, "fat"), fontSize: 12 }}>Cintura: {formatValue(relativeEvolution.diffTotalWaist)} cm</Text>
+            <Text style={{ color: getColor(relativeEvolution.diffTotalHip, "weight"), fontSize: 12 }}>Quadril: {formatValue(relativeEvolution.diffTotalHip)} cm</Text>
+          </View>
+        </View>
+
+        {/* 3. LINHA: MEMBROS */}
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
+            <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#16a34a' }]}>Membros (E/D)</Text>
+            <Text style={{ fontSize: 12 }}>Braço: <Text style={{ color: getColor(relativeEvolution.diffRecentArmL, "muscle") }}>{formatValue(relativeEvolution.diffRecentArmL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffRecentArmR, "muscle") }}>{formatValue(relativeEvolution.diffRecentArmR)}</Text></Text>
+            <Text style={{ fontSize: 12 }}>Coxa: <Text style={{ color: getColor(relativeEvolution.diffRecentThighL, "muscle") }}>{formatValue(relativeEvolution.diffRecentThighL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffRecentThighR, "muscle") }}>{formatValue(relativeEvolution.diffRecentThighR)}</Text></Text>
+            <Text style={{ fontSize: 12 }}>Pant: <Text style={{ color: getColor(relativeEvolution.diffRecentCalfL, "muscle") }}>{formatValue(relativeEvolution.diffRecentCalfL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffRecentCalfR, "muscle") }}>{formatValue(relativeEvolution.diffRecentCalfR)}</Text></Text>
+          </View>
+          <View style={[styles.card, { flex: 1, marginBottom: 0, padding: 10 }]}>
+            <Text style={[styles.cardTitle, { fontSize: 11, marginBottom: 4, color: '#16a34a' }]}>Membros (E/D)</Text>
+            <Text style={{ fontSize: 12 }}>Braço: <Text style={{ color: getColor(relativeEvolution.diffTotalArmL, "muscle") }}>{formatValue(relativeEvolution.diffTotalArmL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffTotalArmR, "muscle") }}>{formatValue(relativeEvolution.diffTotalArmR)}</Text></Text>
+            <Text style={{ fontSize: 12 }}>Coxa: <Text style={{ color: getColor(relativeEvolution.diffTotalThighL, "muscle") }}>{formatValue(relativeEvolution.diffTotalThighL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffTotalThighR, "muscle") }}>{formatValue(relativeEvolution.diffTotalThighR)}</Text></Text>
+            <Text style={{ fontSize: 12 }}>Pant: <Text style={{ color: getColor(relativeEvolution.diffTotalCalfL, "muscle") }}>{formatValue(relativeEvolution.diffTotalCalfL)}</Text> / <Text style={{ color: getColor(relativeEvolution.diffTotalCalfR, "muscle") }}>{formatValue(relativeEvolution.diffTotalCalfR)}</Text></Text>
+          </View>
+        </View>
+      </View>
+    )}
+
+    {/* --- DADOS DETALHADOS DA AVALIAÇÃO ATUAL --- */}
+    {selectedAssessment?.anthropometry?.[0] && (() => {
+      const data = selectedAssessment.anthropometry[0];
+      return (
+        <View style={{ gap: 10, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 15 }}>
+          <Text style={styles.cardTitle}>Bioimpedância Detalhada</Text>
+          <Text>• Peso: {data.weight || "-"} kg</Text>
+          <Text>• % Gordura: {data.body_fat || "-"} %</Text>
+          <Text>• % M. Muscular: {data.muscle_mass_percentage || "-"} %</Text>
+          <Text>• Idade Metabólica: {data.metabolic_age || "-"} anos</Text>
+          <Text>• Metab. Basal: {data.basal_metabolic_rate || "-"} kcal</Text>
+          <Text>• Gord. Visceral: {data.body_fat_index || "-"}</Text>
+
+          <Text style={[styles.cardTitle, { marginTop: 15 }]}>Tronco</Text>
+          <Text>• Peitoral: {data.chest || "-"} cm</Text>
+          <Text>• Abdômen: {data.abdomen || "-"} cm</Text>
+          <Text>• Cintura: {data.waist || "-"} cm</Text>
+          <Text>• Quadril: {data.hip || "-"} cm</Text>
+
+          <Text style={[styles.cardTitle, { marginTop: 15 }]}>Membros</Text>
+          <Text>• Braço Esq/Dir: {data.arm_left || "-"} cm / {data.arm_right || "-"} cm</Text>
+          <Text>• Panturrilha Esq/Dir: {data.calf_left || "-"} cm / {data.calf_right || "-"} cm</Text>
+          <Text>• Coxa Esq/Dir: {data.thigh_left || "-"} cm / {data.thigh_right || "-"} cm</Text>
+        </View>
+      );
+    })()}
+  </View> 
+  {/* FIM DO EMBRULHO */}
+</ScrollView>
+
+
+
+      {/* BOTÕES DE AÇÃO (Fora da foto) */}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 15 }}>
+        <TouchableOpacity 
+          style={[styles.button, { flex: 1, backgroundColor: '#16a34a' }]} 
+          onPress={handleShareImage}
+        >
+          <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Gerar Imagem</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.button, { flex: 1, backgroundColor: '#000' }]} 
+          onPress={() => setViewModalVisible(false)}
+        >
+          <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>Fechar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
 
     </SafeAreaView>
   );
