@@ -34,26 +34,7 @@ export default function ClientAssessments() {
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [editingAnthropometryId, setEditingAnthropometryId] = useState<string | null>(null);
 
-
-  const formatDateBR = (date: Date) => {
-  const d = date.getDate().toString().padStart(2, '0');
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const y = date.getFullYear();
-  const h = date.getHours().toString().padStart(2, '0');
-  const min = date.getMinutes().toString().padStart(2, '0');
-  return `${d}/${m}/${y} ${h}:${min}`;
-};
-
-const parseDateBRToISO = (str: string) => {
-  try {
-    const [datePart, timePart] = str.split(' ');
-    const [d, m, y] = datePart.split('/');
-    const [h, min] = timePart.split(':');
-    return new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min)).toISOString();
-  } catch (e) {
-    return new Date().toISOString();
-  }
-};
+  // 1. Defina a função de busca com useCallback no topo do componente
 
 // 1. Função Unificada com o join explícito corrigido
 const fetchHistory = useCallback(async () => {
@@ -159,7 +140,6 @@ useEffect(() => {
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
 
   const [form, setForm] = useState({
-    assessment_date: formatDateBR(new Date()), 
     weight: "",
     height: "",
     body_fat: "",
@@ -382,8 +362,6 @@ async function deleteAssessment(id: string) {
     setEditingAssessmentId(assessment.id);
     setEditingAnthropometryId(anthro.id);
 
-const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : formatDateBR(new Date());
-
     Object.keys(form).forEach((key) => {
       setForm((prev) => ({
         ...prev,
@@ -392,11 +370,7 @@ const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : fo
     });
   }
 
-async function handleSaveAssessment() {
-    setSaving(true);
-    const isoDate = parseDateBRToISO(form.assessment_date);
-
-    const payload = {
+  async function handleSaveAssessment() {const payload = {
       weight: form.weight ? Number(form.weight) : null,
       height: form.height ? Number(form.height) : null,
       body_fat: form.body_fat ? Number(form.body_fat) : null,
@@ -417,36 +391,22 @@ async function handleSaveAssessment() {
     };
 
     if (editingAnthropometryId) {
-      if (editingAssessmentId) {
-        await supabase.from("physical_assessments").update({ date: isoDate }).eq("id", editingAssessmentId);
-      }
-      
       await supabase.from("anthropometry").update(payload).eq("id", editingAnthropometryId);
-      
       setEditingAnthropometryId(null);
       setEditingAssessmentId(null);
-      
-      // Reseta o formulário e volta a data para o momento atual
-      setForm({
-        assessment_date: formatDateBR(new Date()),
-        weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "",
-        muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "",
-      });
-
       await fetchHistory();
       setSaving(false);
       Alert.alert("Sucesso", "Avaliação atualizada");
       return;
     }
 
-    // Inserção de NOVA avaliação
     const { data: assessment } = await supabase
       .from("physical_assessments")
       .insert([
         {
           client_id: clientId,
           trainer_id: trainerId,
-          date: isoDate, // Salva com a data que está no campo do cabeçalho
+          date: new Date().toISOString(),
           assessor_name: session?.user?.email || "Treinador",
         },
       ])
@@ -458,17 +418,14 @@ async function handleSaveAssessment() {
       ...payload,
     });
 
-    // Reseta o formulário e volta a data para o momento atual
     setForm({
-      assessment_date: formatDateBR(new Date()),
-      weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "",
+      weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "",arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "",
       muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "",
     });
 
     setSaving(false);
     await fetchHistory();
   }
-
  function handleSendWhatsApp(assessment: any) {
     if (!client) return;
 
@@ -609,19 +566,7 @@ _Att, Coach Alzejones_`;
           </View>
 
           <View style={{ padding: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 16 }}>
-              <Text style={[styles.pageTitle, { marginTop: 0, marginBottom: 0 }]}>Nova Avaliação</Text>
-              
-              <View style={{ width: 140 }}>
-                <Text style={{ fontSize: 10, color: '#666', marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                <TextInput
-                  style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
-                  value={form.assessment_date}
-                  onChangeText={(text) => setForm({ ...form, assessment_date: text })}
-                  placeholder="DD/MM/AAAA HH:mm"
-                />
-              </View>
-            </View>
+            <Text style={styles.pageTitle}>Nova Avaliação</Text>
             
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Bioimpedância</Text>
