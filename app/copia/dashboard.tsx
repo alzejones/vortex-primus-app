@@ -164,11 +164,11 @@ export default function Dashboard() {
     </View>
   );
 
-  // O "Rodapé" da lista, contendo o botão de Logout com novo estilo
+  // O "Rodapé" da lista, contendo o botão de Logout
   const renderFooter = () => (
     <View style={{ paddingTop: 20 }}>
       <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
-        <Text style={styles.logoutButtonText}>SAIR DO SISTEMA</Text>
+        <Text style={styles.buttonText}>SAIR DO SISTEMA</Text>
       </TouchableOpacity>
     </View>
   );
@@ -183,6 +183,7 @@ export default function Dashboard() {
 
   return (
     <View style={styles.container}>
+      {/* Usamos o FlatList como container principal para habilitar o RefreshControl e a rolagem suave */}
       <FlatList
         data={filteredClients}
         keyExtractor={(item) => item.id}
@@ -205,38 +206,14 @@ export default function Dashboard() {
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.clientCard}>
-            {/* PARTE DE CIMA: Perfil do Aluno (Igual ao original) */}
-            <TouchableOpacity
-              style={styles.clientInfoArea}
-              onPress={() => handleClientPress(item.id)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.clientName}>{item.name}</Text>
-              <Text style={styles.arrowIcon}>›</Text>
-            </TouchableOpacity>
-
-            {/* PARTE DE BAIXO: Menu de Atalhos (CRUD) */}
-            <View style={styles.clientActionsArea}>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}`)}
-              >
-                <Text style={styles.actionEmoji}>📋</Text>
-                <Text style={styles.actionLabel}>Avaliação</Text>
-              </TouchableOpacity>
-
-              <View style={styles.verticalDivider} />
-
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-details?id=${item.id}`)}
-              >
-                <Text style={styles.actionEmoji}>🩺</Text>
-                <Text style={styles.actionLabel}>Consulta</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <TouchableOpacity
+            style={styles.clientItem}
+            onPress={() => handleClientPress(item.id)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.clientName}>{item.name}</Text>
+            <Text style={styles.arrowIcon}>›</Text>
+          </TouchableOpacity>
         )}
       />
     </View>
@@ -248,7 +225,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f9fafb", // Cor de fundo mais moderna
   },
   loadingContainer: {
     flex: 1,
@@ -265,11 +242,11 @@ const styles = StyleSheet.create({
   planBox: {
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 16, // Bordas mais arredondadas
     marginBottom: 20,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    shadowColor: "#000",
+    shadowColor: "#000", // Sombra leve
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
@@ -327,28 +304,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  // --- NOVO VISUAL DO BOTÃO DE SAIR ---
   logoutButton: {
-    backgroundColor: "#fff", 
+    backgroundColor: "#fee2e2", // Fundo vermelho clarinho
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#ef4444", 
-    alignItems: "center",
-    shadowColor: "#ef4444", 
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#fecaca",
   },
-  logoutButtonText: {
-    color: "#ef4444", 
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 15,
-    letterSpacing: 1, 
-  },
-  // -------------------------------------
   buttonText: {
     color: "#fff",
     textAlign: "center",
@@ -373,17 +335,14 @@ const styles = StyleSheet.create({
     color: "#374151",
     marginBottom: 10,
   },
-  clientCard: {
+  clientItem: {
     backgroundColor: "#fff",
+    padding: 18,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    overflow: "hidden",
-  },
-  clientInfoArea: {
-    padding: 18,
-    flexDirection: "row",
+    flexDirection: "row", // Para alinhar o nome e a setinha
     justifyContent: "space-between",
     alignItems: "center",
   },
@@ -396,33 +355,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#9ca3af",
   },
-  clientActionsArea: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-    backgroundColor: "#fafafa",
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-  },
-  actionEmoji: {
-    fontSize: 18,
-    marginRight: 6,
-  },
-  actionLabel: {
-    fontSize: 12,
-    color: "#4b5563",
-    fontWeight: "500",
-  },
-  verticalDivider: {
-    width: 1,
-    backgroundColor: "#f3f4f6",
-    marginVertical: 8,
-  },
   emptyContainer: {
     padding: 20,
     alignItems: "center",
@@ -433,3 +365,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

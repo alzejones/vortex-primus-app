@@ -50,7 +50,7 @@ export default function ClientDetails() {
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
   const [heightCm, setHeightCm] = useState("");
-  const [observation, setObservation] = useState(""); // Novo campo
+  const [observation, setObservation] = useState(""); 
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function ClientDetails() {
         setBirthDate(sqlToDate(data.birth_date));
         setGender(data.gender || "");
         setHeightCm(data.height_cm ? data.height_cm.toString() : "");
-        setObservation(data.observation || ""); // Carrega a observação
+        setObservation(data.observation || ""); 
         setIsActive(data.is_active ?? true);
       }
     } catch (error) {
@@ -103,9 +103,9 @@ export default function ClientDetails() {
           birth_date: dateToSql(birthDate),
           gender: gender || null,
           height_cm: heightCm ? parseFloat(heightCm) : null,
-          observation: observation || null, // Salva a observação
+          observation: observation || null, 
           is_active: isActive,
-          updated_at: new Date().toISOString(), // Agora a coluna existe no banco!
+          updated_at: new Date().toISOString(), 
         })
         .eq("id", clientId);
 
@@ -130,11 +130,36 @@ export default function ClientDetails() {
           onPress: async () => {
             try {
               setSaving(true);
-              const { error } = await supabase.from("clients").delete().eq("id", clientId);
+              
+              // ADICIONADO .select() para garantir que o Supabase nos avise se a exclusão foi silenciosamente bloqueada
+              const { data, error } = await supabase
+                .from("clients")
+                .delete()
+                .eq("id", clientId)
+                .select();
+
               if (error) throw error;
-              router.replace("/(protected)/dashboard");
+
+              // Verificação de bloqueio silencioso (RLS)
+              if (!data || data.length === 0) {
+                Alert.alert(
+                  "Bloqueio de Segurança",
+                  "O registro não pôde ser excluído. Vá ao Supabase e verifique se a política (Policy) de 'DELETE' está ativada na tabela 'clients'."
+                );
+                return;
+              }
+
+              // Pequeno atraso para evitar o bug do iOS/Android onde a navegação 
+              // não ocorre se o modal do Alert ainda estiver animando/fechando
+              setTimeout(() => {
+                router.replace("/(protected)/dashboard");
+              }, 100);
+
             } catch (error: any) {
-              Alert.alert("Erro Técnico", error.message || "Não foi possível excluir.");
+              Alert.alert(
+                "Erro ao excluir", 
+                "Se o aluno tiver avaliações cadastradas, ative a opção 'Cascade Delete' no banco de dados para poder apagá-lo.\\n\\nDetalhes: " + error.message
+              );
             } finally {
               setSaving(false);
             }
@@ -229,7 +254,6 @@ export default function ClientDetails() {
           <Text style={styles.label}>E-mail</Text>
           <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="email@exemplo.com" />
 
-          {/* NOVO CAMPO DE OBSERVAÇÃO */}
           <Text style={styles.label}>Observações</Text>
           <TextInput 
             style={[styles.input, styles.textArea]} 
@@ -281,7 +305,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 12, fontWeight: "800", color: "#6b7280", marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: { backgroundColor: "#f9fafb", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, padding: 14, fontSize: 16, color: "#111827", marginBottom: 16 },
   row: { flexDirection: 'row' },
-  textArea: { height: 100, textAlignVertical: "top" }, // Estilo específico para o campo multilinhas
+  textArea: { height: 100, textAlignVertical: "top" }, 
   
   genderRow: { flexDirection: 'row', marginBottom: 16 },
   genderBtn: { flex: 1, padding: 14, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', borderRadius: 10, marginRight: 5, backgroundColor: '#fff' },
@@ -295,4 +319,3 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2" },
   deleteButtonText: { color: "#dc2626", fontSize: 14, fontWeight: "bold" },
 });
-
