@@ -17,8 +17,8 @@ export default function Dashboard() {
   const { signOut } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // Estado para o "Puxar para atualizar"
-  const [searchQuery, setSearchQuery] = useState(""); // Estado para a barra de pesquisa
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   const [planName, setPlanName] = useState("");
   const [maxClients, setMaxClients] = useState(0);
@@ -48,8 +48,7 @@ export default function Dashboard() {
       if (!trainer) return;
       setTrainerId(trainer.id);
 
-        // Buscar plano ativo
-      const { data: subscription, error: subError } = await supabase
+      const { data: subscription } = await supabase
         .from("trainer_subscriptions")
         .select(`
           is_active,
@@ -60,9 +59,7 @@ export default function Dashboard() {
         .single();
 
       if (subscription) {
-        // Usamos o "as any" ou acessamos como array se o TS reclamar
         const planData = subscription.plans as any;
-        
         setPlanName(planData?.name || "Sem Plano");
         setMaxClients(planData?.max_clients || 0);
         setPlanStatus(subscription.is_active ? "Ativo" : "Inativo");
@@ -84,7 +81,6 @@ export default function Dashboard() {
     }
   }
 
-  // Função disparada ao arrastar a tela para baixo
   async function onRefresh() {
     setRefreshing(true);
     await loadDashboardData();
@@ -95,79 +91,99 @@ export default function Dashboard() {
     router.push(`/(protected)/client-details?id=${clientId}`);
   }
 
+  // --- FUNÇÃO DE UX: GERA AS INICIAIS DO NOME PARA O AVATAR ---
+  const getInitials = (name: string) => {
+    if (!name) return "AL";
+    const names = name.trim().split(" ");
+    if (names.length >= 2) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
+
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
   
-  // Filtra os clientes com base no que for digitado na barra de pesquisa
   const filteredClients = clients.filter((client) =>
     client.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // O "Cabeçalho" da lista, contendo o card do plano, os botões e o campo de busca
   const renderHeader = () => (
     <View style={{ paddingBottom: 15 }}>
-      <Text style={styles.title}>Dashboard</Text>
+      {/* CABEÇALHO COM SAUDAÇÃO */}
+      <View style={styles.headerTopArea}>
+        <Text style={styles.greetingText}>Visão Geral</Text>
+        <Text style={styles.title}>Meu Dashboard</Text>
+      </View>
 
-      {/* CARD DO PLANO MODERNO */}
-      <View style={styles.planBox}>
+      {/* WIDGET DO PLANO (SaaS PREMIUM) */}
+      <View style={styles.planWidget}>
         <View style={styles.planHeader}>
-          <Text style={styles.planTitle}>Meu Plano: {planName}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: planStatus === "Ativo" ? "#dcfce7" : "#fee2e2" }]}>
-            <Text style={[styles.statusText, { color: planStatus === "Ativo" ? "#16a34a" : "#dc2626" }]}>
+          <View>
+            <Text style={styles.planLabel}>Plano Atual</Text>
+            <Text style={styles.planTitle}>{planName}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: planStatus === "Ativo" ? "#ecfdf5" : "#fef2f2" }]}>
+            <View style={[styles.statusDot, { backgroundColor: planStatus === "Ativo" ? "#10b981" : "#ef4444" }]} />
+            <Text style={[styles.statusText, { color: planStatus === "Ativo" ? "#059669" : "#dc2626" }]}>
               {planStatus}
             </Text>
           </View>
         </View>
         
-        <Text style={styles.planText}>
-          Clientes: {currentClients} de {maxClients}
-        </Text>
+        <View style={styles.metricsRow}>
+          <Text style={styles.planText}>
+            <Text style={styles.highlightNumber}>{currentClients}</Text> de {maxClients} alunos
+          </Text>
+        </View>
 
-        {/* Barra de Progresso Visual */}
         <View style={styles.progressBarBackground}>
           <View 
             style={[
               styles.progressBarFill, 
               { 
                 width: `${Math.min(usagePercentage, 100)}%`,
-                backgroundColor: usagePercentage >= 80 ? "#dc2626" : "#2563eb"
+                backgroundColor: usagePercentage >= 80 ? "#ef4444" : "#4f46e5" // Azul Indigo moderno
               }
             ]} 
           />
         </View>
 
         {usagePercentage >= 80 && (
-          <Text style={styles.warning}>⚠️ Você está próximo do limite do plano.</Text>
+          <Text style={styles.warning}>⚠️ Você está próximo do limite do seu plano.</Text>
         )}
       </View>
 
       <TouchableOpacity
         onPress={() => router.push("/(protected)/client-create")}
         style={styles.primaryButton}
+        activeOpacity={0.8}
       >
-        <Text style={styles.buttonText}>+ NOVO CLIENTE</Text>
+        <Text style={styles.buttonText}>+ Adicionar Aluno</Text>
       </TouchableOpacity>
 
-      {/* BARRA DE PESQUISA */}
+      {/* BARRA DE PESQUISA REFINADA */}
       {clients.length > 0 && (
         <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="🔍 Buscar cliente por nome..."
-            placeholderTextColor="#9ca3af"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+          <View style={styles.searchBar}>
+            <Text style={styles.searchIcon}>🔍</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar aluno por nome..."
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
         </View>
       )}
 
-      {clients.length > 0 && <Text style={styles.sectionTitle}>Seus Clientes</Text>}
+      {clients.length > 0 && <Text style={styles.sectionTitle}>Seus Alunos</Text>}
     </View>
   );
 
-  // O "Rodapé" da lista, contendo o botão de Logout com novo estilo
   const renderFooter = () => (
-    <View style={{ paddingTop: 20 }}>
-      <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+    <View style={{ paddingTop: 30, paddingBottom: 20 }}>
+      <TouchableOpacity onPress={signOut} style={styles.logoutButton} activeOpacity={0.7}>
         <Text style={styles.logoutButtonText}>SAIR DO SISTEMA</Text>
       </TouchableOpacity>
     </View>
@@ -176,7 +192,8 @@ export default function Dashboard() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2563eb" />
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text style={styles.loadingText}>Carregando seu painel...</Text>
       </View>
     );
   }
@@ -187,43 +204,54 @@ export default function Dashboard() {
         data={filteredClients}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#2563eb"]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4f46e5"]} tintColor="#4f46e5" />
         }
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
           clients.length > 0 ? (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Nenhum cliente encontrado com "{searchQuery}".</Text>
+              <Text style={styles.emptyEmoji}>🧐</Text>
+              <Text style={styles.emptyText}>Nenhum aluno encontrado com "{searchQuery}".</Text>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Você ainda não possui clientes cadastrados.</Text>
+              <Text style={styles.emptyEmoji}>🚀</Text>
+              <Text style={styles.emptyTitle}>Sua jornada começa aqui!</Text>
+              <Text style={styles.emptyText}>Você ainda não possui alunos cadastrados.</Text>
             </View>
           )
         }
         renderItem={({ item }) => (
           <View style={styles.clientCard}>
-            {/* PARTE DE CIMA: Perfil do Aluno (Igual ao original) */}
+            
             <TouchableOpacity
               style={styles.clientInfoArea}
               onPress={() => handleClientPress(item.id)}
               activeOpacity={0.7}
             >
-              <Text style={styles.clientName}>{item.name}</Text>
+              <View style={styles.clientProfileGroup}>
+                {/* AVATAR DO CLIENTE */}
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+                </View>
+                <View>
+                  <Text style={styles.clientName}>{item.name}</Text>
+                  <Text style={styles.clientSubText}>Ver perfil completo</Text>
+                </View>
+              </View>
               <Text style={styles.arrowIcon}>›</Text>
             </TouchableOpacity>
 
-            {/* PARTE DE BAIXO: Menu de Atalhos (CRUD) */}
             <View style={styles.clientActionsArea}>
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}`)}
               >
                 <Text style={styles.actionEmoji}>📋</Text>
-                <Text style={styles.actionLabel}>Avaliação</Text>
+                <Text style={styles.actionLabel}>Avaliações</Text>
               </TouchableOpacity>
 
               <View style={styles.verticalDivider} />
@@ -232,8 +260,8 @@ export default function Dashboard() {
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/client-details?id=${item.id}`)}
               >
-                <Text style={styles.actionEmoji}>🩺</Text>
-                <Text style={styles.actionLabel}>Consulta</Text>
+                <Text style={styles.actionEmoji}>⚙️</Text>
+                <Text style={styles.actionLabel}>Gerenciar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -248,188 +276,295 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f8fafc", // Fundo Slate bem claro, super premium
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f8fafc",
+  },
+  loadingText: {
+    marginTop: 12,
+    color: "#64748b",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  headerTopArea: {
+    marginBottom: 24,
+    marginTop: 10,
+  },
+  greetingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: 20,
+    fontSize: 32,
+    fontWeight: "900",
+    color: "#0f172a", // Slate 900 (quase preto, mas mais elegante)
+    letterSpacing: -0.5,
   },
-  planBox: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+  
+  // --- WIDGET DO PLANO ---
+  planWidget: {
+    backgroundColor: "#ffffff",
+    padding: 24,
+    borderRadius: 20,
+    marginBottom: 24,
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.06,
+    shadowRadius: 15,
+    elevation: 4,
   },
   planHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
+    alignItems: "flex-start",
+    marginBottom: 16,
+  },
+  planLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   planTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1f2937",
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#0f172a",
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 99,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
   },
   statusText: {
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: "700",
+  },
+  metricsRow: {
+    marginBottom: 12,
   },
   planText: {
     fontSize: 15,
-    color: "#4b5563",
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  highlightNumber: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0f172a",
   },
   progressBarBackground: {
     height: 8,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 4,
-    marginTop: 12,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 99,
     overflow: "hidden",
   },
   progressBarFill: {
     height: "100%",
-    borderRadius: 4,
+    borderRadius: 99,
   },
   warning: {
     marginTop: 12,
-    color: "#dc2626",
+    color: "#ef4444",
     fontWeight: "600",
     fontSize: 13,
   },
+
+  // --- BOTÕES E INPUTS ---
   primaryButton: {
-    backgroundColor: "#000",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  // --- NOVO VISUAL DO BOTÃO DE SAIR ---
-  logoutButton: {
-    backgroundColor: "#fff", 
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#ef4444", 
+    backgroundColor: "#0f172a", // Escuro elegante
+    padding: 18,
+    borderRadius: 16,
+    marginBottom: 24,
     alignItems: "center",
-    shadowColor: "#ef4444", 
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  logoutButtonText: {
-    color: "#ef4444", 
-    textAlign: "center",
-    fontWeight: "bold",
-    fontSize: 15,
-    letterSpacing: 1, 
-  },
-  // -------------------------------------
   buttonText: {
-    color: "#fff",
-    textAlign: "center",
+    color: "#ffffff",
     fontWeight: "bold",
-    fontSize: 15,
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   searchContainer: {
-    marginBottom: 15,
+    marginBottom: 24,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 54,
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: 10,
+    opacity: 0.5,
   },
   searchInput: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 15,
-    color: "#111827",
+    flex: 1,
+    fontSize: 16,
+    color: "#0f172a",
+    height: "100%",
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#374151",
-    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#0f172a",
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
+
+  // --- CARTÃO DO CLIENTE PREMIUM ---
   clientCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    overflow: "hidden",
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    marginBottom: 16,
+    shadowColor: "#64748b",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
   clientInfoArea: {
-    padding: 18,
+    padding: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  clientName: {
+  clientProfileGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#e0e7ff", // Fundo do avatar (Índigo super claro)
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  avatarText: {
+    color: "#4f46e5", // Cor do texto do avatar
+    fontWeight: "bold",
     fontSize: 16,
-    fontWeight: "600",
-    color: "#1f2937",
+    letterSpacing: 1,
+  },
+  clientName: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#0f172a",
+    marginBottom: 2,
+  },
+  clientSubText: {
+    fontSize: 13,
+    color: "#94a3b8",
+    fontWeight: "500",
   },
   arrowIcon: {
-    fontSize: 20,
-    color: "#9ca3af",
+    fontSize: 24,
+    color: "#cbd5e1",
   },
   clientActionsArea: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-    backgroundColor: "#fafafa",
+    borderTopColor: "#f1f5f9",
+    backgroundColor: "#fcfcfd",
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   actionButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   actionEmoji: {
-    fontSize: 18,
-    marginRight: 6,
+    fontSize: 16,
+    marginRight: 8,
   },
   actionLabel: {
-    fontSize: 12,
-    color: "#4b5563",
-    fontWeight: "500",
+    fontSize: 13,
+    color: "#64748b",
+    fontWeight: "600",
   },
   verticalDivider: {
     width: 1,
-    backgroundColor: "#f3f4f6",
-    marginVertical: 8,
+    backgroundColor: "#f1f5f9",
+    marginVertical: 10,
   },
+
+  // --- ESTADOS VAZIOS ---
   emptyContainer: {
-    padding: 20,
+    padding: 30,
     alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+    borderStyle: "dashed", // Estilo tracejado moderno para "áreas vazias"
+  },
+  emptyEmoji: {
+    fontSize: 40,
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#0f172a",
+    marginBottom: 8,
   },
   emptyText: {
-    color: "#6b7280",
+    color: "#64748b",
     fontSize: 15,
     textAlign: "center",
+    lineHeight: 22,
+  },
+
+  // --- BOTÃO DE LOGOUT ---
+  logoutButton: {
+    backgroundColor: "transparent", 
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#fca5a5", 
+    alignItems: "center",
+  },
+  logoutButtonText: {
+    color: "#ef4444", 
+    fontWeight: "bold",
+    fontSize: 14,
+    letterSpacing: 1, 
   },
 });
+

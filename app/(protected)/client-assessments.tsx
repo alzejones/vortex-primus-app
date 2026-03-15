@@ -55,6 +55,18 @@ const parseDateBRToISO = (str: string) => {
   }
 };
 
+function handleDateChange(text: string) {
+    let v = text.replace(/\D/g, ""); // Remove tudo que não for número
+    if (v.length > 12) v = v.substring(0, 12);
+    
+    v = v.replace(/^(\d{2})(\d)/, "$1/$2");
+    v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
+    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4})(\d)/, "$1/$2/$3 $4");
+    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2})(\d)/, "$1/$2/$3 $4:$5");
+    
+    setForm({ ...form, assessment_date: v });
+  }
+
 // 1. Função Unificada com o join explícito corrigido
 const fetchHistory = useCallback(async () => {
   try {
@@ -382,15 +394,19 @@ async function deleteAssessment(id: string) {
     setEditingAssessmentId(assessment.id);
     setEditingAnthropometryId(anthro.id);
 
-const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : formatDateBR(new Date());
+    const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : formatDateBR(new Date());
 
-    Object.keys(form).forEach((key) => {
-      setForm((prev) => ({
-        ...prev,
-        [key]: anthro[key]?.toString() ?? "",
-      }));
+    setForm((prev: any) => {
+      const newForm = { ...prev, assessment_date: dateToSet };
+      Object.keys(newForm).forEach((key) => {
+        if (key !== 'assessment_date') {
+          newForm[key] = anthro[key]?.toString() ?? "";
+        }
+      });
+      return newForm;
     });
   }
+
 
 async function handleSaveAssessment() {
     setSaving(true);
@@ -582,10 +598,10 @@ _Att, Coach Alzejones_`;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", paddingTop: Platform.OS === "android" ? 48 : 0 }}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
         <ScrollView 
           stickyHeaderIndices={[0]} 
@@ -614,12 +630,14 @@ _Att, Coach Alzejones_`;
               
               <View style={{ width: 140 }}>
                 <Text style={{ fontSize: 10, color: '#666', marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                <TextInput
-                  style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
-                  value={form.assessment_date}
-                  onChangeText={(text) => setForm({ ...form, assessment_date: text })}
-                  placeholder="DD/MM/AAAA HH:mm"
-                />
+                <TextInput 
+              style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
+              value={form.assessment_date}
+              onChangeText={handleDateChange}
+              placeholder="DD/MM/AAAA HH:mm"
+              keyboardType="numeric"
+              maxLength={16}
+            />
               </View>
             </View>
             
