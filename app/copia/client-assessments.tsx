@@ -55,6 +55,18 @@ const parseDateBRToISO = (str: string) => {
   }
 };
 
+function handleDateChange(text: string) {
+    let v = text.replace(/\D/g, ""); // Remove tudo que não for número
+    if (v.length > 12) v = v.substring(0, 12);
+    
+    v = v.replace(/^(\d{2})(\d)/, "$1/$2");
+    v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
+    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4})(\d)/, "$1/$2/$3 $4");
+    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2})(\d)/, "$1/$2/$3 $4:$5");
+    
+    setForm({ ...form, assessment_date: v });
+  }
+
 // 1. Função Unificada com o join explícito corrigido
 const fetchHistory = useCallback(async () => {
   try {
@@ -382,15 +394,19 @@ async function deleteAssessment(id: string) {
     setEditingAssessmentId(assessment.id);
     setEditingAnthropometryId(anthro.id);
 
-const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : formatDateBR(new Date());
+    const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : formatDateBR(new Date());
 
-    Object.keys(form).forEach((key) => {
-      setForm((prev) => ({
-        ...prev,
-        [key]: anthro[key]?.toString() ?? "",
-      }));
+    setForm((prev: any) => {
+      const newForm = { ...prev, assessment_date: dateToSet };
+      Object.keys(newForm).forEach((key) => {
+        if (key !== 'assessment_date') {
+          newForm[key] = anthro[key]?.toString() ?? "";
+        }
+      });
+      return newForm;
     });
   }
+
 
 async function handleSaveAssessment() {
     setSaving(true);
@@ -582,10 +598,10 @@ _Att, Coach Alzejones_`;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", paddingTop: Platform.OS === "android" ? 48 : 0 }}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
         <ScrollView 
           stickyHeaderIndices={[0]} 
@@ -614,12 +630,14 @@ _Att, Coach Alzejones_`;
               
               <View style={{ width: 140 }}>
                 <Text style={{ fontSize: 10, color: '#666', marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                <TextInput
-                  style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
-                  value={form.assessment_date}
-                  onChangeText={(text) => setForm({ ...form, assessment_date: text })}
-                  placeholder="DD/MM/AAAA HH:mm"
-                />
+                <TextInput 
+              style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
+              value={form.assessment_date}
+              onChangeText={handleDateChange}
+              placeholder="DD/MM/AAAA HH:mm"
+              keyboardType="numeric"
+              maxLength={16}
+            />
               </View>
             </View>
             
@@ -709,59 +727,61 @@ _Att, Coach Alzejones_`;
             <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
               <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>Evolução: Gordura vs Músculo</Text>
               
-              <LineChart
-                data={{
-                  labels: chartLabels,
-                  datasets: [
-                    {
-                      data: fatData,
-                      color: (opacity = 1) => `rgba(255, 0, 0, ${opacity})`,
-                      strokeWidth: 2
-                    },
-                    {
-                      data: muscleData,
-                      color: (opacity = 1) => `rgba(0, 128, 0, ${opacity})`,
-                      strokeWidth: 2
-                    }
-                  ],
-                  legend: ["% Gordura", "% Músculo"]
-                }}
-                width={screenWidth}
-                height={220}
-                chartConfig={{
-                  backgroundColor: "#fff",
-                  backgroundGradientFrom: "#fff",
-                  backgroundGradientTo: "#fff",
-                  decimalPlaces: 1,
-                  color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                  propsForDots: {
-                    r: "6",
-                    strokeWidth: "2",
-                    stroke: "#ffa726"
-                  }
-                }}
-                bezier 
-                style={{
-                  marginVertical: 8,
-                  borderRadius: 16
-                }}
-                renderDotContent={({ x, y, index, indexData }) => (
-                  <Text
-                    key={`dot-${index}-${x}-${y}-${Math.random()}`} 
-                    style={{
-                      position: 'absolute',
-                      top: y - 25,
-                      left: x - 10,
-                      fontSize: 10,
-                      fontWeight: 'bold',
-                      color: '#000'
-                    }}
-                  >
-                    {indexData}%
-                  </Text>
-                )}
-              />
+<LineChart
+            data={{
+              labels: chartLabels,
+              datasets: [
+                {
+                  data: fatData,
+                  color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, // Vermelho para Gordura
+                  strokeWidth: 3, 
+                },
+                {
+                  data: muscleData,
+                  color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`, // Verde para Músculo
+                  strokeWidth: 3, 
+                }
+              ],
+              legend: ["% Gordura", "% Músculo"]
+            }}
+            width={screenWidth}
+            height={220}
+            bezier // Esta é a mágica que deixa a linha em formato de onda suave
+            withInnerLines={true}
+            withOuterLines={false}
+            chartConfig={{
+              backgroundColor: "#1e293b",
+              backgroundGradientFrom: "#0f172a",
+              backgroundGradientTo: "#1e293b",
+              decimalPlaces: 1,
+              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: "5",
+                strokeWidth: "2",
+                stroke: "#ffffff" // Borda branca em volta dos pontos para dar efeito 3D
+              },
+              propsForBackgroundLines: {
+                strokeWidth: 1,
+                stroke: "rgba(255,255,255,0.1)", // Linhas de grade super discretas
+                strokeDasharray: ""
+              }
+            }}
+            style={{
+              marginVertical: 8,
+              borderRadius: 16,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 5,
+              elevation: 4,
+            }}
+          />
+
+
             </View>
 
 
