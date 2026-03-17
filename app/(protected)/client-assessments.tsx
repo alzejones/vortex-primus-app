@@ -56,8 +56,8 @@ const parseDateBRToISO = (str: string) => {
   }
 };
 
-// Inteligência Omron: % de Gordura Corporal
- const getBodyFatStatus = (value: any, gender: string | undefined, age: number) => {
+ // Inteligência Omron: % de Gordura Corporal (Com Faixas Dinâmicas)
+  const getBodyFatStatus = (value: any, gender: string | undefined, age: number) => {
     const v = Number(value);
     if (!v || isNaN(v) || !gender || !age) return null;
     const isM = gender.toUpperCase() === 'M';
@@ -83,11 +83,17 @@ const parseDateBRToISO = (str: string) => {
       label: v < low ? 'BAIXO' : v < normal ? 'NORMAL' : v < high ? 'ALTO' : 'MUITO ALTO', 
       color: v < low ? '#0284c7' : v < normal ? '#16a34a' : v < high ? '#d97706' : '#dc2626', 
       bg: v < low ? '#e0f2fe' : v < normal ? '#dcfce3' : v < high ? '#fef3c7' : '#fee2e2', 
-      pos 
+      pos,
+      ranges: {
+        baixo: `< ${low.toFixed(1)}`,
+        normal: `${low.toFixed(1)} - ${(normal - 0.1).toFixed(1)}`,
+        alto: `${normal.toFixed(1)} - ${(high - 0.1).toFixed(1)}`,
+        muitoAlto: `≥ ${high.toFixed(1)}`
+      }
     }; 
   };
 
-  // Inteligência Omron: % de Massa Muscular (Alta Performance no Cross)
+  // Inteligência Omron: % de Massa Muscular (Com Faixas Dinâmicas para Cross)
   const getMuscleStatus = (value: any, gender: string | undefined, age: number) => {
     const v = Number(value);
     if (!v || isNaN(v) || !gender || !age) return null;
@@ -114,19 +120,40 @@ const parseDateBRToISO = (str: string) => {
       label: v < low ? 'BAIXO' : v < normal ? 'NORMAL' : v < high ? 'ALTO' : 'ELITE', 
       color: v < low ? '#dc2626' : v < normal ? '#65a30d' : v < high ? '#16a34a' : '#0284c7', 
       bg: v < low ? '#fee2e2' : v < normal ? '#ecfccb' : v < high ? '#dcfce3' : '#e0f2fe', 
-      pos 
+      pos,
+      ranges: {
+        baixo: `< ${low.toFixed(1)}`,
+        normal: `${low.toFixed(1)} - ${(normal - 0.1).toFixed(1)}`,
+        alto: `${normal.toFixed(1)} - ${(high - 0.1).toFixed(1)}`,
+        muitoAlto: `≥ ${high.toFixed(1)}`
+      }
     }; 
   };
 
+  // Inteligência Omron: Gordura Visceral (Atualizada com Posição e Faixas)
   const getVisceralStatus = (value: any) => {
     const v = Number(value);
     if (!v || isNaN(v)) return null;
-    if (v <= 4) return { label: 'IDEAL', color: '#16a34a', bg: '#dcfce3' }; 
-    if (v <= 8) return { label: 'BOM', color: '#65a30d', bg: '#ecfccb' }; 
-    if (v <= 12) return { label: 'RUIM', color: '#d97706', bg: '#fef3c7' }; 
-    return { label: 'ATENÇÃO ESPECIAL', color: '#dc2626', bg: '#fee2e2' }; 
+
+    let pos = 0;
+    if (v <= 4) pos = Math.min((v / 4) * 25, 24);
+    else if (v <= 8) pos = 25 + ((v - 4) / 4) * 25;
+    else if (v <= 12) pos = 50 + ((v - 8) / 4) * 25;
+    else pos = Math.min(75 + ((v - 12) / 4) * 25, 96);
+
+    let label, color, bg;
+    if (v <= 4) { label = 'IDEAL'; color = '#16a34a'; bg = '#dcfce3'; }
+    else if (v <= 8) { label = 'BOM'; color = '#65a30d'; bg = '#ecfccb'; }
+    else if (v <= 12) { label = 'RUIM'; color = '#d97706'; bg = '#fef3c7'; }
+    else { label = 'CRÍTICO'; color = '#dc2626'; bg = '#fee2e2'; }
+
+    return { 
+      label, color, bg, pos,
+      ranges: { ideal: '1 - 4', bom: '5 - 8', ruim: '9 - 12', atencao: '≥ 13' }
+    };
   };
 
+  // Inteligência Metabólica
   const getMetabolicStatus = (metabolicAge: any, actualAge: number) => {
     const m = Number(metabolicAge);
     if (!m || isNaN(m) || !actualAge) return null;
@@ -358,13 +385,20 @@ useEffect(() => {
 
     return {
       // --- BIOIMPEDÂNCIA ---
+           // --- BIOIMPEDÂNCIA E COMPOSIÇÃO CORPORAL ---
       diffRecentWeight: calc(currentAnthro.weight, previousAnthro?.weight),
       diffRecentFat: calc(currentAnthro.body_fat, previousAnthro?.body_fat),
       diffRecentMuscle: calc(currentAnthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage),
+      diffRecentMetabolicAge: calc(currentAnthro.metabolic_age, previousAnthro?.metabolic_age),
+      diffRecentVisceral: calc(currentAnthro.body_fat_index, previousAnthro?.body_fat_index),
+      diffRecentBasal: calc(currentAnthro.basal_metabolic_rate, previousAnthro?.basal_metabolic_rate),
       
       diffTotalWeight: isNotFirst ? calc(currentAnthro.weight, firstAnthro?.weight) : null,
       diffTotalFat: isNotFirst ? calc(currentAnthro.body_fat, firstAnthro?.body_fat) : null,
       diffTotalMuscle: isNotFirst ? calc(currentAnthro.muscle_mass_percentage, firstAnthro?.muscle_mass_percentage) : null,
+      diffTotalMetabolicAge: isNotFirst ? calc(currentAnthro.metabolic_age, firstAnthro?.metabolic_age) : null,
+      diffTotalVisceral: isNotFirst ? calc(currentAnthro.body_fat_index, firstAnthro?.body_fat_index) : null,
+      diffTotalBasal: isNotFirst ? calc(currentAnthro.basal_metabolic_rate, firstAnthro?.basal_metabolic_rate) : null,
 
       // --- TRONCO ---
       diffRecentChest: calc(currentAnthro.chest, previousAnthro?.chest),
@@ -1032,28 +1066,37 @@ _Att, Coach Alzejones_`;
                 {relativeEvolution && (
                   <View style={{ marginBottom: 24 }}>
                     <Text style={{ fontSize: 15, fontWeight: '900', color: '#0f172a', marginBottom: 12, textTransform: 'uppercase' }}>📉 Análise de Evolução</Text>
-                    <View style={{ flexDirection: 'row', marginBottom: 8, paddingHorizontal: 4 }}>
-                      <View style={{ flex: 1 }}><Text style={{ fontSize: 11, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Última vs Anterior</Text></View>
-                      <View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={{ fontSize: 11, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Evolução Total</Text></View>
-                    </View>
-                    <View style={{ flexDirection: 'row', marginBottom: 12, paddingHorizontal: 4 }}>
-                      <View style={{ flex: 1 }}><Text style={{ fontSize: 10, color: '#94a3b8' }}>{relativeEvolution.labelRecent} ({relativeEvolution.daysRecent})</Text></View>
-                      <View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={{ fontSize: 10, color: '#94a3b8' }}>{relativeEvolution.labelTotal} ({relativeEvolution.daysTotal})</Text></View>
-                    </View>
+ {/* Cartões de Evolução (Agora Completos) */}
                     <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+                      
+                      {/* Cartão: Última vs Anterior */}
                       <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>BIOIMPEDÂNCIA</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>COMPOSIÇÃO CORPORAL</Text>
+                        
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Peso</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentWeight, "weight") }}>{formatValue(relativeEvolution.diffRecentWeight)} kg</Text></View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Gord</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentFat, "fat") }}>{formatValue(relativeEvolution.diffRecentFat)}</Text></View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentMuscle, "muscle") }}>{formatValue(relativeEvolution.diffRecentMuscle)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentMuscle, "muscle") }}>{formatValue(relativeEvolution.diffRecentMuscle)}</Text></View>
+                        
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Id. Metab</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentMetabolicAge, "fat") }}>{formatValue(relativeEvolution.diffRecentMetabolicAge)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>G. Visceral</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentVisceral, "fat") }}>{formatValue(relativeEvolution.diffRecentVisceral)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>Met. Basal</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentBasal, "muscle") }}>{formatValue(relativeEvolution.diffRecentBasal)} kcal</Text></View>
                       </View>
+                      
+                      {/* Cartão: Evolução Total */}
                       <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>BIOIMPEDÂNCIA</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>COMPOSIÇÃO CORPORAL</Text>
+                        
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Peso</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalWeight, "weight") }}>{formatValue(relativeEvolution.diffTotalWeight)} kg</Text></View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Gord</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalFat, "fat") }}>{formatValue(relativeEvolution.diffTotalFat)}</Text></View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalMuscle, "muscle") }}>{formatValue(relativeEvolution.diffTotalMuscle)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalMuscle, "muscle") }}>{formatValue(relativeEvolution.diffTotalMuscle)}</Text></View>
+                        
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Id. Metab</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalMetabolicAge, "fat") }}>{formatValue(relativeEvolution.diffTotalMetabolicAge)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>G. Visceral</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalVisceral, "fat") }}>{formatValue(relativeEvolution.diffTotalVisceral)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>Met. Basal</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalBasal, "muscle") }}>{formatValue(relativeEvolution.diffTotalBasal)} kcal</Text></View>
                       </View>
+
                     </View>
+
                   </View>
                 )}
 
@@ -1074,73 +1117,110 @@ _Att, Coach Alzejones_`;
                       <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text>
                     </View>
 
-                    {/* % Gordura */}
-                    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Gordura Corporal</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          {getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date)) && (
-                            <View style={{ backgroundColor: getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date))?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
-                              <Text style={{ color: getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date))?.color, fontSize: 10, fontWeight: '900' }}>
-                                {getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date))?.label}
-                              </Text>
+{/* Gordura Corporal (COM FAIXAS NUMÉRICAS) */}
+                    {(() => {
+                      const bfStatus = getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date));
+                      const val = selectedAssessment?.anthropometry?.[0]?.body_fat ?? "-";
+                      return (
+                        <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                            <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Gordura Corporal</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              {bfStatus && (
+                                <View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
+                                  <Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text>
+                                </View>
+                              )}
+                              <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val} %</Text>
                             </View>
-                          )}
-                          <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{selectedAssessment?.anthropometry?.[0]?.body_fat ?? "-"} %</Text>
+                          </View>
+                          <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
+                            <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
+                              <View style={{ flex: 1, backgroundColor: '#38bdf8' }} />
+                              <View style={{ flex: 1, backgroundColor: '#22c55e' }} />
+                              <View style={{ flex: 1, backgroundColor: '#eab308' }} />
+                              <View style={{ flex: 1, backgroundColor: '#ef4444' }} />
+                              {bfStatus && (
+                                <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, { left: `${bfStatus.pos}%` } as any]} />
+                              )}
+                            </View>
+                            {bfStatus && (
+                              <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.baixo}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.normal}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.alto}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.muitoAlto}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </View>
                         </View>
-                      </View>
-                      <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                        <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                          <View style={{ flex: 1, backgroundColor: '#38bdf8' }} />
-                          <View style={{ flex: 1, backgroundColor: '#22c55e' }} />
-                          <View style={{ flex: 1, backgroundColor: '#eab308' }} />
-                          <View style={{ flex: 1, backgroundColor: '#ef4444' }} />
-                          {getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date)) && (
-                            <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, ({ left: `${getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date))?.pos}%` } as any)]} />
-                          )}
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Baixo</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Normal</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Alto</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Crítico</Text>
-                        </View>
-                      </View>
-                    </View>
+                      );
+                    })()}
 
-                    {/* % Músculo */}
-                    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Massa Muscular</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          {getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date)) && (
-                            <View style={{ backgroundColor: getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date))?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
-                              <Text style={{ color: getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date))?.color, fontSize: 10, fontWeight: '900' }}>
-                                {getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date))?.label}
-                              </Text>
+                    {/* Massa Muscular (COM FAIXAS NUMÉRICAS) */}
+                    {(() => {
+                      const mmStatus = getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date));
+                      const val = selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage ?? "-";
+                      return (
+                        <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                            <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Massa Muscular</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              {mmStatus && (
+                                <View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
+                                  <Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text>
+                                </View>
+                              )}
+                              <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val} %</Text>
                             </View>
-                          )}
-                          <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage ?? "-"} %</Text>
+                          </View>
+                          <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
+                            <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
+                              <View style={{ flex: 1, backgroundColor: '#ef4444' }} />
+                              <View style={{ flex: 1, backgroundColor: '#84cc16' }} />
+                              <View style={{ flex: 1, backgroundColor: '#22c55e' }} />
+                              <View style={{ flex: 1, backgroundColor: '#38bdf8' }} />
+                              {mmStatus && (
+                                <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, { left: `${mmStatus.pos}%` } as any]} />
+                              )}
+                            </View>
+                            {mmStatus && (
+                              <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.baixo}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.normal}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.alto}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ELITE</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.muitoAlto}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </View>
                         </View>
-                      </View>
-                      <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                        <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                          <View style={{ flex: 1, backgroundColor: '#ef4444' }} />
-                          <View style={{ flex: 1, backgroundColor: '#84cc16' }} />
-                          <View style={{ flex: 1, backgroundColor: '#22c55e' }} />
-                          <View style={{ flex: 1, backgroundColor: '#38bdf8' }} />
-                          {getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date)) && (
-                            <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, ({ left: `${getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date))?.pos}%` } as any)]} />
-                          )}
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Baixo</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Normal</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Alto</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>Elite</Text>
-                        </View>
-                      </View>
-                    </View>
+                      );
+                    })()}
+
 
                     {/* Idade Metabólica */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
@@ -1156,47 +1236,57 @@ _Att, Coach Alzejones_`;
                         <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.metabolic_age ?? "-"} anos</Text>
                       </View>
                     </View>
-
-                 
-
-
-
-
-{/* Gordura Visceral */}
-                    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                        <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Gordura Visceral</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          {getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index) && (
-                            <View style={{ backgroundColor: getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index)?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
-                              <Text style={{ color: getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index)?.color, fontSize: 10, fontWeight: '900' }}>
-                                {getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index)?.label}
-                              </Text>
+{/* Gordura Visceral (COM FAIXAS NUMÉRICAS) */}
+                    {(() => {
+                      const vsStatus = getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index);
+                      const val = selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-";
+                      return (
+                        <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                            <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Gordura Visceral</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              {vsStatus && (
+                                <View style={{ backgroundColor: vsStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
+                                  <Text style={{ color: vsStatus.color, fontSize: 10, fontWeight: '900' }}>{vsStatus.label}</Text>
+                                </View>
+                              )}
+                              <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val}</Text>
                             </View>
-                          )}
-                          <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-"}</Text>
+                          </View>
+                          <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
+                            <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
+                              <View style={{ flex: 1, backgroundColor: '#22c55e' }} /> 
+                              <View style={{ flex: 1, backgroundColor: '#84cc16' }} /> 
+                              <View style={{ flex: 1, backgroundColor: '#eab308' }} /> 
+                              <View style={{ flex: 1, backgroundColor: '#ef4444' }} /> 
+                              {vsStatus && (
+                                <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, { left: `${vsStatus.pos}%` } as any]} />
+                              )}
+                            </View>
+                            {vsStatus && (
+                              <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ideal}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BOM</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.bom}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>RUIM</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ruim}</Text>
+                                </View>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                  <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text>
+                                  <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.atencao}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </View>
                         </View>
-                      </View>
-                      <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                        <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                          <View style={{ flex: 1, backgroundColor: '#22c55e' }} /> 
-                          <View style={{ flex: 1, backgroundColor: '#84cc16' }} /> 
-                          <View style={{ flex: 1, backgroundColor: '#eab308' }} /> 
-                          <View style={{ flex: 1, backgroundColor: '#ef4444' }} /> 
-                          {selectedAssessment?.anthropometry?.[0]?.body_fat_index && (
-                            <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, ({ left: `${Math.min((Number(selectedAssessment?.anthropometry?.[0]?.body_fat_index) / 16) * 100, 96)}%` } as any)]} />
-                          )}
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>1</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>5</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>9</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>13</Text>
-                          <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>16+</Text>
-                        </View>
-                      </View>
-                    </View>
-
+                      );
+                    })()}
                     {/* Metabolismo Basal */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
                       <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Metabolismo Basal</Text>
