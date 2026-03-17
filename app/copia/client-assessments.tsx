@@ -17,7 +17,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { LineChart } from "react-native-chart-kit";
+import { LineChart } from "react-native-gifted-charts";
 import { captureRef } from "react-native-view-shot";
 
 export default function ClientAssessments() {
@@ -725,65 +725,60 @@ _Att, Coach Alzejones_`;
             )}
 
             <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>Evolução: Gordura vs Músculo</Text>
-              
-<LineChart
-            data={{
-              labels: chartLabels,
-              datasets: [
-                {
-                  data: fatData,
-                  color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`, // Vermelho para Gordura
-                  strokeWidth: 3, 
-                },
-                {
-                  data: muscleData,
-                  color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`, // Verde para Músculo
-                  strokeWidth: 3, 
-                }
-              ],
-              legend: ["% Gordura", "% Músculo"]
-            }}
-            width={screenWidth}
-            height={220}
-            bezier // Esta é a mágica que deixa a linha em formato de onda suave
-            withInnerLines={true}
-            withOuterLines={false}
-            chartConfig={{
-              backgroundColor: "#1e293b",
-              backgroundGradientFrom: "#0f172a",
-              backgroundGradientTo: "#1e293b",
-              decimalPlaces: 1,
-              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-              style: {
-                borderRadius: 16,
-              },
-              propsForDots: {
-                r: "5",
-                strokeWidth: "2",
-                stroke: "#ffffff" // Borda branca em volta dos pontos para dar efeito 3D
-              },
-              propsForBackgroundLines: {
-                strokeWidth: 1,
-                stroke: "rgba(255,255,255,0.1)", // Linhas de grade super discretas
-                strokeDasharray: ""
-              }
-            }}
-            style={{
-              marginVertical: 8,
-              borderRadius: 16,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.2,
-              shadowRadius: 5,
-              elevation: 4,
-            }}
-          />
+<View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
+    <LineChart
+      data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
+      data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
+      height={220}
+      width={screenWidth - 80}
+      isAnimated
+      animationDuration={1200}
+      curved
+      spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+      initialSpacing={20}
+      endSpacing={20} 
+      color1="#ef4444" 
+      color2="#22c55e" 
+      dataPointsColor1="#ef4444"
+      dataPointsColor2="#22c55e"
+      thickness1={3}
+      thickness2={3}
+      dataPointsRadius={4}
+      yAxisColor="rgba(255,255,255,0.3)"
+      xAxisColor="rgba(255,255,255,0.3)"
+      yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }}
+      xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
+      yAxisLabelSuffix="%"
+      stepValue={5}
+      maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
+      noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
+      rulesColor="rgba(255,255,255,0.25)"
+      hideRules={false}
+      showVerticalLines={true}
+      verticalLinesColor="rgba(255,255,255,0.15)"
+    />
+    
+    {/* Legenda Customizada Premium */}
+    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} />
+        <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} />
+        <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text>
+      </View>
+    </View>
 
+    {/* Dica de Scroll Inteligente (Aparece apenas se houver mais de 7 avaliações) */}
+    {fatData.length > 7 && (
+      <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>
+        ↔️ Deslize o gráfico para o lado para ver o histórico completo
+      </Text>
+    )}
+  </View>
 
             </View>
-
 
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
             {assessments.map((assessment, index) => {
@@ -853,39 +848,61 @@ _Att, Coach Alzejones_`;
                 </Text> 
 
                 <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                  <LineChart
-                    data={{
-                      labels: chartLabels,
-                      datasets: [
-                        { data: fatData, color: (opacity = 1) => `rgba(220, 38, 38, ${opacity})`, strokeWidth: 2 },
-                        { data: muscleData, color: (opacity = 1) => `rgba(22, 163, 74, ${opacity})`, strokeWidth: 2 }
-                      ],
-                      legend: ["% Gordura", "% Músculo"]
-                    }}
-                    width={screenWidth - 20}
-                    height={180}
-                    chartConfig={{
-                      backgroundColor: "#fff",
-                      backgroundGradientFrom: "#fff",
-                      backgroundGradientTo: "#fff",
-                      decimalPlaces: 1,
-                      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                      labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                      propsForDots: { r: "4", strokeWidth: "2", stroke: "#fbbf24" }
-                    }}
-                    bezier
-                    renderDotContent={({ x, y, index, indexData }) => (
-                      <Text
-                        key={`dot-full-${index}-${x}-${y}-${Math.random()}`}
-                        style={{ position: 'absolute', top: y - 20, left: x - 10, fontSize: 9, fontWeight: 'bold', color: '#000' }}
-                      >
-                        {indexData}%
-                      </Text>
-                    )}
-                  />
-                </View>
+<View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
+    <LineChart
+      data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
+      data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
+      height={220}
+      width={screenWidth - 80}
+      isAnimated
+      animationDuration={1200}
+      curved
+      spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+      initialSpacing={20}
+      endSpacing={20} 
+      color1="#ef4444" 
+      color2="#22c55e" 
+      dataPointsColor1="#ef4444"
+      dataPointsColor2="#22c55e"
+      thickness1={3}
+      thickness2={3}
+      dataPointsRadius={4}
+      yAxisColor="rgba(255,255,255,0.3)"
+      xAxisColor="rgba(255,255,255,0.3)"
+      yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }}
+      xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
+      yAxisLabelSuffix="%"
+      stepValue={5}
+      maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
+      noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
+      rulesColor="rgba(255,255,255,0.25)"
+      hideRules={false}
+      showVerticalLines={true}
+      verticalLinesColor="rgba(255,255,255,0.15)"
+    />
+    
+    {/* Legenda Customizada Premium */}
+    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} />
+        <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} />
+        <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text>
+      </View>
+    </View>
 
-                
+    {/* Dica de Scroll Inteligente (Aparece apenas se houver mais de 7 avaliações) */}
+    {fatData.length > 7 && (
+      <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>
+        ↔️ Deslize o gráfico para o lado para ver o histórico completo
+      </Text>
+    )}
+  </View>
+
+        </View>
+             
           {relativeEvolution && (
                   <View style={{ marginBottom: 20, marginTop: 10 }}>
                     {/* Cabeçalhos das Colunas */}
