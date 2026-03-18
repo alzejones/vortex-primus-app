@@ -385,13 +385,20 @@ useEffect(() => {
 
     return {
       // --- BIOIMPEDÂNCIA ---
+           // --- BIOIMPEDÂNCIA E COMPOSIÇÃO CORPORAL ---
       diffRecentWeight: calc(currentAnthro.weight, previousAnthro?.weight),
       diffRecentFat: calc(currentAnthro.body_fat, previousAnthro?.body_fat),
       diffRecentMuscle: calc(currentAnthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage),
+      diffRecentMetabolicAge: calc(currentAnthro.metabolic_age, previousAnthro?.metabolic_age),
+      diffRecentVisceral: calc(currentAnthro.body_fat_index, previousAnthro?.body_fat_index),
+      diffRecentBasal: calc(currentAnthro.basal_metabolic_rate, previousAnthro?.basal_metabolic_rate),
       
       diffTotalWeight: isNotFirst ? calc(currentAnthro.weight, firstAnthro?.weight) : null,
       diffTotalFat: isNotFirst ? calc(currentAnthro.body_fat, firstAnthro?.body_fat) : null,
       diffTotalMuscle: isNotFirst ? calc(currentAnthro.muscle_mass_percentage, firstAnthro?.muscle_mass_percentage) : null,
+      diffTotalMetabolicAge: isNotFirst ? calc(currentAnthro.metabolic_age, firstAnthro?.metabolic_age) : null,
+      diffTotalVisceral: isNotFirst ? calc(currentAnthro.body_fat_index, firstAnthro?.body_fat_index) : null,
+      diffTotalBasal: isNotFirst ? calc(currentAnthro.basal_metabolic_rate, firstAnthro?.basal_metabolic_rate) : null,
 
       // --- TRONCO ---
       diffRecentChest: calc(currentAnthro.chest, previousAnthro?.chest),
@@ -1059,28 +1066,37 @@ _Att, Coach Alzejones_`;
                 {relativeEvolution && (
                   <View style={{ marginBottom: 24 }}>
                     <Text style={{ fontSize: 15, fontWeight: '900', color: '#0f172a', marginBottom: 12, textTransform: 'uppercase' }}>📉 Análise de Evolução</Text>
-                    <View style={{ flexDirection: 'row', marginBottom: 8, paddingHorizontal: 4 }}>
-                      <View style={{ flex: 1 }}><Text style={{ fontSize: 11, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Última vs Anterior</Text></View>
-                      <View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={{ fontSize: 11, fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Evolução Total</Text></View>
-                    </View>
-                    <View style={{ flexDirection: 'row', marginBottom: 12, paddingHorizontal: 4 }}>
-                      <View style={{ flex: 1 }}><Text style={{ fontSize: 10, color: '#94a3b8' }}>{relativeEvolution.labelRecent} ({relativeEvolution.daysRecent})</Text></View>
-                      <View style={{ flex: 1, alignItems: 'flex-end' }}><Text style={{ fontSize: 10, color: '#94a3b8' }}>{relativeEvolution.labelTotal} ({relativeEvolution.daysTotal})</Text></View>
-                    </View>
+ {/* Cartões de Evolução (Agora Completos) */}
                     <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+                      
+                      {/* Cartão: Última vs Anterior */}
                       <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>BIOIMPEDÂNCIA</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>COMPOSIÇÃO CORPORAL</Text>
+                        
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Peso</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentWeight, "weight") }}>{formatValue(relativeEvolution.diffRecentWeight)} kg</Text></View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Gord</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentFat, "fat") }}>{formatValue(relativeEvolution.diffRecentFat)}</Text></View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentMuscle, "muscle") }}>{formatValue(relativeEvolution.diffRecentMuscle)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentMuscle, "muscle") }}>{formatValue(relativeEvolution.diffRecentMuscle)}</Text></View>
+                        
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Id. Metab</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentMetabolicAge, "fat") }}>{formatValue(relativeEvolution.diffRecentMetabolicAge)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>G. Visceral</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentVisceral, "fat") }}>{formatValue(relativeEvolution.diffRecentVisceral)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>Met. Basal</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffRecentBasal, "muscle") }}>{formatValue(relativeEvolution.diffRecentBasal)} kcal</Text></View>
                       </View>
+                      
+                      {/* Cartão: Evolução Total */}
                       <View style={{ flex: 1, backgroundColor: '#f8fafc', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
-                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>BIOIMPEDÂNCIA</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6', marginBottom: 8 }}>COMPOSIÇÃO CORPORAL</Text>
+                        
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Peso</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalWeight, "weight") }}>{formatValue(relativeEvolution.diffTotalWeight)} kg</Text></View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Gord</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalFat, "fat") }}>{formatValue(relativeEvolution.diffTotalFat)}</Text></View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalMuscle, "muscle") }}>{formatValue(relativeEvolution.diffTotalMuscle)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>% Musc</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalMuscle, "muscle") }}>{formatValue(relativeEvolution.diffTotalMuscle)}</Text></View>
+                        
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>Id. Metab</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalMetabolicAge, "fat") }}>{formatValue(relativeEvolution.diffTotalMetabolicAge)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 12, color: '#475569' }}>G. Visceral</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalVisceral, "fat") }}>{formatValue(relativeEvolution.diffTotalVisceral)}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 12, color: '#475569' }}>Met. Basal</Text><Text style={{ fontSize: 12, fontWeight: '800', color: getColor(relativeEvolution.diffTotalBasal, "muscle") }}>{formatValue(relativeEvolution.diffTotalBasal)} kcal</Text></View>
                       </View>
+
                     </View>
+
                   </View>
                 )}
 

@@ -56,6 +56,8 @@ const parseDateBRToISO = (str: string) => {
   }
 };
 
+
+
  // Inteligência Omron: % de Gordura Corporal (Com Faixas Dinâmicas)
   const getBodyFatStatus = (value: any, gender: string | undefined, age: number) => {
     const v = Number(value);
@@ -161,6 +163,60 @@ const parseDateBRToISO = (str: string) => {
     if (m === actualAge) return { label: 'ADEQUADO', color: '#2563eb', bg: '#dbeafe' };
     return { label: 'ATENÇÃO', color: '#ea580c', bg: '#ffedd5' };
   };
+
+  // Calcula a cor da evolução simples (Gordura ou Músculo)
+  const getHistoryColor = (current: any, previous: any, type: 'fat' | 'muscle') => {
+    const c = Number(current);
+    const p = Number(previous);
+    
+    if (!c || !p || isNaN(c) || isNaN(p)) return '#0f172a'; // Preto se faltar dado
+    if (c === p) return '#0f172a'; // Preto se for exatamente igual
+
+    if (type === 'fat') return c < p ? '#16a34a' : '#dc2626'; // Gordura: Caiu = Verde / Subiu = Vermelho
+    if (type === 'muscle') return c > p ? '#16a34a' : '#dc2626'; // Músculo: Subiu = Verde / Caiu = Vermelho
+    
+    return '#0f172a';
+  };
+
+  // Calcula a cor inteligente do Peso (Avalia a qualidade do emagrecimento/ganho)
+  const getSmartWeightColor = (currW: any, prevW: any, currF: any, prevF: any, currM: any, prevM: any) => {
+    const cw = Number(currW), pw = Number(prevW);
+    const cf = Number(currF), pf = Number(prevF);
+    const cm = Number(currM), pm = Number(prevM);
+
+    if (!cw || !pw || isNaN(cw) || isNaN(pw)) return '#0f172a'; // Preto se não tiver os pesos
+
+    // Se faltar algum dado de composição para avaliar a qualidade, fica preto padrão
+    if (!cf || !pf || !cm || !pm || isNaN(cf) || isNaN(pf) || isNaN(cm) || isNaN(pm)) return '#0f172a';
+
+    if (cw < pw) { 
+      // PESO DIMINUIU
+      if (cf > pf || cm < pm) return '#dc2626'; // Vermelho (Perdeu músculo ou ganhou gordura)
+      if (cf < pf && cm > pm) return '#16a34a'; // Verde (Perdeu gordura E ganhou músculo)
+    } 
+    else if (cw > pw) { 
+      // PESO AUMENTOU
+      if (cf < pf && cm > pm) return '#16a34a'; // Verde (Ganho de massa 100% limpo)
+      
+      // NOVA REGRA PRIME: Bulking (Ganhou músculo e gordura, mas músculo foi maior)
+      if (cf > pf && cm > pm) {
+        const muscleGain = cm - pm;
+        const fatGain = cf - pf;
+        if (muscleGain > fatGain) return '#16a34a'; // Verde (Hipertrofia superou o ganho de gordura)
+        return '#dc2626'; // Vermelho (Ganhou mais gordura do que músculo)
+      }
+
+      if (cf > pf || cm < pm) return '#dc2626'; // Vermelho (Ganhou gordura ou perdeu músculo)
+    } 
+    else { 
+      // PESO SE MANTEVE
+      if (cm > pm) return '#16a34a'; // Verde (Recomposição corporal positiva)
+      if (cm < pm || cf > pf) return '#dc2626'; // Vermelho (Piora na composição)
+    }
+
+    return '#0f172a'; // Caso neutro
+  };
+
 
 
 function handleDateChange(text: string) {
@@ -897,98 +953,100 @@ _Att, Coach Alzejones_`;
 
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
 {assessments.map((assessment, index) => {
-  const anthro = assessment.anthropometry?.[0];
-  const previousAnthro = assessments[index + 1]?.anthropometry?.[0]; 
-  
-  const dateStr = assessment.date 
-    ? new Date(assessment.date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' }) 
-    : "-";
+            const anthro = assessment.anthropometry?.[0];
+            const previousAnthro = assessments[index + 1]?.anthropometry?.[0];
+            const dateStr = assessment.date ? new Date(assessment.date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-";
 
-  return (
-    <View key={assessment.id} style={{
-      backgroundColor: '#fff',
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
-      elevation: 3,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      borderWidth: 1,
-      borderColor: '#f1f5f9'
-    }}>
-      {/* CABEÇALHO: Data e Botão Principal */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3b82f6', marginRight: 8 }} />
-          <Text style={{ fontSize: 13, color: '#64748b', fontWeight: '700', letterSpacing: 0.5 }}>{dateStr}</Text>
-        </View>
-        <TouchableOpacity onPress={() => handleViewAssessment(assessment)} style={{ backgroundColor: '#eff6ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-          <Text style={{ color: '#2563eb', fontSize: 12, fontWeight: '700' }}>VER DETALHES</Text>
-        </TouchableOpacity>
-      </View>
+            return (
+              <View key={assessment.id} style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }}>
+                
+                {/* Cabeçalho do Cartão */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Text style={{ fontSize: 20 }}>📅</Text>
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>{dateStr}</Text>
+                      <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>{index === 0 ? "Última Avaliação" : `Avaliação ${assessments.length - index}`}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    style={{ backgroundColor: '#eff6ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
+                    onPress={() => handleViewAssessment(assessment)}
+                  >
+                    <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 12 }}>VER DETALHES</Text>
+                  </TouchableOpacity>
+                </View>
 
-      {/* TRÍADE DE PERFORMANCE: Os 3 dados mais importantes em destaque */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-        
-        {/* Coluna: Peso */}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Peso</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={{ fontSize: 24, color: '#0f172a', fontWeight: '900' }}>{anthro?.weight ?? "-"}</Text>
-            <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '700', marginLeft: 2 }}>kg</Text>
-          </View>
-          <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.weight, previousAnthro?.weight, "weight")}</View>
-        </View>
+                {/* Corpo do Cartão - Os 3 Pilares com Cores Inteligentes */}
+                {anthro ? (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, backgroundColor: '#f8fafc', padding: 12, borderRadius: 12 }}>
+                    
+                    {/* Coluna: Peso */}
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Peso</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <Text style={{ fontSize: 24, color: getSmartWeightColor(anthro.weight, previousAnthro?.weight, anthro.body_fat, previousAnthro?.body_fat, anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage), fontWeight: '900' }}>{anthro?.weight ?? "-"}</Text>
+                        <Text style={{ fontSize: 12, color: getSmartWeightColor(anthro.weight, previousAnthro?.weight, anthro.body_fat, previousAnthro?.body_fat, anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage), fontWeight: '700', marginLeft: 2 }}>kg</Text>
+                      </View>
+                      <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.weight, previousAnthro?.weight, "weight")}</View>
+                    </View>
 
-        {/* Divisor Vertical */}
-        <View style={{ width: 1, backgroundColor: '#e2e8f0', height: '70%', alignSelf: 'center' }} />
+                    {/* Divisor Vertical */}
+                    <View style={{ width: 1, backgroundColor: '#e2e8f0', height: '70%', alignSelf: 'center' }} />
 
-        {/* Coluna: Gordura */}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Gordura</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={{ fontSize: 24, color: '#ef4444', fontWeight: '900' }}>{anthro?.body_fat ?? "-"}</Text>
-            <Text style={{ fontSize: 12, color: '#ef4444', fontWeight: '700', marginLeft: 2 }}>%</Text>
-          </View>
-          <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.body_fat, previousAnthro?.body_fat, "fat")}</View>
-        </View>
+                    {/* Coluna: Gordura */}
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Gordura</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <Text style={{ fontSize: 24, color: getHistoryColor(anthro.body_fat, previousAnthro?.body_fat, 'fat'), fontWeight: '900' }}>{anthro?.body_fat ?? "-"}</Text>
+                        <Text style={{ fontSize: 12, color: getHistoryColor(anthro.body_fat, previousAnthro?.body_fat, 'fat'), fontWeight: '700', marginLeft: 2 }}>%</Text>
+                      </View>
+                      <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.body_fat, previousAnthro?.body_fat, "fat")}</View>
+                    </View>
 
-        {/* Divisor Vertical */}
-        <View style={{ width: 1, backgroundColor: '#e2e8f0', height: '70%', alignSelf: 'center' }} />
+                    {/* Divisor Vertical */}
+                    <View style={{ width: 1, backgroundColor: '#e2e8f0', height: '70%', alignSelf: 'center' }} />
 
-        {/* Coluna: Músculo */}
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Músculo</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={{ fontSize: 24, color: '#22c55e', fontWeight: '900' }}>{anthro?.muscle_mass_percentage ?? "-"}</Text>
-            <Text style={{ fontSize: 12, color: '#22c55e', fontWeight: '700', marginLeft: 2 }}>%</Text>
-          </View>
-          <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, "muscle")}</View>
-        </View>
-        
-      </View>
+                    {/* Coluna: Músculo */}
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Músculo</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                        <Text style={{ fontSize: 24, color: getHistoryColor(anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle'), fontWeight: '900' }}>{anthro?.muscle_mass_percentage ?? "-"}</Text>
+                        <Text style={{ fontSize: 12, color: getHistoryColor(anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle'), fontWeight: '700', marginLeft: 2 }}>%</Text>
+                      </View>
+                      <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, "muscle")}</View>
+                    </View>
 
-      {/* RODAPÉ DE AÇÕES: Controles secundários organizados */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 10 }}>
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={() => handleEditAssessment(assessment)} style={{ marginRight: 20 }}>
-            <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => deleteAssessment(assessment.id)}>
-            <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <TouchableOpacity onPress={() => handleSendWhatsApp(assessment)}>
-          <Text style={{ color: "#16a34a", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
-        </TouchableOpacity>
-      </View>
+                  </View>
+                ) : (
+                  <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 16 }}>
+                    <Text style={{ color: '#64748b', fontStyle: 'italic' }}>Sem dados de antropometria.</Text>
+                  </View>
+                )}
 
-    </View>
-  );
-})}
+                {/* Rodapé original do Alzejones - Intacto! */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
+                  <View style={{ flexDirection: 'row' }}>
+                    <TouchableOpacity onPress={() => handleEditAssessment(assessment)} style={{ marginRight: 20 }}>
+                      <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteAssessment(assessment.id)}>
+                      <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <TouchableOpacity onPress={() => handleSendWhatsApp(assessment)}>
+                    <Text style={{ color: "#16a34a", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
+                  </TouchableOpacity>
+                </View>
+
+              </View>
+            );
+          })}
+
+
 
           </View>
         </ScrollView>
