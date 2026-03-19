@@ -20,6 +20,9 @@ import { LineChart } from "react-native-gifted-charts";
 import { captureRef } from "react-native-view-shot";
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
+import EvolutionPanel from '../../components/EvolutionPanel';
+import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPanel';
+
 
 export default function ClientAssessments() {
   const { id } = useLocalSearchParams();
@@ -684,36 +687,23 @@ _Att, Coach Alzejones_`;
             </TouchableOpacity>
 
             {evolution && (
-              <View style={{ flexDirection: "row", gap: 10, marginTop: 25, marginBottom: 10 }}>
-                <View style={[styles.card, { flex: 1 }]}>
-                  <Text style={styles.cardTitle}>Última vs Anterior</Text>
-                  
-                  <Text style={{ color: getColor(evolution.diffRecentWeight, "weight"), fontSize: 12 }}>
-                    Peso: {formatValue(evolution.diffRecentWeight)} kg
-                  </Text>
-                  <Text style={{ color: getColor(evolution.diffRecentFat, "fat"), fontSize: 12 }}>
-                    % Gord: {formatValue(evolution.diffRecentFat)}
-                  </Text>
-                  <Text style={{ color: getColor(evolution.diffRecentMuscle, "muscle"), fontSize: 12 }}>
-                    % Musc: {formatValue(evolution.diffRecentMuscle)}
-                  </Text>
-                </View>
-
-                <View style={[styles.card, { flex: 1 }]}>
-                  <Text style={styles.cardTitle}>Evolução Total</Text>
-                  <Text style={{ color: getColor(evolution.diffTotalWeight, "weight"), fontSize: 12 }}>
-                    Peso: {formatValue(evolution.diffTotalWeight)} kg
-                  </Text>
-                  <Text style={{ color: getColor(evolution.diffTotalFat, "fat"), fontSize: 12 }}>
-                    % Gord: {formatValue(evolution.diffTotalFat)}
-                  </Text>
-                  <Text style={{ color: getColor(evolution.diffTotalMuscle, "muscle"), fontSize: 12 }}>
-                    % Musc: {formatValue(evolution.diffTotalMuscle)}
-                  </Text>
-                </View>
-              </View>
+              <EvolutionPanel 
+                evolutionData={evolution}
+                currentAssessment={assessments[0]}
+                prevAssessment={assessments[1]}
+                firstAssessment={assessments[assessments.length - 1]}
+                formatValue={formatValue}
+              />
             )}
 
+            {evolution && assessments?.length > 1 && (
+              <MeasurementsEvolutionPanel 
+                currentAssessment={assessments[0]}
+                prevAssessment={assessments[1]}
+                firstAssessment={assessments[assessments.length - 1]}
+              />
+            )}
+            
             <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
 <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
     <LineChart
@@ -802,6 +792,7 @@ _Att, Coach Alzejones_`;
         client={client}
         selectedAssessment={selectedAssessment}
         relativeEvolution={relativeEvolution}
+        assessments={assessments} // <--- ADICIONE ESTA LINHA AQU
         fatData={fatData}
         muscleData={muscleData}
         chartLabels={chartLabels}
