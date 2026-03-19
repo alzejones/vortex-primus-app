@@ -158,7 +158,7 @@ export default function ClientDetails() {
             } catch (error: any) {
               Alert.alert(
                 "Erro ao excluir", 
-                "Se o aluno tiver avaliações cadastradas, ative a opção 'Cascade Delete' no banco de dados para poder apagá-lo.\\n\\nDetalhes: " + error.message
+                "Se o aluno tiver avaliações cadastradas, ative a opção 'Cascade Delete' no banco de dados para poder apagá-lo.\n\nDetalhes: " + error.message
               );
             } finally {
               setSaving(false);
@@ -197,12 +197,22 @@ export default function ClientDetails() {
             </View>
         </View>
 
-        <TouchableOpacity 
-          style={styles.assessmentsButton}
-          onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}`)}
-        >
-          <Text style={styles.assessmentsButtonText}>📋 ACESSAR AVALIAÇÕES</Text>
-        </TouchableOpacity>
+        {/* NOVA ÁREA DE BOTÕES LADO A LADO */}
+        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+          <TouchableOpacity 
+            style={[styles.assessmentsButton, { flex: 1, marginRight: 6, marginBottom: 0 }]}
+            onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}`)}
+          >
+            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>📈 HISTÓRICO</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#0f172a', shadowColor: '#0f172a' }]}
+            onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}&openForm=true`)}
+          >
+            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>➕ NOVA AVALIAÇÃO</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.formCard}>
           <Text style={styles.label}>Nome Completo *</Text>
@@ -319,3 +329,4 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2" },
   deleteButtonText: { color: "#dc2626", fontSize: 14, fontWeight: "bold" },
 });
+

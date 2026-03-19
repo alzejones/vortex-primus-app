@@ -1,12 +1,12 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useLocalSearchParams } from "expo-router";
-import * as Sharing from "expo-sharing";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert, Dimensions, KeyboardAvoidingView,
   Linking,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -17,7 +17,6 @@ import {
   View
 } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { captureRef } from "react-native-view-shot";
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import EvolutionPanel from '../../components/EvolutionPanel';
@@ -25,7 +24,14 @@ import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPa
 
 
 export default function ClientAssessments() {
-  const { id } = useLocalSearchParams();
+  
+  const { id, openForm } = useLocalSearchParams();
+useEffect(() => {
+    if (openForm === 'true') {
+      setFormModalVisible(true);
+    }
+  }, [openForm]);
+  
   const { session } = useAuth();
   const clientId = id as string;
 
@@ -34,6 +40,7 @@ export default function ClientAssessments() {
   const [assessments, setAssessments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [formModalVisible, setFormModalVisible] = useState(false);
 
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [editingAnthropometryId, setEditingAnthropometryId] = useState<string | null>(null);
@@ -121,23 +128,36 @@ useEffect(() => {
   const viewRef = useRef(null);
 
   // 2. O "Gatilho" para tirar a foto e compartilhar
-  async function handleShareImage() {
+  async function handleShareLink() {
+    // 1. Gera o link único (usaremos o ID da avaliação, que é seguro e impossível de adivinhar)
+    // Nota: Depois você trocará 'app.vortexprimus.com' pelo seu domínio real.
+    const assessmentLink = `https://app.vortexprimus.com/e/${selectedAssessment?.id}`;
+
+    // 2. Limpa o número de telefone do cliente (tira parênteses, traços e espaços)
+    const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
+    // Adiciona o DDI do Brasil (55) se o número não tiver
+    const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+
+    // 3. Monta a mensagem Premium igual à do concorrente, mas com a sua marca
+    const firstName = client?.name ? client.name.split(' ')[0] : 'Aluno';
+    const message = `Olá, *${firstName}*!\n\nSua autoavaliação corporal já está disponível no *Vortex Primus*.\n\n_Clique e veja *agora*:_ 📊\n${assessmentLink}\n\nParabéns pela determinação e foco no processo! 🔥`;
+
     try {
-      // Tira a foto da área que vamos marcar no próximo passo
-      const uri = await captureRef(viewRef, {
-        format: "jpg",
-        quality: 0.9,
-      });
-// Abre a janelinha de partilha (WhatsApp, etc)
-      await Sharing.shareAsync(uri, {
-        dialogTitle: 'Compartilhar Evolução - Vortex Primus',
-        mimeType: 'image/jpeg',
-      });
+      if (cleanPhone) {
+        // Tenta abrir direto na conversa do cliente
+        await Linking.openURL(`whatsapp://send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`);
+      } else {
+        // Se o cliente não tiver telefone cadastrado, abre apenas a janela de partilha do WhatsApp
+        await Linking.openURL(`whatsapp://send?text=${encodeURIComponent(message)}`);
+      }
     } catch (error) {
-      console.error("Erro ao gerar imagem:", error);
-      Alert.alert("Erro", "Não foi possível gerar a imagem da evolução.");
+      // Se o WhatsApp não estiver instalado ou der erro
+      console.error("Erro ao abrir WhatsApp:", error);
+      Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Verifique se o aplicativo está instalado.");
     }
   }
+
+
  const calculateAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
@@ -402,6 +422,9 @@ async function deleteAssessment(id: string) {
 
   function handleEditAssessment(assessment: any) {
     const anthro = assessment.anthropometry?.[0];
+
+setFormModalVisible(true);
+
     if (!anthro) return;
 
     setEditingAssessmentId(assessment.id);
@@ -596,96 +619,143 @@ _Att, Coach Alzejones_`;
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView 
-          stickyHeaderIndices={[0]} 
-          contentContainerStyle={{ paddingBottom: 120 }}
+ {/* ========================================================= */}
+        {/* 1. MODAL DO FORMULÁRIO (Fica oculto até clicar em Nova Avaliação) */}
+        {/* ========================================================= */}
+        <Modal
+          visible={formModalVisible}
+          animationType="slide"
+          onRequestClose={() => setFormModalVisible(false)}
         >
+          <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+            
+            {/* CABEÇALHO SUPERIOR DO MODAL DE FORMULÁRIO */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: 16, paddingTop: 50 }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>
+                {editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}
+              </Text>
+              <TouchableOpacity onPress={() => setFormModalVisible(false)}>
+                <Text style={{ color: '#fca5a5', fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+              <View style={styles.stickyHeader}>
+                <View style={styles.headerRow}>
+                  <Text style={styles.headerItem}>
+                    <Text style={styles.bold}>Nome: </Text>
+                    {client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}
+                  </Text>
+                  <Text style={styles.headerItem}>
+                    <Text style={styles.bold}>Idade: </Text>
+                    {calculateAge(client?.birth_date)}
+                  </Text>
+                  <Text style={styles.headerItem}>
+                    <Text style={styles.bold}>Alt: </Text>
+                    {client?.height_cm}cm
+                  </Text>
+                </View>
+              </View>
+
+              <View style={{ padding: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 10, marginBottom: 16 }}>
+                  <View style={{ width: 140 }}>
+                    <Text style={{ fontSize: 10, color: '#666', marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
+                    <TextInput 
+                      style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
+                      value={form.assessment_date}
+                      onChangeText={handleDateChange}
+                      placeholder="DD/MM/AAAA HH:mm"
+                      keyboardType="numeric"
+                      maxLength={16}
+                    />
+                  </View>
+                </View>
+                
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Bioimpedância</Text>
+                  <View style={styles.row}>
+                    {renderGridInput("Peso", "weight")}
+                    {renderGridInput("% Gordura", "body_fat")}
+                    {renderGridInput("% M. Muscular", "muscle_mass_percentage")}
+                  </View>
+                  <View style={styles.row}>
+                    {renderGridInput("Idade Metabólica", "metabolic_age")}
+                    {renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}
+                    {renderGridInput("Gordura Visceral", "body_fat_index")}
+                  </View>
+                </View>
+
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Medidas do Tronco</Text>
+                  <View style={styles.row}>
+                    {renderGridInput("Peitoral", "chest")}
+                    {renderGridInput("Abdômen", "abdomen")}
+                  </View>
+                  <View style={styles.row}>
+                    {renderGridInput("Cintura", "waist")}
+                    {renderGridInput("Quadril", "hip")}
+                  </View>
+                </View>
+
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Medidas dos Membros</Text>
+                  <View style={styles.row}>
+                    {renderGridInput("Braço Esquerdo", "arm_left")}
+                    {renderGridInput("Braço Direito", "arm_right")}
+                  </View>
+                  <View style={styles.row}>
+                    {renderGridInput("Panturrilha Esquerda", "calf_left")}
+                    {renderGridInput("Panturrilha Direita", "calf_right")}
+                  </View>
+                  <View style={styles.row}>
+                    {renderGridInput("Coxa Esquerda", "thigh_left")}
+                    {renderGridInput("Coxa Direita", "thigh_right")}
+                  </View>
+                </View>
+
+                <TouchableOpacity 
+                  style={[styles.button, saving && { opacity: 0.7 }]} 
+                  onPress={() => {
+                    handleSaveAssessment();
+                    // Oculta o formulário automaticamente se já não estiver em edição
+                    if(!editingAssessmentId) setFormModalVisible(false);
+                  }}
+                  disabled={saving}
+                >
+                  <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>
+                    {saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+
+
+        {/* ========================================================= */}
+        {/* 2. TELA PRINCIPAL (Mostra apenas o Histórico e os Gráficos) */}
+        {/* ========================================================= */}
+        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+          
           <View style={styles.stickyHeader}>
             <View style={styles.headerRow}>
               <Text style={styles.headerItem}>
                 <Text style={styles.bold}>Nome: </Text>
-                {client.name.substring(0, 10)}{client.name.length > 10 ? '...' : ''}
+                {client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}
               </Text>
               <Text style={styles.headerItem}>
                 <Text style={styles.bold}>Idade: </Text>
-                {calculateAge(client.birth_date)}
+                {calculateAge(client?.birth_date)}
               </Text>
               <Text style={styles.headerItem}>
                 <Text style={styles.bold}>Alt: </Text>
-                {client.height_cm}cm
+                {client?.height_cm}cm
               </Text>
             </View>
           </View>
 
           <View style={{ padding: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, marginBottom: 16 }}>
-              <Text style={[styles.pageTitle, { marginTop: 0, marginBottom: 0 }]}>Nova Avaliação</Text>
-              
-              <View style={{ width: 140 }}>
-                <Text style={{ fontSize: 10, color: '#666', marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                <TextInput 
-              style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
-              value={form.assessment_date}
-              onChangeText={handleDateChange}
-              placeholder="DD/MM/AAAA HH:mm"
-              keyboardType="numeric"
-              maxLength={16}
-            />
-              </View>
-            </View>
-            
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Bioimpedância</Text>
-              <View style={styles.row}>
-                {renderGridInput("Peso", "weight")}
-                {renderGridInput("% Gordura", "body_fat")}
-                {renderGridInput("% M. Muscular", "muscle_mass_percentage")}
-              </View>
-              <View style={styles.row}>
-                {renderGridInput("Idade Metabólica", "metabolic_age")}
-                {renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}
-                {renderGridInput("Gordura Visceral", "body_fat_index")}
-              </View>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Medidas do Tronco</Text>
-              <View style={styles.row}>
-                {renderGridInput("Peitoral", "chest")}
-                {renderGridInput("Abdômen", "abdomen")}
-              </View>
-              <View style={styles.row}>
-                {renderGridInput("Cintura", "waist")}
-                {renderGridInput("Quadril", "hip")}
-              </View>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Medidas dos Membros</Text>
-              <View style={styles.row}>
-                {renderGridInput("Braço Esquerdo", "arm_left")}
-                {renderGridInput("Braço Direito", "arm_right")}
-              </View>
-              <View style={styles.row}>
-                {renderGridInput("Panturrilha Esquerda", "calf_left")}
-                {renderGridInput("Panturrilha Direita", "calf_right")}
-              </View>
-              <View style={styles.row}>
-                {renderGridInput("Coxa Esquerda", "thigh_left")}
-                {renderGridInput("Coxa Direita", "thigh_right")}
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={[styles.button, saving && { opacity: 0.7 }]} 
-              onPress={handleSaveAssessment}
-              disabled={saving}
-            >
-              <Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>
-                {saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}
-              </Text>
-            </TouchableOpacity>
-
             {evolution && (
               <EvolutionPanel 
                 evolutionData={evolution}
@@ -705,86 +775,83 @@ _Att, Coach Alzejones_`;
             )}
             
             <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
-<View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
-    <LineChart
-      data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
-      data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
-      height={220}
-      width={screenWidth - 80}
-      isAnimated
-      animationDuration={1200}
-      curved
-      spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
-      initialSpacing={20}
-      endSpacing={20} 
-      color1="#ef4444" 
-      color2="#22c55e" 
-      dataPointsColor1="#ef4444"
-      dataPointsColor2="#22c55e"
-      thickness1={3}
-      thickness2={3}
-      dataPointsRadius={4}
-      yAxisColor="rgba(255,255,255,0.3)"
-      xAxisColor="rgba(255,255,255,0.3)"
-      yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }}
-      xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
-      yAxisLabelSuffix="%"
-      stepValue={5}
-      maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
-      noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
-      rulesColor="rgba(255,255,255,0.25)"
-      hideRules={false}
-      showVerticalLines={true}
-      verticalLinesColor="rgba(255,255,255,0.15)"
-    />
-    
-    {/* Legenda Customizada Premium */}
-    <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} />
-        <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} />
-        <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text>
-      </View>
-    </View>
+              <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
+                <LineChart
+                  data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
+                  data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
+                  height={220}
+                  width={screenWidth - 80}
+                  isAnimated
+                  animationDuration={1200}
+                  curved
+                  spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+                  initialSpacing={20}
+                  endSpacing={20} 
+                  color1="#ef4444" 
+                  color2="#22c55e" 
+                  dataPointsColor1="#ef4444"
+                  dataPointsColor2="#22c55e"
+                  thickness1={3}
+                  thickness2={3}
+                  dataPointsRadius={4}
+                  yAxisColor="rgba(255,255,255,0.3)"
+                  xAxisColor="rgba(255,255,255,0.3)"
+                  yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }}
+                  xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
+                  yAxisLabelSuffix="%"
+                  stepValue={5}
+                  maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
+                  noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
+                  rulesColor="rgba(255,255,255,0.25)"
+                  hideRules={false}
+                  showVerticalLines={true}
+                  verticalLinesColor="rgba(255,255,255,0.15)"
+                />
+                
+                {/* Legenda Customizada Premium */}
+                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} />
+                    <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} />
+                    <Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text>
+                  </View>
+                </View>
 
-    {/* Dica de Scroll Inteligente (Aparece apenas se houver mais de 7 avaliações) */}
-    {fatData.length > 7 && (
-      <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>
-        ↔️ Deslize o gráfico para o lado para ver o histórico completo
-      </Text>
-    )}
-  </View>
-
+                {/* Dica de Scroll Inteligente */}
+                {fatData.length > 7 && (
+                  <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>
+                    ↔️ Deslize o gráfico para o lado para ver o histórico completo
+                  </Text>
+                )}
+              </View>
             </View>
 
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
 
- {assessments.map((assessment, index) => {
-            const previousAnthro = assessments[index + 1]?.anthropometry?.[0];
-            
-            return (
-              <AssessmentHistoryCard
-                key={assessment.id}
-                assessment={assessment}
-                previousAnthro={previousAnthro}
-                index={index}
-                totalAssessments={assessments.length}
-                onViewDetails={handleViewAssessment}
-                onEdit={handleEditAssessment}
-                onDelete={deleteAssessment}
-                onWhatsApp={handleSendWhatsApp}
-
-              />
-            );
-          })}
-
-
+            {assessments.map((assessment, index) => {
+              const previousAnthro = assessments[index + 1]?.anthropometry?.[0];
+              
+              return (
+                <AssessmentHistoryCard
+                  key={assessment.id}
+                  assessment={assessment}
+                  previousAnthro={previousAnthro}
+                  index={index}
+                  totalAssessments={assessments.length}
+                  onViewDetails={handleViewAssessment}
+                  onEdit={handleEditAssessment}
+                  onDelete={deleteAssessment}
+                  onWhatsApp={handleSendWhatsApp}
+                />
+              );
+            })}
 
           </View>
         </ScrollView>
+
       </KeyboardAvoidingView>
  <AssessmentDetailsModal
         visible={viewModalVisible}
@@ -797,7 +864,7 @@ _Att, Coach Alzejones_`;
         muscleData={muscleData}
         chartLabels={chartLabels}
         viewRef={viewRef}
-        onShare={handleShareImage}
+        onShare={handleShareLink}
         calculateAge={calculateAge}
         getColor={getColor}
         formatValue={formatValue}

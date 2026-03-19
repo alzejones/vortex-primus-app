@@ -1,7 +1,6 @@
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { getHistoryColor, getSmartWeightColor } from '../utils/assessmentCalculations';
-// Nota: Se a sua função renderTrendIndicator usar alguma biblioteca de ícones (ex: Feather, Ionicons), importe-a aqui no topo!
 
 interface AssessmentHistoryCardProps {
   assessment: any;
@@ -38,9 +37,6 @@ function renderTrendIndicator(currentValue: any, previousValue: any, type: "weig
         ? <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}> ⏫</Text> 
         : <Text style={{ color: '#dc2626', fontSize: 12, fontWeight: 'bold' }}> ⏬</Text>;
     } else {
-      // Lógica restaurada para Peso e Gordura
-      // diff > 0 (Subiu) -> Vermelho
-      // diff < 0 (Desceu) -> Verde
       return diff > 0 
         ? <Text style={{ color: '#dc2626', fontSize: 12, fontWeight: 'bold' }}> ⏫</Text>
         : <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}> ⏬</Text>;
@@ -49,18 +45,36 @@ function renderTrendIndicator(currentValue: any, previousValue: any, type: "weig
 
   const anthro = assessment.anthropometry?.[0];
   const dateStr = assessment.date ? new Date(assessment.date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-";
+  
+  // Captura o número de visualizações desta avaliação específica
+  const viewCount = anthro?.view_count !== undefined ? anthro.view_count : 0;
 
   return (
     <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }}>
       
       {/* Cabeçalho do Cartão */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
             <Text style={{ fontSize: 20 }}>📅</Text>
           </View>
-          <View>
-            <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a' }}>{dateStr}</Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a', marginRight: 8 }}>{dateStr}</Text>
+                
+                {/* BADGE DE VISUALIZAÇÕES INDIVIDUAL (Mesmo padrão do Dashboard) */}
+                <View style={{ 
+                    flexDirection: 'row', 
+                    alignItems: 'center', 
+                    backgroundColor: '#f1f5f9', 
+                    paddingHorizontal: 6, 
+                    paddingVertical: 2, 
+                    borderRadius: 8 
+                }}>
+                    <Text style={{ fontSize: 10, marginRight: 3 }}>👁️</Text>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>{viewCount}</Text>
+                </View>
+            </View>
             <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>{index === 0 ? "Última Avaliação" : `Avaliação ${totalAssessments - index}`}</Text>
           </View>
         </View>

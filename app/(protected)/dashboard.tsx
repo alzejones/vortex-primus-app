@@ -65,15 +65,37 @@ export default function Dashboard() {
         setPlanStatus(subscription.is_active ? "Ativo" : "Inativo");
       }
 
+      // BUSCA INTELIGENTE: Traz os clientes e soma as visualizações das avaliações
       const { data: clientList } = await supabase
         .from("clients")
-        .select("*")
+        .select(`
+          *,
+          physical_assessments (
+            id,
+            anthropometry:anthropometry!anthropometry_assessment_id_fkey (
+              view_count
+            )
+          )
+        `)
         .eq("trainer_id", trainer.id)
         .eq("is_active", true)
         .order("created_at", { ascending: false });
 
-      setClients(clientList || []);
-      setCurrentClients(clientList?.length || 0);
+      // Processa a soma de views para cada cliente
+      const clientsWithViews = (clientList || []).map((client: any) => {
+        let totalViews = 0;
+        if (client.physical_assessments) {
+          client.physical_assessments.forEach((pa: any) => {
+            if (pa.anthropometry && pa.anthropometry.length > 0) {
+              totalViews += (pa.anthropometry[0].view_count || 0);
+            }
+          });
+        }
+        return { ...client, totalViews };
+      });
+
+      setClients(clientsWithViews);
+      setCurrentClients(clientsWithViews.length || 0);
     } catch (error) {
       console.log("Erro ao carregar dashboard:", error);
     } finally {
@@ -142,7 +164,7 @@ export default function Dashboard() {
               styles.progressBarFill, 
               { 
                 width: `${Math.min(usagePercentage, 100)}%`,
-                backgroundColor: usagePercentage >= 80 ? "#ef4444" : "#4f46e5" // Azul Indigo moderno
+                backgroundColor: usagePercentage >= 80 ? "#ef4444" : "#4f46e5" 
               }
             ]} 
           />
@@ -242,26 +264,47 @@ export default function Dashboard() {
                   <Text style={styles.clientSubText}>Ver perfil completo</Text>
                 </View>
               </View>
-              <Text style={styles.arrowIcon}>›</Text>
+              
+              {/* ÁREA DA DIREITA: BADGE DE VIEWS E SETA (Corrigido para mostrar o 0) */}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.viewsBadge}>
+                  <Text style={styles.viewsEmoji}>👁️</Text>
+                  <Text style={styles.viewsText}>{item.totalViews !== undefined ? item.totalViews : 0}</Text>
+                </View>
+                <Text style={styles.arrowIcon}>›</Text>
+              </View>
             </TouchableOpacity>
 
             <View style={styles.clientActionsArea}>
+              {/* Botão 1: Histórico/Gráficos */}
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}`)}
               >
-                <Text style={styles.actionEmoji}>📋</Text>
-                <Text style={styles.actionLabel}>Avaliações</Text>
+                <Text style={styles.actionEmoji}>📈</Text>
+                <Text style={styles.actionLabel}>Evolução</Text>
               </TouchableOpacity>
 
               <View style={styles.verticalDivider} />
 
+              {/* Botão 2: Nova Avaliação */}
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true`)}
+              >
+                <Text style={styles.actionEmoji}>➕</Text>
+                <Text style={styles.actionLabel}>Avaliar</Text>
+              </TouchableOpacity>
+
+              <View style={styles.verticalDivider} />
+
+              {/* Botão 3: Perfil */}
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/client-details?id=${item.id}`)}
               >
                 <Text style={styles.actionEmoji}>⚙️</Text>
-                <Text style={styles.actionLabel}>Gerenciar</Text>
+                <Text style={styles.actionLabel}>Perfil</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -276,7 +319,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-    backgroundColor: "#f8fafc", // Fundo Slate bem claro, super premium
+    backgroundColor: "#f8fafc", 
   },
   loadingContainer: {
     flex: 1,
@@ -305,7 +348,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "900",
-    color: "#0f172a", // Slate 900 (quase preto, mas mais elegante)
+    color: "#0f172a", 
     letterSpacing: -0.5,
   },
   
@@ -389,7 +432,7 @@ const styles = StyleSheet.create({
 
   // --- BOTÕES E INPUTS ---
   primaryButton: {
-    backgroundColor: "#0f172a", // Escuro elegante
+    backgroundColor: "#0f172a", 
     padding: 18,
     borderRadius: 16,
     marginBottom: 24,
@@ -466,13 +509,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#e0e7ff", // Fundo do avatar (Índigo super claro)
+    backgroundColor: "#e0e7ff", 
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
   },
   avatarText: {
-    color: "#4f46e5", // Cor do texto do avatar
+    color: "#4f46e5", 
     fontWeight: "bold",
     fontSize: 16,
     letterSpacing: 1,
@@ -488,6 +531,27 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     fontWeight: "500",
   },
+  
+  // --- BADGE DE VISUALIZAÇÕES PREMIUM ---
+  viewsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9', 
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 10,
+  },
+  viewsEmoji: {
+    fontSize: 10,
+    marginRight: 4,
+  },
+  viewsText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#475569', 
+  },
+
   arrowIcon: {
     fontSize: 24,
     color: "#cbd5e1",
@@ -532,7 +596,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderWidth: 1,
     borderColor: "#f1f5f9",
-    borderStyle: "dashed", // Estilo tracejado moderno para "áreas vazias"
+    borderStyle: "dashed", 
   },
   emptyEmoji: {
     fontSize: 40,
