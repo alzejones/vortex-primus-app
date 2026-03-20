@@ -13,7 +13,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 
-export default function Dashboard() {
+export default function index() {
   const { signOut } = useAuth();
 
   const [loading, setLoading] = useState(true);
