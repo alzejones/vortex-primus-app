@@ -82,7 +82,7 @@ export default function Login() {
           }
           
           // Redireciona para a Dashboard
-          router.replace("/(protected)/dashboard");
+          router.replace("/(protected)");
         }
       }
     } catch (error: any) {
@@ -105,7 +105,7 @@ export default function Login() {
       setMessage(error.message.toLowerCase().includes("invalid login") ? "E-mail ou senha incorretos." : error.message);
       return;
     }
-    router.replace("/(protected)/dashboard");
+    router.replace("/(protected)/dashboard/");
   }
 
   async function handleSignup() {
@@ -122,7 +122,7 @@ export default function Login() {
     }
     if (data.user) {
       await supabase.from("trainers").insert([{ user_id: data.user.id, email: data.user.email, status: "active" }]);
-      router.replace("/(protected)/dashboard");
+      router.replace("/(protected)/dashboard/");
     }
   }
 
