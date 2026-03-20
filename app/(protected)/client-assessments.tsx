@@ -131,7 +131,7 @@ useEffect(() => {
   async function handleShareLink() {
     // 1. Gera o link único (usaremos o ID da avaliação, que é seguro e impossível de adivinhar)
     // Nota: Depois você trocará 'app.vortexprimus.com' pelo seu domínio real.
-    const assessmentLink = `https://app.vortexprimus.com/e/${selectedAssessment?.id}`;
+    const assessmentLink = `https://vortex-primus-app.vercel.app`;
 
     // 2. Limpa o número de telefone do cliente (tira parênteses, traços e espaços)
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
