@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -11,9 +11,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../lib/supabase";
-import { useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabase";
 
 // Importações necessárias para o login com o Google
 import * as Linking from "expo-linking";
@@ -22,7 +21,6 @@ import * as WebBrowser from "expo-web-browser";
 // Esta chamada deve estar sempre no nível principal (top level), antes da exportação
 WebBrowser.maybeCompleteAuthSession();
 
-export default function Login() {
   export default function Login() {
   const { session } = useAuth(); // Puxa a sessão do contexto
 
