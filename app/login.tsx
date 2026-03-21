@@ -12,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 // Importações necessárias para o login com o Google
 import * as Linking from "expo-linking";
@@ -21,6 +23,16 @@ import * as WebBrowser from "expo-web-browser";
 WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
+  export default function Login() {
+  const { session } = useAuth(); // Puxa a sessão do contexto
+
+  // Fica de olho: se a sessão for confirmada, joga direto pro Dashboard
+  useEffect(() => {
+    if (session) {
+      router.replace("/(protected)" as any);
+    }
+  }, [session]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
