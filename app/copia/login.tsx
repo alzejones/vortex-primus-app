@@ -43,16 +43,6 @@ export default function Login() {
     if (message) setMessage("");
   };
 
-useEffect(() => {
-  if (Platform.OS === "web") {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        router.replace("/(protected)" as any);
-      }
-    });
-  }
-}, []);
-
   async function handleGoogleLogin() {
     setMessage("");
     try {
@@ -61,7 +51,7 @@ useEffect(() => {
           provider: "google",
           options: {
             // CORREÇÃO 2: Redireciona para o login para não perder a chave
-            redirectTo: "https://vortex-primus-app.vercel.app",
+            redirectTo: "https://vortex-primus-app.vercel.app/login",
           },
         });
         if (error) throw error;
