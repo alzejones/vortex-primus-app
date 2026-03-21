@@ -14,18 +14,17 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 
-// Importações necessárias para o login com o Google
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 
-// Esta chamada deve estar sempre no nível principal (top level), antes da exportação
+// CORREÇÃO 1: Bloqueia o roubo de sessão na Web
 if (Platform.OS !== "web") {
   WebBrowser.maybeCompleteAuthSession();
 }
-  export default function Login() {
-  const { session } = useAuth(); // Puxa a sessão do contexto
 
-  // Fica de olho: se a sessão for confirmada, joga direto pro Dashboard
+export default function Login() {
+  const { session } = useAuth();
+
   useEffect(() => {
     if (session) {
       router.replace("/(protected)" as any);
@@ -48,18 +47,15 @@ if (Platform.OS !== "web") {
     setMessage("");
     try {
       if (Platform.OS === "web") {
-        // 🌐 COMPORTAMENTO PARA A VERCEL (WEB)
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: "https://vortex-primus-app.vercel.app/",
-            // Na web, NÃO usamos "skipBrowserRedirect". 
-            // O próprio Supabase vai navegar e voltar sozinho com a sessão na URL.
+            // CORREÇÃO 2: Redireciona para o login para não perder a chave
+            redirectTo: "https://vortex-primus-app.vercel.app/login",
           },
         });
         if (error) throw error;
       } else {
-        // 📱 COMPORTAMENTO PARA O APP NATIVO (TELEMÓVEL/EXPO)
         const redirectTo = Linking.createURL("/");
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
@@ -112,11 +108,10 @@ if (Platform.OS !== "web") {
     }
     if (data.user) {
       await supabase.from("trainers").insert([{ user_id: data.user.id, email: data.user.email, status: "active" }]);
-      router.replace("/(protected)");
+      router.replace("/(protected)" as any);
     }
   }
 
-  // --- FUNÇÕES DE RECUPERAÇÃO DE SENHA ---
   async function handleRequestPasswordReset() {
     setMessage("");
     const cleanEmail = email.trim().toLowerCase();
@@ -175,7 +170,6 @@ if (Platform.OS !== "web") {
     setPassword(""); 
     setResetCode("");
   }
-  // ---------------------------------------------------
 
   return (
     <KeyboardAvoidingView
