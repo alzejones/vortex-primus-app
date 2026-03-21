@@ -1,131 +1,85 @@
-import { Session, User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import * as Linking from "expo-linking";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { Button, Text, View } from "react-native";
+import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 
-interface AuthContextProps {
-  session: Session | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
-}
+export default function Login() {
+  const router = useRouter();
+  const { session, loading } = useAuth();
 
-const AuthContext = createContext<AuthContextProps>({
-  session: null,
-  loading: true,
-  signOut: async () => {},
-});
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  // 🔍 LOG GERAL DE ESTADO
   useEffect(() => {
-    let isMounted = true;
+    console.log("🧠 SESSION:", session);
+    console.log("⏳ LOADING:", loading);
+  }, [session, loading]);
 
-    async function initializeSession() {
-      console.log("🚀 INIT SESSION");
-
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      console.log("📦 getSession result:", session);
-      if (error) console.log("❌ getSession error:", error);
-
-      if (isMounted) {
-        setSession(session);
-
-        if (session?.user) {
-          console.log("👤 User encontrado na sessão inicial");
-          await ensureTrainerExists(session.user);
-        } else {
-          console.log("⚠️ Nenhuma sessão encontrada");
-        }
-
-        setLoading(false);
+  // 🔍 ESCUTA MUDANÇA DE AUTH
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("🔁 AUTH EVENT:", event);
+        console.log("📦 SESSION EVENT:", session);
       }
-    }
-
-    initializeSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔁 Auth state change:", event);
-      console.log("📦 Nova sessão:", session);
-
-      if (!isMounted) return;
-
-      setSession(session);
-
-      if (session?.user) {
-        console.log("👤 User vindo do evento");
-        await ensureTrainerExists(session.user);
-      } else {
-        console.log("⚠️ Sessão nula no evento");
-      }
-
-      setLoading(false);
-    });
+    );
 
     return () => {
-      isMounted = false;
-      subscription.unsubscribe();
+      listener.subscription.unsubscribe();
     };
   }, []);
 
-  async function ensureTrainerExists(user: User) {
-    console.log("🔍 Verificando trainer para user:", user.id);
+  // 🔍 CAPTURA URL DE RETORNO (CRÍTICO)
+  useEffect(() => {
+    const handleUrl = (url: string) => {
+      console.log("🌍 URL RECEBIDA:", url);
+    };
 
-    try {
-      const { data, error } = await supabase
-        .from("trainers")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    Linking.getInitialURL().then((url) => {
+      console.log("🚀 INITIAL URL:", url);
+    });
 
-      if (error) {
-        console.log("❌ Erro ao buscar trainer:", error);
-        return;
-      }
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      handleUrl(url);
+    });
 
-      if (!data) {
-        console.log("⚠️ Trainer não existe, criando...");
+    return () => sub.remove();
+  }, []);
 
-        const { error: insertError } = await supabase
-          .from("trainers")
-          .insert([
-            {
-              user_id: user.id,
-              email: user.email,
-              status: "active",
-            },
-          ]);
+  // 🔍 REDIRECIONAMENTO
+  useEffect(() => {
+    if (loading) return;
 
-        if (insertError) {
-          console.log("❌ Erro ao criar trainer:", insertError);
-        } else {
-          console.log("🔥 Trainer criado com sucesso");
-        }
-      } else {
-        console.log("✅ Trainer já existe");
-      }
-    } catch (err) {
-      console.log("❌ Erro inesperado:", err);
+    if (session) {
+      console.log("✅ REDIRECIONANDO PARA PROTECTED");
+      router.replace("/(protected)");
     }
-  }
+  }, [session, loading]);
 
-  async function signOut() {
-    console.log("🚪 Fazendo logout...");
-    await supabase.auth.signOut();
-    setSession(null);
+  // 🚀 LOGIN GOOGLE
+  async function handleLogin() {
+    console.log("🔥 INICIANDO LOGIN GOOGLE");
+
+    const redirectUrl = "https://vortex-primus-app.vercel.app";
+
+    console.log("🔗 REDIRECT URL:", redirectUrl);
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: redirectUrl,
+      },
+    });
+
+    console.log("📤 RESPONSE signInWithOAuth:", data);
+    if (error) console.log("❌ ERROR:", error);
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signOut }}>
-      {children}
-    </AuthContext.Provider>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <Text>LOGIN DEBUG MODE</Text>
+      <Button title="Entrar com Google" onPress={handleLogin} />
+    </View>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
