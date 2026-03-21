@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Button, Text, View } from "react-native";
@@ -34,14 +33,6 @@ export default function Login() {
     const handleUrl = (url: string) => {
       console.log("🌍 URL RECEBIDA:", url);
     };
-
-    Linking.getInitialURL().then((url) => {
-      console.log("🚀 INITIAL URL:", url);
-    });
-
-    const sub = Linking.addEventListener("url", ({ url }) => {
-      handleUrl(url);
-    });
 
     return () => sub.remove();
   }, []);
