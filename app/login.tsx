@@ -33,8 +33,7 @@ export default function Login() {
     const handleUrl = (url: string) => {
       console.log("🌍 URL RECEBIDA:", url);
     };
-
-    return () => sub.remove();
+    
   }, []);
 
   // 🔍 REDIRECIONAMENTO
@@ -57,9 +56,6 @@ export default function Login() {
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: redirectUrl,
-      },
     });
 
     console.log("📤 RESPONSE signInWithOAuth:", data);
