@@ -1,110 +1,84 @@
-import { Session, User } from "@supabase/supabase-js";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-interface AuthContextProps {
-  session: Session | null;
+// 🧠 Tipagem básica
+type AuthContextType = {
+  session: any;
   loading: boolean;
-  signOut: () => Promise<void>;
-}
+};
 
-const AuthContext = createContext<AuthContextProps>({
+const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
-  signOut: async () => {},
 });
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+// 🚀 Hook para usar o contexto
+export const useAuth = () => useContext(AuthContext);
+
+// 🔐 Provider
+export const AuthProvider = ({ children }: any) => {
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // 🌍 DEBUG URL AO CARREGAR
   useEffect(() => {
-    let isMounted = true;
+    if (typeof window !== "undefined") {
+      console.log("🌍 CURRENT URL (Auth):", window.location.href);
+    }
+  }, []);
 
-    async function initializeSession() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+  // 🧠 PEGAR SESSÃO INICIAL
+  useEffect(() => {
+    const getInitialSession = async () => {
+      console.log("🚀 GET INITIAL SESSION");
 
-      if (isMounted) {
+      const { data, error } = await supabase.auth.getSession();
+
+      console.log("📦 INITIAL SESSION DATA:", data);
+      console.log("❌ INITIAL SESSION ERROR:", error);
+
+      if (data?.session) {
+        console.log("✅ SESSION FOUND");
+        setSession(data.session);
+      } else {
+        console.log("⚠️ NO SESSION");
+      }
+
+      setLoading(false);
+    };
+
+    getInitialSession();
+  }, []);
+
+  // 🔁 LISTENER DE AUTH (LOGIN / LOGOUT / CALLBACK)
+  useEffect(() => {
+    console.log("🧠 INIT AUTH LISTENER");
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("🔁 AUTH EVENT:", event);
+        console.log("📦 SESSION EVENT:", session);
+
         setSession(session);
-
-        if (session?.user) {
-          await ensureTrainerExists(session.user);
-        }
-
         setLoading(false);
       }
-    }
-
-    initializeSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
-
-      setSession(session);
-
-      if (session?.user) {
-        await ensureTrainerExists(session.user);
-      }
-
-      setLoading(false); // 🔥 ESSENCIAL
-    });
+    );
 
     return () => {
-      isMounted = false;
-      subscription.unsubscribe();
+      console.log("🧹 REMOVE AUTH LISTENER");
+      listener.subscription.unsubscribe();
     };
   }, []);
 
-  async function ensureTrainerExists(user: User) {
-    try {
-      const { data, error } = await supabase
-        .from("trainers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      // Se não encontrou ou deu erro de "no rows"
-      if (error && error.code !== "PGRST116") {
-        console.log("Erro ao buscar trainer:", error);
-        return;
-      }
-
-      if (!data) {
-        const { error: insertError } = await supabase
-          .from("trainers")
-          .insert([
-            {
-              user_id: user.id,
-              email: user.email,
-              status: "active",
-            },
-          ]);
-
-        if (insertError) {
-          console.log("Erro ao criar trainer:", insertError);
-        } else {
-          console.log("🔥 Trainer criado automaticamente");
-        }
-      }
-    } catch (err) {
-      console.log("Erro inesperado ao garantir trainer:", err);
-    }
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    setSession(null);
-  }
+  // 🧠 DEBUG GLOBAL
+  useEffect(() => {
+    console.log("🧠 SESSION STATE:", session);
+    console.log("⏳ LOADING STATE:", loading);
+  }, [session, loading]);
 
   return (
-    <AuthContext.Provider value={{ session, loading, signOut }}>
+    <AuthContext.Provider value={{ session, loading }}>
       {children}
     </AuthContext.Provider>
   );
-}
-
-export const useAuth = () => useContext(AuthContext);
+};

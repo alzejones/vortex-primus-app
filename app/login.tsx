@@ -1,21 +1,34 @@
-import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Button, Text, View } from "react-native";
-import { useAuth } from "../contexts/AuthContext";
+import { Button, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 
 export default function Login() {
-  const router = useRouter();
-  const { session, loading } = useAuth();
 
-  // 🔍 LOG GERAL DE ESTADO
+  // 🌍 DEBUG DA URL ATUAL
   useEffect(() => {
-    console.log("🧠 SESSION:", session);
-    console.log("⏳ LOADING:", loading);
-  }, [session, loading]);
+    if (typeof window !== "undefined") {
+      console.log("🌍 CURRENT URL:", window.location.href);
+    }
+  }, []);
 
-  // 🔍 ESCUTA MUDANÇA DE AUTH
+  // 🧠 DEBUG DA SESSÃO INICIAL
   useEffect(() => {
+    const getSession = async () => {
+      console.log("🚀 GET SESSION START");
+
+      const { data, error } = await supabase.auth.getSession();
+
+      console.log("📦 INITIAL SESSION:", data);
+      console.log("❌ INITIAL ERROR:", error);
+    };
+
+    getSession();
+  }, []);
+
+  // 🔁 DEBUG DE EVENTOS DE AUTH
+  useEffect(() => {
+    console.log("🧠 INIT AUTH LISTENER");
+
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("🔁 AUTH EVENT:", event);
@@ -24,49 +37,58 @@ export default function Login() {
     );
 
     return () => {
+      console.log("🧹 REMOVE LISTENER");
       listener.subscription.unsubscribe();
     };
   }, []);
 
-  // 🔍 CAPTURA URL DE RETORNO (CRÍTICO)
-  useEffect(() => {
-    const handleUrl = (url: string) => {
-      console.log("🌍 URL RECEBIDA:", url);
-    };
-    
-  }, []);
+  // 🔐 LOGIN GOOGLE COM DEBUG
+  const handleLoginWithGoogle = async () => {
+    console.log("🟢 CLICK LOGIN");
 
-  // 🔍 REDIRECIONAMENTO
-  useEffect(() => {
-    if (loading) return;
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          queryParams: {
+            prompt: "select_account", // força seleção de conta
+          },
+        },
+      });
 
-    if (session) {
-      console.log("✅ REDIRECIONANDO PARA PROTECTED");
-      router.replace("/(protected)");
+      console.log("📦 RESPONSE:", data);
+      console.log("❌ ERROR:", error);
+
+      if (data?.url) {
+        console.log("🌍 REDIRECT URL:", data.url);
+        // ⚠️ No web, o Supabase já redireciona automaticamente
+      }
+
+    } catch (err) {
+      console.log("🔥 EXCEPTION:", err);
     }
-  }, [session, loading]);
-
-  // 🚀 LOGIN GOOGLE
-  async function handleLogin() {
-    console.log("🔥 INICIANDO LOGIN GOOGLE");
-
-    const redirectUrl = "https://vortex-primus-app.vercel.app";
-
-    console.log("🔗 REDIRECT URL:", redirectUrl);
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-    });
-
-    console.log("📤 RESPONSE signInWithOAuth:", data);
-    if (error) console.log("❌ ERROR:", error);
-  }
-
+  };
+  
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>LOGIN DEBUG MODE</Text>
-      <Button title="Entrar com Google" onPress={handleLogin} />
+    <View style={styles.container}>
+      <Text style={styles.title}>VORTEX Login</Text>
+
+      <Button
+        title="Entrar com Google"
+        onPress={handleLoginWithGoogle}
+      />
     </View>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    marginBottom: 20,
+  },
+});
