@@ -34,59 +34,38 @@ export default function Login() {
   };
 
   async function handleGoogleLogin() {
-    setMessage(""); 
+    setMessage("");
     try {
-      // Cria a URL de redirecionamento dinâmica
-      const redirectTo = Linking.createURL("/");
+      if (Platform.OS === "web") {
+        // 🌐 COMPORTAMENTO PARA A VERCEL (WEB)
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: "https://vortex-primus-app.vercel.app/",
+            // Na web, NÃO usamos "skipBrowserRedirect". 
+            // O próprio Supabase vai navegar e voltar sozinho com a sessão na URL.
+          },
+        });
+        if (error) throw error;
+      } else {
+        // 📱 COMPORTAMENTO PARA O APP NATIVO (TELEMÓVEL/EXPO)
+        const redirectTo = Linking.createURL("/");
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            skipBrowserRedirect: true,
+          },
+        });
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true, // Essencial para o funcionamento no telemóvel
-        },
-      });
+        if (error) throw error;
 
-      if (error) throw error;
-
-      if (data?.url) {
-        // Abre o navegador de forma segura
-        const res = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        
-        if (res.type === "success") {
-          const { url } = res;
-          
-          // Função auxiliar para extrair os parâmetros da URL de retorno
-          const extractParam = (url: string, param: string) => {
-            const regex = new RegExp(`${param}=([^&]+)`);
-            const match = url.match(regex);
-            return match ? match[1] : null;
-          };
-
-          const code = extractParam(url, 'code');
-          
-          if (code) {
-            // Fluxo PKCE
-            await supabase.auth.exchangeCodeForSession(code);
-          } else {
-            // Fluxo Implícito
-            const access_token = extractParam(url, 'access_token');
-            const refresh_token = extractParam(url, 'refresh_token');
-
-            if (access_token && refresh_token) {
-              await supabase.auth.setSession({
-                access_token,
-                refresh_token,
-              });
-            }
-          }
-          
-          // Redireciona para a Dashboard
-          router.replace("/(protected)");
+        if (data?.url) {
+          await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         }
       }
     } catch (error: any) {
-      setMessage("Erro: " + error.message);
+      setMessage(error.message);
     }
   }
 
