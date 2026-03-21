@@ -19,8 +19,9 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 
 // Esta chamada deve estar sempre no nível principal (top level), antes da exportação
-WebBrowser.maybeCompleteAuthSession();
-
+if (Platform.OS !== "web") {
+  WebBrowser.maybeCompleteAuthSession();
+}
   export default function Login() {
   const { session } = useAuth(); // Puxa a sessão do contexto
 
