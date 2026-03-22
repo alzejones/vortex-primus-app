@@ -1,6 +1,13 @@
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import { useEffect } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { Button, Platform, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
+
+// Necessário para o fluxo nativo não travar
+if (Platform.OS !== "web") {
+  WebBrowser.maybeCompleteAuthSession();
+}
 
 export default function Login() {
 
@@ -42,28 +49,45 @@ export default function Login() {
     };
   }, []);
 
-  // 🔐 LOGIN GOOGLE COM DEBUG
+  // 🔐 LOGIN GOOGLE COM DEBUG E ABERTURA DE JANELA CORRIGIDA
   const handleLoginWithGoogle = async () => {
     console.log("🟢 CLICK LOGIN");
 
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          queryParams: {
-            prompt: "select_account", // força seleção de conta
+      if (Platform.OS === "web") {
+        // Fluxo para a Web (Vercel / Chrome do Celular)
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: "https://vortex-primus-app.vercel.app/login",
+            queryParams: {
+              prompt: "select_account",
+            },
           },
-        },
-      });
+        });
+        if (error) console.log("❌ ERROR WEB:", error);
+      } else {
+        // Fluxo para o aplicativo (Expo Go)
+        const redirectTo = Linking.createURL("/");
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            skipBrowserRedirect: true,
+            queryParams: {
+              prompt: "select_account",
+            },
+          },
+        });
 
-      console.log("📦 RESPONSE:", data);
-      console.log("❌ ERROR:", error);
+        console.log("📦 RESPONSE NATIVO:", data);
+        if (error) console.log("❌ ERROR NATIVO:", error);
 
-      if (data?.url) {
-        console.log("🌍 REDIRECT URL:", data.url);
-        // ⚠️ No web, o Supabase já redireciona automaticamente
+        if (data?.url) {
+          console.log("🌍 ABRINDO NAVEGADOR COM URL:", data.url);
+          await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        }
       }
-
     } catch (err) {
       console.log("🔥 EXCEPTION:", err);
     }
@@ -71,7 +95,7 @@ export default function Login() {
   
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>VORTEX Login</Text>
+      <Text style={styles.title}>VORTEX Login Debug</Text>
 
       <Button
         title="Entrar com Google"
