@@ -1,15 +1,18 @@
+import { router } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
-// 🧠 Tipagem básica
+// 🧠 Tipagem completa
 type AuthContextType = {
   session: any;
   loading: boolean;
+  signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
+  signOut: async () => {},
 });
 
 // 🚀 Hook para usar o contexto
@@ -20,64 +23,34 @@ export const AuthProvider = ({ children }: any) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🌍 DEBUG URL AO CARREGAR
+  // 🧠 PEGAR SESSÃO INICIAL E OUVIR MUDANÇAS
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      console.log("🌍 CURRENT URL (Auth):", window.location.href);
-    }
-  }, []);
-
-  // 🧠 PEGAR SESSÃO INICIAL
-  useEffect(() => {
-    const getInitialSession = async () => {
-      console.log("🚀 GET INITIAL SESSION");
-
-      const { data, error } = await supabase.auth.getSession();
-
-      console.log("📦 INITIAL SESSION DATA:", data);
-      console.log("❌ INITIAL SESSION ERROR:", error);
-
-      if (data?.session) {
-        console.log("✅ SESSION FOUND");
-        setSession(data.session);
-      } else {
-        console.log("⚠️ NO SESSION");
-      }
-
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
       setLoading(false);
-    };
-
-    getInitialSession();
-  }, []);
-
-  // 🔁 LISTENER DE AUTH (LOGIN / LOGOUT / CALLBACK)
-  useEffect(() => {
-    console.log("🧠 INIT AUTH LISTENER");
+    });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("🔁 AUTH EVENT:", event);
-        console.log("📦 SESSION EVENT:", session);
-
+      (_event, session) => {
         setSession(session);
         setLoading(false);
       }
     );
 
     return () => {
-      console.log("🧹 REMOVE AUTH LISTENER");
       listener.subscription.unsubscribe();
     };
   }, []);
 
-  // 🧠 DEBUG GLOBAL
-  useEffect(() => {
-    console.log("🧠 SESSION STATE:", session);
-    console.log("⏳ LOADING STATE:", loading);
-  }, [session, loading]);
+  // 🚪 FUNÇÃO OFICIAL PARA SAIR DO SISTEMA
+  const signOut = async () => {
+    await supabase.auth.signOut(); // 1. Apaga no Supabase
+    setSession(null); // 2. Limpa a memória do app
+    router.replace("/login"); // 3. O PULO DO GATO: Força a ida para o login
+  };
 
   return (
-    <AuthContext.Provider value={{ session, loading }}>
+    <AuthContext.Provider value={{ session, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
