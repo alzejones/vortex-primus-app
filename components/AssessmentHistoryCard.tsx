@@ -11,6 +11,7 @@ interface AssessmentHistoryCardProps {
   onEdit: (assessment: any) => void;
   onDelete: (id: string) => void;
   onWhatsApp: (assessment: any) => void;
+  onPhysicalTests: (assessment: any) => void; // A nova porta de entrada
 }
 
 export default function AssessmentHistoryCard({
@@ -21,14 +22,12 @@ export default function AssessmentHistoryCard({
   onViewDetails,
   onEdit,
   onDelete,
-  onWhatsApp
+  onWhatsApp,
+  onPhysicalTests
 }: AssessmentHistoryCardProps) {
   
-function renderTrendIndicator(currentValue: any, previousValue: any, type: "weight" | "fat" | "muscle") {
-    if (currentValue === null || previousValue === null || currentValue === undefined || previousValue === undefined || currentValue === "" || previousValue === "") {
-      return null;
-    }
-    
+  function renderTrendIndicator(currentValue: any, previousValue: any, type: "weight" | "fat" | "muscle") {
+    if (!currentValue || !previousValue) return null;
     const diff = Number(currentValue) - Number(previousValue);
     if (diff === 0) return <Text style={{ color: '#9ca3af', fontSize: 12 }}> ➖</Text>; 
 
@@ -37,118 +36,96 @@ function renderTrendIndicator(currentValue: any, previousValue: any, type: "weig
         ? <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}> ⏫</Text> 
         : <Text style={{ color: '#dc2626', fontSize: 12, fontWeight: 'bold' }}> ⏬</Text>;
     } else {
-      return diff > 0 
-        ? <Text style={{ color: '#dc2626', fontSize: 12, fontWeight: 'bold' }}> ⏫</Text>
-        : <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}> ⏬</Text>;
+      return diff < 0 
+        ? <Text style={{ color: '#16a34a', fontSize: 12, fontWeight: 'bold' }}> ⏬</Text> 
+        : <Text style={{ color: '#dc2626', fontSize: 12, fontWeight: 'bold' }}> ⏫</Text>;
     }
   }
 
   const anthro = assessment.anthropometry?.[0];
-  const dateStr = assessment.date ? new Date(assessment.date).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' }) : "-";
-  
-  // Captura o número de visualizações desta avaliação específica
-  const viewCount = anthro?.view_count !== undefined ? anthro.view_count : 0;
+  const dateObj = new Date(assessment.date);
+  const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 }}>
-      
-      {/* Cabeçalho do Cartão */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-            <Text style={{ fontSize: 20 }}>📅</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a', marginRight: 8 }}>{dateStr}</Text>
-                
-                {/* BADGE DE VISUALIZAÇÕES INDIVIDUAL (Mesmo padrão do Dashboard) */}
-                <View style={{ 
-                    flexDirection: 'row', 
-                    alignItems: 'center', 
-                    backgroundColor: '#f1f5f9', 
-                    paddingHorizontal: 6, 
-                    paddingVertical: 2, 
-                    borderRadius: 8 
-                }}>
-                    <Text style={{ fontSize: 10, marginRight: 3 }}>👁️</Text>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#475569' }}>{viewCount}</Text>
-                </View>
-            </View>
-            <Text style={{ fontSize: 12, color: '#64748b', fontWeight: '500' }}>{index === 0 ? "Última Avaliação" : `Avaliação ${totalAssessments - index}`}</Text>
-          </View>
+    <View style={{
+      backgroundColor: '#fff',
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: '#f1f5f9',
+      elevation: 2,
+    }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <View>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>{formattedDate}</Text>
+          <Text style={{ fontSize: 11, color: '#64748b' }}>{formattedTime}</Text>
         </View>
-        <TouchableOpacity 
-          style={{ backgroundColor: '#eff6ff', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
-          onPress={() => onViewDetails(assessment)}
-        >
-          <Text style={{ color: '#3b82f6', fontWeight: 'bold', fontSize: 12 }}>VER DETALHES</Text>
+        <TouchableOpacity onPress={() => onViewDetails(assessment)} style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#475569' }}>Consultar</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Corpo do Cartão - Os 3 Pilares com Cores Inteligentes */}
       {anthro ? (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, backgroundColor: '#f8fafc', padding: 12, borderRadius: 12 }}>
-          
-          {/* Coluna: Peso */}
-          <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Peso</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Peso</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 24, color: getSmartWeightColor(anthro.weight, previousAnthro?.weight, anthro.body_fat, previousAnthro?.body_fat, anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage), fontWeight: '900' }}>{anthro?.weight ?? "-"}</Text>
-              <Text style={{ fontSize: 12, color: getSmartWeightColor(anthro.weight, previousAnthro?.weight, anthro.body_fat, previousAnthro?.body_fat, anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage), fontWeight: '700', marginLeft: 2 }}>kg</Text>
+              <Text style={{ 
+                fontSize: 18, 
+                fontWeight: '800', 
+                color: getSmartWeightColor(
+                  anthro?.weight, previousAnthro?.weight,
+                  anthro?.body_fat, previousAnthro?.body_fat,
+                  anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage
+                ) 
+              }}>
+                {anthro?.weight || '--'}
+              </Text>
+              <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>kg</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.weight, previousAnthro?.weight, "weight")}</View>
           </View>
 
-          {/* Divisor Vertical */}
-          <View style={{ width: 1, backgroundColor: '#e2e8f0', height: '70%', alignSelf: 'center' }} />
-
-          {/* Coluna: Gordura */}
-          <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Gordura</Text>
+          <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#f1f5f9' }}>
+            <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 24, color: getHistoryColor(anthro.body_fat, previousAnthro?.body_fat, 'fat'), fontWeight: '900' }}>{anthro?.body_fat ?? "-"}</Text>
-              <Text style={{ fontSize: 12, color: getHistoryColor(anthro.body_fat, previousAnthro?.body_fat, 'fat'), fontWeight: '700', marginLeft: 2 }}>%</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat') }}>{anthro?.body_fat || '--'}</Text>
+              <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>%</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.body_fat, previousAnthro?.body_fat, "fat")}</View>
           </View>
 
-          {/* Divisor Vertical */}
-          <View style={{ width: 1, backgroundColor: '#e2e8f0', height: '70%', alignSelf: 'center' }} />
-
-          {/* Coluna: Músculo */}
-          <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontSize: 11, color: '#94a3b8', fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 }}>Músculo</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 24, color: getHistoryColor(anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle'), fontWeight: '900' }}>{anthro?.muscle_mass_percentage ?? "-"}</Text>
-              <Text style={{ fontSize: 12, color: getHistoryColor(anthro.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle'), fontWeight: '700', marginLeft: 2 }}>%</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle') }}>{anthro?.muscle_mass_percentage || '--'}</Text>
+              <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>%</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, "muscle")}</View>
           </View>
-
         </View>
-      ) : (
-        <View style={{ backgroundColor: '#f8fafc', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 16 }}>
-          <Text style={{ color: '#64748b', fontStyle: 'italic' }}>Sem dados de antropometria.</Text>
-        </View>
-      )}
+      ) : null}
 
-      {/* Rodapé de Ações */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
-        <View style={{ flexDirection: 'row' }}>
-          <TouchableOpacity onPress={() => onEdit(assessment)} style={{ marginRight: 20 }}>
+        <View style={{ flexDirection: 'row', gap: 20 }}>
+          <TouchableOpacity onPress={() => onEdit(assessment)}>
             <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => onPhysicalTests(assessment)}>
+            <Text style={{ color: "#2563eb", fontSize: 13, fontWeight: "700" }}>💪 Testes</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={() => onDelete(assessment.id)}>
             <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
           </TouchableOpacity>
         </View>
-        
         <TouchableOpacity onPress={() => onWhatsApp(assessment)}>
-          <Text style={{ color: "#16a34a", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
+          <Text style={{ color: "#22c55e", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
         </TouchableOpacity>
       </View>
-
     </View>
   );
 }

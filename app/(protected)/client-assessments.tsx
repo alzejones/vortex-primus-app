@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router"; // 🔴 router adicionado aqui
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -599,6 +599,13 @@ _Att, Coach Alzejones_`;
     );
   }
 
+  // 🔴 NOVA FUNÇÃO DE ROTEAMENTO (Joga o ID da avaliação para a tela de Condicionamento)
+  function handlePhysicalTests(assessment: any) {
+    router.push({
+      pathname: "/(protected)/assessments/conditioning" as any,
+      params: { assessment_id: assessment.id }
+    } as any);
+  }
   
  
         const evolution = getEvolution();
@@ -845,6 +852,7 @@ _Att, Coach Alzejones_`;
                   onEdit={handleEditAssessment}
                   onDelete={deleteAssessment}
                   onWhatsApp={handleSendWhatsApp}
+                  onPhysicalTests={() => handlePhysicalTests(assessment)} // 🔴 PASSO A FUNÇÃO PARA O CARD AQUI
                 />
               );
             })}
@@ -965,3 +973,5 @@ const styles = StyleSheet.create({
     maxHeight: '90%'
   }
 });
+
+
