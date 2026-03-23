@@ -11,7 +11,7 @@ interface AssessmentHistoryCardProps {
   onEdit: (assessment: any) => void;
   onDelete: (id: string) => void;
   onWhatsApp: (assessment: any) => void;
-  onPhysicalTests: (assessment: any) => void; // A nova porta de entrada
+  onPhysicalTests: (assessment: any) => void; // Prop obrigatória
 }
 
 export default function AssessmentHistoryCard({
@@ -57,6 +57,7 @@ export default function AssessmentHistoryCard({
       borderColor: '#f1f5f9',
       elevation: 2,
     }}>
+      {/* Cabeçalho */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <View>
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>{formattedDate}</Text>
@@ -67,6 +68,7 @@ export default function AssessmentHistoryCard({
         </TouchableOpacity>
       </View>
 
+      {/* Dados (se houver) */}
       {anthro ? (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
           <View style={{ flex: 1 }}>
@@ -106,10 +108,15 @@ export default function AssessmentHistoryCard({
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, "muscle")}</View>
           </View>
         </View>
-      ) : null}
+      ) : (
+        <View style={{ backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 16, alignItems: 'center' }}>
+          <Text style={{ color: '#94a3b8', fontSize: 12, fontStyle: 'italic' }}>Dados de antropometria não registrados</Text>
+        </View>
+      )}
 
+      {/* RODAPÉ DE AÇÕES - O botão "Testes" está aqui */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 20 }}>
+        <View style={{ flexDirection: 'row', gap: 15, flex: 1 }}>
           <TouchableOpacity onPress={() => onEdit(assessment)}>
             <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
           </TouchableOpacity>
@@ -122,6 +129,7 @@ export default function AssessmentHistoryCard({
             <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
           </TouchableOpacity>
         </View>
+
         <TouchableOpacity onPress={() => onWhatsApp(assessment)}>
           <Text style={{ color: "#22c55e", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
         </TouchableOpacity>
