@@ -836,6 +836,20 @@ _Att, Coach Alzejones_`;
               </View>
             </View>
 
+            {/* BOTÃO PARA ACESSAR A EVOLUÇÃO FÍSICA */}
+<TouchableOpacity 
+  style={{ backgroundColor: '#1e293b', padding: 16, borderRadius: 12, marginBottom: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}
+  onPress={() => router.push({
+    pathname: "/(protected)/assessments/conditioning-evolution" as any,
+    params: { client_id: clientId }
+  } as any)}
+>
+  <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>📈 Ver Evolução de Performance</Text>
+</TouchableOpacity>
+
+<Text style={styles.pageTitle}>Histórico de Avaliações</Text>
+
+
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
 
             {assessments.map((assessment, index) => {
