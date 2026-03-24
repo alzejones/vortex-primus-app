@@ -265,7 +265,7 @@ export default function Index() {
                 </View>
               </View>
               
-              {/* ÁREA DA DIREITA: BADGE DE VIEWS E SETA (Corrigido para mostrar o 0) */}
+              {/* ÁREA DA DIREITA: BADGE DE VIEWS E SETA */}
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={styles.viewsBadge}>
                   <Text style={styles.viewsEmoji}>👁️</Text>
@@ -276,10 +276,10 @@ export default function Index() {
             </TouchableOpacity>
 
             <View style={styles.clientActionsArea}>
-              {/* Botão 1: Histórico/Gráficos */}
+              {/* Botão 1: Histórico/Gráficos (Bioimpedância) */}
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}`)}
+                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}
               >
                 <Text style={styles.actionEmoji}>📈</Text>
                 <Text style={styles.actionLabel}>Evolução</Text>
@@ -287,10 +287,10 @@ export default function Index() {
 
               <View style={styles.verticalDivider} />
 
-              {/* Botão 2: Nova Avaliação */}
+              {/* Botão 2: Nova Avaliação (Bioimpedância) */}
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true`)}
+                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}
               >
                 <Text style={styles.actionEmoji}>➕</Text>
                 <Text style={styles.actionLabel}>Avaliar</Text>
@@ -298,10 +298,21 @@ export default function Index() {
 
               <View style={styles.verticalDivider} />
 
-              {/* Botão 3: Perfil */}
+              {/* 🔴 NOVO Botão 3: Testes Físicos (Condicionamento Independente) */}
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-details?id=${item.id}`)}
+                onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}
+              >
+                <Text style={styles.actionEmoji}>💪</Text>
+                <Text style={styles.actionLabel}>Testes</Text>
+              </TouchableOpacity>
+
+              <View style={styles.verticalDivider} />
+
+              {/* Botão 4: Perfil */}
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}
               >
                 <Text style={styles.actionEmoji}>⚙️</Text>
                 <Text style={styles.actionLabel}>Perfil</Text>
@@ -576,7 +587,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   actionLabel: {
-    fontSize: 13,
+    fontSize: 11, // Um pouco reduzido para encaixar perfeitamente os 4
     color: "#64748b",
     fontWeight: "600",
   },
