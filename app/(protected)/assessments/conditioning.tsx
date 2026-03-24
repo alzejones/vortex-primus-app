@@ -1,55 +1,57 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { supabase } from "../../../lib/supabase"; // Ajuste o caminho se necessário
+import { supabase } from "../../../lib/supabase"; // Verifique se o caminho está correto para a sua estrutura
 
-// --- TIPAGENS ---
 type StrengthTest = { id: string; exercise: string; load: string; reps: string; rm: string };
-type EnduranceTest = { id: string; type: string; distance: string; time: string; vo2: string };
+type EnduranceTest = { id: string; type: string; distance: string; time: string; reps: string; vo2: string };
 type MobilityTest = { id: string; name: string; score: string; notes: string };
 
 export default function ConditioningAssessment() {
-  // Pega o ID da avaliação que veio da tela de Antropometria
   const { assessment_id } = useLocalSearchParams();
-
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // CONTROLO DAS SANFONAS (Abas)
-  const [openSection, setOpenSection] = useState<"strength" | "endurance" | "mobility" | null>("strength");
+  const [openSection, setOpenSection] = useState<"strength" | "endurance" | "mobility" | null>("endurance");
 
-  // LISTAS DE TESTES (O professor vai adicionando aqui antes de salvar)
   const [strengthTests, setStrengthTests] = useState<StrengthTest[]>([]);
   const [enduranceTests, setEnduranceTests] = useState<EnduranceTest[]>([]);
   const [mobilityTests, setMobilityTests] = useState<MobilityTest[]>([]);
 
-  // OPÇÕES RÁPIDAS (Chips)
+  // 🎯 AS SUAS NOVAS OPÇÕES DE CROSS
   const strengthOptions = ["Flexão", "Supino", "Agachamento", "Bíceps", "Abdominal"];
-  const enduranceOptions = ["Corrida", "Remo", "Air Bike"];
-  const mobilityOptions = ["Overhead Squat", "Sit and Reach", "Tornozelo"];
+  
+  // Ajuste do Endurance para opções por minuto
+  const enduranceOptions = ["Corrida", "Burpee (1 min)", "Abdominal (1 min)", "Agachamento (1 min)"];
+  
+  // Ajuste da Mobilidade para opções categóricas
+  const mobilityOptions = [
+    "Toque chão (Pernas esticadas)", 
+    "Agachamento (Profundidade)", 
+    "Posição de Rack (Cotovelos altos)", 
+    "Barra Overhead (Alinhamento)"
+  ];
 
-  // --- FUNÇÕES PARA ADICIONAR ITENS ÀS LISTAS ---
   const addStrength = (exercise: string) => {
     setStrengthTests([...strengthTests, { id: Date.now().toString(), exercise, load: "", reps: "", rm: "" }]);
   };
   const addEndurance = (type: string) => {
-    setEnduranceTests([...enduranceTests, { id: Date.now().toString(), type, distance: "", time: "", vo2: "" }]);
+    setEnduranceTests([...enduranceTests, { id: Date.now().toString(), type, distance: "", time: "", reps: "", vo2: "" }]);
   };
   const addMobility = (name: string) => {
     setMobilityTests([...mobilityTests, { id: Date.now().toString(), name, score: "", notes: "" }]);
   };
 
-  // --- ATUALIZAR CAMPOS ---
   const updateStrength = (id: string, field: keyof StrengthTest, value: string) => {
     setStrengthTests(strengthTests.map(t => t.id === id ? { ...t, [field]: value } : t));
   };
@@ -60,10 +62,9 @@ export default function ConditioningAssessment() {
     setMobilityTests(mobilityTests.map(t => t.id === id ? { ...t, [field]: value } : t));
   };
 
-  // --- O "MOTOR" QUE SALVA TUDO DE UMA VEZ ---
   const handleSaveAll = async () => {
     if (!assessment_id) {
-      setMessage("Erro: ID da Avaliação não encontrado.");
+      setMessage("Erro: ID da Avaliação não encontrado na rota.");
       return;
     }
 
@@ -71,7 +72,6 @@ export default function ConditioningAssessment() {
     setMessage("");
 
     try {
-      // 1. Cria a "pasta" de condicionamento para esta avaliação
       const { data: condTest, error: condError } = await supabase
         .from("conditioning_tests")
         .insert([{ assessment_id }])
@@ -81,7 +81,6 @@ export default function ConditioningAssessment() {
       if (condError) throw condError;
       const conditioning_test_id = condTest.id;
 
-      // 2. Prepara os dados de Força
       if (strengthTests.length > 0) {
         const strengthData = strengthTests.map(t => ({
           conditioning_test_id,
@@ -94,37 +93,32 @@ export default function ConditioningAssessment() {
         if (error) throw error;
       }
 
-      // 3. Prepara os dados de Resistência
       if (enduranceTests.length > 0) {
         const enduranceData = enduranceTests.map(t => ({
           conditioning_test_id,
           test_type: t.type,
           distance_m: t.distance ? parseFloat(t.distance) : null,
           time_seconds: t.time ? parseInt(t.time) : null,
+          repetitions: t.reps ? parseInt(t.reps) : null, 
           vo2_estimated: t.vo2 ? parseFloat(t.vo2) : null,
         }));
         const { error } = await supabase.from("endurance_tests").insert(enduranceData);
         if (error) throw error;
       }
 
-      // 4. Prepara os dados de Mobilidade
       if (mobilityTests.length > 0) {
         const mobilityData = mobilityTests.map(t => ({
           conditioning_test_id,
           test_name: t.name,
           score: t.score ? parseInt(t.score) : null,
-          notes: t.notes,
+          notes: t.notes, // As opções "Sim/Não" ou "Acima/Abaixo" serão salvas aqui
         }));
         const { error } = await supabase.from("mobility_tests").insert(mobilityData);
         if (error) throw error;
       }
 
-      setMessage("✅ Avaliação de Condicionamento salva com sucesso!");
-      
-      // Volta para o Dashboard ou vai para a próxima etapa
-      setTimeout(() => {
-        router.replace("/(protected)" as any); 
-      }, 1500);
+      setMessage("✅ Testes salvos com sucesso!");
+      setTimeout(() => { router.back(); }, 1500); // Retorna para o histórico automaticamente
 
     } catch (error: any) {
       setMessage("Erro ao salvar: " + error.message);
@@ -133,18 +127,80 @@ export default function ConditioningAssessment() {
     }
   };
 
+  // Renderizador de Botões Rápidos para Mobilidade
+  const renderMobilityOptions = (item: MobilityTest) => {
+    const isRackOrOverhead = item.name.includes("Rack") || item.name.includes("Overhead");
+    const isSquat = item.name.includes("Agachamento");
+
+    if (isRackOrOverhead) {
+      return (
+        <View style={styles.quickSelectRow}>
+          <TouchableOpacity 
+            style={[styles.quickButton, item.notes === "Sim" && styles.quickButtonActive]} 
+            onPress={() => updateMobility(item.id, "notes", "Sim")}
+          >
+            <Text style={[styles.quickButtonText, item.notes === "Sim" && styles.quickButtonTextActive]}>Sim</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.quickButton, item.notes === "Não" && styles.quickButtonActive]} 
+            onPress={() => updateMobility(item.id, "notes", "Não")}
+          >
+            <Text style={[styles.quickButtonText, item.notes === "Não" && styles.quickButtonTextActive]}>Não</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (isSquat) {
+      return (
+        <View style={{ flexDirection: "column", gap: 8, marginTop: 8 }}>
+          <TouchableOpacity 
+            style={[styles.quickButton, item.notes === "Acima da linha" && styles.quickButtonActive]} 
+            onPress={() => updateMobility(item.id, "notes", "Acima da linha")}
+          >
+            <Text style={[styles.quickButtonText, item.notes === "Acima da linha" && styles.quickButtonTextActive]}>Acima da linha</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.quickButton, item.notes === "Na linha" && styles.quickButtonActive]} 
+            onPress={() => updateMobility(item.id, "notes", "Na linha")}
+          >
+            <Text style={[styles.quickButtonText, item.notes === "Na linha" && styles.quickButtonTextActive]}>Na linha</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.quickButton, item.notes === "Abaixo da linha" && styles.quickButtonActive]} 
+            onPress={() => updateMobility(item.id, "notes", "Abaixo da linha")}
+          >
+            <Text style={[styles.quickButtonText, item.notes === "Abaixo da linha" && styles.quickButtonTextActive]}>Abaixo da linha</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    // Padrão: Toque no chão (Campo de texto para digitar a distância)
+    return (
+      <View style={styles.row}>
+        <TextInput 
+          style={[styles.input, { flex: 1 }]} 
+          placeholder="Distância da mão até o chão (ex: 5cm, Tocou)" 
+          value={item.notes} 
+          onChangeText={(v) => updateMobility(item.id, "notes", v)} 
+        />
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#f8fafc" }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         
         <View style={styles.header}>
           <Text style={styles.title}>Capacidades Físicas</Text>
-          <Text style={styles.subtitle}>Selecione os testes realizados neste ciclo de Cross.</Text>
+          <Text style={styles.subtitle}>Registre os resultados de performance do aluno.</Text>
         </View>
 
         {message ? <Text style={styles.message}>{message}</Text> : null}
 
-        {/* --- SANFONA: FORÇA --- */}
+        {/* --- FORÇA --- */}
         <TouchableOpacity style={styles.accordionHeader} onPress={() => setOpenSection(openSection === "strength" ? null : "strength")}>
           <Text style={styles.accordionTitle}>💪 Testes de Força</Text>
           <Text>{openSection === "strength" ? "▼" : "▶"}</Text>
@@ -173,9 +229,9 @@ export default function ConditioningAssessment() {
           </View>
         )}
 
-        {/* --- SANFONA: RESISTÊNCIA --- */}
+        {/* --- RESISTÊNCIA / CÁRDIO --- */}
         <TouchableOpacity style={styles.accordionHeader} onPress={() => setOpenSection(openSection === "endurance" ? null : "endurance")}>
-          <Text style={styles.accordionTitle}>🏃 Resistência / Cardio</Text>
+          <Text style={styles.accordionTitle}>🏃 Resistência Cárdio</Text>
           <Text>{openSection === "endurance" ? "▼" : "▶"}</Text>
         </TouchableOpacity>
         
@@ -192,17 +248,22 @@ export default function ConditioningAssessment() {
             {enduranceTests.map((item) => (
               <View key={item.id} style={styles.testCard}>
                 <Text style={styles.testCardTitle}>{item.type}</Text>
-                <View style={styles.row}>
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Distância (m)" keyboardType="numeric" value={item.distance} onChangeText={(v) => updateEndurance(item.id, "distance", v)} />
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Tempo (seg)" keyboardType="numeric" value={item.time} onChangeText={(v) => updateEndurance(item.id, "time", v)} />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="VO2 Est." keyboardType="numeric" value={item.vo2} onChangeText={(v) => updateEndurance(item.id, "vo2", v)} />
-                </View>
+                {item.type === "Corrida" ? (
+                  <View style={styles.row}>
+                    <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Distância (m)" keyboardType="numeric" value={item.distance} onChangeText={(v) => updateEndurance(item.id, "distance", v)} />
+                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Tempo (seg)" keyboardType="numeric" value={item.time} onChangeText={(v) => updateEndurance(item.id, "time", v)} />
+                  </View>
+                ) : (
+                  <View style={styles.row}>
+                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Quantidade (Reps em 1 minuto)" keyboardType="numeric" value={item.reps} onChangeText={(v) => updateEndurance(item.id, "reps", v)} />
+                  </View>
+                )}
               </View>
             ))}
           </View>
         )}
 
-        {/* --- SANFONA: MOBILIDADE --- */}
+        {/* --- MOBILIDADE --- */}
         <TouchableOpacity style={styles.accordionHeader} onPress={() => setOpenSection(openSection === "mobility" ? null : "mobility")}>
           <Text style={styles.accordionTitle}>🧘 Mobilidade</Text>
           <Text>{openSection === "mobility" ? "▼" : "▶"}</Text>
@@ -221,10 +282,7 @@ export default function ConditioningAssessment() {
             {mobilityTests.map((item) => (
               <View key={item.id} style={styles.testCard}>
                 <Text style={styles.testCardTitle}>{item.name}</Text>
-                <View style={styles.row}>
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Score (0-10)" keyboardType="numeric" value={item.score} onChangeText={(v) => updateMobility(item.id, "score", v)} />
-                  <TextInput style={[styles.input, { flex: 2 }]} placeholder="Notas / Dificuldade" value={item.notes} onChangeText={(v) => updateMobility(item.id, "notes", v)} />
-                </View>
+                {renderMobilityOptions(item)}
               </View>
             ))}
           </View>
@@ -259,8 +317,13 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between" },
   input: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, fontSize: 14 },
   
+  quickSelectRow: { flexDirection: "row", gap: 10, marginTop: 8 },
+  quickButton: { flex: 1, backgroundColor: "#f1f5f9", paddingVertical: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" },
+  quickButtonActive: { backgroundColor: "#2563eb", borderColor: "#1d4ed8" },
+  quickButtonText: { color: "#475569", fontWeight: "600" },
+  quickButtonTextActive: { color: "#fff" },
+
   saveButton: { backgroundColor: "#2563eb", height: 56, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 24, elevation: 3 },
   saveButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
-
 
