@@ -275,19 +275,19 @@ export default function Index() {
               </View>
             </TouchableOpacity>
 
-            <View style={styles.clientActionsArea}>
-              {/* Botão 1: Histórico/Gráficos (Bioimpedância) */}
+     <View style={styles.clientActionsArea}>
+              {/* Botão 1: Evolução Corporal (Bioimpedância) */}
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}
               >
-                <Text style={styles.actionEmoji}>📈</Text>
-                <Text style={styles.actionLabel}>Evolução</Text>
+                <Text style={styles.actionEmoji}>📉</Text>
+                <Text style={styles.actionLabel}>Corporal</Text>
               </TouchableOpacity>
 
               <View style={styles.verticalDivider} />
 
-              {/* Botão 2: Nova Avaliação (Bioimpedância) */}
+              {/* Botão 2: Nova Avaliação Corporal */}
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}
@@ -298,24 +298,24 @@ export default function Index() {
 
               <View style={styles.verticalDivider} />
 
-              {/* 🔴 NOVO Botão 3: Testes Físicos (Condicionamento Independente) */}
+              {/* 🔴 NOVO Botão 3: EVOLUÇÃO DO CONDICIONAMENTO */}
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}
+              >
+                <Text style={styles.actionEmoji}>📈</Text>
+                <Text style={styles.actionLabel}>Condic.</Text>
+              </TouchableOpacity>
+
+              <View style={styles.verticalDivider} />
+
+              {/* Botão 4: Novo Teste Físico */}
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}
               >
                 <Text style={styles.actionEmoji}>💪</Text>
-                <Text style={styles.actionLabel}>Testes</Text>
-              </TouchableOpacity>
-
-              <View style={styles.verticalDivider} />
-
-              {/* Botão 4: Perfil */}
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}
-              >
-                <Text style={styles.actionEmoji}>⚙️</Text>
-                <Text style={styles.actionLabel}>Perfil</Text>
+                <Text style={styles.actionLabel}>Testar</Text>
               </TouchableOpacity>
             </View>
           </View>
