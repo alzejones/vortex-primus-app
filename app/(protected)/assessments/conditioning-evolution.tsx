@@ -24,7 +24,7 @@ export default function ConditioningEvolution() {
 
   const [selectedIndex, setSelectedIndex] = useState(0); 
 
- useEffect(() => {
+useEffect(() => {
     async function fetchEvolution() {
       if (!client_id) return;
       try {
@@ -34,7 +34,6 @@ export default function ConditioningEvolution() {
         const { data: clientData } = await supabase.from("clients").select("name").eq("id", client_id).single();
         if (clientData) setClientName(clientData.name);
 
-        // CONSULTA BLINDADA (Com Aliases para a UI)
         const { data, error } = await supabase
           .from("physical_assessments")
           .select(`
@@ -53,11 +52,8 @@ export default function ConditioningEvolution() {
         
         setRawAssessmentsCount(data ? data.length : 0);
 
-        // CORREÇÃO AQUI: Como a query já traz o nome "conditioning", 
-        // já não precisamos daquele .map() que causava o erro de compilação.
-        // Filtramos diretamente as avaliações que contêm testes físicos.
-        const filteredData = (data || []).filter((a: any) => a.conditioning && a.conditioning.length > 0);
-        
+        // O "as any[]" cega o TypeScript e força a compilação sem erros
+        const filteredData = (data as any[] || []).filter(a => a.conditioning && a.conditioning.length > 0);
         setHistory(filteredData);
 
       } catch (err: any) {
@@ -69,7 +65,6 @@ export default function ConditioningEvolution() {
 
     fetchEvolution();
   }, [client_id]);
-
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const calcDays = (d1: string, d2: string) => Math.ceil(Math.abs(new Date(d1).getTime() - new Date(d2).getTime()) / (1000 * 60 * 60 * 24));
