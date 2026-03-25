@@ -17,46 +17,37 @@ export default function ConditioningEvolution() {
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<any[]>([]);
   const [clientName, setClientName] = useState("");
-  
-  const [debugError, setDebugError] = useState<string | null>(null);
-  const [rawAssessmentsCount, setRawAssessmentsCount] = useState(0);
 
-  const [selectedIndex, setSelectedIndex] = useState(0); 
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-useEffect(() => {
+  useEffect(() => {
     async function fetchEvolution() {
       if (!client_id) return;
       try {
         setLoading(true);
-        setDebugError(null);
 
         const { data: clientData } = await supabase.from("clients").select("name").eq("id", client_id).single();
         if (clientData) setClientName(clientData.name);
 
-        // 🔴 CONSULTA LIMPA (Sem as gambiarras do código anterior)
         const { data, error } = await supabase
           .from("physical_assessments")
           .select(`
             id, date,
             conditioning:conditioning_tests (
               id,
-              strength:strength_tests (exercise_name, load_kg, repetitions),
-              endurance:endurance_tests (test_type, distance_m, time_seconds, repetitions),
-              mobility:mobility_tests (test_name, notes)
+              strength:strength_tests (exercise_name, load_kg, repetitions)
             )
           `)
           .eq("client_id", client_id)
-          .order("date", { ascending: false }); 
+          .order("date", { ascending: false });
 
         if (error) throw error;
-        
-        setRawAssessmentsCount(data ? data.length : 0);
 
-        const filteredData = (data as any[] || []).filter((a: any) => a.conditioning && a.conditioning.length > 0);
+        // Filtra apenas avaliações que tenham o bloco de condicionamento
+        const filteredData = (data as any[] || []).filter(a => a.conditioning && a.conditioning.length > 0);
         setHistory(filteredData);
-
       } catch (err: any) {
-        setDebugError(err.message || JSON.stringify(err));
+        console.log("Erro:", err);
       } finally {
         setLoading(false);
       }
@@ -65,146 +56,168 @@ useEffect(() => {
     fetchEvolution();
   }, [client_id]);
 
-
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const calcDays = (d1: string, d2: string) => Math.ceil(Math.abs(new Date(d1).getTime() - new Date(d2).getTime()) / (1000 * 60 * 60 * 24));
+  
   const getDiff = (curr: any, prev: any) => {
-    if (curr === null || curr === undefined) return "-";
-    if (prev === null || prev === undefined) return curr;
+    if (curr === null || curr === undefined || curr === "") return "-";
+    if (prev === null || prev === undefined || prev === "") return curr;
     const diff = Number(curr) - Number(prev);
+    if (isNaN(diff)) return "-"; // Caso seja texto, como "Max" ou "Falha"
     return diff > 0 ? `+${diff}` : diff;
   };
 
-  const renderComparisonCard = (currentAss: any, previousAss: any, title: string, subtitle: string) => {
-    if (!currentAss) return null;
+  const getDiffColor = (val: string | number) => {
+    if (val === "-") return "#94a3b8";
+    if (String(val).startsWith("+")) return "#16a34a"; // Verde para ganho
+    if (String(val).startsWith("-")) return "#dc2626"; // Vermelho para perda
+    return "#334155";
+  };
+
+  // ==========================================================
+  // RENDERIZAÇÃO DA TABELA DE FORÇA (EXATAMENTE COMO SOLICITADO)
+  // ==========================================================
+  const renderStrengthCard = () => {
+    if (history.length === 0) return null;
+
+    const currentAss = history[selectedIndex];
+    const previousAss = history.length > selectedIndex + 1 ? history[selectedIndex + 1] : null;
+    const initialAss = history.length > 1 ? history[history.length - 1] : null;
+
+    if (!currentAss || !currentAss.conditioning || currentAss.conditioning.length === 0) return null;
+
     const condCurr = currentAss.conditioning[0];
     const condPrev = previousAss ? previousAss.conditioning[0] : null;
+    const condInit = initialAss ? initialAss.conditioning[0] : null;
+
     const dateCurr = formatDate(currentAss.date);
     const datePrev = previousAss ? formatDate(previousAss.date) : "--/--/--";
-    const daysDiff = previousAss ? calcDays(currentAss.date, previousAss.date) : 0;
+    
+    const daysPrev = previousAss ? calcDays(currentAss.date, previousAss.date) : 0;
+    const daysInit = initialAss ? calcDays(currentAss.date, initialAss.date) : 0;
+
+    if (!condCurr.strength || condCurr.strength.length === 0) {
+      return <Text style={{ padding: 20, textAlign: 'center', color: '#64748b' }}>Nenhum teste de força registrado nesta data.</Text>;
+    }
 
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardSubtitle}>{subtitle}</Text>
+          <Text style={styles.cardTitle}>Teste de Força</Text>
         </View>
 
-        {/* --- FORÇA --- */}
-        {condCurr.strength && condCurr.strength.length > 0 && (
-          <View style={styles.tableSection}>
-            <Text style={styles.sectionTitle}>💪 Força</Text>
-            <View style={styles.tableRowHeader}>
-              <View style={[styles.colName, { borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.colHeaderText}>Exercício</Text></View>
-              <View style={styles.colData}><Text style={styles.colDateText}>Atual</Text><Text style={styles.colDateSub}>{dateCurr}</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Carga</Text><Text style={styles.metricsTitle}>Reps</Text></View></View>
-              <View style={styles.colData}><Text style={styles.colDateText}>Anterior</Text><Text style={styles.colDateSub}>{datePrev}</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Carga</Text><Text style={styles.metricsTitle}>Reps</Text></View></View>
-              <View style={styles.colData}><Text style={[styles.colDateText, { color: '#16a34a' }]}>Evolução</Text><Text style={styles.colDateSub}>{daysDiff} dias</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Carga</Text><Text style={styles.metricsTitle}>Reps</Text></View></View>
+        {/* Scroll Horizontal para não espremer os dados no celular */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.tableContainer}>
+            
+            {/* LINHA DE CABEÇALHOS (AS 3 COLUNAS PRINCIPAIS) */}
+            <View style={styles.headerRow}>
+              {/* COLUNA 1: ATUAL */}
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Data da Última</Text>
+                <Text style={styles.headerDate}>{dateCurr}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1.5, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Carga</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
+                </View>
+              </View>
+
+              {/* COLUNA 2: ANTERIOR */}
+              <View style={[styles.headerCell, { width: 100, backgroundColor: '#f8fafc' }]}>
+                <Text style={styles.headerLabel}>Avaliação Anterior</Text>
+                <Text style={styles.headerDate}>{datePrev}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Carga</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
+                </View>
+              </View>
+
+              {/* COLUNA 3: EVOLUÇÃO (DIVIDIDA EM 2) */}
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Evolução no Período</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                  <Text style={styles.headerDate}>{daysPrev} Dias</Text>
+                  <Text style={styles.headerDate}>{daysInit} Dias</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Total</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Cg | Rp</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Cg | Rp</Text>
+                </View>
+              </View>
             </View>
+
+            {/* LINHAS DE DADOS (OS EXERCÍCIOS) */}
             {condCurr.strength.map((item: any, i: number) => {
+              // Busca os dados deste mesmo exercício nas avaliações antigas
               const prevItem = condPrev?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
-              return (
-                <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.rowEven]}>
-                  <View style={[styles.colName, { borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.exerciseName}>{item.exercise_name}</Text></View>
-                  <View style={styles.colData}><View style={styles.metricsHeader}><Text style={styles.valueText}>{item.load_kg || '-'}</Text><Text style={styles.valueText}>{item.repetitions || '-'}</Text></View></View>
-                  <View style={styles.colData}><View style={styles.metricsHeader}><Text style={styles.valueText}>{prevItem?.load_kg || '-'}</Text><Text style={styles.valueText}>{prevItem?.repetitions || '-'}</Text></View></View>
-                  <View style={styles.colData}><View style={styles.metricsHeader}><Text style={styles.diffText}>{getDiff(item.load_kg, prevItem?.load_kg)}</Text><Text style={styles.diffText}>{getDiff(item.repetitions, prevItem?.repetitions)}</Text></View></View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+              const initItem = condInit?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
 
-        {/* --- RESISTÊNCIA --- */}
-        {condCurr.endurance && condCurr.endurance.length > 0 && (
-          <View style={styles.tableSection}>
-            <Text style={styles.sectionTitle}>🏃 Resistência Cárdio</Text>
-            <View style={styles.tableRowHeader}>
-              <View style={[styles.colName, { borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.colHeaderText}>Exercício</Text></View>
-              <View style={styles.colData}><Text style={styles.colDateText}>Atual</Text><Text style={styles.colDateSub}>{dateCurr}</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Dist/Reps</Text><Text style={styles.metricsTitle}>Tempo</Text></View></View>
-              <View style={styles.colData}><Text style={styles.colDateText}>Anterior</Text><Text style={styles.colDateSub}>{datePrev}</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Dist/Reps</Text><Text style={styles.metricsTitle}>Tempo</Text></View></View>
-              <View style={styles.colData}><Text style={[styles.colDateText, { color: '#16a34a' }]}>Evolução</Text><Text style={styles.colDateSub}>{daysDiff} dias</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Dist/Reps</Text><Text style={styles.metricsTitle}>Tempo</Text></View></View>
-            </View>
-            {condCurr.endurance.map((item: any, i: number) => {
-              const prevItem = condPrev?.endurance?.find((p: any) => p.test_type === item.test_type);
-              const isRun = item.test_type === "Corrida";
-              const currVal1 = isRun ? item.distance_m : item.repetitions;
-              const prevVal1 = isRun ? prevItem?.distance_m : prevItem?.repetitions;
-              const currVal2 = isRun ? item.time_seconds : "-";
-              const prevVal2 = isRun ? prevItem?.time_seconds : "-";
-              return (
-                <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.rowEven]}>
-                  <View style={[styles.colName, { borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.exerciseName}>{item.test_type}</Text></View>
-                  <View style={styles.colData}><View style={styles.metricsHeader}><Text style={styles.valueText}>{currVal1 || '-'}</Text><Text style={styles.valueText}>{currVal2 || '-'}</Text></View></View>
-                  <View style={styles.colData}><View style={styles.metricsHeader}><Text style={styles.valueText}>{prevVal1 || '-'}</Text><Text style={styles.valueText}>{prevVal2 || '-'}</Text></View></View>
-                  <View style={styles.colData}><View style={styles.metricsHeader}><Text style={styles.diffText}>{getDiff(currVal1, prevVal1)}</Text><Text style={styles.diffText}>{getDiff(currVal2, prevVal2)}</Text></View></View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+              // Cálculos vs Anterior
+              const diffLoadPrev = getDiff(item.load_kg, prevItem?.load_kg);
+              const diffRepsPrev = getDiff(item.repetitions, prevItem?.repetitions);
 
-        {/* --- MOBILIDADE --- */}
-        {condCurr.mobility && condCurr.mobility.length > 0 && (
-          <View style={styles.tableSection}>
-            <Text style={styles.sectionTitle}>🧘 Mobilidade</Text>
-            <View style={styles.tableRowHeader}>
-              <View style={[styles.colName, { flex: 1.5, borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.colHeaderText}>Exercício</Text></View>
-              <View style={[styles.colData, { flex: 1.2 }]}><Text style={styles.colDateText}>Atual</Text></View>
-              <View style={[styles.colData, { flex: 1.2 }]}><Text style={styles.colDateText}>Anterior</Text></View>
-            </View>
-            {condCurr.mobility.map((item: any, i: number) => {
-              const prevItem = condPrev?.mobility?.find((p: any) => p.test_name === item.test_name);
+              // Cálculos vs Inicial (Total)
+              const diffLoadInit = getDiff(item.load_kg, initItem?.load_kg);
+              const diffRepsInit = getDiff(item.repetitions, initItem?.repetitions);
+
               return (
-                <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.rowEven]}>
-                  <View style={[styles.colName, { flex: 1.5, borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.exerciseName}>{item.test_name}</Text></View>
-                  <View style={[styles.colData, { flex: 1.2 }]}><Text style={styles.valueText}>{item.notes || '-'}</Text></View>
-                  <View style={[styles.colData, { flex: 1.2 }]}><Text style={styles.valueText}>{prevItem?.notes || '-'}</Text></View>
+                <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
+                  
+                  {/* DADOS COLUNA 1 */}
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <Text style={[styles.exerciseText, { flex: 1.5 }]} numberOfLines={1}>{item.exercise_name}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{item.load_kg || '-'}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{item.repetitions || '-'}</Text>
+                  </View>
+
+                  {/* DADOS COLUNA 2 */}
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: '#f8fafc' }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevItem?.load_kg || '-'}</Text>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevItem?.repetitions || '-'}</Text>
+                  </View>
+
+                  {/* DADOS COLUNA 3 */}
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    {/* Diff vs Anterior */}
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffLoadPrev) }]}>{diffLoadPrev}</Text>
+                      <Text style={styles.divider}>|</Text>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffRepsPrev) }]}>{diffRepsPrev}</Text>
+                    </View>
+                    {/* Diff vs Total */}
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffLoadInit) }]}>{diffLoadInit}</Text>
+                      <Text style={styles.divider}>|</Text>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffRepsInit) }]}>{diffRepsInit}</Text>
+                    </View>
+                  </View>
+
                 </View>
               );
             })}
           </View>
-        )}
+        </ScrollView>
       </View>
     );
   };
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color="#2563eb" /><Text style={{ marginTop: 12 }}>Analisando performance...</Text></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color="#2563eb" /></View>;
   }
 
-  if (debugError || history.length === 0) {
+  if (history.length === 0) {
     return (
       <View style={styles.center}>
-        <Text style={{ fontSize: 40, marginBottom: 10 }}>🕵️‍♂️</Text>
-        <Text style={styles.emptyTitle}>Modo Diagnóstico</Text>
-        
-        {debugError ? (
-          <View style={{ backgroundColor: '#fef2f2', padding: 16, borderRadius: 8, marginTop: 16, width: '100%', borderWidth: 1, borderColor: '#ef4444' }}>
-            <Text style={{ color: '#b91c1c', fontWeight: 'bold', marginBottom: 8 }}>ERRO NO BANCO DE DADOS:</Text>
-            <Text style={{ color: '#ef4444' }}>{debugError}</Text>
-          </View>
-        ) : (
-          <View style={{ backgroundColor: '#fffbeb', padding: 16, borderRadius: 8, marginTop: 16, width: '100%', borderWidth: 1, borderColor: '#f59e0b' }}>
-            <Text style={{ color: '#b45309', fontWeight: 'bold', marginBottom: 8 }}>LEITURA DOS DADOS:</Text>
-            <Text style={{ color: '#d97706', marginBottom: 4 }}>Total de Avaliações criadas: {rawAssessmentsCount}</Text>
-            <Text style={{ color: '#d97706' }}>Testes Físicos encontrados nelas: {history.length}</Text>
-          </View>
-        )}
-
-        <Text style={{ color: "#64748b", marginTop: 20, textAlign: 'center', marginHorizontal: 20 }}>
-          {rawAssessmentsCount > 0 && history.length === 0 
-            ? "O evento principal foi criado, mas os testes físicos não foram anexados. O erro está no momento de Salvar a avaliação." 
-            : "Este aluno realmente não tem nenhuma avaliação física criada no sistema."}
-        </Text>
-        
-        <TouchableOpacity style={[styles.backBtn, { marginTop: 24 }]} onPress={() => router.back()}><Text style={{ color: "#fff", fontWeight: "bold" }}>Voltar ao Dashboard</Text></TouchableOpacity>
+        <Text style={styles.emptyTitle}>Nenhum teste encontrado</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}><Text style={{ color: "#fff" }}>Voltar</Text></TouchableOpacity>
       </View>
     );
   }
-
-  const currentAss = history[selectedIndex];
-  const previousAss = history.length > selectedIndex + 1 ? history[selectedIndex + 1] : null;
-  const initialAss = history.length > 1 ? history[history.length - 1] : null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f1f5f9", paddingTop: Platform.OS === "android" ? 40 : 0 }}>
@@ -212,19 +225,15 @@ useEffect(() => {
         <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
           <Text style={{ color: "#2563eb", fontWeight: "700" }}>← Voltar para {clientName}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Evolução de Performance</Text>
-        <Text style={styles.subtitle}>Detalhes e Comparativos da Avaliação Selecionada.</Text>
+        <Text style={styles.title}>Condicionamento Físico</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
-        {renderComparisonCard(currentAss, previousAss, "Evolução Recente", "Atual vs Anterior")}
         
-        {initialAss && previousAss && currentAss.id !== initialAss.id && (
-          <View style={{ marginTop: 16 }}>
-             {renderComparisonCard(currentAss, initialAss, "Evolução Histórica", "Atual vs Primeira Avaliação")}
-          </View>
-        )}
+        {/* A TABELA DE FORÇA SOLICITADA */}
+        {renderStrengthCard()}
 
+        {/* LISTA DE DATAS (HISTÓRICO) PARA TROCAR A "ATUAL" */}
         <Text style={styles.listTitle}>📅 Histórico de Avaliações</Text>
         
         {history.map((assessment, index) => (
@@ -232,7 +241,6 @@ useEffect(() => {
             <View>
               <Text style={[styles.historyDate, selectedIndex === index && { color: '#1e40af' }]}>{formatDate(assessment.date)}</Text>
               {index === 0 && <Text style={styles.historyTag}>Mais Recente</Text>}
-              {index === history.length - 1 && history.length > 1 && <Text style={styles.historyTag}>Primeiro Teste</Text>}
             </View>
             <TouchableOpacity 
               style={[styles.detailsBtn, selectedIndex === index && styles.detailsBtnActive]} 
@@ -251,31 +259,53 @@ useEffect(() => {
 
 const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc", padding: 20 },
-  backBtn: { backgroundColor: "#2563eb", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
+  backBtn: { backgroundColor: "#2563eb", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, marginTop: 20 },
   emptyTitle: { fontSize: 20, fontWeight: "bold", color: "#1e293b" },
   header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
-  title: { fontSize: 26, fontWeight: "900", color: "#0f172a", letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: "#64748b", marginTop: 4 },
-  card: { backgroundColor: "#fff", borderRadius: 16, marginBottom: 16, overflow: "hidden", borderWidth: 1, borderColor: "#cbd5e1", elevation: 3 },
-  cardHeader: { backgroundColor: "#1e293b", padding: 16 },
-  cardTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
-  cardSubtitle: { color: "#94a3b8", fontSize: 12, marginTop: 2 },
-  tableSection: { marginTop: 16, paddingBottom: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: "800", color: "#334155", marginLeft: 12, marginBottom: 12 },
-  tableRowHeader: { flexDirection: "row", backgroundColor: "#f8fafc", borderTopWidth: 1, borderBottomWidth: 1, borderColor: "#e2e8f0", paddingVertical: 8 },
-  tableRow: { flexDirection: "row", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
-  rowEven: { backgroundColor: "#fafafa" },
-  colName: { flex: 1.1, paddingHorizontal: 8, justifyContent: "center" },
-  colData: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
-  colHeaderText: { fontSize: 11, fontWeight: "700", color: "#64748b", textTransform: "uppercase" },
-  colDateText: { fontSize: 11, fontWeight: "800", color: "#0f172a" },
-  colDateSub: { fontSize: 10, color: "#94a3b8", marginBottom: 6 },
-  metricsHeader: { flexDirection: "row", width: "100%", justifyContent: "space-between", paddingHorizontal: 4 },
-  metricsTitle: { fontSize: 9, color: "#94a3b8", fontWeight: "700", width: "45%", textAlign: "center" },
-  exerciseName: { fontSize: 12, fontWeight: "700", color: "#1e293b" },
-  valueText: { fontSize: 13, fontWeight: "600", color: "#334155", width: "45%", textAlign: "center" },
-  diffText: { fontSize: 13, fontWeight: "800", color: "#16a34a", width: "45%", textAlign: "center" },
-  listTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginTop: 24, marginBottom: 12, marginLeft: 4 },
+  title: { fontSize: 24, fontWeight: "900", color: "#0f172a", letterSpacing: -0.5 },
+  
+  card: { backgroundColor: "#fff", borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: "#cbd5e1", overflow: "hidden" },
+  cardHeader: { backgroundColor: "#1e293b", padding: 12 },
+  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "800", textTransform: "uppercase" },
+  
+  tableContainer: {
+    flexDirection: 'column',
+    minWidth: 460, // Força a largura mínima para habilitar o scroll horizontal e não espremer
+  },
+  headerRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 2,
+    borderBottomColor: '#cbd5e1',
+    backgroundColor: '#fff',
+  },
+  headerCell: {
+    padding: 10,
+    borderRightWidth: 1,
+    borderRightColor: '#e2e8f0',
+  },
+  headerLabel: { fontSize: 11, fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: 4 },
+  headerDate: { fontSize: 13, fontWeight: "800", color: "#0f172a" },
+  
+  subHeaderArea: { flexDirection: 'row', marginTop: 8, justifyContent: 'space-between' },
+  subHeaderText: { fontSize: 10, fontWeight: "700", color: "#475569", textAlign: 'center' },
+  
+  dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  rowEven: { backgroundColor: '#fafafa' },
+  
+  dataCell: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRightWidth: 1,
+    borderRightColor: '#e2e8f0',
+    alignItems: 'center',
+  },
+  
+  exerciseText: { fontSize: 13, fontWeight: "700", color: "#1e293b", textAlign: 'left' },
+  valueText: { fontSize: 13, fontWeight: "600", color: "#334155", textAlign: 'center' },
+  diffText: { fontSize: 12, fontWeight: "800", textAlign: 'center' },
+  divider: { fontSize: 12, color: '#cbd5e1', marginHorizontal: 4 },
+
+  listTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginTop: 10, marginBottom: 12, marginLeft: 4 },
   historyItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: "#e2e8f0" },
   historyItemActive: { borderColor: "#3b82f6", backgroundColor: "#eff6ff" },
   historyDate: { fontSize: 16, fontWeight: "800", color: "#334155" },
