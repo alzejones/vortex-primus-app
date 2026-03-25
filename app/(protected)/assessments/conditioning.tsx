@@ -2,371 +2,444 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { supabase } from "../../../lib/supabase";
 
-type StrengthTest = { id: string; exercise: string; load: string; reps: string; rm: string };
-type EnduranceTest = { id: string; type: string; distance: string; time: string; reps: string; vo2: string };
-type MobilityTest = { id: string; name: string; score: string; notes: string };
-
-export default function ConditioningAssessment() {
-  // 🔴 Agora recebemos o ID do Aluno direto do Dashboard
+export default function ConditioningEvolution() {
   const { client_id } = useLocalSearchParams();
-  
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<any[]>([]);
   const [clientName, setClientName] = useState("");
 
-  // Funções de Data
-  const formatDateBR = (date: Date) => {
-    const d = date.getDate().toString().padStart(2, '0');
-    const m = (date.getMonth() + 1).toString().padStart(2, '0');
-    const y = date.getFullYear();
-    const h = date.getHours().toString().padStart(2, '0');
-    const min = date.getMinutes().toString().padStart(2, '0');
-    return `${d}/${m}/${y} ${h}:${min}`;
-  };
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const parseDateBRToISO = (str: string) => {
-    try {
-      const [datePart, timePart] = str.split(' ');
-      const [d, m, y] = datePart.split('/');
-      const [h, min] = timePart.split(':');
-      return new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min)).toISOString();
-    } catch (e) {
-      return new Date().toISOString();
-    }
-  };
-
-  const [assessmentDate, setAssessmentDate] = useState(formatDateBR(new Date()));
-
-  function handleDateChange(text: string) {
-    let v = text.replace(/\D/g, "");
-    if (v.length > 12) v = v.substring(0, 12);
-    v = v.replace(/^(\d{2})(\d)/, "$1/$2");
-    v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
-    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4})(\d)/, "$1/$2/$3 $4");
-    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2})(\d)/, "$1/$2/$3 $4:$5");
-    setAssessmentDate(v);
-  }
-
-  const [openSection, setOpenSection] = useState<"strength" | "endurance" | "mobility" | null>("strength");
-
-  const [strengthTests, setStrengthTests] = useState<StrengthTest[]>([]);
-  const [enduranceTests, setEnduranceTests] = useState<EnduranceTest[]>([]);
-  const [mobilityTests, setMobilityTests] = useState<MobilityTest[]>([]);
-
-  const strengthOptions = ["Flexão", "Supino", "Agachamento", "Bíceps", "Abdominal"];
-  const enduranceOptions = ["Corrida", "Burpee (1 min)", "Abdominal (1 min)", "Agachamento (1 min)"];
-  const mobilityOptions = [
-    "Toque chão (Pernas esticadas)", 
-    "Agachamentos (Profundidade)", 
-    "Cotovelos altos (Clean/Front Squat)", 
-    "Ombros/Escápulas (Barra Overhead)"
-  ];
-
-  // Busca o nome do aluno ao abrir a tela
   useEffect(() => {
-    if (client_id) {
-      supabase.from("clients").select("name").eq("id", client_id).single()
-        .then(({ data }) => { if (data) setClientName(data.name); });
+    async function fetchEvolution() {
+      if (!client_id) return;
+      try {
+        setLoading(true);
+
+        const { data: clientData } = await supabase.from("clients").select("name").eq("id", client_id).single();
+        if (clientData) setClientName(clientData.name);
+
+        // 🔴 BUSCA COMPLETA: Força, Resistência e Mobilidade
+        const { data, error } = await supabase
+          .from("physical_assessments")
+          .select(`
+            id, date,
+            conditioning:conditioning_tests (
+              id,
+              strength:strength_tests (exercise_name, load_kg, repetitions),
+              endurance:endurance_tests (test_type, distance_m, time_seconds, repetitions),
+              mobility:mobility_tests (test_name, notes)
+            )
+          `)
+          .eq("client_id", client_id)
+          .order("date", { ascending: false });
+
+        if (error) throw error;
+
+        const filteredData = (data as any[] || []).filter(a => a.conditioning && a.conditioning.length > 0);
+        setHistory(filteredData);
+      } catch (err: any) {
+        console.log("Erro:", err);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    fetchEvolution();
   }, [client_id]);
 
-  const addStrength = (exercise: string) => setStrengthTests([...strengthTests, { id: Date.now().toString(), exercise, load: "", reps: "", rm: "" }]);
-  const addEndurance = (type: string) => setEnduranceTests([...enduranceTests, { id: Date.now().toString(), type, distance: "", time: "", reps: "", vo2: "" }]);
-  const addMobility = (name: string) => setMobilityTests([...mobilityTests, { id: Date.now().toString(), name, score: "", notes: "" }]);
-
-  const updateStrength = (id: string, field: keyof StrengthTest, value: string) => setStrengthTests(strengthTests.map(t => t.id === id ? { ...t, [field]: value } : t));
-  const updateEndurance = (id: string, field: keyof EnduranceTest, value: string) => setEnduranceTests(enduranceTests.map(t => t.id === id ? { ...t, [field]: value } : t));
-  const updateMobility = (id: string, field: keyof MobilityTest, value: string) => setMobilityTests(mobilityTests.map(t => t.id === id ? { ...t, [field]: value } : t));
-
-const handleSaveAll = async () => {
-    if (!client_id) {
-      setMessage("Erro: ID do Aluno não encontrado.");
-      return;
-    }
-
-    setLoading(true);
-    setMessage("");
-
-    try {
-      // Pega o ID do treinador autenticado
-      const { data: { user } } = await supabase.auth.getUser();
-      let trainerId = null;
-      if (user) {
-        const { data: trainer } = await supabase.from('trainers').select('id').eq('user_id', user.id).single();
-        if (trainer) trainerId = trainer.id;
-      }
-
-      // 1. Cria o "Evento" de Avaliação principal independente
-      const isoDate = parseDateBRToISO(assessmentDate);
-      const { data: newAssessment, error: assessError } = await supabase
-        .from("physical_assessments")
-        .insert([{ 
-          client_id, 
-          date: isoDate,
-          trainer_id: trainerId,
-          assessor_name: user?.email || "Treinador"
-        }])
-        .select()
-        .single();
-
-      if (assessError) throw assessError;
-      const assessment_id = newAssessment.id;
-
-      // 2. Cria a pasta de condicionamento amarrada a este evento
-      const { data: condTest, error: condError } = await supabase
-        .from("conditioning_tests")
-        .insert([{ assessment_id }])
-        .select()
-        .single();
-
-      if (condError) throw condError;
-      const conditioning_test_id = condTest.id;
-
-      // 3. Salva os testes (AGORA COM BLOQUEIO RIGOROSO DE ERROS)
-      if (strengthTests.length > 0) {
-        const strengthData = strengthTests.map(t => ({
-          conditioning_test_id, 
-          exercise_name: t.exercise, 
-          load_kg: t.load ? parseFloat(t.load) : null, 
-          repetitions: t.reps || null // Passando como texto (compatível com o banco)
-        }));
-        
-        // Se houver erro, joga para a tela imediatamente
-        const { error: errStr } = await supabase.from("strength_tests").insert(strengthData);
-        if (errStr) throw errStr; 
-      }
-
-      if (enduranceTests.length > 0) {
-        const enduranceData = enduranceTests.map(t => ({
-          conditioning_test_id, 
-          test_type: t.type, 
-          distance_m: t.distance ? parseFloat(t.distance) : null, 
-          time_seconds: t.time ? parseInt(t.time) : null, 
-          repetitions: t.reps || null // Passando como texto
-        }));
-        
-        const { error: errEnd } = await supabase.from("endurance_tests").insert(enduranceData);
-        if (errEnd) throw errEnd;
-      }
-
-      if (mobilityTests.length > 0) {
-        const mobilityData = mobilityTests.map(t => ({
-          conditioning_test_id, 
-          test_name: t.name, 
-          notes: t.notes 
-        }));
-        
-        const { error: errMob } = await supabase.from("mobility_tests").insert(mobilityData);
-        if (errMob) throw errMob;
-      }
-
-      setMessage("✅ Testes físicos salvos com sucesso!");
-      setTimeout(() => { router.back(); }, 1500); 
-
-    } catch (error: any) {
-      // Agora, se qualquer tabela falhar, o motivo exato vai aparecer em vermelho!
-      setMessage("Erro ao salvar: " + (error.message || JSON.stringify(error)));
-    } finally {
-      setLoading(false);
-    }
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const calcDays = (d1: string, d2: string) => Math.ceil(Math.abs(new Date(d1).getTime() - new Date(d2).getTime()) / (1000 * 60 * 60 * 24));
+  
+  const getDiff = (curr: any, prev: any) => {
+    if (curr === null || curr === undefined || curr === "") return "-";
+    if (prev === null || prev === undefined || prev === "") return curr;
+    const diff = Number(curr) - Number(prev);
+    if (isNaN(diff)) return "-"; // Se o professor digitar texto (ex: "Não"), não faz conta matemática
+    return diff > 0 ? `+${diff}` : diff;
   };
 
-
-
-  const renderMobilityOptions = (item: MobilityTest) => {
-    if (item.name === "Cotovelos altos (Clean/Front Squat)" || item.name === "Ombros/Escápulas (Barra Overhead)") {
-      return (
-        <View style={styles.quickSelectRow}>
-          <TouchableOpacity style={[styles.quickButton, item.notes === "Sim" && styles.quickButtonActive]} onPress={() => updateMobility(item.id, "notes", "Sim")}>
-            <Text style={[styles.quickButtonText, item.notes === "Sim" && styles.quickButtonTextActive]}>Sim</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.quickButton, item.notes === "Não" && styles.quickButtonActive]} onPress={() => updateMobility(item.id, "notes", "Não")}>
-            <Text style={[styles.quickButtonText, item.notes === "Não" && styles.quickButtonTextActive]}>Não</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (item.name === "Agachamentos (Profundidade)") {
-      return (
-        <View style={{ flexDirection: "column", gap: 8, marginTop: 8 }}>
-          <TouchableOpacity style={[styles.quickButton, item.notes === "Quadril acima da linha dos joelhos" && styles.quickButtonActive]} onPress={() => updateMobility(item.id, "notes", "Quadril acima da linha dos joelhos")}>
-            <Text style={[styles.quickButtonText, item.notes === "Quadril acima da linha dos joelhos" && styles.quickButtonTextActive]}>Quadril acima da linha dos joelhos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.quickButton, item.notes === "Quadril na linha dos joelhos" && styles.quickButtonActive]} onPress={() => updateMobility(item.id, "notes", "Quadril na linha dos joelhos")}>
-            <Text style={[styles.quickButtonText, item.notes === "Quadril na linha dos joelhos" && styles.quickButtonTextActive]}>Quadril na linha dos joelhos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.quickButton, item.notes === "Quadril abaixo da linha dos joelhos" && styles.quickButtonActive]} onPress={() => updateMobility(item.id, "notes", "Quadril abaixo da linha dos joelhos")}>
-            <Text style={[styles.quickButtonText, item.notes === "Quadril abaixo da linha dos joelhos" && styles.quickButtonTextActive]}>Quadril abaixo da linha dos joelhos</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    if (item.name === "Toque chão (Pernas esticadas)") {
-      return (
-        <View style={styles.row}>
-          <TextInput style={[styles.input, { flex: 1 }]} placeholder="Distância da mão até o chão (ex: 5cm, Tocou)" value={item.notes} onChangeText={(v) => updateMobility(item.id, "notes", v)} />
-        </View>
-      );
-    }
+  const getDiffColor = (val: string | number, isTime: boolean = false) => {
+    if (val === "-") return "#94a3b8";
+    const strVal = String(val);
     
-    return null;
+    if (isTime) {
+      if (strVal.startsWith("-")) return "#16a34a"; // Verde (menos tempo)
+      if (strVal.startsWith("+")) return "#dc2626"; // Vermelho (mais tempo)
+    } else {
+      if (strVal.startsWith("+")) return "#16a34a"; // Verde (mais carga/reps)
+      if (strVal.startsWith("-")) return "#dc2626"; // Vermelho (menos carga/reps)
+    }
+    return "#334155";
   };
 
-  return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#f8fafc" }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        
-        <View style={styles.header}>
-          <Text style={styles.title}>Testes Físicos</Text>
-          <Text style={styles.subtitle}>Registre a performance de forma independente.</Text>
-        </View>
+  // ==========================================================
+  // 1. FORÇA
+  // ==========================================================
+  const renderStrengthCard = (currentAss: any, previousAss: any, initialAss: any) => {
+    const condCurr = currentAss.conditioning[0];
+    const condPrev = previousAss ? previousAss.conditioning[0] : null;
+    const condInit = initialAss ? initialAss.conditioning[0] : null;
 
-        {/* 🔴 CABEÇALHO DO ALUNO COM DATA E HORA (Idêntico ao da Bioimpedância) */}
-        <View style={styles.clientHeaderBox}>
-          <Text style={styles.clientNameLabel}>Aluno(a):</Text>
-          <Text style={styles.clientNameValue}>{clientName || "Carregando..."}</Text>
-          
-          <View style={{ marginTop: 12 }}>
-            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: 'bold', marginBottom: 4 }}>DATA / HORA DA AVALIAÇÃO</Text>
-            <TextInput 
-              style={styles.dateInput}
-              value={assessmentDate}
-              onChangeText={handleDateChange}
-              placeholder="DD/MM/AAAA HH:mm"
-              keyboardType="numeric"
-              maxLength={16}
-            />
-          </View>
-        </View>
+    if (!condCurr.strength || condCurr.strength.length === 0) return null;
 
-        {message ? <Text style={styles.message}>{message}</Text> : null}
+    const dateCurr = formatDate(currentAss.date);
+    const datePrev = previousAss ? formatDate(previousAss.date) : "--/--/--";
+    const daysPrev = previousAss ? calcDays(currentAss.date, previousAss.date) : 0;
+    const daysInit = initialAss ? calcDays(currentAss.date, initialAss.date) : 0;
 
-        {/* --- FORÇA --- */}
-        <TouchableOpacity style={styles.accordionHeader} onPress={() => setOpenSection(openSection === "strength" ? null : "strength")}>
-          <Text style={styles.accordionTitle}>💪 Testes de Força</Text>
-          <Text>{openSection === "strength" ? "▼" : "▶"}</Text>
-        </TouchableOpacity>
-        {openSection === "strength" && (
-          <View style={styles.accordionBody}>
-            <View style={styles.chipContainer}>
-              {strengthOptions.map(opt => (
-                <TouchableOpacity key={opt} style={styles.chip} onPress={() => addStrength(opt)}><Text style={styles.chipText}>+ {opt}</Text></TouchableOpacity>
-              ))}
-            </View>
-            {strengthTests.map((item) => (
-              <View key={item.id} style={styles.testCard}>
-                <Text style={styles.testCardTitle}>{item.exercise}</Text>
-                <View style={styles.row}>
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Carga (kg)" keyboardType="numeric" value={item.load} onChangeText={(v) => updateStrength(item.id, "load", v)} />
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Reps" keyboardType="numeric" value={item.reps} onChangeText={(v) => updateStrength(item.id, "reps", v)} />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="1RM Est." keyboardType="numeric" value={item.rm} onChangeText={(v) => updateStrength(item.id, "rm", v)} />
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}><Text style={styles.cardTitle}>Teste de Força</Text></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.tableContainer}>
+            <View style={styles.headerRow}>
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Data da Última</Text><Text style={styles.headerDate}>{dateCurr}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1.5, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Carga</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
                 </View>
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* --- RESISTÊNCIA / CÁRDIO --- */}
-        <TouchableOpacity style={styles.accordionHeader} onPress={() => setOpenSection(openSection === "endurance" ? null : "endurance")}>
-          <Text style={styles.accordionTitle}>🏃 Resistência Cárdio</Text>
-          <Text>{openSection === "endurance" ? "▼" : "▶"}</Text>
-        </TouchableOpacity>
-        {openSection === "endurance" && (
-          <View style={styles.accordionBody}>
-            <View style={styles.chipContainer}>
-              {enduranceOptions.map(opt => (
-                <TouchableOpacity key={opt} style={styles.chip} onPress={() => addEndurance(opt)}><Text style={styles.chipText}>+ {opt}</Text></TouchableOpacity>
-              ))}
-            </View>
-            {enduranceTests.map((item) => (
-              <View key={item.id} style={styles.testCard}>
-                <Text style={styles.testCardTitle}>{item.type}</Text>
-                {item.type === "Corrida" ? (
-                  <View style={styles.row}>
-                    <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Distância (m)" keyboardType="numeric" value={item.distance} onChangeText={(v) => updateEndurance(item.id, "distance", v)} />
-                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Tempo (seg)" keyboardType="numeric" value={item.time} onChangeText={(v) => updateEndurance(item.id, "time", v)} />
-                  </View>
-                ) : (
-                  <View style={styles.row}>
-                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Quantidade (Reps em 1 minuto)" keyboardType="numeric" value={item.reps} onChangeText={(v) => updateEndurance(item.id, "reps", v)} />
-                  </View>
-                )}
+              <View style={[styles.headerCell, { width: 100, backgroundColor: '#f8fafc' }]}>
+                <Text style={styles.headerLabel}>Avaliação Anterior</Text><Text style={styles.headerDate}>{datePrev}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Carga</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
+                </View>
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* --- MOBILIDADE --- */}
-        <TouchableOpacity style={styles.accordionHeader} onPress={() => setOpenSection(openSection === "mobility" ? null : "mobility")}>
-          <Text style={styles.accordionTitle}>🧘 Mobilidade</Text>
-          <Text>{openSection === "mobility" ? "▼" : "▶"}</Text>
-        </TouchableOpacity>
-        {openSection === "mobility" && (
-          <View style={styles.accordionBody}>
-            <View style={styles.chipContainer}>
-              {mobilityOptions.map(opt => (
-                <TouchableOpacity key={opt} style={styles.chip} onPress={() => addMobility(opt)}><Text style={styles.chipText}>+ {opt}</Text></TouchableOpacity>
-              ))}
-            </View>
-            {mobilityTests.map((item) => (
-              <View key={item.id} style={styles.testCard}>
-                <Text style={styles.testCardTitle}>{item.name}</Text>
-                {renderMobilityOptions(item)}
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Evolução no Período</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                  <Text style={styles.headerDate}>{daysPrev} Dias</Text><Text style={styles.headerDate}>{daysInit} Dias</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Total</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Cg | Rp</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>Cg | Rp</Text>
+                </View>
               </View>
-            ))}
+            </View>
+            {condCurr.strength.map((item: any, i: number) => {
+              const prevItem = condPrev?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
+              const initItem = condInit?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
+              const diffLoadPrev = getDiff(item.load_kg, prevItem?.load_kg);
+              const diffRepsPrev = getDiff(item.repetitions, prevItem?.repetitions);
+              const diffLoadInit = getDiff(item.load_kg, initItem?.load_kg);
+              const diffRepsInit = getDiff(item.repetitions, initItem?.repetitions);
+
+              return (
+                <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <Text style={[styles.exerciseText, { flex: 1.5 }]} numberOfLines={1}>{item.exercise_name}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{item.load_kg || '-'}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{item.repetitions || '-'}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: '#f8fafc' }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevItem?.load_kg || '-'}</Text>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevItem?.repetitions || '-'}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffLoadPrev) }]}>{diffLoadPrev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsPrev) }]}>{diffRepsPrev}</Text>
+                    </View>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffLoadInit) }]}>{diffLoadInit}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsInit) }]}>{diffRepsInit}</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
           </View>
-        )}
+        </ScrollView>
+      </View>
+    );
+  };
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveAll} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Salvar Testes</Text>}
+  // ==========================================================
+  // 2. RESISTÊNCIA CÁRDIO
+  // ==========================================================
+  const renderEnduranceCard = (currentAss: any, previousAss: any, initialAss: any) => {
+    const condCurr = currentAss.conditioning[0];
+    const condPrev = previousAss ? previousAss.conditioning[0] : null;
+    const condInit = initialAss ? initialAss.conditioning[0] : null;
+
+    if (!condCurr.endurance || condCurr.endurance.length === 0) return null;
+
+    const dateCurr = formatDate(currentAss.date);
+    const datePrev = previousAss ? formatDate(previousAss.date) : "--/--/--";
+    const daysPrev = previousAss ? calcDays(currentAss.date, previousAss.date) : 0;
+    const daysInit = initialAss ? calcDays(currentAss.date, initialAss.date) : 0;
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}><Text style={styles.cardTitle}>Resistência Cárdio</Text></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.tableContainer}>
+            <View style={styles.headerRow}>
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Data da Última</Text><Text style={styles.headerDate}>{dateCurr}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1.5, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Dist/Reps</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Tempo</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 100, backgroundColor: '#f8fafc' }]}>
+                <Text style={styles.headerLabel}>Avaliação Anterior</Text><Text style={styles.headerDate}>{datePrev}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Dist/Reps</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>Tempo</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Evolução no Período</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                  <Text style={styles.headerDate}>{daysPrev} Dias</Text><Text style={styles.headerDate}>{daysInit} Dias</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Total</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>D/R | Tmp</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>D/R | Tmp</Text>
+                </View>
+              </View>
+            </View>
+            {condCurr.endurance.map((item: any, i: number) => {
+              const prevItem = condPrev?.endurance?.find((p: any) => p.test_type === item.test_type);
+              const initItem = condInit?.endurance?.find((p: any) => p.test_type === item.test_type);
+              const currVal1 = item.distance_m ?? item.repetitions ?? '-';
+              const prevVal1 = prevItem?.distance_m ?? prevItem?.repetitions ?? '-';
+              const initVal1 = initItem?.distance_m ?? initItem?.repetitions ?? '-';
+              const currVal2 = item.time_seconds ?? '-';
+              const prevVal2 = prevItem?.time_seconds ?? '-';
+              const initVal2 = initItem?.time_seconds ?? '-';
+              const diff1Prev = getDiff(currVal1, prevVal1);
+              const diff2Prev = getDiff(currVal2, prevVal2);
+              const diff1Init = getDiff(currVal1, initVal1);
+              const diff2Init = getDiff(currVal2, initVal2);
+
+              return (
+                <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <Text style={[styles.exerciseText, { flex: 1.5 }]} numberOfLines={1}>{item.test_type}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{currVal1}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{currVal2}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: '#f8fafc' }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevVal1}</Text>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevVal2}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diff1Prev) }]}>{diff1Prev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Prev, true) }]}>{diff2Prev}</Text>
+                    </View>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diff1Init) }]}>{diff1Init}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Init, true) }]}>{diff2Init}</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
+  // ==========================================================
+  // 3. MOBILIDADE E ESTABILIDADE (NOVO)
+  // ==========================================================
+  const renderMobilityCard = (currentAss: any, previousAss: any, initialAss: any) => {
+    const condCurr = currentAss.conditioning[0];
+    const condPrev = previousAss ? previousAss.conditioning[0] : null;
+    const condInit = initialAss ? initialAss.conditioning[0] : null;
+
+    if (!condCurr.mobility || condCurr.mobility.length === 0) return null;
+
+    const dateCurr = formatDate(currentAss.date);
+    const datePrev = previousAss ? formatDate(previousAss.date) : "--/--/--";
+    const daysPrev = previousAss ? calcDays(currentAss.date, previousAss.date) : 0;
+    const daysInit = initialAss ? calcDays(currentAss.date, initialAss.date) : 0;
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}><Text style={styles.cardTitle}>Mobilidade e Estabilidade</Text></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.tableContainer}>
+            <View style={styles.headerRow}>
+              
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Data da Última</Text><Text style={styles.headerDate}>{dateCurr}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 2, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Resultado</Text>
+                </View>
+              </View>
+              
+              <View style={[styles.headerCell, { width: 100, backgroundColor: '#f8fafc' }]}>
+                <Text style={styles.headerLabel}>Avaliação Anterior</Text><Text style={styles.headerDate}>{datePrev}</Text>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Resultado</Text>
+                </View>
+              </View>
+              
+              <View style={[styles.headerCell, { width: 180 }]}>
+                <Text style={styles.headerLabel}>Evolução no Período</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
+                  <Text style={styles.headerDate}>{daysPrev} Dias</Text><Text style={styles.headerDate}>{daysInit} Dias</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: '#2563eb' }]}>x Total</Text>
+                </View>
+                <View style={styles.subHeaderArea}>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Evolução</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1 }]}>Evolução</Text>
+                </View>
+              </View>
+              
+            </View>
+            
+            {condCurr.mobility.map((item: any, i: number) => {
+              const prevItem = condPrev?.mobility?.find((p: any) => p.test_name === item.test_name);
+              const initItem = condInit?.mobility?.find((p: any) => p.test_name === item.test_name);
+              
+              const currVal = item.notes ?? '-';
+              const prevVal = prevItem?.notes ?? '-';
+              const initVal = initItem?.notes ?? '-';
+              
+              const diffPrev = getDiff(currVal, prevVal);
+              const diffInit = getDiff(currVal, initVal);
+
+              return (
+                <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <Text style={[styles.exerciseText, { flex: 2 }]} numberOfLines={1}>{item.test_name}</Text>
+                    <Text style={[styles.valueText, { flex: 1 }]}>{currVal}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: '#f8fafc' }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: '#64748b' }]}>{prevVal}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffPrev) }]}>{diffPrev}</Text>
+                    </View>
+                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+                      <Text style={[styles.diffText, { color: getDiffColor(diffInit) }]}>{diffInit}</Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color="#2563eb" /></View>;
+  }
+
+  if (history.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.emptyTitle}>Nenhum teste encontrado</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}><Text style={{ color: "#fff" }}>Voltar</Text></TouchableOpacity>
+      </View>
+    );
+  }
+
+  const currentAss = history[selectedIndex];
+  const previousAss = history.length > selectedIndex + 1 ? history[selectedIndex + 1] : null;
+  const initialAss = history.length > 1 ? history[history.length - 1] : null;
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f1f5f9", paddingTop: Platform.OS === "android" ? 40 : 0 }}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
+          <Text style={{ color: "#2563eb", fontWeight: "700" }}>← Voltar para {clientName}</Text>
         </TouchableOpacity>
+        <Text style={styles.title}>Condicionamento Físico</Text>
+      </View>
 
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
+        
+        {/* RENDERIZA OS TRÊS CARDS */}
+        {renderStrengthCard(currentAss, previousAss, initialAss)}
+        {renderEnduranceCard(currentAss, previousAss, initialAss)}
+        {renderMobilityCard(currentAss, previousAss, initialAss)}
+
+        <Text style={styles.listTitle}>📅 Histórico de Avaliações</Text>
+        {history.map((assessment, index) => (
+          <View key={assessment.id} style={[styles.historyItem, selectedIndex === index && styles.historyItemActive]}>
+            <View>
+              <Text style={[styles.historyDate, selectedIndex === index && { color: '#1e40af' }]}>{formatDate(assessment.date)}</Text>
+              {index === 0 && <Text style={styles.historyTag}>Mais Recente</Text>}
+            </View>
+            <TouchableOpacity 
+              style={[styles.detailsBtn, selectedIndex === index && styles.detailsBtnActive]} 
+              onPress={() => setSelectedIndex(index)}
+            >
+              <Text style={[styles.detailsBtnText, selectedIndex === index && { color: '#fff' }]}>
+                {selectedIndex === index ? "Em Exibição" : "Ver Detalhes"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 100 },
-  header: { marginBottom: 16, marginTop: 40 },
-  title: { fontSize: 28, fontWeight: "900", color: "#0f172a" },
-  subtitle: { fontSize: 14, color: "#64748b", marginTop: 4 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc", padding: 20 },
+  backBtn: { backgroundColor: "#2563eb", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, marginTop: 20 },
+  emptyTitle: { fontSize: 20, fontWeight: "bold", color: "#1e293b" },
+  header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 10, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+  title: { fontSize: 24, fontWeight: "900", color: "#0f172a", letterSpacing: -0.5 },
   
-  clientHeaderBox: { backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 24, borderWidth: 1, borderColor: "#e2e8f0", elevation: 1 },
-  clientNameLabel: { fontSize: 12, color: "#64748b", fontWeight: "700", textTransform: "uppercase" },
-  clientNameValue: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginTop: 2 },
-  dateInput: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#cbd5e1", padding: 10, borderRadius: 8, fontSize: 14, color: "#0f172a", textAlign: "center", width: 160 },
+  card: { backgroundColor: "#fff", borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: "#cbd5e1", overflow: "hidden" },
+  cardHeader: { backgroundColor: "#1e293b", padding: 12 },
+  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "800", textTransform: "uppercase" },
+  
+  tableContainer: { flexDirection: 'column', minWidth: 460 },
+  headerRow: { flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: '#cbd5e1', backgroundColor: '#fff' },
+  headerCell: { padding: 10, borderRightWidth: 1, borderRightColor: '#e2e8f0' },
+  headerLabel: { fontSize: 11, fontWeight: "700", color: "#64748b", textTransform: "uppercase", marginBottom: 4 },
+  headerDate: { fontSize: 13, fontWeight: "800", color: "#0f172a" },
+  
+  subHeaderArea: { flexDirection: 'row', marginTop: 8, justifyContent: 'space-between' },
+  subHeaderText: { fontSize: 10, fontWeight: "700", color: "#475569", textAlign: 'center' },
+  
+  dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  rowEven: { backgroundColor: '#fafafa' },
+  dataCell: { paddingVertical: 12, paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: '#e2e8f0', alignItems: 'center' },
+  
+  exerciseText: { fontSize: 13, fontWeight: "700", color: "#1e293b", textAlign: 'left' },
+  valueText: { fontSize: 13, fontWeight: "600", color: "#334155", textAlign: 'center' },
+  diffText: { fontSize: 12, fontWeight: "800", textAlign: 'center' },
+  divider: { fontSize: 12, color: '#cbd5e1', marginHorizontal: 4 },
 
-  message: { backgroundColor: "#dbeafe", color: "#1e40af", padding: 12, borderRadius: 8, marginBottom: 16, fontWeight: "600", textAlign: "center" },
-  accordionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 8, elevation: 1, borderWidth: 1, borderColor: "#e2e8f0" },
-  accordionTitle: { fontSize: 16, fontWeight: "700", color: "#1e293b" },
-  accordionBody: { paddingBottom: 16 },
-  chipContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16, marginTop: 8 },
-  chip: { backgroundColor: "#eff6ff", paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: "#bfdbfe" },
-  chipText: { color: "#2563eb", fontWeight: "600", fontSize: 13 },
-  testCard: { backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: "#f1f5f9" },
-  testCardTitle: { fontSize: 14, fontWeight: "700", color: "#334155", marginBottom: 12 },
-  row: { flexDirection: "row", justifyContent: "space-between" },
-  input: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 8, paddingHorizontal: 12, height: 44, fontSize: 14 },
-  quickSelectRow: { flexDirection: "row", gap: 10, marginTop: 8 },
-  quickButton: { flex: 1, backgroundColor: "#f1f5f9", paddingVertical: 12, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" },
-  quickButtonActive: { backgroundColor: "#2563eb", borderColor: "#1d4ed8" },
-  quickButtonText: { color: "#475569", fontWeight: "600", fontSize: 13, textAlign: "center" },
-  quickButtonTextActive: { color: "#fff" },
-  saveButton: { backgroundColor: "#2563eb", height: 56, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 24, elevation: 3 },
-  saveButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  listTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginTop: 10, marginBottom: 12, marginLeft: 4 },
+  historyItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "#fff", padding: 16, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: "#e2e8f0" },
+  historyItemActive: { borderColor: "#3b82f6", backgroundColor: "#eff6ff" },
+  historyDate: { fontSize: 16, fontWeight: "800", color: "#334155" },
+  historyTag: { fontSize: 10, color: "#64748b", fontWeight: "600", marginTop: 2 },
+  detailsBtn: { backgroundColor: "#f1f5f9", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  detailsBtnActive: { backgroundColor: "#2563eb" },
+  detailsBtnText: { fontSize: 12, fontWeight: "700", color: "#475569" },
 });
-
