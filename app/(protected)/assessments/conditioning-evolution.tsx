@@ -23,7 +23,7 @@ export default function ConditioningEvolution() {
 
   const [selectedIndex, setSelectedIndex] = useState(0); 
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchEvolution() {
       if (!client_id) return;
       try {
@@ -33,15 +33,16 @@ export default function ConditioningEvolution() {
         const { data: clientData } = await supabase.from("clients").select("name").eq("id", client_id).single();
         if (clientData) setClientName(clientData.name);
 
+        // 🔴 CONSULTA LIMPA (Sem as gambiarras do código anterior)
         const { data, error } = await supabase
           .from("physical_assessments")
           .select(`
             id, date,
-            conditioning:conditioning_tests!assessment_id (
+            conditioning:conditioning_tests (
               id,
-              strength:strength_tests!conditioning_test_id (exercise_name, load_kg, repetitions),
-              endurance:endurance_tests!conditioning_test_id (test_type, distance_m, time_seconds, repetitions),
-              mobility:mobility_tests!conditioning_test_id (test_name, notes)
+              strength:strength_tests (exercise_name, load_kg, repetitions),
+              endurance:endurance_tests (test_type, distance_m, time_seconds, repetitions),
+              mobility:mobility_tests (test_name, notes)
             )
           `)
           .eq("client_id", client_id)
@@ -51,7 +52,7 @@ export default function ConditioningEvolution() {
         
         setRawAssessmentsCount(data ? data.length : 0);
 
-        const filteredData = (data as any[] || []).filter(a => a.conditioning && a.conditioning.length > 0);
+        const filteredData = (data as any[] || []).filter((a: any) => a.conditioning && a.conditioning.length > 0);
         setHistory(filteredData);
 
       } catch (err: any) {
@@ -63,6 +64,7 @@ export default function ConditioningEvolution() {
 
     fetchEvolution();
   }, [client_id]);
+
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const calcDays = (d1: string, d2: string) => Math.ceil(Math.abs(new Date(d1).getTime() - new Date(d2).getTime()) / (1000 * 60 * 60 * 24));
