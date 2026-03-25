@@ -18,13 +18,12 @@ export default function ConditioningEvolution() {
   const [history, setHistory] = useState<any[]>([]);
   const [clientName, setClientName] = useState("");
   
-  // 🔴 ESTADOS DE DIAGNÓSTICO (O NOSSO RAIO-X)
   const [debugError, setDebugError] = useState<string | null>(null);
   const [rawAssessmentsCount, setRawAssessmentsCount] = useState(0);
 
   const [selectedIndex, setSelectedIndex] = useState(0); 
 
-useEffect(() => {
+  useEffect(() => {
     async function fetchEvolution() {
       if (!client_id) return;
       try {
@@ -52,7 +51,6 @@ useEffect(() => {
         
         setRawAssessmentsCount(data ? data.length : 0);
 
-        // O "as any[]" cega o TypeScript e força a compilação sem erros
         const filteredData = (data as any[] || []).filter(a => a.conditioning && a.conditioning.length > 0);
         setHistory(filteredData);
 
@@ -91,7 +89,7 @@ useEffect(() => {
         </View>
 
         {/* --- FORÇA --- */}
-        {condCurr.strength_tests && condCurr.strength_tests.length > 0 && (
+        {condCurr.strength && condCurr.strength.length > 0 && (
           <View style={styles.tableSection}>
             <Text style={styles.sectionTitle}>💪 Força</Text>
             <View style={styles.tableRowHeader}>
@@ -100,8 +98,8 @@ useEffect(() => {
               <View style={styles.colData}><Text style={styles.colDateText}>Anterior</Text><Text style={styles.colDateSub}>{datePrev}</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Carga</Text><Text style={styles.metricsTitle}>Reps</Text></View></View>
               <View style={styles.colData}><Text style={[styles.colDateText, { color: '#16a34a' }]}>Evolução</Text><Text style={styles.colDateSub}>{daysDiff} dias</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Carga</Text><Text style={styles.metricsTitle}>Reps</Text></View></View>
             </View>
-            {condCurr.strength_tests.map((item: any, i: number) => {
-              const prevItem = condPrev?.strength_tests?.find((p: any) => p.exercise_name === item.exercise_name);
+            {condCurr.strength.map((item: any, i: number) => {
+              const prevItem = condPrev?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
               return (
                 <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.rowEven]}>
                   <View style={[styles.colName, { borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.exerciseName}>{item.exercise_name}</Text></View>
@@ -115,7 +113,7 @@ useEffect(() => {
         )}
 
         {/* --- RESISTÊNCIA --- */}
-        {condCurr.endurance_tests && condCurr.endurance_tests.length > 0 && (
+        {condCurr.endurance && condCurr.endurance.length > 0 && (
           <View style={styles.tableSection}>
             <Text style={styles.sectionTitle}>🏃 Resistência Cárdio</Text>
             <View style={styles.tableRowHeader}>
@@ -124,8 +122,8 @@ useEffect(() => {
               <View style={styles.colData}><Text style={styles.colDateText}>Anterior</Text><Text style={styles.colDateSub}>{datePrev}</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Dist/Reps</Text><Text style={styles.metricsTitle}>Tempo</Text></View></View>
               <View style={styles.colData}><Text style={[styles.colDateText, { color: '#16a34a' }]}>Evolução</Text><Text style={styles.colDateSub}>{daysDiff} dias</Text><View style={styles.metricsHeader}><Text style={styles.metricsTitle}>Dist/Reps</Text><Text style={styles.metricsTitle}>Tempo</Text></View></View>
             </View>
-            {condCurr.endurance_tests.map((item: any, i: number) => {
-              const prevItem = condPrev?.endurance_tests?.find((p: any) => p.test_type === item.test_type);
+            {condCurr.endurance.map((item: any, i: number) => {
+              const prevItem = condPrev?.endurance?.find((p: any) => p.test_type === item.test_type);
               const isRun = item.test_type === "Corrida";
               const currVal1 = isRun ? item.distance_m : item.repetitions;
               const prevVal1 = isRun ? prevItem?.distance_m : prevItem?.repetitions;
@@ -144,7 +142,7 @@ useEffect(() => {
         )}
 
         {/* --- MOBILIDADE --- */}
-        {condCurr.mobility_tests && condCurr.mobility_tests.length > 0 && (
+        {condCurr.mobility && condCurr.mobility.length > 0 && (
           <View style={styles.tableSection}>
             <Text style={styles.sectionTitle}>🧘 Mobilidade</Text>
             <View style={styles.tableRowHeader}>
@@ -152,8 +150,8 @@ useEffect(() => {
               <View style={[styles.colData, { flex: 1.2 }]}><Text style={styles.colDateText}>Atual</Text></View>
               <View style={[styles.colData, { flex: 1.2 }]}><Text style={styles.colDateText}>Anterior</Text></View>
             </View>
-            {condCurr.mobility_tests.map((item: any, i: number) => {
-              const prevItem = condPrev?.mobility_tests?.find((p: any) => p.test_name === item.test_name);
+            {condCurr.mobility.map((item: any, i: number) => {
+              const prevItem = condPrev?.mobility?.find((p: any) => p.test_name === item.test_name);
               return (
                 <View key={i} style={[styles.tableRow, i % 2 === 0 && styles.rowEven]}>
                   <View style={[styles.colName, { flex: 1.5, borderRightWidth: 1, borderColor: '#e2e8f0' }]}><Text style={styles.exerciseName}>{item.test_name}</Text></View>
@@ -172,7 +170,6 @@ useEffect(() => {
     return <View style={styles.center}><ActivityIndicator size="large" color="#2563eb" /><Text style={{ marginTop: 12 }}>Analisando performance...</Text></View>;
   }
 
-  // 🔴 TELA DE DIAGNÓSTICO E ERROS
   if (debugError || history.length === 0) {
     return (
       <View style={styles.center}>
