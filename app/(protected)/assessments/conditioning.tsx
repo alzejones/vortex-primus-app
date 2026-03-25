@@ -89,7 +89,7 @@ export default function ConditioningAssessment() {
   const updateEndurance = (id: string, field: keyof EnduranceTest, value: string) => setEnduranceTests(enduranceTests.map(t => t.id === id ? { ...t, [field]: value } : t));
   const updateMobility = (id: string, field: keyof MobilityTest, value: string) => setMobilityTests(mobilityTests.map(t => t.id === id ? { ...t, [field]: value } : t));
 
-  const handleSaveAll = async () => {
+const handleSaveAll = async () => {
     if (!client_id) {
       setMessage("Erro: ID do Aluno não encontrado.");
       return;
@@ -133,37 +133,56 @@ export default function ConditioningAssessment() {
       if (condError) throw condError;
       const conditioning_test_id = condTest.id;
 
-      // 3. Salva os testes
+      // 3. Salva os testes (AGORA COM BLOQUEIO RIGOROSO DE ERROS)
       if (strengthTests.length > 0) {
         const strengthData = strengthTests.map(t => ({
-          conditioning_test_id, exercise_name: t.exercise, load_kg: t.load ? parseFloat(t.load) : null, repetitions: t.reps ? parseInt(t.reps) : null, rm_estimated: t.rm ? parseFloat(t.rm) : null,
+          conditioning_test_id, 
+          exercise_name: t.exercise, 
+          load_kg: t.load ? parseFloat(t.load) : null, 
+          repetitions: t.reps || null // Passando como texto (compatível com o banco)
         }));
-        await supabase.from("strength_tests").insert(strengthData);
+        
+        // Se houver erro, joga para a tela imediatamente
+        const { error: errStr } = await supabase.from("strength_tests").insert(strengthData);
+        if (errStr) throw errStr; 
       }
 
       if (enduranceTests.length > 0) {
         const enduranceData = enduranceTests.map(t => ({
-          conditioning_test_id, test_type: t.type, distance_m: t.distance ? parseFloat(t.distance) : null, time_seconds: t.time ? parseInt(t.time) : null, repetitions: t.reps ? parseInt(t.reps) : null, vo2_estimated: t.vo2 ? parseFloat(t.vo2) : null,
+          conditioning_test_id, 
+          test_type: t.type, 
+          distance_m: t.distance ? parseFloat(t.distance) : null, 
+          time_seconds: t.time ? parseInt(t.time) : null, 
+          repetitions: t.reps || null // Passando como texto
         }));
-        await supabase.from("endurance_tests").insert(enduranceData);
+        
+        const { error: errEnd } = await supabase.from("endurance_tests").insert(enduranceData);
+        if (errEnd) throw errEnd;
       }
 
       if (mobilityTests.length > 0) {
         const mobilityData = mobilityTests.map(t => ({
-          conditioning_test_id, test_name: t.name, score: t.score ? parseInt(t.score) : null, notes: t.notes, 
+          conditioning_test_id, 
+          test_name: t.name, 
+          notes: t.notes 
         }));
-        await supabase.from("mobility_tests").insert(mobilityData);
+        
+        const { error: errMob } = await supabase.from("mobility_tests").insert(mobilityData);
+        if (errMob) throw errMob;
       }
 
       setMessage("✅ Testes físicos salvos com sucesso!");
       setTimeout(() => { router.back(); }, 1500); 
 
     } catch (error: any) {
-      setMessage("Erro ao salvar: " + error.message);
+      // Agora, se qualquer tabela falhar, o motivo exato vai aparecer em vermelho!
+      setMessage("Erro ao salvar: " + (error.message || JSON.stringify(error)));
     } finally {
       setLoading(false);
     }
   };
+
+
 
   const renderMobilityOptions = (item: MobilityTest) => {
     if (item.name === "Cotovelos altos (Clean/Front Squat)" || item.name === "Ombros/Escápulas (Barra Overhead)") {
