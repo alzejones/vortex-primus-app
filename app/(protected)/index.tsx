@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   Modal,
+  Platform,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -25,11 +26,10 @@ export default function Index() {
   const [planName, setPlanName] = useState("");
   const [maxClients, setMaxClients] = useState(0);
   const [currentClients, setCurrentClients] = useState(0);
-  const [planStatus, setPlanStatus] = useState("");
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
 
-  // 🔴 NOVOS ESTADOS: Controle do Modal Inteligente de Agendamento
+  const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
   const [isScheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState("");
 
@@ -39,44 +39,39 @@ export default function Index() {
 
   async function loadDashboardData() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: trainer } = await supabase
-        .from("trainers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
+      const { data: trainer } = await supabase.from("trainers").select("id").eq("user_id", user.id).single();
       if (!trainer) return;
       setTrainerId(trainer.id);
 
-      // (Mantida a sua lógica original de busca de plano e clientes)
-      const { data: subscription } = await supabase
-        .from("subscriptions")
-        .select("plan_name, max_clients, status")
-        .eq("trainer_id", trainer.id)
-        .single();
-
+      const { data: subscription } = await supabase.from("subscriptions").select("plan_name, max_clients").eq("trainer_id", trainer.id).single();
       if (subscription) {
         setPlanName(subscription.plan_name);
         setMaxClients(subscription.max_clients);
-        setPlanStatus(subscription.status);
       }
 
-      const { data: clientsData } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("trainer_id", trainer.id)
-        .order("name");
-
+      const { data: clientsData } = await supabase.from("clients").select("*").eq("trainer_id", trainer.id).order("name");
       if (clientsData) {
         setClients(clientsData);
         setCurrentClients(clientsData.length);
       }
+
+      const today = new Date().toISOString().split('T')[0];
+      const { data: agendaData } = await supabase
+        .from("appointments")
+        .select("id, appointment_date, appointment_time, types, clients(name)")
+        .eq("trainer_id", trainer.id)
+        .gte("appointment_date", today)
+        .order("appointment_date", { ascending: true })
+        .order("appointment_time", { ascending: true })
+        .limit(3);
+
+      if (agendaData) {
+        setUpcomingAppointments(agendaData);
+      }
+
     } catch (error) {
       console.log("Erro ao carregar dashboard:", error);
     } finally {
@@ -90,34 +85,27 @@ export default function Index() {
     loadDashboardData();
   };
 
-  const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClients = clients.filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const scheduleFilteredClients = clients.filter((c) => c.name.toLowerCase().includes(scheduleSearchQuery.toLowerCase()));
 
-  // Filtro específico para o Modal de Agendamento
-  const scheduleFilteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(scheduleSearchQuery.toLowerCase())
-  );
+  const formatDateBR = (isoString: string) => {
+    if (!isoString) return "";
+    const [y, m, d] = isoString.split('-');
+    return `${d}/${m}`;
+  };
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
-    );
+    return <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><ActivityIndicator size="large" color="#2563eb" /></View>;
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
       
-      {/* 🔴 MODAL DE AGENDAMENTO (SOBREPÕE A TELA QUANDO ATIVADO) */}
       <Modal visible={isScheduleModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setScheduleModalVisible(false)}>
         <View style={styles.modalHeader}>
           <View style={styles.modalHeaderTop}>
             <Text style={styles.modalTitle}>Agendar Avaliação</Text>
-            <TouchableOpacity onPress={() => setScheduleModalVisible(false)}>
-              <Text style={styles.modalCloseBtn}>Fechar</Text>
-            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setScheduleModalVisible(false)}><Text style={styles.modalCloseBtn}>Fechar</Text></TouchableOpacity>
           </View>
           <TextInput
             style={styles.modalInput}
@@ -138,7 +126,8 @@ export default function Index() {
               style={styles.modalClientItem}
               onPress={() => {
                 setScheduleModalVisible(false);
-                router.push({ pathname: '/schedule/new', params: { client_id: item.id } });
+                // CORREÇÃO: Usando a navegação via String para evitar erros do TypeScript
+                router.push(`/schedule/new?client_id=${item.id}` as any);
               }}
             >
               <Text style={styles.modalClientEmoji}>👤</Text>
@@ -146,121 +135,125 @@ export default function Index() {
               <Text style={styles.modalArrow}>→</Text>
             </TouchableOpacity>
           )}
-          ListEmptyComponent={
-            <Text style={{ textAlign: "center", color: "#64748b", marginTop: 20 }}>Nenhum aluno encontrado.</Text>
-          }
+          ListEmptyComponent={<Text style={{ textAlign: "center", color: "#64748b", marginTop: 20 }}>Nenhum aluno encontrado.</Text>}
         />
       </Modal>
 
-      <View style={styles.container}>
-        {/* CABEÇALHO PADRÃO DO DASHBOARD */}
-        <View style={styles.header}>
+      <FlatList
+        data={filteredClients}
+        keyExtractor={(item) => item.id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
+        ListHeaderComponent={
           <View>
-            <Text style={styles.welcomeText}>Bem-vindo,</Text>
-            <Text style={styles.titleText}>Dashboard</Text>
-          </View>
-          <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* INFO DO PLANO */}
-        <View style={styles.planCard}>
-          <Text style={styles.planTitle}>Plano Atual: {planName}</Text>
-          <Text style={styles.planInfo}>
-            Alunos: {currentClients} / {maxClients}
-          </Text>
-        </View>
-
-        {/* 🔴 O NOVO BOTÃO DE AÇÃO RÁPIDA (DESTAQUE) */}
-        <TouchableOpacity 
-          style={styles.mainScheduleBtn} 
-          onPress={() => {
-            setScheduleSearchQuery(""); // Limpa a busca anterior
-            setScheduleModalVisible(true); // Abre o modal inteligente
-          }}
-        >
-          <Text style={styles.mainScheduleBtnIcon}>📅</Text>
-          <View>
-            <Text style={styles.mainScheduleBtnTitle}>Agendar Avaliação</Text>
-            <Text style={styles.mainScheduleBtnSub}>Busque um aluno e marque um horário rapidamente</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* BUSCA DA LISTA PRINCIPAL E BOTÃO DE NOVO ALUNO */}
-        <View style={styles.searchRow}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar aluno..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => router.push("/clients/new")}
-          >
-            <Text style={styles.addBtnText}>+ Novo</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* LISTAGEM PRINCIPAL DE ALUNOS */}
-        <FlatList
-          data={filteredClients}
-          keyExtractor={(item) => item.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          contentContainerStyle={{ paddingBottom: 40 }}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>👥</Text>
-              <Text style={styles.emptyTitle}>Nenhum aluno encontrado.</Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.clientCard}>
-              <View style={styles.clientInfoArea}>
-                <Text style={styles.clientName}>{item.name}</Text>
-                <Text style={styles.clientEmail}>{item.email}</Text>
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.welcomeText}>Bem-vindo,</Text>
+                <Text style={styles.titleText}>Dashboard</Text>
               </View>
+              <TouchableOpacity onPress={signOut} style={styles.logoutBtn}><Text style={styles.logoutText}>Sair</Text></TouchableOpacity>
+            </View>
 
-              {/* BARRA DE AÇÕES INFERIOR DO CARD */}
-              <View style={styles.actionArea}>
-                <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/clients/${item.id}`)}>
-                  <Text style={styles.actionEmoji}>📋</Text>
-                  <Text style={styles.actionLabel}>Perfil</Text>
-                </TouchableOpacity>
+            <View style={styles.planCard}>
+              <Text style={styles.planTitle}>Plano Atual: {planName}</Text>
+              <Text style={styles.planInfo}>Alunos: {currentClients} / {maxClients}</Text>
+            </View>
 
-                <View style={styles.verticalDivider} />
-
-                {/* BOTÃO CONTEXTUAL DE AGENDAMENTO DENTRO DO CARD (Opcional, mas muito útil) */}
-                <TouchableOpacity style={styles.actionButton} onPress={() => router.push({ pathname: '/schedule/new', params: { client_id: item.id } })}>
-                  <Text style={styles.actionEmoji}>📅</Text>
-                  <Text style={styles.actionLabel}>Agendar</Text>
-                </TouchableOpacity>
-
-                <View style={styles.verticalDivider} />
-
-                <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/assessments/new?client_id=${item.id}`)}>
-                  <Text style={styles.actionEmoji}>⚖️</Text>
-                  <Text style={styles.actionLabel}>Comp.</Text>
-                </TouchableOpacity>
-
-                <View style={styles.verticalDivider} />
-
-                <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/assessments/conditioning?client_id=${item.id}`)}>
-                  <Text style={styles.actionEmoji}>🏃</Text>
-                  <Text style={styles.actionLabel}>Condic.</Text>
+            <View style={styles.widgetContainer}>
+              <View style={styles.widgetHeader}>
+                <Text style={styles.widgetTitle}>Próximas Avaliações</Text>
+                <TouchableOpacity onPress={() => router.push('/schedule'  as any)}>
+                  <Text style={styles.widgetLink}>Ver Toda a Agenda</Text>
                 </TouchableOpacity>
               </View>
+              
+              {upcomingAppointments.length === 0 ? (
+                <View style={styles.widgetEmpty}>
+                  <Text style={{ color: '#64748b' }}>Sem avaliações marcadas para breve.</Text>
+                </View>
+              ) : (
+                upcomingAppointments.map((app) => (
+                  <View key={app.id} style={styles.agendaItem}>
+                    <View style={styles.agendaDateBox}>
+                      <Text style={styles.agendaDateText}>{formatDateBR(app.appointment_date)}</Text>
+                      <Text style={styles.agendaTimeText}>{app.appointment_time}</Text>
+                    </View>
+                    <View style={styles.agendaInfo}>
+                      <Text style={styles.agendaClientName}>{app.clients?.name}</Text>
+                      <Text style={styles.agendaTypes}>
+                        {app.types && app.types.includes('composition') && '⚖️ Comp. '}
+                        {app.types && app.types.includes('conditioning') && '🏃 Cond. '}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
-          )}
-        />
-      </View>
+
+            <TouchableOpacity 
+              style={styles.mainScheduleBtn} 
+              onPress={() => { setScheduleSearchQuery(""); setScheduleModalVisible(true); }}
+            >
+              <Text style={styles.mainScheduleBtnIcon}>📅</Text>
+              <View>
+                <Text style={styles.mainScheduleBtnTitle}>Novo Agendamento</Text>
+                <Text style={styles.mainScheduleBtnSub}>Busque um aluno e marque um horário rapidamente</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.searchRow}>
+              <TextInput style={styles.searchInput} placeholder="Buscar aluno..." value={searchQuery} onChangeText={setSearchQuery} />
+              <TouchableOpacity style={styles.addBtn} onPress={() => router.push("/clients/new"  as any)}><Text style={styles.addBtnText}>+ Novo</Text></TouchableOpacity>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>👥</Text>
+            <Text style={styles.emptyTitle}>Nenhum aluno encontrado.</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.clientCard}>
+            <View style={styles.clientInfoArea}>
+              <Text style={styles.clientName}>{item.name}</Text>
+              <Text style={styles.clientEmail}>{item.email}</Text>
+            </View>
+<View style={styles.actionArea}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/clients/${item.id}` as any)}>
+                <Text style={styles.actionEmoji}>📋</Text>
+                <Text style={styles.actionLabel}>Perfil</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.verticalDivider} />
+              
+              <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
+                <Text style={styles.actionEmoji}>📅</Text>
+                <Text style={styles.actionLabel}>Agendar</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.verticalDivider} />
+              
+              <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/assessments/new?client_id=${item.id}` as any)}>
+                <Text style={styles.actionEmoji}>⚖️</Text>
+                <Text style={styles.actionLabel}>Comp.</Text>
+              </TouchableOpacity>
+              
+              <View style={styles.verticalDivider} />
+              
+              <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/assessments/conditioning?client_id=${item.id}` as any)}>
+                <Text style={styles.actionEmoji}>🏃</Text>
+                <Text style={styles.actionLabel}>Condic.</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 16 },
   welcomeText: { fontSize: 14, color: "#64748b" },
   titleText: { fontSize: 28, fontWeight: "bold", color: "#0f172a" },
@@ -271,17 +264,21 @@ const styles = StyleSheet.create({
   planTitle: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   planInfo: { color: "#94a3b8", fontSize: 14, marginTop: 4 },
 
-  // --- BOTÃO PRINCIPAL DE AGENDAMENTO (NOVO) ---
-  mainScheduleBtn: {
-    backgroundColor: "#eff6ff",
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#bfdbfe",
-  },
+  widgetContainer: { backgroundColor: "#fff", borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e2e8f0" },
+  widgetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  widgetTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a" },
+  widgetLink: { fontSize: 12, fontWeight: "700", color: "#2563eb" },
+  widgetEmpty: { paddingVertical: 10, alignItems: "center" },
+  
+  agendaItem: { flexDirection: "row", alignItems: "center", marginBottom: 8, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
+  agendaDateBox: { backgroundColor: "#f8fafc", padding: 8, borderRadius: 8, alignItems: "center", width: 60, marginRight: 12, borderWidth: 1, borderColor: "#e2e8f0" },
+  agendaDateText: { fontSize: 12, fontWeight: "800", color: "#1e293b" },
+  agendaTimeText: { fontSize: 11, color: "#64748b", fontWeight: "600", marginTop: 2 },
+  agendaInfo: { flex: 1 },
+  agendaClientName: { fontSize: 15, fontWeight: "700", color: "#334155" },
+  agendaTypes: { fontSize: 12, color: "#64748b", marginTop: 2 },
+
+  mainScheduleBtn: { backgroundColor: "#eff6ff", flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: "#bfdbfe" },
   mainScheduleBtnIcon: { fontSize: 32, marginRight: 16 },
   mainScheduleBtnTitle: { fontSize: 18, fontWeight: "800", color: "#1d4ed8" },
   mainScheduleBtnSub: { fontSize: 12, color: "#3b82f6", marginTop: 2, paddingRight: 30 },
@@ -296,17 +293,16 @@ const styles = StyleSheet.create({
   clientName: { fontSize: 18, fontWeight: "bold", color: "#1e293b" },
   clientEmail: { fontSize: 14, color: "#64748b", marginTop: 4 },
   
-  actionArea: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#f1f5f9", backgroundColor: "#f8fafc", borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
-  actionButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12 },
-  actionEmoji: { fontSize: 14, marginRight: 6 },
-  actionLabel: { fontSize: 11, color: "#64748b", fontWeight: "700" },
-  verticalDivider: { width: 1, backgroundColor: "#e2e8f0", marginVertical: 8 },
+  actionArea: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#f1f5f9", backgroundColor: "#fcfcfd", borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
+  actionButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 14 },
+  actionEmoji: { fontSize: 16, marginRight: 6 },
+  actionLabel: { fontSize: 11, color: "#64748b", fontWeight: "600" },
+  verticalDivider: { width: 1, backgroundColor: "#f1f5f9", marginVertical: 10 },
 
-  emptyContainer: { padding: 30, alignItems: "center", backgroundColor: "#fff", borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "#e2e8f0", borderStyle: "dashed" },
+  emptyContainer: { padding: 30, alignItems: "center", backgroundColor: "#fff", borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "#f1f5f9", borderStyle: "dashed" },
   emptyEmoji: { fontSize: 40, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontWeight: "bold", color: "#64748b" },
 
-  // --- ESTILOS DO MODAL DE AGENDAMENTO (NOVO) ---
   modalHeader: { padding: 20, backgroundColor: "#fff", borderBottomWidth: 1, borderColor: "#e2e8f0", paddingTop: Platform.OS === "android" ? 40 : 20 },
   modalHeaderTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   modalTitle: { fontSize: 20, fontWeight: "900", color: "#0f172a" },
