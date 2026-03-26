@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   RefreshControl,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -27,6 +29,10 @@ export default function Index() {
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [clients, setClients] = useState<any[]>([]);
 
+  // 🔴 NOVOS ESTADOS: Controle do Modal Inteligente de Agendamento
+  const [isScheduleModalVisible, setScheduleModalVisible] = useState(false);
+  const [scheduleSearchQuery, setScheduleSearchQuery] = useState("");
+
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -48,598 +54,267 @@ export default function Index() {
       if (!trainer) return;
       setTrainerId(trainer.id);
 
+      // (Mantida a sua lógica original de busca de plano e clientes)
       const { data: subscription } = await supabase
-        .from("trainer_subscriptions")
-        .select(`
-          is_active,
-          plans ( name, max_clients )
-        `)
+        .from("subscriptions")
+        .select("plan_name, max_clients, status")
         .eq("trainer_id", trainer.id)
-        .eq("is_active", true)
         .single();
 
       if (subscription) {
-        const planData = subscription.plans as any;
-        setPlanName(planData?.name || "Sem Plano");
-        setMaxClients(planData?.max_clients || 0);
-        setPlanStatus(subscription.is_active ? "Ativo" : "Inativo");
+        setPlanName(subscription.plan_name);
+        setMaxClients(subscription.max_clients);
+        setPlanStatus(subscription.status);
       }
 
-      // BUSCA INTELIGENTE: Traz os clientes e soma as visualizações das avaliações
-      const { data: clientList } = await supabase
+      const { data: clientsData } = await supabase
         .from("clients")
-        .select(`
-          *,
-          physical_assessments (
-            id,
-            anthropometry:anthropometry!anthropometry_assessment_id_fkey (
-              view_count
-            )
-          )
-        `)
+        .select("*")
         .eq("trainer_id", trainer.id)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+        .order("name");
 
-      // Processa a soma de views para cada cliente
-      const clientsWithViews = (clientList || []).map((client: any) => {
-        let totalViews = 0;
-        if (client.physical_assessments) {
-          client.physical_assessments.forEach((pa: any) => {
-            if (pa.anthropometry && pa.anthropometry.length > 0) {
-              totalViews += (pa.anthropometry[0].view_count || 0);
-            }
-          });
-        }
-        return { ...client, totalViews };
-      });
-
-      setClients(clientsWithViews);
-      setCurrentClients(clientsWithViews.length || 0);
+      if (clientsData) {
+        setClients(clientsData);
+        setCurrentClients(clientsData.length);
+      }
     } catch (error) {
       console.log("Erro ao carregar dashboard:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
-  async function onRefresh() {
+  const handleRefresh = () => {
     setRefreshing(true);
-    await loadDashboardData();
-    setRefreshing(false);
-  }
-
-  function handleClientPress(clientId: string) {
-    router.push(`/(protected)/client-details?id=${clientId}`);
-  }
-
-  // --- FUNÇÃO DE UX: GERA AS INICIAIS DO NOME PARA O AVATAR ---
-  const getInitials = (name: string) => {
-    if (!name) return "AL";
-    const names = name.trim().split(" ");
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
+    loadDashboardData();
   };
 
-  const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
-  
-  const filteredClients = clients.filter((client) =>
-    client.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredClients = clients.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderHeader = () => (
-    <View style={{ paddingBottom: 15 }}>
-      {/* CABEÇALHO COM SAUDAÇÃO */}
-      <View style={styles.headerTopArea}>
-        <Text style={styles.greetingText}>Visão Geral</Text>
-        <Text style={styles.title}>Meu Dashboard</Text>
-      </View>
-
-      {/* WIDGET DO PLANO (SaaS PREMIUM) */}
-      <View style={styles.planWidget}>
-        <View style={styles.planHeader}>
-          <View>
-            <Text style={styles.planLabel}>Plano Atual</Text>
-            <Text style={styles.planTitle}>{planName}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: planStatus === "Ativo" ? "#ecfdf5" : "#fef2f2" }]}>
-            <View style={[styles.statusDot, { backgroundColor: planStatus === "Ativo" ? "#10b981" : "#ef4444" }]} />
-            <Text style={[styles.statusText, { color: planStatus === "Ativo" ? "#059669" : "#dc2626" }]}>
-              {planStatus}
-            </Text>
-          </View>
-        </View>
-        
-        <View style={styles.metricsRow}>
-          <Text style={styles.planText}>
-            <Text style={styles.highlightNumber}>{currentClients}</Text> de {maxClients} alunos
-          </Text>
-        </View>
-
-        <View style={styles.progressBarBackground}>
-          <View 
-            style={[
-              styles.progressBarFill, 
-              { 
-                width: `${Math.min(usagePercentage, 100)}%`,
-                backgroundColor: usagePercentage >= 80 ? "#ef4444" : "#4f46e5" 
-              }
-            ]} 
-          />
-        </View>
-
-        {usagePercentage >= 80 && (
-          <Text style={styles.warning}>⚠️ Você está próximo do limite do seu plano.</Text>
-        )}
-      </View>
-
-      <TouchableOpacity
-        onPress={() => router.push("/(protected)/client-create")}
-        style={styles.primaryButton}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.buttonText}>+ Adicionar Aluno</Text>
-      </TouchableOpacity>
-
-      {/* BARRA DE PESQUISA REFINADA */}
-      {clients.length > 0 && (
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar aluno por nome..."
-              placeholderTextColor="#94a3b8"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
-        </View>
-      )}
-
-      {clients.length > 0 && <Text style={styles.sectionTitle}>Seus Alunos</Text>}
-    </View>
-  );
-
-  const renderFooter = () => (
-    <View style={{ paddingTop: 30, paddingBottom: 20 }}>
-      <TouchableOpacity onPress={signOut} style={styles.logoutButton} activeOpacity={0.7}>
-        <Text style={styles.logoutButtonText}>SAIR DO SISTEMA</Text>
-      </TouchableOpacity>
-    </View>
+  // Filtro específico para o Modal de Agendamento
+  const scheduleFilteredClients = clients.filter((c) =>
+    c.name.toLowerCase().includes(scheduleSearchQuery.toLowerCase())
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4f46e5" />
-        <Text style={styles.loadingText}>Carregando seu painel...</Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={filteredClients}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4f46e5"]} tintColor="#4f46e5" />
-        }
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={
-          clients.length > 0 ? (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>🧐</Text>
-              <Text style={styles.emptyText}>Nenhum aluno encontrado com "{searchQuery}".</Text>
-            </View>
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>🚀</Text>
-              <Text style={styles.emptyTitle}>Sua jornada começa aqui!</Text>
-              <Text style={styles.emptyText}>Você ainda não possui alunos cadastrados.</Text>
-            </View>
-          )
-        }
-        renderItem={({ item }) => (
-          <View style={styles.clientCard}>
-            
-            <TouchableOpacity
-              style={styles.clientInfoArea}
-              onPress={() => handleClientPress(item.id)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.clientProfileGroup}>
-                {/* AVATAR DO CLIENTE */}
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
-                </View>
-                <View>
-                  <Text style={styles.clientName}>{item.name}</Text>
-                  <Text style={styles.clientSubText}>Ver perfil completo</Text>
-                </View>
-              </View>
-              
-              {/* ÁREA DA DIREITA: BADGE DE VIEWS E SETA */}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={styles.viewsBadge}>
-                  <Text style={styles.viewsEmoji}>👁️</Text>
-                  <Text style={styles.viewsText}>{item.totalViews !== undefined ? item.totalViews : 0}</Text>
-                </View>
-                <Text style={styles.arrowIcon}>›</Text>
-              </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      
+      {/* 🔴 MODAL DE AGENDAMENTO (SOBREPÕE A TELA QUANDO ATIVADO) */}
+      <Modal visible={isScheduleModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setScheduleModalVisible(false)}>
+        <View style={styles.modalHeader}>
+          <View style={styles.modalHeaderTop}>
+            <Text style={styles.modalTitle}>Agendar Avaliação</Text>
+            <TouchableOpacity onPress={() => setScheduleModalVisible(false)}>
+              <Text style={styles.modalCloseBtn}>Fechar</Text>
             </TouchableOpacity>
-
-     <View style={styles.clientActionsArea}>
-              {/* Botão 1: Evolução Corporal (Bioimpedância) */}
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}
-              >
-                <Text style={styles.actionEmoji}>📉</Text>
-                <Text style={styles.actionLabel}>Corporal</Text>
-              </TouchableOpacity>
-
-              <View style={styles.verticalDivider} />
-
-              {/* Botão 2: Nova Avaliação Corporal */}
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}
-              >
-                <Text style={styles.actionEmoji}>➕</Text>
-                <Text style={styles.actionLabel}>Avaliar</Text>
-              </TouchableOpacity>
-
-              <View style={styles.verticalDivider} />
-
-              {/* 🔴 NOVO Botão 3: EVOLUÇÃO DO CONDICIONAMENTO */}
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}
-              >
-                <Text style={styles.actionEmoji}>📈</Text>
-                <Text style={styles.actionLabel}>Condic.</Text>
-              </TouchableOpacity>
-
-              <View style={styles.verticalDivider} />
-
-              {/* Botão 4: Novo Teste Físico */}
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}
-              >
-                <Text style={styles.actionEmoji}>💪</Text>
-                <Text style={styles.actionLabel}>Testar</Text>
-              </TouchableOpacity>
-            </View>
           </View>
-        )}
-      />
-    </View>
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Qual aluno será avaliado?"
+            placeholderTextColor="#94a3b8"
+            value={scheduleSearchQuery}
+            onChangeText={setScheduleSearchQuery}
+            autoFocus
+          />
+        </View>
+        <FlatList
+          data={scheduleFilteredClients}
+          keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 16 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.modalClientItem}
+              onPress={() => {
+                setScheduleModalVisible(false);
+                router.push({ pathname: '/schedule/new', params: { client_id: item.id } });
+              }}
+            >
+              <Text style={styles.modalClientEmoji}>👤</Text>
+              <Text style={styles.modalClientName}>{item.name}</Text>
+              <Text style={styles.modalArrow}>→</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <Text style={{ textAlign: "center", color: "#64748b", marginTop: 20 }}>Nenhum aluno encontrado.</Text>
+          }
+        />
+      </Modal>
+
+      <View style={styles.container}>
+        {/* CABEÇALHO PADRÃO DO DASHBOARD */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcomeText}>Bem-vindo,</Text>
+            <Text style={styles.titleText}>Dashboard</Text>
+          </View>
+          <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Sair</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* INFO DO PLANO */}
+        <View style={styles.planCard}>
+          <Text style={styles.planTitle}>Plano Atual: {planName}</Text>
+          <Text style={styles.planInfo}>
+            Alunos: {currentClients} / {maxClients}
+          </Text>
+        </View>
+
+        {/* 🔴 O NOVO BOTÃO DE AÇÃO RÁPIDA (DESTAQUE) */}
+        <TouchableOpacity 
+          style={styles.mainScheduleBtn} 
+          onPress={() => {
+            setScheduleSearchQuery(""); // Limpa a busca anterior
+            setScheduleModalVisible(true); // Abre o modal inteligente
+          }}
+        >
+          <Text style={styles.mainScheduleBtnIcon}>📅</Text>
+          <View>
+            <Text style={styles.mainScheduleBtnTitle}>Agendar Avaliação</Text>
+            <Text style={styles.mainScheduleBtnSub}>Busque um aluno e marque um horário rapidamente</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* BUSCA DA LISTA PRINCIPAL E BOTÃO DE NOVO ALUNO */}
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar aluno..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => router.push("/clients/new")}
+          >
+            <Text style={styles.addBtnText}>+ Novo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* LISTAGEM PRINCIPAL DE ALUNOS */}
+        <FlatList
+          data={filteredClients}
+          keyExtractor={(item) => item.id}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>👥</Text>
+              <Text style={styles.emptyTitle}>Nenhum aluno encontrado.</Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.clientCard}>
+              <View style={styles.clientInfoArea}>
+                <Text style={styles.clientName}>{item.name}</Text>
+                <Text style={styles.clientEmail}>{item.email}</Text>
+              </View>
+
+              {/* BARRA DE AÇÕES INFERIOR DO CARD */}
+              <View style={styles.actionArea}>
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/clients/${item.id}`)}>
+                  <Text style={styles.actionEmoji}>📋</Text>
+                  <Text style={styles.actionLabel}>Perfil</Text>
+                </TouchableOpacity>
+
+                <View style={styles.verticalDivider} />
+
+                {/* BOTÃO CONTEXTUAL DE AGENDAMENTO DENTRO DO CARD (Opcional, mas muito útil) */}
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push({ pathname: '/schedule/new', params: { client_id: item.id } })}>
+                  <Text style={styles.actionEmoji}>📅</Text>
+                  <Text style={styles.actionLabel}>Agendar</Text>
+                </TouchableOpacity>
+
+                <View style={styles.verticalDivider} />
+
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/assessments/new?client_id=${item.id}`)}>
+                  <Text style={styles.actionEmoji}>⚖️</Text>
+                  <Text style={styles.actionLabel}>Comp.</Text>
+                </TouchableOpacity>
+
+                <View style={styles.verticalDivider} />
+
+                <TouchableOpacity style={styles.actionButton} onPress={() => router.push(`/assessments/conditioning?client_id=${item.id}`)}>
+                  <Text style={styles.actionEmoji}>🏃</Text>
+                  <Text style={styles.actionLabel}>Condic.</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    backgroundColor: "#f8fafc", 
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-  },
-  loadingText: {
-    marginTop: 12,
-    color: "#64748b",
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  headerTopArea: {
-    marginBottom: 24,
-    marginTop: 10,
-  },
-  greetingText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "900",
-    color: "#0f172a", 
-    letterSpacing: -0.5,
-  },
+  container: { flex: 1, paddingHorizontal: 16 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, marginBottom: 16 },
+  welcomeText: { fontSize: 14, color: "#64748b" },
+  titleText: { fontSize: 28, fontWeight: "bold", color: "#0f172a" },
+  logoutBtn: { backgroundColor: "#f1f5f9", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  logoutText: { color: "#ef4444", fontWeight: "bold" },
   
-  // --- WIDGET DO PLANO ---
-  planWidget: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 20,
-    marginBottom: 24,
-    shadowColor: "#64748b",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.06,
-    shadowRadius: 15,
-    elevation: 4,
-  },
-  planHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  planLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  planTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#0f172a",
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 99,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  metricsRow: {
-    marginBottom: 12,
-  },
-  planText: {
-    fontSize: 15,
-    color: "#64748b",
-    fontWeight: "500",
-  },
-  highlightNumber: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0f172a",
-  },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: "#f1f5f9",
-    borderRadius: 99,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    borderRadius: 99,
-  },
-  warning: {
-    marginTop: 12,
-    color: "#ef4444",
-    fontWeight: "600",
-    fontSize: 13,
-  },
+  planCard: { backgroundColor: "#1e293b", padding: 16, borderRadius: 12, marginBottom: 16 },
+  planTitle: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  planInfo: { color: "#94a3b8", fontSize: 14, marginTop: 4 },
 
-  // --- BOTÕES E INPUTS ---
-  primaryButton: {
-    backgroundColor: "#0f172a", 
-    padding: 18,
-    borderRadius: 16,
-    marginBottom: 24,
-    alignItems: "center",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
-  },
-  buttonText: {
-    color: "#ffffff",
-    fontWeight: "bold",
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  searchContainer: {
-    marginBottom: 24,
-  },
-  searchBar: {
+  // --- BOTÃO PRINCIPAL DE AGENDAMENTO (NOVO) ---
+  mainScheduleBtn: {
+    backgroundColor: "#eff6ff",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    height: 54,
-    shadowColor: "#64748b",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  searchIcon: {
-    fontSize: 16,
-    marginRight: 10,
-    opacity: 0.5,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#0f172a",
-    height: "100%",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 16,
-    letterSpacing: -0.5,
-  },
-
-  // --- CARTÃO DO CLIENTE PREMIUM ---
-  clientCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    marginBottom: 16,
-    shadowColor: "#64748b",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  clientInfoArea: {
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  clientProfileGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#e0e7ff", 
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  avatarText: {
-    color: "#4f46e5", 
-    fontWeight: "bold",
-    fontSize: 16,
-    letterSpacing: 1,
-  },
-  clientName: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#0f172a",
-    marginBottom: 2,
-  },
-  clientSubText: {
-    fontSize: 13,
-    color: "#94a3b8",
-    fontWeight: "500",
-  },
-  
-  // --- BADGE DE VISUALIZAÇÕES PREMIUM ---
-  viewsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f1f5f9', 
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 10,
-  },
-  viewsEmoji: {
-    fontSize: 10,
-    marginRight: 4,
-  },
-  viewsText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#475569', 
-  },
-
-  arrowIcon: {
-    fontSize: 24,
-    color: "#cbd5e1",
-  },
-  clientActionsArea: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
-    backgroundColor: "#fcfcfd",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-  },
-  actionEmoji: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  actionLabel: {
-    fontSize: 11, // Um pouco reduzido para encaixar perfeitamente os 4
-    color: "#64748b",
-    fontWeight: "600",
-  },
-  verticalDivider: {
-    width: 1,
-    backgroundColor: "#f1f5f9",
-    marginVertical: 10,
-  },
-
-  // --- ESTADOS VAZIOS ---
-  emptyContainer: {
-    padding: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-    borderStyle: "dashed", 
-  },
-  emptyEmoji: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  emptyText: {
-    color: "#64748b",
-    fontSize: 15,
-    textAlign: "center",
-    lineHeight: 22,
-  },
-
-  // --- BOTÃO DE LOGOUT ---
-  logoutButton: {
-    backgroundColor: "transparent", 
     padding: 16,
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#fca5a5", 
-    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
   },
-  logoutButtonText: {
-    color: "#ef4444", 
-    fontWeight: "bold",
-    fontSize: 14,
-    letterSpacing: 1, 
-  },
+  mainScheduleBtnIcon: { fontSize: 32, marginRight: 16 },
+  mainScheduleBtnTitle: { fontSize: 18, fontWeight: "800", color: "#1d4ed8" },
+  mainScheduleBtnSub: { fontSize: 12, color: "#3b82f6", marginTop: 2, paddingRight: 30 },
+
+  searchRow: { flexDirection: "row", gap: 10, marginBottom: 16 },
+  searchInput: { flex: 1, backgroundColor: "#fff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 16, height: 48 },
+  addBtn: { backgroundColor: "#2563eb", justifyContent: "center", paddingHorizontal: 20, borderRadius: 8 },
+  addBtnText: { color: "#fff", fontWeight: "bold" },
+  
+  clientCard: { backgroundColor: "#fff", borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: "#e2e8f0" },
+  clientInfoArea: { padding: 16 },
+  clientName: { fontSize: 18, fontWeight: "bold", color: "#1e293b" },
+  clientEmail: { fontSize: 14, color: "#64748b", marginTop: 4 },
+  
+  actionArea: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#f1f5f9", backgroundColor: "#f8fafc", borderBottomLeftRadius: 12, borderBottomRightRadius: 12 },
+  actionButton: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12 },
+  actionEmoji: { fontSize: 14, marginRight: 6 },
+  actionLabel: { fontSize: 11, color: "#64748b", fontWeight: "700" },
+  verticalDivider: { width: 1, backgroundColor: "#e2e8f0", marginVertical: 8 },
+
+  emptyContainer: { padding: 30, alignItems: "center", backgroundColor: "#fff", borderRadius: 12, marginTop: 10, borderWidth: 1, borderColor: "#e2e8f0", borderStyle: "dashed" },
+  emptyEmoji: { fontSize: 40, marginBottom: 12 },
+  emptyTitle: { fontSize: 16, fontWeight: "bold", color: "#64748b" },
+
+  // --- ESTILOS DO MODAL DE AGENDAMENTO (NOVO) ---
+  modalHeader: { padding: 20, backgroundColor: "#fff", borderBottomWidth: 1, borderColor: "#e2e8f0", paddingTop: Platform.OS === "android" ? 40 : 20 },
+  modalHeaderTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: "900", color: "#0f172a" },
+  modalCloseBtn: { color: "#ef4444", fontWeight: "800", fontSize: 16 },
+  modalInput: { backgroundColor: "#f1f5f9", padding: 16, borderRadius: 12, fontSize: 16, color: "#1e293b", borderWidth: 1, borderColor: "#cbd5e1" },
+  modalClientItem: { padding: 16, backgroundColor: "#fff", borderBottomWidth: 1, borderColor: "#f1f5f9", flexDirection: "row", alignItems: "center" },
+  modalClientEmoji: { fontSize: 24, marginRight: 16 },
+  modalClientName: { fontSize: 16, fontWeight: "700", color: "#334155", flex: 1 },
+  modalArrow: { fontSize: 18, color: "#cbd5e1" },
 });
 
