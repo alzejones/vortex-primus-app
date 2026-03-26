@@ -1,14 +1,14 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { supabase } from "../../../lib/supabase";
 
@@ -76,21 +76,41 @@ export default function NewAppointment() {
 
     setLoading(true);
     
-    // MOCK: Aqui entrará a gravação no banco de dados na próxima etapa!
-    console.log("Salvando agendamento:", {
-      client_id,
-      types: selectedTypes,
-      date: selectedDate.toLocaleDateString(),
-      time: selectedTime,
-      notes
-    });
+    try {
+      // 1. Pega o ID do treinador logado
+      const { data: { user } } = await supabase.auth.getUser();
+      let trainerId = null;
+      if (user) {
+        const { data: trainer } = await supabase.from('trainers').select('id').eq('user_id', user.id).single();
+        if (trainer) trainerId = trainer.id;
+      }
 
-    setTimeout(() => {
+      // 2. Formata a data para o padrão do banco (YYYY-MM-DD)
+      const isoDate = selectedDate.toISOString().split('T')[0];
+
+      // 3. Salva no banco de dados real
+      const { error } = await supabase.from('appointments').insert([{
+        trainer_id: trainerId,
+        client_id: client_id,
+        appointment_date: isoDate,
+        appointment_time: selectedTime,
+        types: selectedTypes,
+        notes: notes,
+        status: 'Agendado'
+      }]);
+
+      if (error) throw error;
+
       alert("✅ Agendamento realizado com sucesso!");
-      setLoading(false);
       router.back();
-    }, 1000);
+
+    } catch (err: any) {
+      alert("Erro ao salvar: " + (err.message || JSON.stringify(err)));
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
