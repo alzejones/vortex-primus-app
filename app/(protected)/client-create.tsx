@@ -34,17 +34,23 @@ export default function ClientCreate() {
 
   // Máscara inteligente para Celular
   function handlePhoneChange(text: string) {
+    if (!text) {
+      handleChange("phone", "");
+      return;
+    }
     let v = text.replace(/\D/g, ""); 
     v = v.substring(0, 11); 
-    
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
     if (v.length > 7) v = v.replace(/(\d{5})(\d)/, "$1-$2");
-    
     handleChange("phone", v);
   }
 
   // Máscara inteligente para Data
   function handleDateChange(text: string) {
+    if (!text) {
+      handleChange("birth_date", "");
+      return;
+    }
     let v = text.replace(/\D/g, ""); 
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/, "$1/$2");
     if (v.length > 5) v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
@@ -53,17 +59,15 @@ export default function ClientCreate() {
 
   // Calcula a idade automaticamente
   const calculatedAge = useMemo(() => {
-    if (form.birth_date.length === 10) {
+    if (form.birth_date && form.birth_date.length === 10) {
       const [d, m, y] = form.birth_date.split("/");
       const birth = new Date(Number(y), Number(m) - 1, Number(d));
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const mDiff = today.getMonth() - birth.getMonth();
-      
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) {
         age--;
       }
-      
       return age >= 0 && age < 150 ? `${age} anos` : "";
     }
     return "";
@@ -76,9 +80,12 @@ export default function ClientCreate() {
     return `${y}-${m}-${d}`;
   }
 
-async function handleSave() {
-    if (!form.name.trim()) {
-      Alert.alert("Atenção", "O nome do aluno é obrigatório.");
+  async function handleSave() {
+    // 🔴 PROTEÇÃO MÁXIMA CONTRA CRASH SILENCIOSO: Garante que name nunca é nulo
+    const safeName = form.name || "";
+    
+    if (safeName.trim() === "") {
+      Alert.alert("Atenção", "O nome do cliente é obrigatório.");
       return;
     }
 
@@ -88,7 +95,7 @@ async function handleSave() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        Alert.alert("Erro", "Sessão expirada ou usuário não autenticado.");
+        Alert.alert("Erro", "Sessão expirada ou utilizador não autenticado.");
         setLoading(false);
         return;
       }
@@ -107,23 +114,29 @@ async function handleSave() {
 
       const formattedDate = parseDateToDB(form.birth_date);
 
-      // 🔴 PROTEÇÃO DO BANCO: Pega apenas a 1ª letra do sexo para não quebrar a coluna 'character(1)'
-      let safeGender = form.gender.trim().toUpperCase();
-      if (safeGender.length > 0) {
-        safeGender = safeGender.charAt(0); 
+      // Proteção garantida para o Gênero (M ou F)
+      const safeGenderVal = form.gender || "";
+      let safeGenderDB = safeGenderVal.trim().toUpperCase();
+      if (safeGenderDB.length > 0) {
+        safeGenderDB = safeGenderDB.charAt(0); 
       } else {
-        safeGender = null as any;
+        safeGenderDB = null as any;
       }
 
+      const safeEmail = form.email || "";
+      const safePhone = form.phone || "";
+      const safeNotes = form.notes || "";
+
+      // Payload final usando "observation" conforme sua tabela
       const payload = {
         trainer_id: trainer.id,
-        name: form.name.trim(),
-        email: form.email.trim() || null,
-        phone: form.phone.trim() || null,
+        name: safeName.trim(),
+        email: safeEmail.trim() || null,
+        phone: safePhone.trim() || null,
         birth_date: formattedDate,
-        gender: safeGender,
+        gender: safeGenderDB,
         height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
-        observation: form.notes.trim() || null, // Voltou para observation!
+        observation: safeNotes.trim() || null,
       };
 
       const { error } = await supabase.from("clients").insert([payload]);
@@ -132,21 +145,22 @@ async function handleSave() {
         throw error;
       }
 
-      Alert.alert("Sucesso", "Aluno cadastrado com sucesso!");
-      router.back(); 
+      Alert.alert(
+        "Sucesso", 
+        "Cliente cadastrado com sucesso!",
+        [{ text: "OK", onPress: () => router.back() }]
+      );
 
     } catch (error: any) {
-      console.log("Erro ao guardar aluno:", error);
+      console.log("Erro no catch:", error);
       Alert.alert(
-        "Erro no Banco de Dados", 
-        error.message || "Não foi possível salvar. Verifique os dados digitados."
+        "Erro ao Salvar", 
+        error.message || "Ocorreu um erro inesperado ao salvar no banco."
       );
     } finally {
       setLoading(false);
     }
   }
-
-
 
   return (
     <KeyboardAvoidingView
@@ -218,6 +232,7 @@ async function handleSave() {
               value={form.gender}
               onChangeText={(v) => handleChange("gender", v)}
               style={styles.input}
+              maxLength={1}
             />
           </View>
         </View>
