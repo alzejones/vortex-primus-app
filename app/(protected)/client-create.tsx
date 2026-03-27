@@ -76,25 +76,23 @@ export default function ClientCreate() {
     return `${y}-${m}-${d}`;
   }
 
-  async function handleSave() {
+async function handleSave() {
     if (!form.name.trim()) {
-      Alert.alert("Atenção", "O nome do cliente é obrigatório.");
+      Alert.alert("Atenção", "O nome do aluno é obrigatório.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // 1. Busca o utilizador logado de forma direta e segura
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !user) {
-        Alert.alert("Erro", "Sessão expirada ou utilizador não autenticado.");
+        Alert.alert("Erro", "Sessão expirada ou usuário não autenticado.");
         setLoading(false);
         return;
       }
 
-      // 2. Busca o perfil do treinador
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
         .select("id")
@@ -109,32 +107,46 @@ export default function ClientCreate() {
 
       const formattedDate = parseDateToDB(form.birth_date);
 
-      // 3. Insere na base de dados (evitando enviar strings vazias para campos que não existem)
-      const { error } = await supabase.from("clients").insert([
-        {
-          trainer_id: trainer.id,
-          name: form.name.trim(),
-          email: form.email.trim() || null,
-          phone: form.phone.trim() || null,
-          birth_date: formattedDate,
-          gender: form.gender.trim() || null,
-          height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
-          observation: form.notes.trim() || null,
-        },
-      ]);
+      // 🔴 PROTEÇÃO DO BANCO: Pega apenas a 1ª letra do sexo para não quebrar a coluna 'character(1)'
+      let safeGender = form.gender.trim().toUpperCase();
+      if (safeGender.length > 0) {
+        safeGender = safeGender.charAt(0); 
+      } else {
+        safeGender = null as any;
+      }
 
-      if (error) throw error; // Lança o erro para o bloco catch se houver falha na base de dados
+      const payload = {
+        trainer_id: trainer.id,
+        name: form.name.trim(),
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+        birth_date: formattedDate,
+        gender: safeGender,
+        height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
+        observation: form.notes.trim() || null, // Voltou para observation!
+      };
 
-      Alert.alert("Sucesso", "Cliente cadastrado com sucesso!");
+      const { error } = await supabase.from("clients").insert([payload]);
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert("Sucesso", "Aluno cadastrado com sucesso!");
       router.back(); 
 
     } catch (error: any) {
-      console.log("Erro ao guardar cliente:", error);
-      Alert.alert("Erro ao guardar", error.message || "Ocorreu um erro inesperado. Verifique os dados.");
+      console.log("Erro ao guardar aluno:", error);
+      Alert.alert(
+        "Erro no Banco de Dados", 
+        error.message || "Não foi possível salvar. Verifique os dados digitados."
+      );
     } finally {
       setLoading(false);
     }
   }
+
+
 
   return (
     <KeyboardAvoidingView
