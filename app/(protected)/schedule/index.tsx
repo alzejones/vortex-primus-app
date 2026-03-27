@@ -200,3 +200,4 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", marginTop: 60 },
   emptyStateText: { color: "#6b7280", fontSize: 16 },
 });
+
