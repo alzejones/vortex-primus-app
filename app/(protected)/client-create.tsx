@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -12,12 +11,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 
 export default function ClientCreate() {
   const router = useRouter();
+  const { session } = useAuth();
 
-  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -32,44 +32,44 @@ export default function ClientCreate() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  // Máscara inteligente para Celular: converte números digitados para (99) 99999-9999
   function handlePhoneChange(text: string) {
-    if (!text) {
-      handleChange("phone", "");
-      return;
-    }
-    let v = text.replace(/\D/g, ""); 
-    v = v.substring(0, 11); 
+    let v = text.replace(/\D/g, ""); // Remove tudo que não é número
+    v = v.substring(0, 11); // Limita a 11 dígitos (2 do DDD + 9 do número)
+    
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
     if (v.length > 7) v = v.replace(/(\d{5})(\d)/, "$1-$2");
+    
     handleChange("phone", v);
   }
 
+  // Máscara inteligente para Data: converte números digitados para DD/MM/AAAA
   function handleDateChange(text: string) {
-    if (!text) {
-      handleChange("birth_date", "");
-      return;
-    }
-    let v = text.replace(/\D/g, ""); 
+    let v = text.replace(/\D/g, ""); // Remove tudo que não é número
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/, "$1/$2");
     if (v.length > 5) v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
-    handleChange("birth_date", v.substring(0, 10)); 
+    handleChange("birth_date", v.substring(0, 10)); // Limita a 10 caracteres
   }
 
+  // Calcula a idade automaticamente baseada no texto digitado
   const calculatedAge = useMemo(() => {
-    if (form.birth_date && form.birth_date.length === 10) {
+    if (form.birth_date.length === 10) {
       const [d, m, y] = form.birth_date.split("/");
       const birth = new Date(Number(y), Number(m) - 1, Number(d));
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const mDiff = today.getMonth() - birth.getMonth();
+      
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) {
         age--;
       }
+      
       return age >= 0 && age < 150 ? `${age} anos` : "";
     }
     return "";
   }, [form.birth_date]);
 
+  // Converte DD/MM/AAAA para YYYY-MM-DD (para o banco de dados)
   function parseDateToDB(dateStr: string) {
     if (!dateStr || dateStr.length !== 10) return null;
     const [d, m, y] = dateStr.split('/');
@@ -77,102 +77,65 @@ export default function ClientCreate() {
   }
 
   async function handleSave() {
-    console.log("Botão Salvar clicado! Versão 3.0");
-    
-    const safeName = form.name || "";
-    
-    if (safeName.trim() === "") {
+    if (!session?.user) {
+      Alert.alert("Erro", "Usuário não autenticado.");
+      return;
+    }
+
+    if (!form.name.trim()) {
       Alert.alert("Atenção", "O nome do cliente é obrigatório.");
       return;
     }
 
-    setLoading(true);
+    const { data: trainer, error: trainerError } = await supabase
+      .from("trainers")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .single();
 
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        Alert.alert("Erro", "Sessão expirada ou utilizador não autenticado.");
-        setLoading(false);
-        return;
-      }
+    if (trainerError || !trainer) {
+      Alert.alert("Erro", "Trainer não encontrado para este usuário.");
+      return;
+    }
 
-      const { data: trainer, error: trainerError } = await supabase
-        .from("trainers")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
+    const formattedDate = parseDateToDB(form.birth_date);
 
-      if (trainerError || !trainer) {
-        Alert.alert("Erro", "Perfil de treinador não encontrado.");
-        setLoading(false);
-        return;
-      }
-
-      const formattedDate = parseDateToDB(form.birth_date);
-
-      const safeGenderVal = form.gender || "";
-      let safeGenderDB = safeGenderVal.trim().toUpperCase();
-      if (safeGenderDB.length > 0) {
-        safeGenderDB = safeGenderDB.charAt(0); 
-      } else {
-        safeGenderDB = null as any;
-      }
-
-      const safeEmail = form.email || "";
-      const safePhone = form.phone || "";
-      const safeNotes = form.notes || "";
-
-      const payload = {
+    const { error } = await supabase.from("clients").insert([
+      {
         trainer_id: trainer.id,
-        name: safeName.trim(),
-        email: safeEmail.trim() || null,
-        phone: safePhone.trim() || null,
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
         birth_date: formattedDate,
-        gender: safeGenderDB,
+        gender: form.gender.trim(),
         height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
-        observation: safeNotes.trim() || null,
-      };
+        observation: form.notes.trim(),
+      },
+    ]);
 
-      const { error } = await supabase.from("clients").insert([payload]);
-
-      if (error) {
-        throw error;
-      }
-
-      Alert.alert(
-        "Sucesso", 
-        "Cliente cadastrado com sucesso!",
-        [{ text: "OK", onPress: () => router.back() }]
-      );
-
-    } catch (error: any) {
-      console.log("Erro no catch:", error);
-      Alert.alert(
-        "Erro ao Salvar", 
-        error.message || "Ocorreu um erro inesperado ao salvar no banco."
-      );
-    } finally {
-      setLoading(false);
+    if (error) {
+      Alert.alert("Erro ao salvar", error.message);
+    } else {
+      Alert.alert("Sucesso", "Cliente cadastrado com sucesso!");
+      router.back(); 
     }
   }
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#f9fafb" }}
+      // Forçamos o Android a redimensionar a altura (height) quando o teclado abre
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 20} 
     >
       <ScrollView 
         style={styles.container} 
+        // flexGrow garante que a rolagem funcione bem, e paddingBottom extra grande libera o espaço do teclado
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled" 
       >
         <Text style={styles.pageTitle}>Novo Cliente</Text>
-        
-        {/* MARCADOR DE VERSÃO AQUI */}
-        <Text style={styles.versionMarker}>[ VERSÃO 3.0 - TESTE ]</Text>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Nome Completo *</Text>
@@ -230,7 +193,6 @@ export default function ClientCreate() {
               value={form.gender}
               onChangeText={(v) => handleChange("gender", v)}
               style={styles.input}
-              maxLength={1}
             />
           </View>
         </View>
@@ -259,12 +221,10 @@ export default function ClientCreate() {
           />
         </View>
 
-        <TouchableOpacity onPress={handleSave} style={styles.button} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Salvar Cliente</Text>
-          )}
+        <TouchableOpacity onPress={handleSave} style={styles.button}>
+          <Text style={styles.buttonText}>
+            Salvar Cliente
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -280,18 +240,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#111827",
-    marginBottom: 5,
-    marginTop: 10,
-  },
-  versionMarker: {
-    color: "#ef4444",
-    fontWeight: "900",
-    fontSize: 16,
     marginBottom: 20,
-    backgroundColor: "#fee2e2",
-    padding: 8,
-    borderRadius: 8,
-    textAlign: "center",
+    marginTop: 10,
   },
   inputGroup: {
     marginBottom: 16,
@@ -340,4 +290,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-
