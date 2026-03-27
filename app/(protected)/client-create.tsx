@@ -32,7 +32,6 @@ export default function ClientCreate() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Máscara inteligente para Celular
   function handlePhoneChange(text: string) {
     if (!text) {
       handleChange("phone", "");
@@ -45,7 +44,6 @@ export default function ClientCreate() {
     handleChange("phone", v);
   }
 
-  // Máscara inteligente para Data
   function handleDateChange(text: string) {
     if (!text) {
       handleChange("birth_date", "");
@@ -57,7 +55,6 @@ export default function ClientCreate() {
     handleChange("birth_date", v.substring(0, 10)); 
   }
 
-  // Calcula a idade automaticamente
   const calculatedAge = useMemo(() => {
     if (form.birth_date && form.birth_date.length === 10) {
       const [d, m, y] = form.birth_date.split("/");
@@ -73,7 +70,6 @@ export default function ClientCreate() {
     return "";
   }, [form.birth_date]);
 
-  // Converte DD/MM/AAAA para YYYY-MM-DD
   function parseDateToDB(dateStr: string) {
     if (!dateStr || dateStr.length !== 10) return null;
     const [d, m, y] = dateStr.split('/');
@@ -81,7 +77,8 @@ export default function ClientCreate() {
   }
 
   async function handleSave() {
-    // 🔴 PROTEÇÃO MÁXIMA CONTRA CRASH SILENCIOSO: Garante que name nunca é nulo
+    console.log("Botão Salvar clicado! Versão 3.0");
+    
     const safeName = form.name || "";
     
     if (safeName.trim() === "") {
@@ -114,7 +111,6 @@ export default function ClientCreate() {
 
       const formattedDate = parseDateToDB(form.birth_date);
 
-      // Proteção garantida para o Gênero (M ou F)
       const safeGenderVal = form.gender || "";
       let safeGenderDB = safeGenderVal.trim().toUpperCase();
       if (safeGenderDB.length > 0) {
@@ -127,7 +123,6 @@ export default function ClientCreate() {
       const safePhone = form.phone || "";
       const safeNotes = form.notes || "";
 
-      // Payload final usando "observation" conforme sua tabela
       const payload = {
         trainer_id: trainer.id,
         name: safeName.trim(),
@@ -175,6 +170,9 @@ export default function ClientCreate() {
         keyboardShouldPersistTaps="handled" 
       >
         <Text style={styles.pageTitle}>Novo Cliente</Text>
+        
+        {/* MARCADOR DE VERSÃO AQUI */}
+        <Text style={styles.versionMarker}>[ VERSÃO 3.0 - TESTE ]</Text>
 
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Nome Completo *</Text>
@@ -282,8 +280,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#111827",
-    marginBottom: 20,
+    marginBottom: 5,
     marginTop: 10,
+  },
+  versionMarker: {
+    color: "#ef4444",
+    fontWeight: "900",
+    fontSize: 16,
+    marginBottom: 20,
+    backgroundColor: "#fee2e2",
+    padding: 8,
+    borderRadius: 8,
+    textAlign: "center",
   },
   inputGroup: {
     marginBottom: 16,
