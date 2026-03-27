@@ -2,7 +2,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -43,6 +42,10 @@ export default function ClientDetails() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // 🔴 NOVO: Estado para substituir os Alerts falhos e botão de confirmação dupla
+  const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   // Estados
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -79,8 +82,7 @@ export default function ClientDetails() {
       }
     } catch (error) {
       console.error("Erro ao carregar:", error);
-      Alert.alert("Erro", "Não foi possível carregar os dados do aluno.");
-      router.back();
+      setStatusMsg({ text: "Não foi possível carregar os dados do aluno.", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -88,12 +90,14 @@ export default function ClientDetails() {
 
   async function handleUpdate() {
     if (!name.trim()) {
-      Alert.alert("Aviso", "O nome é obrigatório.");
+      setStatusMsg({ text: "O nome é obrigatório.", type: "error" });
       return;
     }
 
     try {
       setSaving(true);
+      setStatusMsg({ text: "", type: "" });
+      
       const { error } = await supabase
         .from("clients")
         .update({
@@ -110,63 +114,58 @@ export default function ClientDetails() {
         .eq("id", clientId);
 
       if (error) throw error;
-      Alert.alert("Sucesso", "Perfil atualizado!");
+      
+      setStatusMsg({ text: "Perfil atualizado com sucesso!", type: "success" });
     } catch (error: any) {
-      Alert.alert("Erro Técnico", error.message || "Falha ao salvar alterações.");
+      setStatusMsg({ text: error.message || "Falha ao salvar alterações.", type: "error" });
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    Alert.alert(
-      "Excluir Aluno",
-      "Isso apagará permanentemente o aluno e todo o seu histórico. Confirmar?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setSaving(true);
-              
-              // ADICIONADO .select() para garantir que o Supabase nos avise se a exclusão foi silenciosamente bloqueada
-              const { data, error } = await supabase
-                .from("clients")
-                .delete()
-                .eq("id", clientId)
-                .select();
+    // 🔴 NOVO: Sistema de confirmação de 2 cliques (Ignora o bug do Alert)
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      // Se ele não clicar em 4 segundos, o botão volta ao normal
+      setTimeout(() => setConfirmDelete(false), 4000); 
+      return;
+    }
 
-              if (error) throw error;
+    try {
+      setSaving(true);
+      setStatusMsg({ text: "", type: "" });
+      
+      const { data, error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", clientId)
+        .select();
 
-              // Verificação de bloqueio silencioso (RLS)
-              if (!data || data.length === 0) {
-                Alert.alert(
-                  "Bloqueio de Segurança",
-                  "O registro não pôde ser excluído. Vá ao Supabase e verifique se a política (Policy) de 'DELETE' está ativada na tabela 'clients'."
-                );
-                return;
-              }
+      if (error) throw error;
 
-              // Pequeno atraso para evitar o bug do iOS/Android onde a navegação 
-              // não ocorre se o modal do Alert ainda estiver animando/fechando
-              setTimeout(() => {
-                router.replace("/(protected)/dashboard");
-              }, 100);
+      if (!data || data.length === 0) {
+        setStatusMsg({ text: "Bloqueio de Segurança: O registo não pôde ser excluído.", type: "error" });
+        setConfirmDelete(false);
+        return;
+      }
 
-            } catch (error: any) {
-              Alert.alert(
-                "Erro ao excluir", 
-                "Se o aluno tiver avaliações cadastradas, ative a opção 'Cascade Delete' no banco de dados para poder apagá-lo.\n\nDetalhes: " + error.message
-              );
-            } finally {
-              setSaving(false);
-            }
-          },
-        },
-      ]
-    );
+      setStatusMsg({ text: "Aluno excluído com sucesso!", type: "success" });
+      
+      setTimeout(() => {
+        router.back(); // Retorno 100% seguro para o dashboard
+      }, 1500);
+
+    } catch (error: any) {
+      // 🔴 Captura o erro do banco de dados (ex: se o aluno estiver na agenda)
+      setStatusMsg({ 
+        text: "Erro ao excluir: O aluno possui agendamentos ou avaliações cadastradas. Apague o histórico dele primeiro.", 
+        type: "error" 
+      });
+      setConfirmDelete(false);
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -196,6 +195,22 @@ export default function ClientDetails() {
                 />
             </View>
         </View>
+
+        {/* 🔴 CAIXA DE MENSAGENS VISUAIS (SUBSTITUI OS ALERTS) */}
+        {statusMsg.text !== "" && (
+          <View style={[
+            styles.statusBox, 
+            statusMsg.type === "error" ? styles.statusError : styles.statusSuccess
+          ]}>
+            <Text style={[
+              styles.statusText,
+              statusMsg.type === "error" ? styles.statusTextError : styles.statusTextSuccess
+            ]}>
+              {statusMsg.type === "error" ? "⚠️ " : "✅ "}
+              {statusMsg.text}
+            </Text>
+          </View>
+        )}
 
         {/* NOVA ÁREA DE BOTÕES LADO A LADO */}
         <View style={{ flexDirection: 'row', marginBottom: 20 }}>
@@ -279,8 +294,17 @@ export default function ClientDetails() {
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>SALVAR ALTERAÇÕES</Text>}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.deleteButton} onPress={handleDelete} disabled={saving}>
-          <Text style={styles.deleteButtonText}>EXCLUIR ALUNO</Text>
+        {/* 🔴 BOTÃO DE EXCLUIR INTELIGENTE */}
+        <TouchableOpacity 
+          style={[styles.deleteButton, confirmDelete && { backgroundColor: "#ef4444", borderColor: "#dc2626" }]} 
+          onPress={handleDelete} 
+          disabled={saving}
+        >
+          {saving ? <ActivityIndicator color={confirmDelete ? "#fff" : "#dc2626"} /> : (
+            <Text style={[styles.deleteButtonText, confirmDelete && { color: "#fff" }]}>
+              {confirmDelete ? "⚠️ TEM CERTEZA? CLIQUE PARA EXCLUIR" : "EXCLUIR ALUNO"}
+            </Text>
+          )}
         </TouchableOpacity>
 
       </ScrollView>
@@ -297,6 +321,13 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 8, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
   statusLabel: { marginRight: 8, fontWeight: '700', color: '#374151', fontSize: 12, textTransform: 'uppercase' },
   
+  statusBox: { padding: 14, borderRadius: 10, marginBottom: 20, borderWidth: 1 },
+  statusError: { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
+  statusSuccess: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
+  statusText: { fontWeight: "bold", fontSize: 14, lineHeight: 20 },
+  statusTextError: { color: "#dc2626" },
+  statusTextSuccess: { color: "#16a34a" },
+
   assessmentsButton: {
     backgroundColor: "#2563eb",
     padding: 18,
@@ -329,4 +360,3 @@ const styles = StyleSheet.create({
   deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2" },
   deleteButtonText: { color: "#dc2626", fontSize: 14, fontWeight: "bold" },
 });
-
