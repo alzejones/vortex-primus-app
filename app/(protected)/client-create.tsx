@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -11,13 +12,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 
 export default function ClientCreate() {
   const router = useRouter();
-  const { session } = useAuth();
 
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -32,10 +32,10 @@ export default function ClientCreate() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  // Máscara inteligente para Celular: converte números digitados para (99) 99999-9999
+  // Máscara inteligente para Celular
   function handlePhoneChange(text: string) {
-    let v = text.replace(/\D/g, ""); // Remove tudo que não é número
-    v = v.substring(0, 11); // Limita a 11 dígitos (2 do DDD + 9 do número)
+    let v = text.replace(/\D/g, ""); 
+    v = v.substring(0, 11); 
     
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
     if (v.length > 7) v = v.replace(/(\d{5})(\d)/, "$1-$2");
@@ -43,15 +43,15 @@ export default function ClientCreate() {
     handleChange("phone", v);
   }
 
-  // Máscara inteligente para Data: converte números digitados para DD/MM/AAAA
+  // Máscara inteligente para Data
   function handleDateChange(text: string) {
-    let v = text.replace(/\D/g, ""); // Remove tudo que não é número
+    let v = text.replace(/\D/g, ""); 
     if (v.length > 2) v = v.replace(/^(\d{2})(\d)/, "$1/$2");
     if (v.length > 5) v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
-    handleChange("birth_date", v.substring(0, 10)); // Limita a 10 caracteres
+    handleChange("birth_date", v.substring(0, 10)); 
   }
 
-  // Calcula a idade automaticamente baseada no texto digitado
+  // Calcula a idade automaticamente
   const calculatedAge = useMemo(() => {
     if (form.birth_date.length === 10) {
       const [d, m, y] = form.birth_date.split("/");
@@ -69,7 +69,7 @@ export default function ClientCreate() {
     return "";
   }, [form.birth_date]);
 
-  // Converte DD/MM/AAAA para YYYY-MM-DD (para o banco de dados)
+  // Converte DD/MM/AAAA para YYYY-MM-DD
   function parseDateToDB(dateStr: string) {
     if (!dateStr || dateStr.length !== 10) return null;
     const [d, m, y] = dateStr.split('/');
@@ -77,60 +77,73 @@ export default function ClientCreate() {
   }
 
   async function handleSave() {
-    if (!session?.user) {
-      Alert.alert("Erro", "Usuário não autenticado.");
-      return;
-    }
-
     if (!form.name.trim()) {
       Alert.alert("Atenção", "O nome do cliente é obrigatório.");
       return;
     }
 
-    const { data: trainer, error: trainerError } = await supabase
-      .from("trainers")
-      .select("id")
-      .eq("user_id", session.user.id)
-      .single();
+    setLoading(true);
 
-    if (trainerError || !trainer) {
-      Alert.alert("Erro", "Trainer não encontrado para este usuário.");
-      return;
-    }
+    try {
+      // 1. Busca o utilizador logado de forma direta e segura
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        Alert.alert("Erro", "Sessão expirada ou utilizador não autenticado.");
+        setLoading(false);
+        return;
+      }
 
-    const formattedDate = parseDateToDB(form.birth_date);
+      // 2. Busca o perfil do treinador
+      const { data: trainer, error: trainerError } = await supabase
+        .from("trainers")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
-    const { error } = await supabase.from("clients").insert([
-      {
-        trainer_id: trainer.id,
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        birth_date: formattedDate,
-        gender: form.gender.trim(),
-        height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
-        observation: form.notes.trim(),
-      },
-    ]);
+      if (trainerError || !trainer) {
+        Alert.alert("Erro", "Perfil de treinador não encontrado.");
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
-      Alert.alert("Erro ao salvar", error.message);
-    } else {
+      const formattedDate = parseDateToDB(form.birth_date);
+
+      // 3. Insere na base de dados (evitando enviar strings vazias para campos que não existem)
+      const { error } = await supabase.from("clients").insert([
+        {
+          trainer_id: trainer.id,
+          name: form.name.trim(),
+          email: form.email.trim() || null,
+          phone: form.phone.trim() || null,
+          birth_date: formattedDate,
+          gender: form.gender.trim() || null,
+          height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
+          observation: form.notes.trim() || null,
+        },
+      ]);
+
+      if (error) throw error; // Lança o erro para o bloco catch se houver falha na base de dados
+
       Alert.alert("Sucesso", "Cliente cadastrado com sucesso!");
       router.back(); 
+
+    } catch (error: any) {
+      console.log("Erro ao guardar cliente:", error);
+      Alert.alert("Erro ao guardar", error.message || "Ocorreu um erro inesperado. Verifique os dados.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#f9fafb" }}
-      // Forçamos o Android a redimensionar a altura (height) quando o teclado abre
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 20} 
     >
       <ScrollView 
         style={styles.container} 
-        // flexGrow garante que a rolagem funcione bem, e paddingBottom extra grande libera o espaço do teclado
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }} 
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled" 
@@ -221,10 +234,12 @@ export default function ClientCreate() {
           />
         </View>
 
-        <TouchableOpacity onPress={handleSave} style={styles.button}>
-          <Text style={styles.buttonText}>
-            Salvar Cliente
-          </Text>
+        <TouchableOpacity onPress={handleSave} style={styles.button} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Salvar Cliente</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -290,3 +305,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
