@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { getHistoryColor, getSmartWeightColor } from '../utils/assessmentCalculations';
 
 interface EvolutionPanelProps {
-  evolutionData?: any; // Deixamos opcional, pois o painel agora é autossuficiente
+  evolutionData?: any; 
   currentAssessment: any;
   prevAssessment: any;
   firstAssessment: any;
@@ -30,13 +30,13 @@ export default function EvolutionPanel({
   const prevDate = formatDate(prevAssessment?.date);
   const firstDate = formatDate(firstAssessment?.date);
 
-  // NOVA FUNÇÃO: O próprio painel calcula a diferença com precisão
+  // 🔴 CORREÇÃO AQUI: Força o JavaScript a calcular a diferença travando em 1 casa decimal
   const calcDiff = (curr: any, prev: any) => {
     if (curr === undefined || curr === null || prev === undefined || prev === null) return null;
     const c = Number(curr);
     const p = Number(prev);
     if (isNaN(c) || isNaN(p)) return null;
-    return c - p;
+    return parseFloat((c - p).toFixed(1)); 
   };
 
   const getEmoji = (val: any) => {
@@ -45,9 +45,7 @@ export default function EvolutionPanel({
     return num > 0 ? '⏫' : '⏬';
   };
 
-  // Componente interno para desenhar cada linha com perfeição
   const DataRow = ({ label, diffValue, currW, prevW, currF, prevF, currM, prevM, type, suffix = "" }: any) => {
-    // Se faltar algum dado para calcular, mostra apenas o traço
     if (diffValue === null || diffValue === undefined) {
       return (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
@@ -61,8 +59,8 @@ export default function EvolutionPanel({
     if (type === 'weight') color = getSmartWeightColor(currW, prevW, currF, prevF, currM, prevM);
     else if (type === 'fat') color = getHistoryColor(currF, prevF, 'fat');
     else if (type === 'muscle') color = getHistoryColor(currM, prevM, 'muscle');
-    else if (type === 'visceral' || type === 'metabolic') color = getHistoryColor(currF, prevF, 'fat'); // Menos é melhor
-    else if (type === 'basal') color = getHistoryColor(currM, prevM, 'muscle'); // Mais é melhor
+    else if (type === 'visceral' || type === 'metabolic') color = getHistoryColor(currF, prevF, 'fat');
+    else if (type === 'basal') color = getHistoryColor(currM, prevM, 'muscle');
 
     const valFormatted = formatValue(diffValue);
     const emoji = getEmoji(diffValue);
@@ -129,6 +127,4 @@ export default function EvolutionPanel({
     </View>
   );
 }
-
-
 

@@ -11,7 +11,7 @@ interface AssessmentHistoryCardProps {
   onEdit: (assessment: any) => void;
   onDelete: (id: string) => void;
   onWhatsApp: (assessment: any) => void;
-  onPhysicalTests: (assessment: any) => void; // Prop obrigatória
+  onPhysicalTests: (assessment: any) => void; 
 }
 
 export default function AssessmentHistoryCard({
@@ -46,6 +46,9 @@ export default function AssessmentHistoryCard({
   const dateObj = new Date(assessment.date);
   const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // Função auxiliar segura para 1 casa decimal
+  const formatNum = (val: any) => val != null && val !== "" ? Number(val).toFixed(1) : '--';
 
   return (
     <View style={{
@@ -83,7 +86,7 @@ export default function AssessmentHistoryCard({
                   anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage
                 ) 
               }}>
-                {anthro?.weight || '--'}
+                {formatNum(anthro?.weight)}
               </Text>
               <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>kg</Text>
             </View>
@@ -93,7 +96,9 @@ export default function AssessmentHistoryCard({
           <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#f1f5f9' }}>
             <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat') }}>{anthro?.body_fat || '--'}</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat') }}>
+                {formatNum(anthro?.body_fat)}
+              </Text>
               <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>%</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.body_fat, previousAnthro?.body_fat, "fat")}</View>
@@ -102,7 +107,9 @@ export default function AssessmentHistoryCard({
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle') }}>{anthro?.muscle_mass_percentage || '--'}</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle') }}>
+                {formatNum(anthro?.muscle_mass_percentage)}
+              </Text>
               <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>%</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, "muscle")}</View>
@@ -114,7 +121,7 @@ export default function AssessmentHistoryCard({
         </View>
       )}
 
-      {/* RODAPÉ DE AÇÕES - O botão "Testes" está aqui */}
+      {/* RODAPÉ DE AÇÕES */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
         <View style={{ flexDirection: 'row', gap: 15, flex: 1 }}>
           <TouchableOpacity onPress={() => onEdit(assessment)}>
