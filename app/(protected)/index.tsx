@@ -169,6 +169,17 @@ export default function Index() {
           <View style={[styles.progressBarFill, { width: `${Math.min(usagePercentage, 100)}%`, backgroundColor: usagePercentage >= 80 ? "#ef4444" : "#4f46e5" }]} />
         </View>
         {usagePercentage >= 80 && <Text style={styles.warning}>⚠️ Você está próximo do limite do seu plano.</Text>}
+
+        {/* 🔴 A PONTE DE VENDA (UPSELL CONTEXTUAL) */}
+        {usagePercentage >= 80 && (
+          <TouchableOpacity 
+            style={styles.upgradeDashboardBtn}
+            onPress={() => router.push("/(protected)/upgrade" as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.upgradeDashboardBtnText}>⭐ Fazer Upgrade Agora</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* 🔴 NOVO WIDGET: PRÓXIMAS AVALIAÇÕES */}
@@ -311,7 +322,6 @@ export default function Index() {
               </View>
             </TouchableOpacity>
 
-            {/* 🔴 MENU INFERIOR DOS CARDS AGORA É SCROLLÁVEL PARA CABER TUDO */}
             <View style={styles.clientActionsArea}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 
@@ -336,7 +346,7 @@ export default function Index() {
                 </TouchableOpacity>
                 <View style={styles.verticalDivider} />
 
-                {/* 4. ADICIONAR NOVA AVALIAÇÃO CORPORAL (O que estava faltando) */}
+                {/* 4. ADICIONAR NOVA AVALIAÇÃO CORPORAL */}
                 <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
                   <Text style={styles.actionEmoji}>➕</Text>
                   <Text style={styles.actionLabel}>Avaliar</Text>
@@ -386,6 +396,10 @@ const styles = StyleSheet.create({
   progressBarBackground: { height: 8, backgroundColor: "#f1f5f9", borderRadius: 99, overflow: "hidden" },
   progressBarFill: { height: "100%", borderRadius: 99 },
   warning: { marginTop: 12, color: "#ef4444", fontWeight: "600", fontSize: 13 },
+
+  // 🔴 NOVO ESTILO DO BOTÃO DE UPGRADE
+  upgradeDashboardBtn: { backgroundColor: "#111827", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 16, shadowColor: "#111827", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  upgradeDashboardBtnText: { color: "#ffffff", fontWeight: "800", fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5 },
 
   widgetHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   widgetTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a" },
