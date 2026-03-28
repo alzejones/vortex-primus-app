@@ -124,7 +124,7 @@ export default function UpgradeScreen() {
 
               if (trainerError) throw trainerError;
 
-              Alert.alert("Sucesso! 🎉", "O seu plano foi atualizado com sucesso. O seu limite de alunos aumentou!");
+              Alert.alert("Sucesso! 🎉", "O seu plano foi atualizado com sucesso. A sua capacidade de alunos aumentou!");
               router.replace("/(protected)");
 
             } catch (error: any) {
@@ -149,22 +149,18 @@ export default function UpgradeScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
       
-      {/* CABEÇALHO DE ALTA CONVERSÃO */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>← Voltar</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Desbloqueie o Próximo Nível</Text>
-        <Text style={styles.subtitle}>Escolha o limite ideal para escalar o seu negócio de consultoria. Sem taxas ocultas, cancele quando quiser.</Text>
+        <Text style={styles.title}>Eleve a sua Autoridade Profissional</Text>
+        <Text style={styles.subtitle}>Escolha o plano ideal para escalar a sua faturação. Ferramentas criadas para que os seus alunos vejam o seu valor real e nunca queiram parar de treinar.</Text>
       </View>
 
-      {/* CARTÕES DE PREÇO OBJETIVOS E LIMPOS */}
       <View style={styles.cardsContainer}>
         {plans.map((plan, index) => {
           const isCurrent = plan.id === currentPlanId;
           const isPopular = index === 1; 
-          
-          // O limite ilimitado
           const isUnlimited = plan.max_clients >= 900;
 
           return (
@@ -208,7 +204,7 @@ export default function UpgradeScreen() {
                 </View>
                 <View style={styles.featureItem}>
                   <Text style={[styles.featureIcon, isPopular && styles.textWhite]}>✨</Text>
-                  <Text style={[styles.featureText, isPopular && styles.textWhite]}>Acesso a <Text style={{fontWeight: 'bold'}}>todas</Text> as funcionalidades</Text>
+                  <Text style={[styles.featureText, isPopular && styles.textWhite]}>Acesso VIP a <Text style={{fontWeight: 'bold'}}>todas</Text> as ferramentas</Text>
                 </View>
               </View>
 
@@ -234,55 +230,55 @@ export default function UpgradeScreen() {
         })}
       </View>
 
-      {/* 🔴 SESSÃO DE COPYWRITING: O ARSENAL DO TREINADOR */}
+      {/* 🔴 SESSÃO DE COPYWRITING COMPORTAMENTAL AVANÇADA */}
       <View style={styles.benefitsSection}>
         <View style={styles.benefitsHeader}>
-          <Text style={styles.benefitsMainTitle}>O arsenal que você leva em todos os planos</Text>
-          <Text style={styles.benefitsMainSubtitle}>Ao assinar o Vortex Primus, você ganha acesso total e irrestrito a ferramentas de classe mundial desenhadas para aumentar o seu faturamento e fidelizar seus alunos.</Text>
+          <Text style={styles.benefitsMainTitle}>Não venda treinos. Venda resultados comprovados.</Text>
+          <Text style={styles.benefitsMainSubtitle}>A maioria dos treinadores falha por não saber mostrar o próprio valor. O Vortex Primus traduz o seu trabalho técnico em provas visuais e emocionais que fidelizam o seu aluno.</Text>
         </View>
 
-        {/* BENEFÍCIO 1: AGENDAMENTO */}
-        <View style={styles.benefitBox}>
-          <View style={[styles.benefitIconWrapper, { backgroundColor: '#e0e7ff' }]}>
-            <Text style={styles.benefitIcon}>📅</Text>
-          </View>
-          <Text style={styles.benefitTitle}>Agendamento Inteligente</Text>
-          <Text style={styles.benefitSubtitle}>Aumente a produtividade da sua operação e elimine esquecimentos.</Text>
-          
-          <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>WhatsApp Integrado:</Text> Envie confirmações direto para o aluno com 1 clique.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Controle Total:</Text> Gestão clara de agendamentos feitos e status de presença.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Organização Visual:</Text> Interface limpa para os envios e recebimentos.</Text>
-          </View>
-        </View>
-
-        {/* BENEFÍCIO 2: COMPOSIÇÃO CORPORAL */}
+        {/* BENEFÍCIO 1: COMPOSIÇÃO CORPORAL (Dopamina e Visual) */}
         <View style={styles.benefitBox}>
           <View style={[styles.benefitIconWrapper, { backgroundColor: '#fce7f3' }]}>
             <Text style={styles.benefitIcon}>⚖️</Text>
           </View>
-          <Text style={styles.benefitTitle}>Composição Corporal Avançada</Text>
-          <Text style={styles.benefitSubtitle}>Mostre visualmente que você e o aluno têm o controle absoluto dos resultados.</Text>
+          <Text style={styles.benefitTitle}>A Ciência da Fidelização Visual</Text>
+          <Text style={styles.benefitSubtitle}>Números numa folha de papel não motivam ninguém. Entregue ao seu aluno a dose de dopamina de ver o próprio corpo a transformar-se em gráficos claros.</Text>
           
           <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Curvas de Evolução:</Text> Gráficos de alta precisão mostrando o progresso.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Inteligência Comparativa:</Text> Gráficos mostrando o "Resultado Atual vs. Número Ideal".</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Histórico Comprovado:</Text> Tabelas que traduzem a melhora de cada marcador de saúde.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Curvas de Motivação:</Text> Gráficos visuais que comprovam que o esforço dele no treino está a valer a pena.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Alvo Claro:</Text> Comparações diretas de "Onde estou" versus "A minha saúde ideal".</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Autoridade Imediata:</Text> O aluno percebe imediatamente que você tem o controlo técnico do corpo dele.</Text>
           </View>
         </View>
 
-        {/* BENEFÍCIO 3: CONDICIONAMENTO CROSS */}
+        {/* BENEFÍCIO 2: CONDICIONAMENTO FÍSICO (Comportamento e Status) */}
         <View style={styles.benefitBox}>
           <View style={[styles.benefitIconWrapper, { backgroundColor: '#dcfce7' }]}>
             <Text style={styles.benefitIcon}>🏃</Text>
           </View>
-          <Text style={styles.benefitTitle}>Condicionamento Físico & Cross</Text>
-          <Text style={styles.benefitSubtitle}>Prove na prática que o seu método de treino gera performance real.</Text>
+          <Text style={styles.benefitTitle}>Resultados que o Aluno Sente na Pele</Text>
+          <Text style={styles.benefitSubtitle}>Traduza os jargões do Cross (Cargas, Pace, PRs) naquilo que o aluno realmente deseja: sentir-se uma pessoa mais capaz para a vida real.</Text>
           
           <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Flexibilidade Absoluta:</Text> Você no comando. Escolha exatamente quais exercícios quer avaliar.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Evolução de Força:</Text> Tabelas demonstrando aumentos de carga (PRs).</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Resistência & Mobilidade:</Text> Registre a diminuição de tempo (Pace) e ganho de amplitude.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Força e Confiança:</Text> Mostre que ele está mais forte e capaz de superar desafios através da evolução de cargas.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Mais Fôlego e Energia:</Text> Elimine o cansaço do dia a dia comprovando a melhora da resistência física.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Movimentos Livres e Sem Dor:</Text> Registe os ganhos reais de mobilidade que devolvem a qualidade de vida.</Text>
+          </View>
+        </View>
+
+        {/* BENEFÍCIO 3: AGENDAMENTO (Posicionamento Premium) */}
+        <View style={styles.benefitBox}>
+          <View style={[styles.benefitIconWrapper, { backgroundColor: '#e0e7ff' }]}>
+            <Text style={styles.benefitIcon}>📅</Text>
+          </View>
+          <Text style={styles.benefitTitle}>Experiência e Atendimento Premium</Text>
+          <Text style={styles.benefitSubtitle}>O aluno percebe o valor do seu serviço antes mesmo de chegar ao treino. Posicione-se como um profissional de elite.</Text>
+          
+          <View style={styles.bulletList}>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Comunicação VIP:</Text> Agendamentos enviados diretamente para o WhatsApp do aluno com um visual impecável.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Zero Faltas e Desculpas:</Text> Sistema que aumenta o compromisso do aluno em aparecer nas avaliações.</Text>
+            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Mais Tempo Livre para Si:</Text> Uma gestão visual e clara que tira de si a carga mental de cobrar horários.</Text>
           </View>
         </View>
 
@@ -347,7 +343,7 @@ const styles = StyleSheet.create({
   benefitTitle: { fontSize: 19, fontWeight: "800", color: "#0f172a", marginBottom: 6 },
   benefitSubtitle: { fontSize: 14, color: "#64748b", fontStyle: "italic", marginBottom: 16, lineHeight: 20 },
   
-  bulletList: { gap: 10 },
+  bulletList: { gap: 12 },
   bulletItem: { fontSize: 14, color: "#334155", lineHeight: 22, flexDirection: "row" },
   bulletCheck: { color: "#10b981", fontWeight: "900" },
   bulletBold: { fontWeight: "800", color: "#0f172a" },
