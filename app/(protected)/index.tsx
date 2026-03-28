@@ -142,11 +142,19 @@ export default function Index() {
   const filteredClients = clients.filter((client) => client.name.toLowerCase().includes(searchQuery.toLowerCase()));
   const scheduleFilteredClients = clients.filter((c) => c.name.toLowerCase().includes(scheduleSearchQuery.toLowerCase()));
 
-  const renderHeader = () => (
+const renderHeader = () => (
     <View style={{ paddingBottom: 15 }}>
-      <View style={styles.headerTopArea}>
-        <Text style={styles.greetingText}>Visão Geral</Text>
-        <Text style={styles.title}>Meu Dashboard</Text>
+      <View style={[styles.headerTopArea, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+        <View>
+          <Text style={styles.greetingText}>Visão Geral</Text>
+          <Text style={styles.title}>Meu Dashboard</Text>
+        </View>
+        <TouchableOpacity 
+          style={{ width: 48, height: 48, backgroundColor: '#e0e7ff', borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}
+          onPress={() => router.push("/(protected)/trainer-profile" as any)}
+        >
+          <Text style={{ fontSize: 22 }}>⚙️</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.planWidget}>
