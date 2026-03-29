@@ -100,7 +100,7 @@ export default function ScheduleIndex() {
     }
   }
 
-  // ==== FUNÇÕES DE WHATSAPP ====
+// ==== FUNÇÕES DE WHATSAPP ====
   async function handleWhatsApp(appt: Appointment) {
     const d = appt.appointment_date.split('-');
     const dateFormatted = `${d[2]}/${d[1]}`;
@@ -115,14 +115,15 @@ export default function ScheduleIndex() {
     const cleanPhone = appt.clients?.phone ? appt.clients.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
 
-    const message = `Olá, *${firstName}*! Passando para confirmar nossa avaliação no Vortex Primus.\n\n🗓 *Data:* ${dateFormatted}\n⏰ *Hora:* ${timeFormatted}\n🎯 *Foco:* ${typeText}\n\nPor favor, confirme se está tudo certo para este horário! Nos vemos no box 💪`;
+    // 🔴 MENSAGEM ATUALIZADA COM O AVISO DE JEJUM
+    const message = `Olá, *${firstName}*! Passando para confirmar nossa avaliação no Vortex Primus.\n\n🗓 *Data:* ${dateFormatted}\n⏰ *Hora:* ${timeFormatted}\n🎯 *Foco:* ${typeText}\n\n⚠️ *IMPORTANTE:* Você deve estar 1 hora em jejum de comida e bebida, inclusive água. E 1 hora sem a prática de atividade física.\n\nPor favor, confirme se está tudo certo para este horário! Nos vemos no box 💪`;
 
     try {
       if (cleanPhone) {
         await Linking.openURL(`whatsapp://send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`);
         
         await supabase.from("appointments").update({ whatsapp_sent: true }).eq("id", appt.id);
-        setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, whatsapp_sent: true } : a));
+        setAppointments(prev => prev.map(a => a.id === appt.id ? { ...a, whatsapp_sent: true } : a) as any);
       } else {
         await Linking.openURL(`whatsapp://send?text=${encodeURIComponent(message)}`);
       }
@@ -130,6 +131,8 @@ export default function ScheduleIndex() {
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
     }
   }
+
+
 
   // ==== FUNÇÕES DE REAGENDAMENTO ====
   const getDayName = (date: Date) => {
