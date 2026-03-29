@@ -169,17 +169,17 @@ export default function AssessmentDetailsModal({
                           </View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                            <View style={{ flex: 1, backgroundColor: '#38bdf8' }} />
+                          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
+                            <View style={{ flex: 1, backgroundColor: '#38bdf8', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} />
                             <View style={{ flex: 1, backgroundColor: '#22c55e' }} />
                             <View style={{ flex: 1, backgroundColor: '#eab308' }} />
-                            <View style={{ flex: 1, backgroundColor: '#ef4444' }} />
+                            <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} />
                             {bfStatus && (
-                              <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, { left: `${bfStatus.pos}%` } as any]} />
+                              <View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 3 }, { left: `${bfStatus.pos}%` } as any]} />
                             )}
                           </View>
                           {bfStatus && (
-                            <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                            <View style={{ flexDirection: 'row', marginTop: 12 }}>
                               <View style={{ flex: 1, alignItems: 'center' }}>
                                 <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text>
                                 <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.baixo}</Text>
@@ -221,17 +221,17 @@ export default function AssessmentDetailsModal({
                           </View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                            <View style={{ flex: 1, backgroundColor: '#ef4444' }} />
+                          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
+                            <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} />
                             <View style={{ flex: 1, backgroundColor: '#84cc16' }} />
                             <View style={{ flex: 1, backgroundColor: '#22c55e' }} />
-                            <View style={{ flex: 1, backgroundColor: '#38bdf8' }} />
+                            <View style={{ flex: 1, backgroundColor: '#38bdf8', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} />
                             {mmStatus && (
-                              <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, { left: `${mmStatus.pos}%` } as any]} />
+                              <View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 3 }, { left: `${mmStatus.pos}%` } as any]} />
                             )}
                           </View>
                           {mmStatus && (
-                            <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                            <View style={{ flexDirection: 'row', marginTop: 12 }}>
                               <View style={{ flex: 1, alignItems: 'center' }}>
                                 <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text>
                                 <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.baixo}</Text>
@@ -288,17 +288,17 @@ export default function AssessmentDetailsModal({
                           </View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                            <View style={{ flex: 1, backgroundColor: '#22c55e' }} /> 
+                          <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
+                            <View style={{ flex: 1, backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} /> 
                             <View style={{ flex: 1, backgroundColor: '#84cc16' }} /> 
                             <View style={{ flex: 1, backgroundColor: '#eab308' }} /> 
-                            <View style={{ flex: 1, backgroundColor: '#ef4444' }} /> 
+                            <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} /> 
                             {vsStatus && (
-                              <View style={[{ position: 'absolute', top: -2, bottom: -2, width: 4, backgroundColor: '#0f172a', borderRadius: 2, borderWidth: 1, borderColor: '#fff' }, { left: `${vsStatus.pos}%` } as any]} />
+                              <View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 3 }, { left: `${vsStatus.pos}%` } as any]} />
                             )}
                           </View>
                           {vsStatus && (
-                            <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                            <View style={{ flexDirection: 'row', marginTop: 12 }}>
                               <View style={{ flex: 1, alignItems: 'center' }}>
                                 <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text>
                                 <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ideal}</Text>
@@ -378,3 +378,4 @@ export default function AssessmentDetailsModal({
     </Modal>
   );
 }
+
