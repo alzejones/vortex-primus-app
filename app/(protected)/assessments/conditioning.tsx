@@ -18,22 +18,87 @@ type EnduranceTest = { id: string; type: string; distance: string; time: string;
 type MobilityTest = { id: string; name: string; notes: string };
 
 export default function ConditioningAssessment() {
-  const { client_id } = useLocalSearchParams();
+  // 🔴 Agora recebe tanto o client_id quanto o assessment_id
+  const { client_id, assessment_id } = useLocalSearchParams();
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [clientName, setClientName] = useState("");
 
   const [activeTab, setActiveTab] = useState<"strength" | "endurance" | "mobility">("strength");
+  const [assessmentDate, setAssessmentDate] = useState("");
 
-  const formatDateBR = (date: Date) => {
-    const d = date.getDate().toString().padStart(2, '0');
-    const m = (date.getMonth() + 1).toString().padStart(2, '0');
-    const y = date.getFullYear();
-    const h = date.getHours().toString().padStart(2, '0');
-    const min = date.getMinutes().toString().padStart(2, '0');
-    return `${d}/${m}/${y} ${h}:${min}`;
-  };
+  const [strengthTests, setStrengthTests] = useState<StrengthTest[]>([]);
+  const [enduranceTests, setEnduranceTests] = useState<EnduranceTest[]>([]);
+  const [mobilityTests, setMobilityTests] = useState<MobilityTest[]>([]);
+
+  // 🔴 CARREGA DADOS EXISTENTES (Se já houver testes salvos, ele mostra na tela)
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        if (client_id) {
+          const { data } = await supabase.from("clients").select("name").eq("id", client_id).single();
+          if (data) setClientName(data.name);
+        }
+
+        if (assessment_id) {
+          const { data: assessData } = await supabase
+            .from("physical_assessments")
+            .select(`
+              date,
+              conditioning:conditioning_tests (
+                id,
+                strength:strength_tests (id, exercise_name, load_kg, repetitions),
+                endurance:endurance_tests (id, test_type, distance_m, time_seconds, repetitions),
+                mobility:mobility_tests (id, test_name, notes)
+              )
+            `)
+            .eq("id", assessment_id)
+            .single();
+
+          if (assessData) {
+            // Formata a data existente
+            const d = new Date(assessData.date);
+            const dia = d.getDate().toString().padStart(2, '0');
+            const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+            const ano = d.getFullYear();
+            const h = d.getHours().toString().padStart(2, '0');
+            const min = d.getMinutes().toString().padStart(2, '0');
+            setAssessmentDate(`${dia}/${mes}/${ano} ${h}:${min}`);
+
+            // Preenche os testes se já existirem
+            const cond = assessData.conditioning?.[0];
+            if (cond) {
+              if (cond.strength) {
+                setStrengthTests(cond.strength.map((s: any) => ({ id: s.id, exercise: s.exercise_name, load: s.load_kg?.toString() || "", reps: s.repetitions || "" })));
+              }
+              if (cond.endurance) {
+                setEnduranceTests(cond.endurance.map((e: any) => ({ id: e.id, type: e.test_type, distance: e.distance_m?.toString() || "", time: e.time_seconds?.toString() || "", reps: e.repetitions || "" })));
+              }
+              if (cond.mobility) {
+                setMobilityTests(cond.mobility.map((m: any) => ({ id: m.id, name: m.test_name, notes: m.notes || "" })));
+              }
+            }
+          }
+        } else {
+          // Nova avaliação - seta a data atual
+          const d = new Date();
+          const dia = d.getDate().toString().padStart(2, '0');
+          const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+          const ano = d.getFullYear();
+          const h = d.getHours().toString().padStart(2, '0');
+          const min = d.getMinutes().toString().padStart(2, '0');
+          setAssessmentDate(`${dia}/${mes}/${ano} ${h}:${min}`);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [client_id, assessment_id]);
 
   const parseDateBRToISO = (str: string) => {
     try {
@@ -45,36 +110,21 @@ export default function ConditioningAssessment() {
     }
   };
 
-  const [assessmentDate, setAssessmentDate] = useState(formatDateBR(new Date()));
-
-  const [strengthTests, setStrengthTests] = useState<StrengthTest[]>([]);
-  const [enduranceTests, setEnduranceTests] = useState<EnduranceTest[]>([]);
-  const [mobilityTests, setMobilityTests] = useState<MobilityTest[]>([]);
-
-  useEffect(() => {
-    if (client_id) {
-      supabase.from("clients").select("name").eq("id", client_id).single()
-        .then(({ data }) => { if (data) setClientName(data.name); });
-    }
-  }, [client_id]);
-
   const addStrengthTest = () => setStrengthTests([...strengthTests, { id: Date.now().toString(), exercise: "", load: "", reps: "" }]);
   const addEnduranceTest = () => setEnduranceTests([...enduranceTests, { id: Date.now().toString(), type: "", distance: "", time: "", reps: "" }]);
   const addMobilityTest = () => setMobilityTests([...mobilityTests, { id: Date.now().toString(), name: "", notes: "" }]);
 
-  const updateStrength = (id: string, field: keyof StrengthTest, value: string) => {
-    setStrengthTests(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
-  };
-  const updateEndurance = (id: string, field: keyof EnduranceTest, value: string) => {
-    setEnduranceTests(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
-  };
-  const updateMobility = (id: string, field: keyof MobilityTest, value: string) => {
-    setMobilityTests(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
-  };
+  const updateStrength = (id: string, field: keyof StrengthTest, value: string) => setStrengthTests(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  const updateEndurance = (id: string, field: keyof EnduranceTest, value: string) => setEnduranceTests(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  const updateMobility = (id: string, field: keyof MobilityTest, value: string) => setMobilityTests(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+
+  const removeStrength = (id: string) => setStrengthTests(prev => prev.filter(t => t.id !== id));
+  const removeEndurance = (id: string) => setEnduranceTests(prev => prev.filter(t => t.id !== id));
+  const removeMobility = (id: string) => setMobilityTests(prev => prev.filter(t => t.id !== id));
 
   const handleSaveAll = async () => {
-    if (!client_id) {
-      setMessage("Erro: ID do Aluno não encontrado.");
+    if (!client_id && !assessment_id) {
+      setMessage("Erro: Referência da avaliação não encontrada.");
       return;
     }
 
@@ -87,7 +137,6 @@ export default function ConditioningAssessment() {
     setMessage("");
 
     try {
-      // Pega o treinador autenticado
       const { data: { user } } = await supabase.auth.getUser();
       let trainerId = null;
       if (user) {
@@ -95,65 +144,64 @@ export default function ConditioningAssessment() {
         if (trainer) trainerId = trainer.id;
       }
 
-      // 1. Cria o Evento Principal
       const isoDate = parseDateBRToISO(assessmentDate);
-      const { data: newAssessment, error: assessError } = await supabase
-        .from("physical_assessments")
-        .insert([{ 
-          client_id, 
-          date: isoDate,
-          trainer_id: trainerId,
-          assessor_name: user?.email || "Treinador"
-        }])
-        .select()
-        .single();
+      let target_assessment_id = assessment_id as string;
 
-      if (assessError) throw assessError;
-      const assessment_id = newAssessment.id;
+      // 1. Se NÃO tiver assessment_id, cria um evento principal
+      if (!target_assessment_id) {
+        const { data: newAssessment, error: assessError } = await supabase
+          .from("physical_assessments")
+          .insert([{ client_id, date: isoDate, trainer_id: trainerId, assessor_name: user?.email || "Treinador" }])
+          .select().single();
+        if (assessError) throw assessError;
+        target_assessment_id = newAssessment.id;
+      } else {
+        // Atualiza a data da avaliação principal se for edição
+        await supabase.from("physical_assessments").update({ date: isoDate }).eq("id", target_assessment_id);
+      }
 
-      // 2. Cria a pasta de condicionamento
-      const { data: condTest, error: condError } = await supabase
-        .from("conditioning_tests")
-        .insert([{ assessment_id }])
-        .select()
-        .single();
+      // 2. Procura a pasta de condicionamento para este assessment_id
+      let conditioning_test_id = null;
+      const { data: existingCond } = await supabase.from("conditioning_tests").select("id").eq("assessment_id", target_assessment_id).single();
+      
+      if (existingCond) {
+        conditioning_test_id = existingCond.id;
+        // Limpa os testes antigos para inserir os novos limpos (evita duplicação ao editar)
+        await supabase.from("strength_tests").delete().eq("conditioning_test_id", conditioning_test_id);
+        await supabase.from("endurance_tests").delete().eq("conditioning_test_id", conditioning_test_id);
+        await supabase.from("mobility_tests").delete().eq("conditioning_test_id", conditioning_test_id);
+      } else {
+        const { data: condTest, error: condError } = await supabase.from("conditioning_tests").insert([{ assessment_id: target_assessment_id }]).select().single();
+        if (condError) throw condError;
+        conditioning_test_id = condTest.id;
+      }
 
-      if (condError) throw condError;
-      const conditioning_test_id = condTest.id;
-
-      // 3. Salva os testes (Com Bloqueio Rigoroso de Erros)
+      // 3. Salva os testes (com replace de vírgula por ponto para não falhar na vírgula)
       if (strengthTests.length > 0) {
-        const strengthData = strengthTests.map(t => ({
+        const strengthData = strengthTests.map(t => ({ 
           conditioning_test_id, 
           exercise_name: t.exercise, 
-          load_kg: t.load ? parseFloat(t.load) : null, 
+          load_kg: t.load ? parseFloat(t.load.replace(',', '.')) : null, 
           repetitions: t.reps || null 
         }));
-        
         const { error: errStr } = await supabase.from("strength_tests").insert(strengthData);
         if (errStr) throw errStr; 
       }
 
       if (enduranceTests.length > 0) {
-        const enduranceData = enduranceTests.map(t => ({
+        const enduranceData = enduranceTests.map(t => ({ 
           conditioning_test_id, 
           test_type: t.type, 
-          distance_m: t.distance ? parseFloat(t.distance) : null, 
+          distance_m: t.distance ? parseFloat(t.distance.replace(',', '.')) : null, 
           time_seconds: t.time ? parseInt(t.time) : null, 
           repetitions: t.reps || null 
         }));
-        
         const { error: errEnd } = await supabase.from("endurance_tests").insert(enduranceData);
         if (errEnd) throw errEnd;
       }
 
       if (mobilityTests.length > 0) {
-        const mobilityData = mobilityTests.map(t => ({
-          conditioning_test_id, 
-          test_name: t.name, 
-          notes: t.notes 
-        }));
-        
+        const mobilityData = mobilityTests.map(t => ({ conditioning_test_id, test_name: t.name, notes: t.notes }));
         const { error: errMob } = await supabase.from("mobility_tests").insert(mobilityData);
         if (errMob) throw errMob;
       }
@@ -210,7 +258,7 @@ export default function ConditioningAssessment() {
               <View key={t.id} style={styles.testCard}>
                 <View style={styles.row}>
                   <Text style={styles.testCardTitle}>Exercício de Força #{index + 1}</Text>
-                  <TouchableOpacity onPress={() => setStrengthTests(prev => prev.filter(item => item.id !== t.id))}>
+                  <TouchableOpacity onPress={() => removeStrength(t.id)}>
                     <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>X Remover</Text>
                   </TouchableOpacity>
                 </View>
@@ -234,7 +282,7 @@ export default function ConditioningAssessment() {
               <View key={t.id} style={styles.testCard}>
                 <View style={styles.row}>
                   <Text style={styles.testCardTitle}>Exercício de Resistência #{index + 1}</Text>
-                  <TouchableOpacity onPress={() => setEnduranceTests(prev => prev.filter(item => item.id !== t.id))}>
+                  <TouchableOpacity onPress={() => removeEndurance(t.id)}>
                     <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>X Remover</Text>
                   </TouchableOpacity>
                 </View>
@@ -259,7 +307,7 @@ export default function ConditioningAssessment() {
               <View key={t.id} style={styles.testCard}>
                 <View style={styles.row}>
                   <Text style={styles.testCardTitle}>Exercício de Mobilidade #{index + 1}</Text>
-                  <TouchableOpacity onPress={() => setMobilityTests(prev => prev.filter(item => item.id !== t.id))}>
+                  <TouchableOpacity onPress={() => removeMobility(t.id)}>
                     <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>X Remover</Text>
                   </TouchableOpacity>
                 </View>
@@ -323,4 +371,3 @@ const styles = StyleSheet.create({
   errorText: { color: "#b91c1c" },
   successText: { color: "#15803d" }
 });
-
