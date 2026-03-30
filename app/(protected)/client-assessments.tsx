@@ -80,68 +80,6 @@ export default function ClientAssessments() {
     setForm({ ...form, assessment_date: v });
   }
 
-// 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
-  function calculateRemoteAssessment() {
-    if (!form.weight || !form.height || !form.waist) {
-      Alert.alert("Atenção", "Preencha o Peso, Altura e Cintura (Tronco) para a IA calcular.");
-      return;
-    }
-
-    const weight = parseFloat(form.weight.replace(',', '.'));
-    const height = parseFloat(form.height.replace(',', '.'));
-    const waist = parseFloat(form.waist.replace(',', '.'));
-    
-    if (isNaN(weight) || isNaN(height) || isNaN(waist)) {
-      Alert.alert("Erro", "Valores numéricos inválidos.");
-      return;
-    }
-
-    const gender = client?.gender || 'M';
-    const age = calculateAge(client?.birth_date || new Date().toISOString());
-
-    // 1. % Gordura (RFM - Relative Fat Mass)
-    let bodyFat = 0;
-    if (gender === 'M' || gender === 'Masculino') {
-      bodyFat = 64 - (20 * (height / waist));
-    } else {
-      bodyFat = 76 - (20 * (height / waist));
-    }
-    bodyFat = Math.max(5, Math.min(bodyFat, 60)); 
-
-    // 2. Metabolismo Basal (Mifflin-St Jeor)
-    let bmr = 0;
-    if (gender === 'M' || gender === 'Masculino') {
-      bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
-    } else {
-      bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
-    }
-
-    // 3. Massa Muscular Esquelética % (Estimativa clínica: ~55% da massa magra)
-    const leanMass = weight * (1 - (bodyFat / 100));
-    const skeletalMuscleMass = leanMass * 0.55;
-    const musclePercentage = (skeletalMuscleMass / weight) * 100;
-
-    // 4. Gordura Visceral (Estimativa pela cintura na escala Omron 1-30)
-    let visceral = (gender === 'M' || gender === 'Masculino') ? (waist / 10) - 2 : (waist / 10) - 3;
-    visceral = Math.max(1, Math.round(visceral));
-
-    // 5. Idade Metabólica (Idade real ajustada pelo desvio de gordura)
-    const idealFat = (gender === 'M' || gender === 'Masculino') ? 15 : 25;
-    let metabolicAge = age + Math.round((bodyFat - idealFat) / 1.5);
-    metabolicAge = Math.max(18, metabolicAge); 
-
-    setForm({
-      ...form,
-      body_fat: bodyFat.toFixed(1),
-      muscle_mass_percentage: musclePercentage.toFixed(1),
-      basal_metabolic_rate: Math.round(bmr).toString(),
-      body_fat_index: visceral.toString(),
-      metabolic_age: metabolicAge.toString()
-    });
-    
-    Alert.alert("Cálculo Científico Concluído! 🪄", "Os 5 parâmetros foram auto-preenchidos usando as equações de RFM e Mifflin-St Jeor.");
-  }
-
   const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
