@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dimensions, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import {
@@ -47,6 +47,18 @@ export default function AssessmentDetailsModal({
   formatValue,
   styles
 }: AssessmentDetailsModalProps) {
+
+  const [referencesVisible, setReferencesVisible] = useState(false);
+
+  // Componente reutilizável para o link de referência elegante
+  const ReferenceLink = () => (
+    <TouchableOpacity 
+      style={{ marginTop: 8, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' }}
+      onPress={() => setReferencesVisible(true)}
+    >
+      <Text style={{ color: '#64748b', fontSize: 11, fontWeight: '600' }}>ℹ️ Referência Científica</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <Modal
@@ -128,11 +140,11 @@ export default function AssessmentDetailsModal({
                 />
               )}
               
-<MeasurementsEvolutionPanel 
-                  currentAssessment={selectedAssessment}
-                  prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]}
-                  firstAssessment={assessments?.[assessments.length - 1]}
-                />
+              <MeasurementsEvolutionPanel 
+                currentAssessment={selectedAssessment}
+                prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]}
+                firstAssessment={assessments?.[assessments.length - 1]}
+              />
 
               {/* DIAGNÓSTICO ATUAL UNIFICADO */}
               <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 20 }}>
@@ -151,7 +163,7 @@ export default function AssessmentDetailsModal({
                     <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text>
                   </View>
 
-                  {/* Gordura Corporal (COM FAIXAS NUMÉRICAS) */}
+                  {/* Gordura Corporal */}
                   {(() => {
                     const bfStatus = getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date));
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat ?? "-";
@@ -180,30 +192,19 @@ export default function AssessmentDetailsModal({
                           </View>
                           {bfStatus && (
                             <View style={{ flexDirection: 'row', marginTop: 12 }}>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.baixo}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.normal}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.alto}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.muitoAlto}</Text>
-                              </View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.baixo}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.normal}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.alto}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{bfStatus.ranges.muitoAlto}</Text></View>
                             </View>
                           )}
+                          <ReferenceLink />
                         </View>
                       </View>
                     );
                   })()}
 
-                  {/* Massa Muscular (COM FAIXAS NUMÉRICAS) */}
+                  {/* Massa Muscular */}
                   {(() => {
                     const mmStatus = getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date));
                     const val = selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage ?? "-";
@@ -232,45 +233,37 @@ export default function AssessmentDetailsModal({
                           </View>
                           {mmStatus && (
                             <View style={{ flexDirection: 'row', marginTop: 12 }}>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.baixo}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.normal}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.alto}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ELITE</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.muitoAlto}</Text>
-                              </View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.baixo}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.normal}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.alto}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ELITE</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{mmStatus.ranges.muitoAlto}</Text></View>
                             </View>
                           )}
+                          <ReferenceLink />
                         </View>
                       </View>
                     );
                   })()}
 
                   {/* Idade Metabólica */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                    <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Idade Metabólica</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      {getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date)) && (
-                        <View style={{ backgroundColor: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
-                          <Text style={{ color: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.color, fontSize: 10, fontWeight: '800' }}>
-                            {getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.label}
-                          </Text>
-                        </View>
-                      )}
-                      <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.metabolic_age ?? "-"} anos</Text>
+                  <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Idade Metabólica</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date)) && (
+                          <View style={{ backgroundColor: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}>
+                            <Text style={{ color: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.color, fontSize: 10, fontWeight: '800' }}>
+                              {getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.label}
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.metabolic_age ?? "-"} anos</Text>
+                      </View>
                     </View>
+                    <ReferenceLink />
                   </View>
 
-                  {/* Gordura Visceral (COM FAIXAS NUMÉRICAS) */}
+                    {/* Gordura Visceral */}
                   {(() => {
                     const vsStatus = getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index);
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-";
@@ -299,34 +292,27 @@ export default function AssessmentDetailsModal({
                           </View>
                           {vsStatus && (
                             <View style={{ flexDirection: 'row', marginTop: 12 }}>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ideal}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BOM</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.bom}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>RUIM</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ruim}</Text>
-                              </View>
-                              <View style={{ flex: 1, alignItems: 'center' }}>
-                                <Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text>
-                                <Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.atencao}</Text>
-                              </View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ideal}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BOM</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.bom}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>RUIM</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.ruim}</Text></View>
+                              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text><Text style={{ fontSize: 9, color: '#64748b', fontWeight: 'bold' }}>{vsStatus.ranges.atencao}</Text></View>
                             </View>
                           )}
+                          <ReferenceLink />
                         </View>
                       </View>
                     );
                   })()}
 
                   {/* Metabolismo Basal */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 }}>
-                    <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Metabolismo Basal</Text>
-                    <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.basal_metabolic_rate ?? "-"} kcal</Text>
+                  <View style={{ paddingVertical: 12 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Metabolismo Basal</Text>
+                      <Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.basal_metabolic_rate ?? "-"} kcal</Text>
+                    </View>
+                    <ReferenceLink />
                   </View>
+
                 </View>
 
                 {/* Bloco Tronco & Membros */}
@@ -375,7 +361,54 @@ export default function AssessmentDetailsModal({
           </ScrollView>
         </View>
       </View>
+
+      {/* 🔴 MODAL DE REFERÊNCIAS CIENTÍFICAS ATUALIZADO */}
+      <Modal visible={referencesVisible} animationType="fade" transparent={true} onRequestClose={() => setReferencesVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#fff', padding: 24, borderRadius: 16, width: '100%', maxHeight: '85%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: '900', color: '#0f172a' }}>Referências Científicas 📚</Text>
+              <TouchableOpacity onPress={() => setReferencesVisible(false)}><Text style={{ fontSize: 20, color: '#64748b' }}>✕</Text></TouchableOpacity>
+            </View>
+            
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={{ fontSize: 14, color: '#475569', marginBottom: 20, lineHeight: 22 }}>
+                O Vortex Primus utiliza como base científica as rigorosas diretrizes estabelecidas pela <Text style={{fontWeight: 'bold'}}>Omron Healthcare</Text> (modelo padrão HBF-514C) e estudos reconhecidos internacionalmente.
+              </Text>
+
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>% Gordura Corporal</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>
+                As faixas de classificação baseiam-se na pesquisa clássica de <Text style={{fontStyle: 'italic'}}>Gallagher et al.</Text>, publicada no <Text style={{fontWeight: 'bold'}}>American Journal of Clinical Nutrition</Text> (Vol. 72, Setembro de 2000), cruzando género e faixa etária.
+              </Text>
+
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Gordura Visceral</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>
+                Os níveis (1 a 30) são definidos segundo estatísticas internas da Omron Healthcare, alinhados com as diretrizes médicas para prevenção de síndromes metabólicas e riscos cardiovasculares. Níveis acima de 10 exigem atenção clínica e treino focado.
+              </Text>
+
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Massa Muscular (Esquelética)</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>
+                O percentual foca-se na massa muscular esquelética (que pode ser desenvolvida com exercício). As classificações derivam dos padrões ótimos de condicionamento físico geral mantidos pela indústria desportiva.
+              </Text>
+
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Idade Metabólica</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>
+                Calculada ao comparar o seu Metabolismo Basal com a média estatística de pessoas da mesma idade cronológica e género. Uma idade metabólica inferior à idade real indica um corpo com mais massa magra e maior eficiência na queima de calorias.
+              </Text>
+
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Metabolismo Basal (TMB)</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>
+                Representa a energia mínima necessária para manter as funções vitais em repouso. O cálculo baseia-se em equações clínicas preditivas padrão, considerando peso, altura, idade, género e composição corporal.
+              </Text>
+            </ScrollView>
+
+            <TouchableOpacity style={{ backgroundColor: '#0f172a', padding: 14, borderRadius: 10, marginTop: 10, alignItems: 'center' }} onPress={() => setReferencesVisible(false)}>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </Modal>
   );
 }
-
