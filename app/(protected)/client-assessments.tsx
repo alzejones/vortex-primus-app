@@ -599,3 +599,4 @@ const styles = StyleSheet.create({
   gridInput: { borderWidth: 1, borderColor: "#ccc", padding: 8, borderRadius: 6, backgroundColor: '#fafafa', textAlign: 'center', fontSize: 14, color: '#000' },
   button: { backgroundColor: "#000", padding: 16, borderRadius: 8, marginTop: 10, marginHorizontal: 4 },
 });
+
