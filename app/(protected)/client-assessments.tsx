@@ -435,6 +435,64 @@ export default function ClientAssessments() {
     });
   }
 
+ // 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
+  function calculateRemoteAssessment() {
+    if (!form.weight || !form.height || !form.waist) {
+      Alert.alert("Atenção", "Para a IA calcular, preencha primeiro o Peso, Altura e Cintura.");
+      return;
+    }
+
+    const weight = parseFloat(form.weight.replace(',', '.'));
+    const height = parseFloat(form.height.replace(',', '.'));
+    const waist = parseFloat(form.waist.replace(',', '.'));
+    
+    if (isNaN(weight) || isNaN(height) || isNaN(waist)) {
+      Alert.alert("Erro", "Certifique-se de que os valores de Peso, Altura e Cintura contêm apenas números.");
+      return;
+    }
+
+    const gender = client?.gender || 'M';
+    
+    const calculateAge = (birthDateString: string) => {
+      if (!birthDateString) return 30;
+      const birthDate = new Date(birthDateString);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) { age--; }
+      return age;
+    };
+
+    const age = calculateAge(client?.birth_date || new Date().toISOString());
+
+    let bodyFat = (gender === 'M' || gender === 'Masculino') ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
+    bodyFat = Math.max(5, Math.min(bodyFat, 60)); 
+
+    let bmr = (gender === 'M' || gender === 'Masculino') ? (10 * weight) + (6.25 * height) - (5 * age) + 5 : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+
+    const leanMass = weight * (1 - (bodyFat / 100));
+    const skeletalMuscleMass = leanMass * 0.55;
+    const musclePercentage = (skeletalMuscleMass / weight) * 100;
+
+    let visceral = (gender === 'M' || gender === 'Masculino') ? (waist / 10) - 2 : (waist / 10) - 3;
+    visceral = Math.max(1, Math.round(visceral));
+
+    const idealFat = (gender === 'M' || gender === 'Masculino') ? 15 : 25;
+    let metabolicAge = age + Math.round((bodyFat - idealFat) / 1.5);
+    metabolicAge = Math.max(18, metabolicAge); 
+
+    setForm({
+      ...form,
+      body_fat: bodyFat.toFixed(1).replace('.', ','),
+      muscle_mass_percentage: musclePercentage.toFixed(1).replace('.', ','),
+      basal_metabolic_rate: Math.round(bmr).toString(),
+      body_fat_index: visceral.toString(),
+      metabolic_age: metabolicAge.toString()
+    });
+    
+    Alert.alert("Cálculo Clínico Concluído! 🪄", "Gordura, Músculo e Metabolismo preenchidos via IA.");
+  }
+
     function renderGridInput(label: string, key: keyof typeof form) {
     return (
       <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
@@ -488,6 +546,20 @@ export default function ClientAssessments() {
                 </View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
+
+{/* 🔴 AVALIAÇÃO À DISTÂNCIA VIA IA */}
+            <TouchableOpacity 
+              style={{ backgroundColor: '#f8fafc', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 8, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
+              onPress={calculateRemoteAssessment}
+            >
+              <Text style={{ fontSize: 24, marginRight: 12 }}>🪄</Text>
+              <View>
+                <Text style={{ color: '#0f172a', fontWeight: '900', fontSize: 13, textTransform: 'uppercase' }}>Auto-Preencher via IA</Text>
+                <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Calcula composição com Peso, Altura e Cintura</Text>
+              </View>
+            </TouchableOpacity>
+
+
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
                 <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); if(!editingAssessmentId) setFormModalVisible(false); }} disabled={saving}><Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text></TouchableOpacity>
               </View>
