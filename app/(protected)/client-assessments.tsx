@@ -4,7 +4,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert, Dimensions, KeyboardAvoidingView,
+  Alert, Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -67,6 +69,68 @@ export default function ClientAssessments() {
       return new Date().toISOString();
     }
   };
+
+// 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
+  const calculateRemoteAssessment = () => {
+    try {
+      if (!form.weight || !form.height || !form.waist) {
+        Alert.alert("Atenção", "Para a IA calcular, preencha primeiro o Peso, Altura e Cintura.");
+        return;
+      }
+
+      const weight = parseFloat(form.weight.toString().replace(',', '.'));
+      const height = parseFloat(form.height.toString().replace(',', '.'));
+      const waist = parseFloat(form.waist.toString().replace(',', '.'));
+      
+      if (isNaN(weight) || isNaN(height) || isNaN(waist)) {
+        Alert.alert("Erro", "Valores numéricos inválidos.");
+        return;
+      }
+
+      const gender = client?.gender || 'M';
+      
+      const calcAge = (birthDateString: string) => {
+        if (!birthDateString) return 30;
+        const birthDate = new Date(birthDateString);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) { age--; }
+        return age;
+      };
+
+      const age = calcAge(client?.birth_date);
+
+      let bodyFat = (gender === 'M' || gender === 'Masculino') ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
+      bodyFat = Math.max(5, Math.min(bodyFat, 60)); 
+
+      let bmr = (gender === 'M' || gender === 'Masculino') ? (10 * weight) + (6.25 * height) - (5 * age) + 5 : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+
+      const leanMass = weight * (1 - (bodyFat / 100));
+      const musclePercentage = ((leanMass * 0.55) / weight) * 100;
+
+      let visceral = (gender === 'M' || gender === 'Masculino') ? (waist / 10) - 2 : (waist / 10) - 3;
+      visceral = Math.max(1, Math.round(visceral));
+
+      const idealFat = (gender === 'M' || gender === 'Masculino') ? 15 : 25;
+      let metabolicAge = age + Math.round((bodyFat - idealFat) / 1.5);
+      metabolicAge = Math.max(18, metabolicAge); 
+
+      setForm(prevForm => ({
+        ...prevForm,
+        body_fat: bodyFat.toFixed(1).replace('.', ','),
+        muscle_mass_percentage: musclePercentage.toFixed(1).replace('.', ','),
+        basal_metabolic_rate: Math.round(bmr).toString(),
+        body_fat_index: visceral.toString(),
+        metabolic_age: metabolicAge.toString()
+      }));
+      
+      Alert.alert("Sucesso! 🪄", "Gordura, Músculo e Metabolismo calculados.");
+    } catch (error) {
+      Alert.alert("Erro", "Algo deu errado no cálculo.");
+    }
+  };
+
 
   function handleDateChange(text: string) {
     let v = text.replace(/\D/g, ""); 
@@ -435,64 +499,6 @@ export default function ClientAssessments() {
     });
   }
 
- // 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
-  function calculateRemoteAssessment() {
-    if (!form.weight || !form.height || !form.waist) {
-      Alert.alert("Atenção", "Para a IA calcular, preencha primeiro o Peso, Altura e Cintura.");
-      return;
-    }
-
-    const weight = parseFloat(form.weight.replace(',', '.'));
-    const height = parseFloat(form.height.replace(',', '.'));
-    const waist = parseFloat(form.waist.replace(',', '.'));
-    
-    if (isNaN(weight) || isNaN(height) || isNaN(waist)) {
-      Alert.alert("Erro", "Certifique-se de que os valores de Peso, Altura e Cintura contêm apenas números.");
-      return;
-    }
-
-    const gender = client?.gender || 'M';
-    
-    const calculateAge = (birthDateString: string) => {
-      if (!birthDateString) return 30;
-      const birthDate = new Date(birthDateString);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) { age--; }
-      return age;
-    };
-
-    const age = calculateAge(client?.birth_date || new Date().toISOString());
-
-    let bodyFat = (gender === 'M' || gender === 'Masculino') ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
-    bodyFat = Math.max(5, Math.min(bodyFat, 60)); 
-
-    let bmr = (gender === 'M' || gender === 'Masculino') ? (10 * weight) + (6.25 * height) - (5 * age) + 5 : (10 * weight) + (6.25 * height) - (5 * age) - 161;
-
-    const leanMass = weight * (1 - (bodyFat / 100));
-    const skeletalMuscleMass = leanMass * 0.55;
-    const musclePercentage = (skeletalMuscleMass / weight) * 100;
-
-    let visceral = (gender === 'M' || gender === 'Masculino') ? (waist / 10) - 2 : (waist / 10) - 3;
-    visceral = Math.max(1, Math.round(visceral));
-
-    const idealFat = (gender === 'M' || gender === 'Masculino') ? 15 : 25;
-    let metabolicAge = age + Math.round((bodyFat - idealFat) / 1.5);
-    metabolicAge = Math.max(18, metabolicAge); 
-
-    setForm({
-      ...form,
-      body_fat: bodyFat.toFixed(1).replace('.', ','),
-      muscle_mass_percentage: musclePercentage.toFixed(1).replace('.', ','),
-      basal_metabolic_rate: Math.round(bmr).toString(),
-      body_fat_index: visceral.toString(),
-      metabolic_age: metabolicAge.toString()
-    });
-    
-    Alert.alert("Cálculo Clínico Concluído! 🪄", "Gordura, Músculo e Metabolismo preenchidos via IA.");
-  }
-
     function renderGridInput(label: string, key: keyof typeof form) {
     return (
       <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
@@ -547,10 +553,16 @@ export default function ClientAssessments() {
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
 
-{/* 🔴 AVALIAÇÃO À DISTÂNCIA VIA IA */}
+ {/* 🔴 AVALIAÇÃO À DISTÂNCIA VIA IA */}
             <TouchableOpacity 
+              activeOpacity={0.7}
+              onPress={() => {
+                Keyboard.dismiss();
+                setTimeout(() => {
+                  calculateRemoteAssessment();
+                }, 100);
+              }}
               style={{ backgroundColor: '#f8fafc', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#cbd5e1', marginTop: 8, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
-              onPress={calculateRemoteAssessment}
             >
               <Text style={{ fontSize: 24, marginRight: 12 }}>🪄</Text>
               <View>
