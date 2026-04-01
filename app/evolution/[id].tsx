@@ -14,8 +14,9 @@ const formatValue = (val: any) => {
 };
 
 export default function PublicAssessmentView() {
-  const { id } = useLocalSearchParams(); // Pega o ID da avaliação na URL
-  const assessmentId = id as string;
+  const { id } = useLocalSearchParams(); 
+  // O link agora passa o ID do ALUNO, não da avaliação
+  const clientId = id as string;
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
@@ -23,61 +24,46 @@ export default function PublicAssessmentView() {
   const [currentAssessment, setCurrentAssessment] = useState<any>(null);
 
   useEffect(() => {
-    if (assessmentId) {
+    if (clientId) {
       loadPublicData();
     }
-  }, [assessmentId]);
+  }, [clientId]);
 
   async function loadPublicData() {
     try {
-      // 1. Busca a avaliação específica com o nome correto da tabela e o relacionamento exato
-      const { data: assessmentData, error: assessmentError } = await supabase
-        .from("physical_assessments")
-        .select(`
-          *,
-          anthropometry:anthropometry!anthropometry_assessment_id_fkey (*)
-        `)
-        .eq("id", assessmentId)
-        .single();
-
-      if (assessmentError || !assessmentData) throw new Error("Avaliação não encontrada");
-
-      setCurrentAssessment(assessmentData);
-
-      // 2. Regista a visualização (Soma +1 no view_count dentro da tabela anthropometry)
-      const anthro = assessmentData.anthropometry?.[0];
-      if (anthro) {
-        const currentViews = anthro.view_count || 0;
-        await supabase
-          .from("anthropometry")
-          .update({ view_count: currentViews + 1 })
-          .eq("id", anthro.id);
-      }
-
-      // 3. Busca os dados do aluno associado
-      const { data: clientData } = await supabase
+      // 1. Busca os dados básicos do aluno
+      const { data: clientData, error: clientError } = await supabase
         .from("clients")
-        .select("name, gender, birth_date, height_cm")
-        .eq("id", assessmentData.client_id)
+        .select("name, gender, birth_date")
+        .eq("id", clientId)
         .single();
       
-      if (clientData) setClient(clientData);
+      if (clientError || !clientData) throw new Error("Aluno não encontrado");
+      setClient(clientData);
 
-      // 4. Busca o histórico do aluno para montar os gráficos
-      const { data: historyData } = await supabase
+      // 2. Busca TODAS as avaliações deste aluno, ordenadas da mais recente para a mais antiga
+      // Uma consulta mais simples e direta que contorna possíveis problemas de chaves estrangeiras complexas
+      const { data: historyData, error: historyError } = await supabase
         .from("physical_assessments")
         .select(`
-          *,
-          anthropometry:anthropometry!anthropometry_assessment_id_fkey (*)
+          id, date,
+          anthropometry (*)
         `)
-        .eq("client_id", assessmentData.client_id)
-        .lte("date", assessmentData.date) // Pega apenas até a data desta avaliação
+        .eq("client_id", clientId)
         .order("date", { ascending: false });
 
-      if (historyData) setAssessments(historyData);
+      if (historyError || !historyData || historyData.length === 0) {
+        throw new Error("Nenhuma avaliação encontrada");
+      }
+
+      setAssessments(historyData);
+      
+      // A avaliação atual é sempre a primeira da lista (a mais recente)
+      setCurrentAssessment(historyData[0]);
 
     } catch (error) {
       console.error("Erro ao carregar link público:", error);
+      // Se der erro, mantemos o currentAssessment nulo para mostrar o ecrã de indisponível
     } finally {
       setLoading(false);
     }
@@ -116,15 +102,15 @@ export default function PublicAssessmentView() {
         <View style={styles.clientCard}>
           <Text style={styles.clientName}>{client?.name}</Text>
           <Text style={styles.clientInfo}>
-            Data da Avaliação: {new Date(currentAssessment.date).toLocaleDateString("pt-BR")}
+            Última Avaliação: {new Date(currentAssessment.date).toLocaleDateString("pt-BR")}
           </Text>
         </View>
 
-        {/* PAINÉIS DE EVOLUÇÃO (Reaproveitando os componentes que já construímos!) */}
+        {/* PAINÉIS DE EVOLUÇÃO */}
         {assessments.length > 1 ? (
           <View>
             <EvolutionPanel 
-              evolutionData={{}} // Passamos vazio pois o painel agora calcula sozinho
+              evolutionData={{}} 
               currentAssessment={assessments[0]}
               prevAssessment={assessments[1]}
               firstAssessment={assessments[assessments.length - 1]}
