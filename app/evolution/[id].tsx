@@ -6,7 +6,6 @@ import EvolutionPanel from "../../components/EvolutionPanel";
 import MeasurementsEvolutionPanel from "../../components/MeasurementsEvolutionPanel";
 import { supabase } from "../../lib/supabase";
 
-// Função utilitária para formatar números no padrão brasileiro
 const formatValue = (val: any) => {
   if (val === null || val === undefined) return "-";
   const num = Number(val);
@@ -15,13 +14,15 @@ const formatValue = (val: any) => {
 
 export default function PublicAssessmentView() {
   const { id } = useLocalSearchParams(); 
-  // O link agora passa o ID do ALUNO, não da avaliação
   const clientId = id as string;
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
   const [assessments, setAssessments] = useState<any[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<any>(null);
+  
+  // 🔴 NOVO: Estado para capturar a mensagem técnica de erro
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (clientId) {
@@ -31,18 +32,19 @@ export default function PublicAssessmentView() {
 
   async function loadPublicData() {
     try {
-      // 1. Busca os dados básicos do aluno
+      // 1. Busca os dados do aluno
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .select("name, gender, birth_date")
         .eq("id", clientId)
         .single();
       
-      if (clientError || !clientData) throw new Error("Aluno não encontrado");
+      if (clientError) throw new Error("Erro ao buscar Cliente: " + clientError.message);
+      if (!clientData) throw new Error("Aluno não encontrado na base de dados.");
+      
       setClient(clientData);
 
-      // 2. Busca TODAS as avaliações deste aluno, ordenadas da mais recente para a mais antiga
-      // Uma consulta mais simples e direta que contorna possíveis problemas de chaves estrangeiras complexas
+      // 2. Busca as avaliações
       const { data: historyData, error: historyError } = await supabase
         .from("physical_assessments")
         .select(`
@@ -52,18 +54,18 @@ export default function PublicAssessmentView() {
         .eq("client_id", clientId)
         .order("date", { ascending: false });
 
-      if (historyError || !historyData || historyData.length === 0) {
-        throw new Error("Nenhuma avaliação encontrada");
+      if (historyError) throw new Error("Erro ao buscar Avaliações: " + historyError.message);
+      if (!historyData || historyData.length === 0) {
+        throw new Error("Nenhuma avaliação encontrada para este aluno (Pode ser bloqueio de RLS no Supabase).");
       }
 
       setAssessments(historyData);
-      
-      // A avaliação atual é sempre a primeira da lista (a mais recente)
       setCurrentAssessment(historyData[0]);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar link público:", error);
-      // Se der erro, mantemos o currentAssessment nulo para mostrar o ecrã de indisponível
+      // 🔴 Salva a mensagem de erro para mostrar na tela
+      setErrorMsg(error.message || JSON.stringify(error));
     } finally {
       setLoading(false);
     }
@@ -84,6 +86,14 @@ export default function PublicAssessmentView() {
         <Text style={{ fontSize: 40, marginBottom: 10 }}>😕</Text>
         <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#0f172a' }}>Avaliação indisponível</Text>
         <Text style={{ color: '#64748b', marginTop: 8 }}>Este link pode ter expirado ou estar incorreto.</Text>
+        
+        {/* 🔴 EXIBIÇÃO DO ERRO TÉCNICO */}
+        {errorMsg && (
+          <View style={{ marginTop: 24, padding: 16, backgroundColor: '#fee2e2', borderRadius: 8, marginHorizontal: 20 }}>
+            <Text style={{ color: '#b91c1c', fontSize: 13, fontWeight: 'bold', marginBottom: 4 }}>DETALHE TÉCNICO PARA DEBUG:</Text>
+            <Text style={{ color: '#b91c1c', fontSize: 13 }}>{errorMsg}</Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -91,14 +101,11 @@ export default function PublicAssessmentView() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* CABEÇALHO PREMIUM DA MARCA */}
         <View style={styles.brandHeader}>
           <Text style={styles.brandTitle}>VORTEX PRIMUS</Text>
           <Text style={styles.brandSubtitle}>Relatório Oficial de Evolução</Text>
         </View>
 
-        {/* DADOS DO ALUNO */}
         <View style={styles.clientCard}>
           <Text style={styles.clientName}>{client?.name}</Text>
           <Text style={styles.clientInfo}>
@@ -106,7 +113,6 @@ export default function PublicAssessmentView() {
           </Text>
         </View>
 
-        {/* PAINÉIS DE EVOLUÇÃO */}
         {assessments.length > 1 ? (
           <View>
             <EvolutionPanel 
@@ -116,7 +122,6 @@ export default function PublicAssessmentView() {
               firstAssessment={assessments[assessments.length - 1]}
               formatValue={formatValue}
             />
-            
             <MeasurementsEvolutionPanel 
               currentAssessment={assessments[0]}
               prevAssessment={assessments[1]}
@@ -136,7 +141,6 @@ export default function PublicAssessmentView() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Gerado por Vortex Primus App</Text>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -146,17 +150,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#f8fafc" },
   scrollContent: { padding: 16, paddingBottom: 40 },
-  
   brandHeader: { alignItems: 'center', marginBottom: 24, marginTop: 20 },
   brandTitle: { fontSize: 24, fontWeight: '900', color: '#0f172a', letterSpacing: 2 },
   brandSubtitle: { fontSize: 12, color: '#3b82f6', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 4 },
-  
   clientCard: { backgroundColor: '#fff', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 24, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4 },
   clientName: { fontSize: 18, fontWeight: '900', color: '#1e293b', marginBottom: 4 },
   clientInfo: { fontSize: 13, color: '#64748b', fontWeight: '500' },
-
   emptyState: { backgroundColor: '#fff', padding: 24, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center', marginTop: 20 },
-  
   footer: { marginTop: 40, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 20 },
   footerText: { color: '#94a3b8', fontSize: 12, fontWeight: '600' }
 });
