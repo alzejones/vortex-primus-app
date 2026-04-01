@@ -20,8 +20,6 @@ export default function PublicAssessmentView() {
   const [client, setClient] = useState<any>(null);
   const [assessments, setAssessments] = useState<any[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<any>(null);
-  
-  // 🔴 NOVO: Estado para capturar a mensagem técnica de erro
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,19 +42,19 @@ export default function PublicAssessmentView() {
       
       setClient(clientData);
 
-      // 2. Busca as avaliações
+      // 🔴 CORREÇÃO: Instrução exata de qual chave estrangeira usar para evitar a confusão do banco
       const { data: historyData, error: historyError } = await supabase
         .from("physical_assessments")
         .select(`
           id, date,
-          anthropometry (*)
+          anthropometry!anthropometry_assessment_id_fkey (*)
         `)
         .eq("client_id", clientId)
         .order("date", { ascending: false });
 
       if (historyError) throw new Error("Erro ao buscar Avaliações: " + historyError.message);
       if (!historyData || historyData.length === 0) {
-        throw new Error("Nenhuma avaliação encontrada para este aluno (Pode ser bloqueio de RLS no Supabase).");
+        throw new Error("Nenhuma avaliação encontrada para este aluno.");
       }
 
       setAssessments(historyData);
@@ -64,7 +62,6 @@ export default function PublicAssessmentView() {
 
     } catch (error: any) {
       console.error("Erro ao carregar link público:", error);
-      // 🔴 Salva a mensagem de erro para mostrar na tela
       setErrorMsg(error.message || JSON.stringify(error));
     } finally {
       setLoading(false);
@@ -87,7 +84,6 @@ export default function PublicAssessmentView() {
         <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#0f172a' }}>Avaliação indisponível</Text>
         <Text style={{ color: '#64748b', marginTop: 8 }}>Este link pode ter expirado ou estar incorreto.</Text>
         
-        {/* 🔴 EXIBIÇÃO DO ERRO TÉCNICO */}
         {errorMsg && (
           <View style={{ marginTop: 24, padding: 16, backgroundColor: '#fee2e2', borderRadius: 8, marginHorizontal: 20 }}>
             <Text style={{ color: '#b91c1c', fontSize: 13, fontWeight: 'bold', marginBottom: 4 }}>DETALHE TÉCNICO PARA DEBUG:</Text>
