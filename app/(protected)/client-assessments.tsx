@@ -130,7 +130,7 @@ export default function ClientAssessments() {
 async function handleShareLink() {
     // 🔴 AQUI ESTÁ A CORREÇÃO: O link agora inclui o ID específico do aluno.
     // (Se a sua rota web para a visão do aluno for diferente de "evolution", basta alterar a palavra na URL)
-    const assessmentLink = `https://vortex-primus-app.vercel.app/(protected)/AssessmentDetailsModal.tsx?id=${clientId}`;
+    const assessmentLink = `https://vortex-primus-app.vercel.app/components/AssessmentDetailsModal.tsx?id=${clientId}`;
     
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
