@@ -128,9 +128,8 @@ export default function ClientAssessments() {
   const viewRef = useRef(null);
 
 async function handleShareLink() {
-    // 🔴 AQUI ESTÁ A CORREÇÃO: O link agora inclui o ID específico do aluno.
-    // (Se a sua rota web para a visão do aluno for diferente de "evolution", basta alterar a palavra na URL)
-    const assessmentLink = `https://vortex-primus-app.vercel.app/components/AssessmentDetailsModal.tsx?id=${clientId}`;
+    // 🔴 A ROTA CORRETA: O [id] na pasta significa que o ID vai direto na URL após a barra
+    const assessmentLink = `https://vortex-primus-app.vercel.app/evolution/${clientId}`;
     
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
@@ -146,9 +145,11 @@ async function handleShareLink() {
       }
     } catch (error) {
       console.error("Erro ao abrir WhatsApp:", error);
-      Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Verifique se o aplicativo está instalado.");
+      Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Verifique se a aplicação está instalada.");
     }
   }
+
+
 
   const calculateAge = (birthDate: string) => {
     const today = new Date();
