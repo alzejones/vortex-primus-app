@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { Dimensions, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import {
-  getBodyFatStatus,
-  getMetabolicStatus,
-  getMuscleStatus
+  getMetabolicStatus
 } from '../utils/assessmentCalculations';
 import EvolutionPanel from './EvolutionPanel';
 import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
@@ -29,25 +27,82 @@ interface AssessmentDetailsModalProps {
   styles: any; 
 }
 
-// 🔴 NOVA LÓGICA DE GORDURA VISCERAL (Substitui a lógica antiga)
+// 🔴 NOVA LÓGICA DE GORDURA CORPORAL (Planilha Omron)
+const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
+  const v = Number(value);
+  if (isNaN(v) || v <= 0) return null;
+
+  const isMale = gender === 'M' || gender === 'Masculino';
+  let L1 = 0, L2 = 0, L3 = 0;
+
+  if (isMale) {
+    if (age < 40) { L1 = 8.0; L2 = 20.0; L3 = 25.0; }
+    else if (age < 60) { L1 = 11.0; L2 = 22.0; L3 = 28.0; }
+    else { L1 = 13.0; L2 = 25.0; L3 = 30.0; }
+  } else {
+    if (age < 40) { L1 = 21.0; L2 = 33.0; L3 = 39.0; }
+    else if (age < 60) { L1 = 23.0; L2 = 34.0; L3 = 40.0; }
+    else { L1 = 24.0; L2 = 36.0; L3 = 42.0; }
+  }
+
+  let label = "BAIXO"; let bg = "#e0f2fe"; let color = "#0284c7"; let pos = 0;
+
+  if (v < L1) {
+    label = "BAIXO"; bg = "#e0f2fe"; color = "#0284c7"; pos = (v / L1) * 25;
+  } else if (v < L2) {
+    label = "NORMAL"; bg = "#dcfce7"; color = "#16a34a"; pos = 25 + ((v - L1) / (L2 - L1)) * 25;
+  } else if (v < L3) {
+    label = "ALTO"; bg = "#fef08a"; color = "#ca8a04"; pos = 50 + ((v - L2) / (L3 - L2)) * 25;
+  } else {
+    label = "MUITO ALTO"; bg = "#fee2e2"; color = "#dc2626"; pos = 75 + Math.min(((v - L3) / 15), 1) * 25;
+  }
+
+  return { label, bg, color, pos: Math.min(Math.max(pos, 0), 100), limits: [L1, L2, L3] };
+};
+
+// 🔴 NOVA LÓGICA DE MASSA MUSCULAR (Planilha Omron)
+const getLocalMuscleStatus = (value: any, gender: string, age: number) => {
+  const v = Number(value);
+  if (isNaN(v) || v <= 0) return null;
+
+  const isMale = gender === 'M' || gender === 'Masculino';
+  let L1 = 0, L2 = 0, L3 = 0;
+
+  if (isMale) {
+    if (age < 40) { L1 = 33.3; L2 = 39.4; L3 = 44.1; }
+    else if (age < 60) { L1 = 33.1; L2 = 39.2; L3 = 43.9; }
+    else { L1 = 32.9; L2 = 39.0; L3 = 43.7; }
+  } else {
+    if (age < 40) { L1 = 24.3; L2 = 30.4; L3 = 35.4; }
+    else if (age < 60) { L1 = 24.1; L2 = 30.2; L3 = 35.2; }
+    else { L1 = 23.9; L2 = 30.0; L3 = 35.0; }
+  }
+
+  let label = "BAIXO"; let bg = "#fee2e2"; let color = "#dc2626"; let pos = 0;
+
+  if (v < L1) {
+    label = "BAIXO"; bg = "#fee2e2"; color = "#dc2626"; pos = (v / L1) * 25;
+  } else if (v < L2) {
+    label = "NORMAL"; bg = "#ecfccb"; color = "#65a30d"; pos = 25 + ((v - L1) / (L2 - L1)) * 25;
+  } else if (v < L3) {
+    label = "ALTO"; bg = "#dcfce7"; color = "#16a34a"; pos = 50 + ((v - L2) / (L3 - L2)) * 25;
+  } else {
+    label = "MUITO ALTO"; bg = "#e0f2fe"; color = "#0284c7"; pos = 75 + Math.min(((v - L3) / 10), 1) * 25;
+  }
+
+  return { label, bg, color, pos: Math.min(Math.max(pos, 0), 100), limits: [L1, L2, L3] };
+};
+
+// 🔴 LÓGICA DE GORDURA VISCERAL (Ajustada anteriormente)
 const getLocalVisceralStatus = (value: any) => {
   const v = Number(value);
   if (isNaN(v) || v <= 0) return null;
   let label = "IDEAL"; let bg = "#dcfce7"; let color = "#16a34a"; let pos = 0;
   
-  if (v <= 4) {
-    label = "IDEAL"; bg = "#dcfce7"; color = "#16a34a";
-    pos = (v / 4) * 25;
-  } else if (v <= 9) {
-    label = "ATENÇÃO"; bg = "#fef08a"; color = "#ca8a04";
-    pos = 25 + ((v - 4) / 5) * 25;
-  } else if (v <= 13) {
-    label = "ALTO"; bg = "#ffedd5"; color = "#ea580c";
-    pos = 50 + ((v - 9) / 4) * 25;
-  } else {
-    label = "CRÍTICO"; bg = "#fee2e2"; color = "#dc2626";
-    pos = 75 + ((Math.min(v, 20) - 13) / 7) * 25; // Limita o máximo visual em 20 para o ponto não sumir da tela
-  }
+  if (v <= 4) { label = "IDEAL"; bg = "#dcfce7"; color = "#16a34a"; pos = (v / 4) * 25; } 
+  else if (v <= 9) { label = "ATENÇÃO"; bg = "#fef08a"; color = "#ca8a04"; pos = 25 + ((v - 4) / 5) * 25; } 
+  else if (v <= 13) { label = "ALTO"; bg = "#ffedd5"; color = "#ea580c"; pos = 50 + ((v - 9) / 4) * 25; } 
+  else { label = "CRÍTICO"; bg = "#fee2e2"; color = "#dc2626"; pos = 75 + ((Math.min(v, 20) - 13) / 7) * 25; }
   
   return { label, bg, color, pos: Math.min(Math.max(pos, 0), 100) };
 };
@@ -135,9 +190,9 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}><Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
 
-                  {/* 🟢 BARRA DE GORDURA CORPORAL */}
+                  {/* 🟢 BARRA DE GORDURA CORPORAL (ATUALIZADA) */}
                   {(() => {
-                    const bfStatus = getBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date));
+                    const bfStatus = getLocalBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date));
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat ?? "-";
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
@@ -146,24 +201,24 @@ export default function AssessmentDetailsModal({
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(bfStatus as any)?.limits?.[0] || '10'}</Text>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(bfStatus as any)?.limits?.[1] || '20'}</Text>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(bfStatus as any)?.limits?.[2] || '30'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{bfStatus?.limits?.[0] || '10'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{bfStatus?.limits?.[1] || '20'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{bfStatus?.limits?.[2] || '30'}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
                             <View style={{ flex: 1, backgroundColor: '#38bdf8', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} /><View style={{ flex: 1, backgroundColor: '#22c55e' }} /><View style={{ flex: 1, backgroundColor: '#eab308' }} /><View style={{ flex: 1, backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} />
                             {bfStatus && (<View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5 }, { left: `${bfStatus.pos}%` } as any]} />)}
                           </View>
-                          {bfStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text></View></View>)}
+                          {bfStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>MUITO ALTO</Text></View></View>)}
                           <ReferenceLink />
                         </View>
                       </View>
                     );
                   })()}
 
-                  {/* 🟢 BARRA DE MASSA MUSCULAR */}
+                  {/* 🟢 BARRA DE MASSA MUSCULAR (ATUALIZADA) */}
                   {(() => {
-                    const mmStatus = getMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date));
+                    const mmStatus = getLocalMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date));
                     const val = selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage ?? "-";
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
@@ -172,15 +227,15 @@ export default function AssessmentDetailsModal({
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(mmStatus as any)?.limits?.[0] || '33'}</Text>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(mmStatus as any)?.limits?.[1] || '39'}</Text>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(mmStatus as any)?.limits?.[2] || '44'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{mmStatus?.limits?.[0] || '33'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{mmStatus?.limits?.[1] || '39'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{mmStatus?.limits?.[2] || '44'}</Text>
                           </View>
                           <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
                             <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} /><View style={{ flex: 1, backgroundColor: '#84cc16' }} /><View style={{ flex: 1, backgroundColor: '#22c55e' }} /><View style={{ flex: 1, backgroundColor: '#38bdf8', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} />
                             {mmStatus && (<View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5 }, { left: `${mmStatus.pos}%` } as any]} />)}
                           </View>
-                          {mmStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ELITE</Text></View></View>)}
+                          {mmStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BAIXO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>NORMAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>MUITO ALTO</Text></View></View>)}
                           <ReferenceLink />
                         </View>
                       </View>
@@ -199,7 +254,8 @@ export default function AssessmentDetailsModal({
                     <ReferenceLink />
                   </View>
 
-                  {/* 🟢 BARRA DE GORDURA VISCERAL (ATUALIZADA) */}
+                   
+                  {/* 🟢 BARRA DE GORDURA VISCERAL */}
                   {(() => {
                     const vsStatus = getLocalVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index);
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-";
@@ -209,14 +265,11 @@ export default function AssessmentDetailsModal({
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{vsStatus && (<View style={{ backgroundColor: vsStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: vsStatus.color, fontSize: 10, fontWeight: '900' }}>{vsStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val}</Text></View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-   
-                          {/* Novas Réguas Numéricas */}
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>4</Text>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>9</Text>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>13</Text>
                           </View>
-                          {/* Novas Cores */}
                           <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
                             <View style={{ flex: 1, backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} /> 
                             <View style={{ flex: 1, backgroundColor: '#eab308' }} /> 
@@ -224,7 +277,6 @@ export default function AssessmentDetailsModal({
                             <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} /> 
                             {vsStatus && (<View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5 }, { left: `${vsStatus.pos}%` } as any]} />)}
                           </View>
-                          {/* Novos Textos */}
                           {vsStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ATENÇÃO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text></View></View>)}
                           <ReferenceLink />
                         </View>
@@ -278,7 +330,7 @@ export default function AssessmentDetailsModal({
                 As classificações padrão do Cross utilizam as rigorosas diretrizes da <Text style={{fontWeight: 'bold'}}>Omron Healthcare</Text> (modelo HBF-514C) e estudos reconhecidos internacionalmente:
               </Text>
 
-              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>% Gordura Corporal</Text>
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>% Gordura Corporal e Massa Muscular</Text>
               <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>As faixas baseiam-se na pesquisa de <Text style={{fontStyle: 'italic'}}>Gallagher et al.</Text>, do <Text style={{fontWeight: 'bold'}}>American Journal of Clinical Nutrition</Text> (2000), cruzando género e faixa etária.</Text>
 
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Gordura Visceral</Text>
@@ -298,7 +350,3 @@ export default function AssessmentDetailsModal({
     </Modal>
   );
 }
-
-
-
-
