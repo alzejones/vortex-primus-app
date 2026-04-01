@@ -4,8 +4,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import {
   getBodyFatStatus,
   getMetabolicStatus,
-  getMuscleStatus,
-  getVisceralStatus
+  getMuscleStatus
 } from '../utils/assessmentCalculations';
 import EvolutionPanel from './EvolutionPanel';
 import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
@@ -29,6 +28,29 @@ interface AssessmentDetailsModalProps {
   formatValue: (val: any) => any;
   styles: any; 
 }
+
+// 🔴 NOVA LÓGICA DE GORDURA VISCERAL (Substitui a lógica antiga)
+const getLocalVisceralStatus = (value: any) => {
+  const v = Number(value);
+  if (isNaN(v) || v <= 0) return null;
+  let label = "IDEAL"; let bg = "#dcfce7"; let color = "#16a34a"; let pos = 0;
+  
+  if (v <= 4) {
+    label = "IDEAL"; bg = "#dcfce7"; color = "#16a34a";
+    pos = (v / 4) * 25;
+  } else if (v <= 9) {
+    label = "ATENÇÃO"; bg = "#fef08a"; color = "#ca8a04";
+    pos = 25 + ((v - 4) / 5) * 25;
+  } else if (v <= 13) {
+    label = "ALTO"; bg = "#ffedd5"; color = "#ea580c";
+    pos = 50 + ((v - 9) / 4) * 25;
+  } else {
+    label = "CRÍTICO"; bg = "#fee2e2"; color = "#dc2626";
+    pos = 75 + ((Math.min(v, 20) - 13) / 7) * 25; // Limita o máximo visual em 20 para o ponto não sumir da tela
+  }
+  
+  return { label, bg, color, pos: Math.min(Math.max(pos, 0), 100) };
+};
 
 export default function AssessmentDetailsModal({
   visible,
@@ -123,7 +145,6 @@ export default function AssessmentDetailsModal({
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{bfStatus && (<View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val} %</Text></View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                          {/* Réguas numéricas da Gordura */}
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(bfStatus as any)?.limits?.[0] || '10'}</Text>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(bfStatus as any)?.limits?.[1] || '20'}</Text>
@@ -150,7 +171,6 @@ export default function AssessmentDetailsModal({
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{mmStatus && (<View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val} %</Text></View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                          {/* Réguas numéricas do Músculo */}
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(mmStatus as any)?.limits?.[0] || '33'}</Text>
                             <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(mmStatus as any)?.limits?.[1] || '39'}</Text>
@@ -179,9 +199,9 @@ export default function AssessmentDetailsModal({
                     <ReferenceLink />
                   </View>
 
-                  {/* 🟢 BARRA DE GORDURA VISCERAL */}
+                  {/* 🟢 BARRA DE GORDURA VISCERAL (ATUALIZADA) */}
                   {(() => {
-                    const vsStatus = getVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index);
+                    const vsStatus = getLocalVisceralStatus(selectedAssessment?.anthropometry?.[0]?.body_fat_index);
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-";
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
@@ -189,17 +209,23 @@ export default function AssessmentDetailsModal({
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{vsStatus && (<View style={{ backgroundColor: vsStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: vsStatus.color, fontSize: 10, fontWeight: '900' }}>{vsStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: '#0f172a', fontSize: 16 }}>{val}</Text></View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
-                          {/* Réguas numéricas da Gordura Visceral */}
+   
+                          {/* Novas Réguas Numéricas */}
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(vsStatus as any)?.limits?.[0] || '9'}</Text>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(vsStatus as any)?.limits?.[1] || '14'}</Text>
-                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>{(vsStatus as any)?.limits?.[2] || '30'}</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>4</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>9</Text>
+                            <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '800' }}>13</Text>
                           </View>
+                          {/* Novas Cores */}
                           <View style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'visible', backgroundColor: '#e2e8f0', position: 'relative' }}>
-                            <View style={{ flex: 1, backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} /> <View style={{ flex: 1, backgroundColor: '#84cc16' }} /> <View style={{ flex: 1, backgroundColor: '#eab308' }} /> <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} /> 
+                            <View style={{ flex: 1, backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }} /> 
+                            <View style={{ flex: 1, backgroundColor: '#eab308' }} /> 
+                            <View style={{ flex: 1, backgroundColor: '#f97316' }} /> 
+                            <View style={{ flex: 1, backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }} /> 
                             {vsStatus && (<View style={[{ position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: '#ffffff', borderWidth: 4, borderColor: '#0f172a', marginLeft: -10, elevation: 5 }, { left: `${vsStatus.pos}%` } as any]} />)}
                           </View>
-                          {vsStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>BOM</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>RUIM</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text></View></View>)}
+                          {/* Novos Textos */}
+                          {vsStatus && (<View style={{ flexDirection: 'row', marginTop: 6 }}><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>IDEAL</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ATENÇÃO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>ALTO</Text></View><View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 9, color: '#94a3b8', fontWeight: 'bold' }}>CRÍTICO</Text></View></View>)}
                           <ReferenceLink />
                         </View>
                       </View>
@@ -216,8 +242,7 @@ export default function AssessmentDetailsModal({
 
                 </View>
 
-        <View      
-style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#ea580c', marginBottom: 10 }}>📏 TRONCO</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Peitoral</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.chest ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Abdômen</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.abdomen ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Cintura</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.waist ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Quadril</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.hip ?? "-"} cm</Text></View></View>
                   <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Braço</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.arm_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.arm_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Coxa</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.thigh_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.thigh_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: '#475569', fontSize: 12 }}>Pantur.</Text><Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{selectedAssessment?.anthropometry?.[0]?.calf_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.calf_right ?? "-"}</Text></View></View>
                 </View>
@@ -257,7 +282,7 @@ style={{ flexDirection: 'row', gap: 12 }}>
               <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>As faixas baseiam-se na pesquisa de <Text style={{fontStyle: 'italic'}}>Gallagher et al.</Text>, do <Text style={{fontWeight: 'bold'}}>American Journal of Clinical Nutrition</Text> (2000), cruzando género e faixa etária.</Text>
 
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Gordura Visceral</Text>
-              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Níveis (1 a 30) alinhados com as diretrizes médicas para prevenção de síndromes metabólicas.</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Níveis alinhados com as diretrizes médicas para prevenção de síndromes metabólicas.</Text>
 
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Idade Metabólica & Metabolismo Basal</Text>
               <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Cálculo clínico comparativo usando a equação preditiva de gasto energético em repouso ajustada pela massa livre de gordura.</Text>
@@ -273,3 +298,7 @@ style={{ flexDirection: 'row', gap: 12 }}>
     </Modal>
   );
 }
+
+
+
+
