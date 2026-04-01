@@ -127,11 +127,15 @@ export default function ClientAssessments() {
 
   const viewRef = useRef(null);
 
-  async function handleShareLink() {
-    const assessmentLink = `https://vortex-primus-app.vercel.app`;
+async function handleShareLink() {
+    // 🔴 AQUI ESTÁ A CORREÇÃO: O link agora inclui o ID específico do aluno.
+    // (Se a sua rota web para a visão do aluno for diferente de "evolution", basta alterar a palavra na URL)
+    const assessmentLink = `https://vortex-primus-app.vercel.app/evolution?id=${clientId}`;
+    
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     const firstName = client?.name ? client.name.split(' ')[0] : 'Aluno';
+    
     const message = `Olá, *${firstName}*!\n\nSua autoavaliação corporal já está disponível no *Vortex Primus*.\n\n_Clique e veja *agora*:_ 📊\n${assessmentLink}\n\nParabéns pela determinação e foco no processo! 🔥`;
 
     try {
