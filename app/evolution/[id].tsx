@@ -12,7 +12,7 @@ const screenWidth = Dimensions.get("window").width;
 
 // --- FUNÇÕES AUXILIARES ---
 const formatValue = (val: any) => {
-  if (val === null || val === undefined) return "-";
+  if (val === null || val === undefined || val === "") return "-";
   const num = Number(val);
   return isNaN(num) ? "-" : num.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 };
@@ -31,6 +31,23 @@ const calculateAge = (birthDateString: string) => {
   let age = today.getFullYear() - birthDate.getFullYear();
   if (today.getMonth() - birthDate.getMonth() < 0 || (today.getMonth() - birthDate.getMonth() === 0 && today.getDate() < birthDate.getDate())) age--;
   return age;
+};
+
+// 🔴 RESTAURADA: Função vital para alimentar os Cards de Evolução
+const calculateEvolution = (current: any, previous: any) => {
+  if (!previous || !current) return null;
+  const calcDiff = (curr: number, prev: number) => {
+    if (curr == null || prev == null) return null;
+    const diff = Number(curr) - Number(prev);
+    return { diff: parseFloat(diff.toFixed(2)), isPositive: diff > 0 };
+  };
+  return {
+    weight: calcDiff(current.weight, previous.weight),
+    body_fat: calcDiff(current.body_fat, previous.body_fat),
+    muscle_mass_percentage: calcDiff(current.muscle_mass_percentage, previous.muscle_mass_percentage),
+    waist: calcDiff(current.waist, previous.waist),
+    abdomen: calcDiff(current.abdomen, previous.abdomen),
+  };
 };
 
 // --- LÓGICA ESPELHO (OMRON & VISCERAL) ---
@@ -132,6 +149,9 @@ export default function PublicAssessmentView() {
 
   const age = calculateAge(client?.birth_date);
   const anthro = currentAssessment.anthropometry?.[0];
+  
+  // 🔴 RESTAURADO: Cálculo que alimenta os componentes visuais
+  const relativeEvolution = calculateEvolution(currentAssessment?.anthropometry?.[0], assessments[1]?.anthropometry?.[0]);
 
   const ReferenceLink = () => (
     <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-start' }} onPress={() => setReferencesVisible(true)}>
@@ -152,25 +172,44 @@ export default function PublicAssessmentView() {
           <Text style={styles.clientInfo}>Última Avaliação: {formatDateBR(currentAssessment.date)}</Text>
         </View>
 
-        {/* GRÁFICO DE LINHAS */}
+        {/* 🔴 RESTAURADO: Gráfico de linhas com todas as propriedades de Grid (pontilhado) originais */}
         {fatData.length > 0 && (
-          <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24 }}>
+          <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24, elevation: 4 }}>
             <LineChart
               data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
               data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
-              height={200} width={screenWidth - 80} curved isAnimated
-              color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
-              thickness1={3} thickness2={3} yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11 }}
+              height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved
+              spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+              initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
+              thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
+              yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
+              yAxisLabelSuffix="%" stepValue={5}
+              maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
+              noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
+              rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
             />
-            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
               <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#ef4444' }]} /><Text style={styles.legendText}>% Gordura</Text></View>
               <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#22c55e' }]} /><Text style={styles.legendText}>% Músculo</Text></View>
             </View>
           </View>
         )}
 
-        <EvolutionPanel currentAssessment={currentAssessment} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} formatValue={formatValue} evolutionData={{}} />
-        <MeasurementsEvolutionPanel currentAssessment={currentAssessment} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} />
+        {/* 🔴 RESTAURADO: Paineis de evolução com os dados corretos repassados */}
+        {relativeEvolution && (
+          <EvolutionPanel 
+            evolutionData={relativeEvolution} 
+            currentAssessment={currentAssessment} 
+            prevAssessment={assessments[1]} 
+            firstAssessment={assessments[assessments.length - 1]} 
+            formatValue={formatValue} 
+          />
+        )}
+        <MeasurementsEvolutionPanel 
+          currentAssessment={currentAssessment} 
+          prevAssessment={assessments[1]} 
+          firstAssessment={assessments[assessments.length - 1]} 
+        />
 
         {/* DIAGNÓSTICO */}
         <View style={styles.diagnosisSection}>
@@ -264,25 +303,25 @@ export default function PublicAssessmentView() {
             </View>
           </View>
 
-          {/* 🔴 OS CARTÕES DE TRONCO E MEMBROS QUE FALTAVAM */}
+          {/* 🔴 RESTAURADO: Tronco e Membros com a formatação ultra-segura para puxar os valores */}
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
             <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' }}>
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#ea580c', marginBottom: 10 }}>📏 TRONCO</Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Peitoral</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.chest ?? "-"} cm</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.chest)} cm</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Abdômen</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.abdomen ?? "-"} cm</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.abdomen)} cm</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Cintura</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.waist ?? "-"} cm</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.waist)} cm</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Quadril</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.hip ?? "-"} cm</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.hip)} cm</Text>
               </View>
             </View>
             
@@ -290,15 +329,15 @@ export default function PublicAssessmentView() {
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Braço</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.arm_left ?? "-"}/{anthro?.arm_right ?? "-"}</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.arm_left)}/{formatValue(anthro?.arm_right)}</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Coxa</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.thigh_left ?? "-"}/{anthro?.thigh_right ?? "-"}</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.thigh_left)}/{formatValue(anthro?.thigh_right)}</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
                 <Text style={{ color: '#475569', fontSize: 12 }}>Pantur.</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{anthro?.calf_left ?? "-"}/{anthro?.calf_right ?? "-"}</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: '#0f172a' }}>{formatValue(anthro?.calf_left)}/{formatValue(anthro?.calf_right)}</Text>
               </View>
             </View>
           </View>
@@ -357,3 +396,4 @@ const styles = StyleSheet.create({
   refText: { fontSize: 13, color: '#64748b', lineHeight: 20 },
   closeBtn: { backgroundColor: '#0f172a', padding: 14, borderRadius: 10, marginTop: 20, alignItems: 'center' }
 });
+
