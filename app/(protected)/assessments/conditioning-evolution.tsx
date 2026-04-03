@@ -401,17 +401,16 @@ export default function ConditioningEvolution() {
                 </Text>
               </TouchableOpacity>
 
-             {/* 🔴 NOVO BOTÃO DE EDITAR (C-R-U-D Completo) */}
+             {/* 🔴 BOTÃO DE EDITAR FINAL (Sem erro de compilação e sem duplicar) */}
               <TouchableOpacity
                 style={[styles.detailsBtn, { backgroundColor: '#f59e0b', paddingHorizontal: 12 }]}
                 onPress={() => router.push({ 
-                  pathname: "./(protected)/assessments/conditioning", 
+                  pathname: "conditioning", 
                   params: { client_id: client_id, assessment_id: assessment.id } 
-                })}
+                } as any)}
               >
                 <Text style={[styles.detailsBtnText, { color: '#fff' }]}>✏️ Editar</Text>
               </TouchableOpacity>
-
             </View>
 
           </View>
