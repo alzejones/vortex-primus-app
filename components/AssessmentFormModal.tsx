@@ -1,18 +1,18 @@
 import { supabase } from "@/lib/supabase";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface AssessmentFormModalProps {
@@ -105,12 +105,13 @@ export default function AssessmentFormModal({
     }
   };
 
-  // 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
+// 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
   const calculateRemoteAssessment = () => {
     Keyboard.dismiss();
     setTimeout(() => {
+      // 1. Verifica se os dados mínimos foram preenchidos
       if (!form.weight || !form.height || !form.waist) {
-        Alert.alert("Atenção", "Preencha primeiro o Peso, Altura e Cintura.");
+        Alert.alert("Atenção", "Preencha primeiro o Peso (kg), Altura (cm) e Cintura (cm) para calcular a composição à distância.");
         return;
       }
 
@@ -118,47 +119,82 @@ export default function AssessmentFormModal({
       const height = parseFloat(form.height.replace(',', '.'));
       const waist = parseFloat(form.waist.replace(',', '.'));
       
-      if (isNaN(weight) || isNaN(height) || isNaN(waist)) {
-        Alert.alert("Erro", "Valores numéricos inválidos.");
+      if (isNaN(weight) || isNaN(height) || isNaN(waist) || height === 0 || waist === 0) {
+        Alert.alert("Erro", "Valores numéricos inválidos nas medidas base.");
         return;
       }
-
-      const gender = clientGender || 'M';
-      const calcAge = (birthDateString: string) => {
-        if (!birthDateString) return 30;
-        const birthDate = new Date(birthDateString);
+      
+      // 2. Calcula a idade exata baseada na data de nascimento do cliente
+      const isMale = (clientGender === 'M' || clientGender === 'Masculino');
+      let age = 30; // Idade padrão caso não tenha data
+      if (clientBirthDate) {
+        const birth = new Date(clientBirthDate);
         const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        if (today.getMonth() - birthDate.getMonth() < 0 || (today.getMonth() - birthDate.getMonth() === 0 && today.getDate() < birthDate.getDate())) age--;
-        return age;
-      };
-      const age = calcAge(clientBirthDate);
+        age = today.getFullYear() - birth.getFullYear();
+        if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
+          age--;
+        }
+      }
 
-      let bodyFat = (gender === 'M' || gender === 'Masculino') ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
-      bodyFat = Math.max(5, Math.min(bodyFat, 60)); 
+      // 3. CÁLCULO RFM (Relative Fat Mass) para % de Gordura
+      // Validação científica Cedars-Sinai
+      let bodyFat = 0;
+      if (isMale) {
+        bodyFat = 64 - (20 * (height / waist));
+      } else {
+        bodyFat = 76 - (20 * (height / waist));
+      }
+      // Limites de segurança biológica
+      bodyFat = Math.max(3, Math.min(bodyFat, 60));
 
-      let bmr = (gender === 'M' || gender === 'Masculino') ? (10 * weight) + (6.25 * height) - (5 * age) + 5 : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+      // 4. CÁLCULO MASSA MUSCULAR ESQUELÉTICA (Estimativa Omron)
+      const fatMassKg = weight * (bodyFat / 100);
+      const leanMassKg = weight - fatMassKg;
+      // O músculo esquelético é cerca de 48% da massa magra em homens e 40% em mulheres
+      const muscleMassKg = isMale ? (leanMassKg * 0.48) : (leanMassKg * 0.40);
+      let musclePercentage = (muscleMassKg / weight) * 100;
+      
+      // 5. CÁLCULO METABOLISMO BASAL (Mifflin-St Jeor)
+      let bmr = 0;
+      if (isMale) {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+      } else {
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+      }
 
-      const leanMass = weight * (1 - (bodyFat / 100));
-      const musclePercentage = ((leanMass * 0.55) / weight) * 100;
+      // 6. CÁLCULO IDADE METABÓLICA (Estimativa baseada na gordura e BMR)
+      let metabolicAge = age;
+      const idealFat = isMale ? 15 : 23; // Referências médias ideais
+      if (bodyFat > idealFat) {
+        metabolicAge += Math.floor((bodyFat - idealFat) / 2); // Mais velho se tiver mais gordura
+      } else {
+        metabolicAge -= Math.floor((idealFat - bodyFat) / 2); // Mais jovem se for atlético
+      }
+      metabolicAge = Math.max(15, Math.min(metabolicAge, 90)); // Limites de idade
 
-      let visceral = (gender === 'M' || gender === 'Masculino') ? (waist / 10) - 2 : (waist / 10) - 3;
-      visceral = Math.max(1, Math.round(visceral));
+      // 7. GORDURA VISCERAL (Índice)
+      // Usando relação Cintura/Altura para estimar nível de 1 a 20+
+      const waistToHeightRatio = waist / height;
+      let visceralFat = 1;
+      if (isMale) {
+        visceralFat = Math.round((waistToHeightRatio - 0.45) * 40);
+      } else {
+        visceralFat = Math.round((waistToHeightRatio - 0.42) * 40);
+      }
+      visceralFat = Math.max(1, Math.min(visceralFat, 30));
 
-      const idealFat = (gender === 'M' || gender === 'Masculino') ? 15 : 25;
-      let metabolicAge = age + Math.round((bodyFat - idealFat) / 1.5);
-      metabolicAge = Math.max(18, metabolicAge); 
-
+      // 8. ATUALIZAR O FORMULÁRIO MAGICAMENTE
       setForm(prev => ({
         ...prev,
         body_fat: bodyFat.toFixed(1).replace('.', ','),
         muscle_mass_percentage: musclePercentage.toFixed(1).replace('.', ','),
         basal_metabolic_rate: Math.round(bmr).toString(),
-        body_fat_index: visceral.toString(),
-        metabolic_age: metabolicAge.toString()
+        metabolic_age: Math.round(metabolicAge).toString(),
+        body_fat_index: visceralFat.toString()
       }));
+
+      Alert.alert("Sucesso", "IA Antropométrica calculou os resultados com base no Peso, Altura e Cintura do aluno!");
       
-      Alert.alert("Cálculo Concluído! 🪄", "Gordura, Músculo e Metabolismo calculados via IA.");
     }, 100);
   };
 
