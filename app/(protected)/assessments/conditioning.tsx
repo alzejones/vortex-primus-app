@@ -216,6 +216,33 @@ export default function ConditioningAssessment() {
     }
   };
 
+  const handleDateChange = (text: string) => {
+    // Remove tudo o que não for número
+    let cleaned = text.replace(/\D/g, '');
+    
+    // Limita a 12 números (DDMMAAAAHHMM)
+    if (cleaned.length > 12) {
+      cleaned = cleaned.substring(0, 12);
+    }
+
+    // Aplica a máscara DD/MM/AAAA HH:MM dinamicamente
+    let formatted = cleaned;
+    if (cleaned.length > 2) {
+      formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(2)}`;
+    }
+    if (cleaned.length > 4) {
+      formatted = `${formatted.substring(0, 5)}/${cleaned.substring(4)}`;
+    }
+    if (cleaned.length > 8) {
+      formatted = `${formatted.substring(0, 10)} ${cleaned.substring(8)}`;
+    }
+    if (cleaned.length > 10) {
+      formatted = `${formatted.substring(0, 13)}:${cleaned.substring(10)}`;
+    }
+
+    setAssessmentDate(formatted);
+  };
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -233,8 +260,10 @@ export default function ConditioningAssessment() {
           <TextInput
             style={styles.input}
             value={assessmentDate}
-            onChangeText={setAssessmentDate}
+            onChangeText={handleDateChange}
             placeholder="DD/MM/AAAA HH:MM"
+            keyboardType="numeric"
+            maxLength={16}
           />
         </View>
 
@@ -371,3 +400,4 @@ const styles = StyleSheet.create({
   errorText: { color: "#b91c1c" },
   successText: { color: "#15803d" }
 });
+
