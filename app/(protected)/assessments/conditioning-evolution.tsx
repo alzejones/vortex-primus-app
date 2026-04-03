@@ -401,11 +401,11 @@ export default function ConditioningEvolution() {
                 </Text>
               </TouchableOpacity>
 
-             {/* 🔴 BOTÃO DE EDITAR FINAL (Sem erro de compilação e sem duplicar) */}
+              {/* 🔴 BOTÃO DE EDITAR (Caminho absoluto web com bypass do TypeScript) */}
               <TouchableOpacity
                 style={[styles.detailsBtn, { backgroundColor: '#f59e0b', paddingHorizontal: 12 }]}
                 onPress={() => router.push({ 
-                  pathname: "conditioning", 
+                  pathname: "/assessments/conditioning", 
                   params: { client_id: client_id, assessment_id: assessment.id } 
                 } as any)}
               >
