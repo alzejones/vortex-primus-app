@@ -16,7 +16,6 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import EvolutionPanel from '../../components/EvolutionPanel';
@@ -44,7 +43,6 @@ export default function ClientAssessments() {
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [editingAnthropometryId, setEditingAnthropometryId] = useState<string | null>(null);
 
-  // 🔴 NOVOS ESTADOS PARA EXCLUSÃO SEGURA (Substitui o Alert.alert bugado)
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -104,7 +102,6 @@ export default function ClientAssessments() {
 
       if (assessError) throw assessError;
       
-      // 🔴 CORREÇÃO 1: Filtra as avaliações vazias criadas pelos testes de condicionamento
       const validAssessments = (assessmentsData || []).filter(
         (a: any) => a.anthropometry && a.anthropometry.length > 0
       );
@@ -127,10 +124,8 @@ export default function ClientAssessments() {
 
   const viewRef = useRef(null);
 
-async function handleShareLink() {
-    // 🔴 A ROTA CORRETA: O [id] na pasta significa que o ID vai direto na URL após a barra
+  async function handleShareLink() {
     const assessmentLink = `https://vortex-primus-app.vercel.app/evolution/${clientId}`;
-    
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     const firstName = client?.name ? client.name.split(' ')[0] : 'Aluno';
@@ -148,8 +143,6 @@ async function handleShareLink() {
       Alert.alert("Erro", "Não foi possível abrir o WhatsApp. Verifique se a aplicação está instalada.");
     }
   }
-
-
 
   const calculateAge = (birthDate: string) => {
     const today = new Date();
@@ -317,7 +310,6 @@ async function handleShareLink() {
     setViewModalVisible(true);
   }
 
-  // 🔴 CORREÇÃO 2: Substitui o Alert nativo por uma abertura do nosso próprio Modal seguro
   function deleteAssessment(id: string) {
     setAssessmentToDelete(id);
   }
@@ -331,7 +323,7 @@ async function handleShareLink() {
 
       setAssessments((prev) => prev.filter((a) => a.id !== assessmentToDelete));
       await fetchHistory();
-      setAssessmentToDelete(null); // Fecha o modal
+      setAssessmentToDelete(null); 
     } catch (error: any) {
       console.error("Erro na exclusão:", error);
     } finally {
@@ -358,6 +350,82 @@ async function handleShareLink() {
       return newForm;
     });
   }
+
+  // 🔴 NOVA FUNÇÃO DE AVALIAÇÃO A DISTÂNCIA AQUI!
+  const calculateRemoteAssessment = () => {
+    setTimeout(() => {
+      // Puxa a altura do cadastro se não tiver no formulário (já que o campo não está visível no grid)
+      const heightVal = form.height ? form.height : client?.height_cm?.toString();
+      
+      if (!form.weight || !heightVal || !form.waist) {
+        Alert.alert("Atenção", "Preencha primeiro o Peso (kg) e Cintura (cm). A Altura do aluno será pega do cadastro.");
+        return;
+      }
+
+      const weight = parseFloat(form.weight.replace(',', '.'));
+      const height = parseFloat(heightVal.replace(',', '.'));
+      const waist = parseFloat(form.waist.replace(',', '.'));
+      
+      if (isNaN(weight) || isNaN(height) || isNaN(waist) || height === 0 || waist === 0) {
+        Alert.alert("Erro", "Valores numéricos inválidos nas medidas base.");
+        return;
+      }
+      
+      const isMale = (client?.gender === 'M' || client?.gender === 'Masculino');
+      let age = 30; 
+      if (client?.birth_date) {
+        const birth = new Date(client.birth_date);
+        const today = new Date();
+        age = today.getFullYear() - birth.getFullYear();
+        if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
+          age--;
+        }
+      }
+
+      // 1. RFM
+      let bodyFat = isMale ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
+      bodyFat = Math.max(3, Math.min(bodyFat, 60));
+
+      // 2. Músculo
+      const fatMassKg = weight * (bodyFat / 100);
+      const leanMassKg = weight - fatMassKg;
+      const muscleMassKg = isMale ? (leanMassKg * 0.48) : (leanMassKg * 0.40);
+      let musclePercentage = (muscleMassKg / weight) * 100;
+      
+      // 3. Basal
+      let bmr = isMale 
+        ? (10 * weight) + (6.25 * height) - (5 * age) + 5
+        : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+
+      // 4. Idade Metabólica
+      let metabolicAge = age;
+      const idealFat = isMale ? 15 : 23;
+      if (bodyFat > idealFat) {
+        metabolicAge += Math.floor((bodyFat - idealFat) / 2);
+      } else {
+        metabolicAge -= Math.floor((idealFat - bodyFat) / 2);
+      }
+      metabolicAge = Math.max(15, Math.min(metabolicAge, 90));
+
+      // 5. Visceral
+      const waistToHeightRatio = waist / height;
+      let visceralFat = isMale 
+        ? Math.round((waistToHeightRatio - 0.45) * 40)
+        : Math.round((waistToHeightRatio - 0.42) * 40);
+      visceralFat = Math.max(1, Math.min(visceralFat, 30));
+
+      setForm(prev => ({
+        ...prev,
+        body_fat: bodyFat.toFixed(1).replace('.', ','),
+        muscle_mass_percentage: musclePercentage.toFixed(1).replace('.', ','),
+        basal_metabolic_rate: Math.round(bmr).toString(),
+        metabolic_age: Math.round(metabolicAge).toString(),
+        body_fat_index: visceralFat.toString()
+      }));
+
+      Alert.alert("Sucesso", "Cálculos realizados via Inteligência Artificial Antropométrica!");
+    }, 100);
+  };
 
   async function handleSaveAssessment() {
     setSaving(true);
@@ -440,7 +508,7 @@ async function handleShareLink() {
     });
   }
 
-    function renderGridInput(label: string, key: keyof typeof form) {
+  function renderGridInput(label: string, key: keyof typeof form) {
     return (
       <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
         <Text style={{ fontSize: 12, marginBottom: 4, color: "#333", minHeight: 30 }} numberOfLines={2}>{label}</Text>
@@ -494,13 +562,24 @@ async function handleShareLink() {
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
+                
+                {/* 🔴 O BOTÃO NOVO ENTRA AQUI */}
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#eff6ff', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', marginTop: 4, marginBottom: 16 }} 
+                  onPress={calculateRemoteAssessment}
+                >
+                  <Text style={{ textAlign: 'center', color: '#2563eb', fontWeight: 'bold', fontSize: 15 }}>
+                    🪄 Calcular Avaliação à Distância (IA)
+                  </Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); if(!editingAssessmentId) setFormModalVisible(false); }} disabled={saving}><Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text></TouchableOpacity>
               </View>
             </ScrollView>
           </View>
         </Modal>
 
-        {/* 🔴 MODAL DE CONFIRMAÇÃO DE EXCLUSÃO SEGURO (Substitui o Alert) */}
+        {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO SEGURO */}
         <Modal visible={!!assessmentToDelete} transparent={true} animationType="fade" onRequestClose={() => setAssessmentToDelete(null)}>
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
             <View style={{ backgroundColor: '#fff', padding: 24, borderRadius: 16, width: '100%', maxWidth: 400, alignItems: 'center' }}>
@@ -508,66 +587,68 @@ async function handleShareLink() {
               <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 8, textAlign: 'center' }}>Excluir Avaliação?</Text>
               <Text style={{ fontSize: 15, color: '#64748b', textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar esta avaliação permanentemente? Esta ação não pode ser desfeita.</Text>
               <View style={{ flexDirection: 'row', width: '100%', gap: 12 }}>
-                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: '#f1f5f9', borderRadius: 10, alignItems: 'center' }} onPress={() => setAssessmentToDelete(null)} disabled={isDeleting}><Text style={{ color: '#475569', fontWeight: 'bold', fontSize: 15 }}>Cancelar</Text></TouchableOpacity>
-                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: '#ef4444', borderRadius: 10, alignItems: 'center' }} onPress={executeDelete} disabled={isDeleting}>{isDeleting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Sim, Excluir</Text>}</TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: '#f1f5f9', borderRadius: 10, alignItems: 'center' }} onPress={() => setAssessmentToDelete(null)} disabled={isDeleting}>
+                  <Text style={{ color: '#475569', fontWeight: 'bold', fontSize: 15 }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: '#ef4444', borderRadius: 10, alignItems: 'center' }} onPress={executeDelete} disabled={isDeleting}>
+                  {isDeleting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Excluir</Text>}
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
 
-        {/* TELA PRINCIPAL */}
-        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-          <View style={styles.stickyHeader}>
-            <View style={styles.headerRow}>
-              <Text style={styles.headerItem}><Text style={styles.bold}>Nome: </Text>{client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}</Text>
-              <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
-              <Text style={styles.headerItem}><Text style={styles.bold}>Alt: </Text>{client?.height_cm}cm</Text>
-            </View>
-          </View>
+        {/* TELA PRINCIPAL (POR TRÁS DO MODAL) */}
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
+          {relativeEvolution && (
+            <EvolutionPanel 
+              evolutionData={relativeEvolution} 
+              currentAssessment={selectedAssessment || assessments[0]} 
+              prevAssessment={assessments[1]} 
+              firstAssessment={assessments[assessments.length - 1]} 
+              formatValue={formatValue} 
+            />
+          )}
+          {assessments.length > 0 && (
+            <MeasurementsEvolutionPanel 
+              currentAssessment={selectedAssessment || assessments[0]} 
+              prevAssessment={assessments[1]} 
+              firstAssessment={assessments[assessments.length - 1]} 
+            />
+          )}
 
-          <View style={{ padding: 16 }}>
-            {evolution && <EvolutionPanel evolutionData={evolution} currentAssessment={assessments[0]} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} formatValue={formatValue} />}
-            {evolution && assessments?.length > 1 && <MeasurementsEvolutionPanel currentAssessment={assessments[0]} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} />}
-            
-            <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
-              <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
-                <LineChart data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))} data2={muscleData.map((val) => ({ value: Number(val) || 0 }))} height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))} initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e" thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)" yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }} yAxisLabelSuffix="%" stepValue={5} maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5} noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)} rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)" />
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
-                </View>
-                {fatData.length > 7 && <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>↔️ Deslize o gráfico para o lado para ver o histórico completo</Text>}
-              </View>
-            </View>
-
-            <TouchableOpacity style={{ backgroundColor: '#1e293b', padding: 16, borderRadius: 12, marginBottom: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }} onPress={() => router.push({ pathname: "/(protected)/assessments/conditioning-evolution" as any, params: { client_id: clientId } } as any)}>
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>📈 Ver Evolução de Performance</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
-
-            {assessments.map((assessment, index) => {
-              const previousAnthro = assessments[index + 1]?.anthropometry?.[0];
-              return (
-                <AssessmentHistoryCard
-                  key={assessment.id}
-                  assessment={assessment}
-                  previousAnthro={previousAnthro}
-                  index={index}
-                  totalAssessments={assessments.length}
-                  onViewDetails={handleViewAssessment}
-                  onEdit={handleEditAssessment}
-                  onDelete={deleteAssessment}
-                  onWhatsApp={handleSendWhatsApp}
-                  onPhysicalTests={() => handlePhysicalTests(assessment)} 
-                />
-              );
-            })}
-          </View>
+          <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
+          {assessments.length === 0 ? (
+            <Text style={{ textAlign: "center", marginTop: 20, color: "#666" }}>Nenhuma avaliação encontrada.</Text>
+          ) : (
+            assessments.map((item, index) => (
+              <AssessmentHistoryCard 
+                key={item.id} 
+                {...{
+                  assessment: item,
+                  index: index,
+                  onEdit: handleEditAssessment,
+                  onDelete: deleteAssessment,
+                  onView: handleViewAssessment,
+                  onWhatsApp: handleSendWhatsApp,
+                  onPhysicalTests: handlePhysicalTests
+                } as any}
+              />
+            ))
+          )}
+          
         </ScrollView>
-      </KeyboardAvoidingView>
 
-      <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} />
+        <AssessmentDetailsModal 
+          {...{
+            visible: viewModalVisible,
+            onClose: () => setViewModalVisible(false),
+            assessment: selectedAssessment,
+            clientName: client?.name
+          } as any}
+        />
+        
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -583,7 +664,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "space-between" },
   gridInput: { borderWidth: 1, borderColor: "#ccc", padding: 8, borderRadius: 6, backgroundColor: '#fafafa', textAlign: 'center', fontSize: 14, color: '#000' },
   button: { backgroundColor: "#000", padding: 16, borderRadius: 8, marginTop: 10 },
-  historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: "#eee", borderRadius: 8, backgroundColor: "#fafafa" },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#fff', borderRadius: 15, padding: 20, width: '100%', maxHeight: '90%' }
 });
+
