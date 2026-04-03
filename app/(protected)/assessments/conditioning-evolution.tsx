@@ -260,7 +260,7 @@ export default function ConditioningEvolution() {
   };
 
   // ==========================================================
-  // 3. MOBILIDADE E ESTABILIDADE (NOVO)
+  // 3. MOBILIDADE E ESTABILIDADE
   // ==========================================================
   const renderMobilityCard = (currentAss: any, previousAss: any, initialAss: any) => {
     const condCurr = currentAss.conditioning[0];
@@ -358,12 +358,12 @@ export default function ConditioningEvolution() {
     return (
       <View style={styles.center}>
         <Text style={styles.emptyTitle}>Nenhum teste encontrado</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}><Text style={{ color: "#fff" }}>Voltar</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}><Text style={{ color: "#fff", fontWeight: "bold" }}>Voltar</Text></TouchableOpacity>
       </View>
     );
   }
 
-  const currentAss = history[selectedIndex];
+    const currentAss = history[selectedIndex];
   const previousAss = history.length > selectedIndex + 1 ? history[selectedIndex + 1] : null;
   const initialAss = history.length > 1 ? history[history.length - 1] : null;
 
@@ -378,7 +378,6 @@ export default function ConditioningEvolution() {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
         
-        {/* RENDERIZA OS TRÊS CARDS */}
         {renderStrengthCard(currentAss, previousAss, initialAss)}
         {renderEnduranceCard(currentAss, previousAss, initialAss)}
         {renderMobilityCard(currentAss, previousAss, initialAss)}
@@ -390,14 +389,31 @@ export default function ConditioningEvolution() {
               <Text style={[styles.historyDate, selectedIndex === index && { color: '#1e40af' }]}>{formatDate(assessment.date)}</Text>
               {index === 0 && <Text style={styles.historyTag}>Mais Recente</Text>}
             </View>
-            <TouchableOpacity 
-              style={[styles.detailsBtn, selectedIndex === index && styles.detailsBtnActive]} 
-              onPress={() => setSelectedIndex(index)}
-            >
-              <Text style={[styles.detailsBtnText, selectedIndex === index && { color: '#fff' }]}>
-                {selectedIndex === index ? "Em Exibição" : "Ver Detalhes"}
-              </Text>
-            </TouchableOpacity>
+            
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* BOTÃO DE VISUALIZAR DETALHES (Existente) */}
+              <TouchableOpacity 
+                style={[styles.detailsBtn, selectedIndex === index && styles.detailsBtnActive]} 
+                onPress={() => setSelectedIndex(index)}
+              >
+                <Text style={[styles.detailsBtnText, selectedIndex === index && { color: '#fff' }]}>
+                  {selectedIndex === index ? "Em Exibição" : "Ver Detalhes"}
+                </Text>
+              </TouchableOpacity>
+
+            {/* 🔴 NOVO BOTÃO DE EDITAR (C-R-U-D Completo) */}
+              <TouchableOpacity
+                style={[styles.detailsBtn, { backgroundColor: '#f59e0b', paddingHorizontal: 12 }]}
+                onPress={() => router.push({ 
+                  // Usar o caminho relativo "./conditioning" costuma ser mais seguro se ambos estiverem na mesma pasta
+                  pathname: "./conditioning", 
+                  params: { client_id: client_id, assessment_id: assessment.id } 
+                })}
+              >
+                <Text style={[styles.detailsBtnText, { color: '#fff' }]}>✏️ Editar</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         ))}
       </ScrollView>
