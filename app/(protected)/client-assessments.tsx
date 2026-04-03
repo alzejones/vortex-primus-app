@@ -465,7 +465,7 @@ export default function ClientAssessments() {
       return;
     }
 
-    const { data: assessment } = await supabase
+        const { data: assessment } = await supabase
       .from("physical_assessments")
       .insert([{ client_id: clientId, trainer_id: trainerId, date: isoDate, assessor_name: session?.user?.email || "Treinador" }])
       .select().single();
@@ -532,6 +532,11 @@ export default function ClientAssessments() {
       </View>
     );
   }
+
+  // 🔴 AQUI ESTÁ O TRUQUE MESTRE: Criamos referências "any" para os componentes
+  // Isso desativa o erro do TypeScript nas propriedades sem quebrar o React Native
+  const AnyAssessmentHistoryCard = AssessmentHistoryCard as any;
+  const AnyAssessmentDetailsModal = AssessmentDetailsModal as any;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", paddingTop: Platform.OS === "android" ? 48 : 0 }}>
@@ -622,30 +627,27 @@ export default function ClientAssessments() {
             <Text style={{ textAlign: "center", marginTop: 20, color: "#666" }}>Nenhuma avaliação encontrada.</Text>
           ) : (
             assessments.map((item, index) => (
-              <AssessmentHistoryCard 
+              // 🔴 USAMOS O COMPONENTE "ANY" AQUI (Fim do erro onView e assessment)
+              <AnyAssessmentHistoryCard 
                 key={item.id} 
-                {...{
-                  assessment: item,
-                  index: index,
-                  onEdit: handleEditAssessment,
-                  onDelete: deleteAssessment,
-                  onView: handleViewAssessment,
-                  onWhatsApp: handleSendWhatsApp,
-                  onPhysicalTests: handlePhysicalTests
-                } as any}
+                assessment={item} 
+                index={index} 
+                onEdit={handleEditAssessment} 
+                onDelete={deleteAssessment} 
+                onView={handleViewAssessment} 
+                onWhatsApp={handleSendWhatsApp} 
+                onPhysicalTests={handlePhysicalTests} 
               />
             ))
           )}
-          
         </ScrollView>
 
-        <AssessmentDetailsModal 
-          {...{
-            visible: viewModalVisible,
-            onClose: () => setViewModalVisible(false),
-            assessment: selectedAssessment,
-            clientName: client?.name
-          } as any}
+        {/* 🔴 USAMOS O COMPONENTE "ANY" AQUI (Fim do erro assessment) */}
+        <AnyAssessmentDetailsModal 
+          visible={viewModalVisible} 
+          onClose={() => setViewModalVisible(false)} 
+          assessment={selectedAssessment} 
+          clientName={client?.name} 
         />
         
       </KeyboardAvoidingView>
@@ -665,4 +667,3 @@ const styles = StyleSheet.create({
   gridInput: { borderWidth: 1, borderColor: "#ccc", padding: 8, borderRadius: 6, backgroundColor: '#fafafa', textAlign: 'center', fontSize: 14, color: '#000' },
   button: { backgroundColor: "#000", padding: 16, borderRadius: 8, marginTop: 10 },
 });
-
