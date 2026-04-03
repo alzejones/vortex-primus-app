@@ -304,6 +304,16 @@ export default function AssessmentFormModal({
           <View style={styles.row}>{renderGridInput("Índice Visceral", "body_fat_index")}{renderGridInput("Idade Metabólica", "metabolic_age")}</View>
           <View style={styles.row}>{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}</View>
 
+          {/* 🔴 O BOTÃO NOVO ENTRA AQUI */}
+          <TouchableOpacity 
+            style={{ backgroundColor: '#eff6ff', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', marginHorizontal: 4, marginTop: 12, marginBottom: 16 }} 
+            onPress={calculateRemoteAssessment}
+          >
+            <Text style={{ textAlign: 'center', color: '#2563eb', fontWeight: 'bold', fontSize: 15 }}>
+              🪄 Calcular Avaliação à Distância (IA)
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.button} onPress={handleSaveAssessment} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", textAlign: "center", fontWeight: "bold", fontSize: 16 }}>Salvar Avaliação</Text>}
           </TouchableOpacity>
