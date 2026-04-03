@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,7 +19,6 @@ type EnduranceTest = { id: string; type: string; distance: string; time: string;
 type MobilityTest = { id: string; name: string; notes: string };
 
 export default function ConditioningAssessment() {
-  // 🔴 Agora recebe tanto o client_id quanto o assessment_id
   const { client_id, assessment_id } = useLocalSearchParams();
   
   const [loading, setLoading] = useState(false);
@@ -32,7 +32,6 @@ export default function ConditioningAssessment() {
   const [enduranceTests, setEnduranceTests] = useState<EnduranceTest[]>([]);
   const [mobilityTests, setMobilityTests] = useState<MobilityTest[]>([]);
 
-  // 🔴 CARREGA DADOS EXISTENTES (Se já houver testes salvos, ele mostra na tela)
   useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -58,7 +57,6 @@ export default function ConditioningAssessment() {
             .single();
 
           if (assessData) {
-            // Formata a data existente
             const d = new Date(assessData.date);
             const dia = d.getDate().toString().padStart(2, '0');
             const mes = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -67,7 +65,6 @@ export default function ConditioningAssessment() {
             const min = d.getMinutes().toString().padStart(2, '0');
             setAssessmentDate(`${dia}/${mes}/${ano} ${h}:${min}`);
 
-            // Preenche os testes se já existirem
             const cond = assessData.conditioning?.[0];
             if (cond) {
               if (cond.strength) {
@@ -82,7 +79,6 @@ export default function ConditioningAssessment() {
             }
           }
         } else {
-          // Nova avaliação - seta a data atual
           const d = new Date();
           const dia = d.getDate().toString().padStart(2, '0');
           const mes = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -147,7 +143,6 @@ export default function ConditioningAssessment() {
       const isoDate = parseDateBRToISO(assessmentDate);
       let target_assessment_id = assessment_id as string;
 
-      // 1. Se NÃO tiver assessment_id, cria um evento principal
       if (!target_assessment_id) {
         const { data: newAssessment, error: assessError } = await supabase
           .from("physical_assessments")
@@ -156,17 +151,14 @@ export default function ConditioningAssessment() {
         if (assessError) throw assessError;
         target_assessment_id = newAssessment.id;
       } else {
-        // Atualiza a data da avaliação principal se for edição
         await supabase.from("physical_assessments").update({ date: isoDate }).eq("id", target_assessment_id);
       }
 
-      // 2. Procura a pasta de condicionamento para este assessment_id
       let conditioning_test_id = null;
       const { data: existingCond } = await supabase.from("conditioning_tests").select("id").eq("assessment_id", target_assessment_id).single();
       
       if (existingCond) {
         conditioning_test_id = existingCond.id;
-        // Limpa os testes antigos para inserir os novos limpos (evita duplicação ao editar)
         await supabase.from("strength_tests").delete().eq("conditioning_test_id", conditioning_test_id);
         await supabase.from("endurance_tests").delete().eq("conditioning_test_id", conditioning_test_id);
         await supabase.from("mobility_tests").delete().eq("conditioning_test_id", conditioning_test_id);
@@ -176,7 +168,6 @@ export default function ConditioningAssessment() {
         conditioning_test_id = condTest.id;
       }
 
-      // 3. Salva os testes (com replace de vírgula por ponto para não falhar na vírgula)
       if (strengthTests.length > 0) {
         const strengthData = strengthTests.map(t => ({ 
           conditioning_test_id, 
@@ -216,29 +207,46 @@ export default function ConditioningAssessment() {
     }
   };
 
-  const handleDateChange = (text: string) => {
-    // Remove tudo o que não for número
-    let cleaned = text.replace(/\D/g, '');
+  // 🔴 NOVA FUNÇÃO DE EXCLUSÃO (DELETE)
+  const handleDelete = () => {
+    if (!assessment_id) return;
     
-    // Limita a 12 números (DDMMAAAAHHMM)
-    if (cleaned.length > 12) {
-      cleaned = cleaned.substring(0, 12);
-    }
+    Alert.alert(
+      "Excluir Avaliação",
+      "Tem a certeza que deseja excluir esta avaliação de condicionamento? Esta ação não pode ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            setLoading(true);
+            try {
+              // Apaga a avaliação inteira (o Supabase cuidará de limpar os testes em cascata)
+              const { error } = await supabase.from('physical_assessments').delete().eq('id', assessment_id);
+              if (error) throw error;
+              
+              setMessage("✅ Avaliação excluída com sucesso!");
+              setTimeout(() => { router.back(); }, 1500);
+            } catch (error: any) {
+              setMessage("Erro ao excluir: " + (error.message || JSON.stringify(error)));
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
 
-    // Aplica a máscara DD/MM/AAAA HH:MM dinamicamente
+  const handleDateChange = (text: string) => {
+    let cleaned = text.replace(/\D/g, '');
+    if (cleaned.length > 12) cleaned = cleaned.substring(0, 12);
+
     let formatted = cleaned;
-    if (cleaned.length > 2) {
-      formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(2)}`;
-    }
-    if (cleaned.length > 4) {
-      formatted = `${formatted.substring(0, 5)}/${cleaned.substring(4)}`;
-    }
-    if (cleaned.length > 8) {
-      formatted = `${formatted.substring(0, 10)} ${cleaned.substring(8)}`;
-    }
-    if (cleaned.length > 10) {
-      formatted = `${formatted.substring(0, 13)}:${cleaned.substring(10)}`;
-    }
+    if (cleaned.length > 2) formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(2)}`;
+    if (cleaned.length > 4) formatted = `${formatted.substring(0, 5)}/${cleaned.substring(4)}`;
+    if (cleaned.length > 8) formatted = `${formatted.substring(0, 10)} ${cleaned.substring(8)}`;
+    if (cleaned.length > 10) formatted = `${formatted.substring(0, 13)}:${cleaned.substring(10)}`;
 
     setAssessmentDate(formatted);
   };
@@ -364,6 +372,13 @@ export default function ConditioningAssessment() {
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Salvar Avaliação Completa</Text>}
         </TouchableOpacity>
 
+        {/* BOTÃO EXCLUIR (Só aparece se estiver a editar uma avaliação existente) */}
+        {assessment_id && (
+          <TouchableOpacity style={[styles.saveBtn, { backgroundColor: '#ef4444', marginTop: 12 }]} onPress={handleDelete} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>🗑️ Excluir Avaliação</Text>}
+          </TouchableOpacity>
+        )}
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -393,11 +408,10 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: "#16a34a", padding: 16, borderRadius: 8, alignItems: "center", marginTop: 10 },
   saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "800" },
 
-  messageBox: { padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1 },
+    messageBox: { padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1 },
   errorBox: { backgroundColor: "#fef2f2", borderColor: "#f87171" },
   successBox: { backgroundColor: "#f0fdf4", borderColor: "#4ade80" },
   messageText: { fontSize: 14, fontWeight: "600", textAlign: "center" },
   errorText: { color: "#b91c1c" },
   successText: { color: "#15803d" }
 });
-
