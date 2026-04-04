@@ -427,8 +427,8 @@ async function handleShareLink() {
       // Injeta os dados na tela
       setForm(prev => ({
         ...prev,
-        body_fat: bodyFat.toFixed(1).replace('.', ','),
-        muscle_mass_percentage: musclePercentage.toFixed(1).replace('.', ','),
+        body_fat: bodyFat.toFixed(1),
+        muscle_mass_percentage: musclePercentage.toFixed(1),
         basal_metabolic_rate: Math.round(bmr).toString(),
         metabolic_age: Math.round(metabolicAge).toString(),
         body_fat_index: visceralFat.toString()
