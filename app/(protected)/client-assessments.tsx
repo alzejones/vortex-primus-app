@@ -361,36 +361,48 @@ async function handleShareLink() {
     });
   }
 
- // 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
+// 🪄 IA ANTROPOMÉTRICA BLINDADA (Sem falhas silenciosas)
   const calculateRemoteAssessment = () => {
-    Keyboard.dismiss(); // 🔴 Força o fechamento do teclado imediatamente
+    try {
+      // 1. Tenta fechar o teclado, mas se não conseguir (ex: na Web), ignora e segue em frente
+      if (Platform.OS !== 'web') {
+        Keyboard.dismiss();
+      }
 
-    setTimeout(() => {
-      const heightVal = form.height ? form.height : client?.height_cm?.toString();
+      // 2. Garante que a altura é um texto válido, mesmo que venha nula do banco
+      const heightVal = form.height ? String(form.height) : String(client?.height_cm || "");
       
-      if (!form.weight || !heightVal || !form.waist) {
-        Alert.alert("Atenção", "Preencha primeiro o Peso (kg) e Cintura (cm). A Altura será pega do cadastro.");
+      // 3. Validação inicial rigorosa
+      if (!form.weight || !heightVal || heightVal === "undefined" || !form.waist) {
+        Alert.alert("⚠️ Atenção", "Preencha primeiro o Peso (kg) e Cintura (cm).");
         return;
       }
 
+      // 4. Conversão segura para números
       const weight = parseFloat(form.weight.replace(',', '.'));
       const height = parseFloat(heightVal.replace(',', '.'));
       const waist = parseFloat(form.waist.replace(',', '.'));
       
       if (isNaN(weight) || isNaN(height) || isNaN(waist) || height === 0 || waist === 0) {
-        Alert.alert("Erro", "Valores numéricos inválidos nas medidas.");
+        Alert.alert("❌ Erro", "Os valores digitados não são números válidos.");
         return;
       }
       
-      const isMale = (client?.gender === 'M' || client?.gender === 'Masculino');
-      let age = 30; 
+      // 5. Garantia de gênero e idade para evitar cálculos quebrados
+      const clientGenderStr = client?.gender ? String(client.gender).toUpperCase() : 'M';
+      const isMale = (clientGenderStr === 'M' || clientGenderStr === 'MASCULINO');
+      
+      let age = 30; // Idade base segura
       if (client?.birth_date) {
         const birth = new Date(client.birth_date);
         const today = new Date();
         age = today.getFullYear() - birth.getFullYear();
-        if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+        if (today.getMonth() - birth.getMonth() < 0 || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
+          age--;
+        }
       }
 
+      // --- CÁLCULOS ---
       let bodyFat = isMale ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
       bodyFat = Math.max(3, Math.min(bodyFat, 60));
 
@@ -398,7 +410,9 @@ async function handleShareLink() {
       const muscleMassKg = isMale ? ((weight - fatMassKg) * 0.48) : ((weight - fatMassKg) * 0.40);
       let musclePercentage = (muscleMassKg / weight) * 100;
       
-      let bmr = isMale ? (10 * weight) + (6.25 * height) - (5 * age) + 5 : (10 * weight) + (6.25 * height) - (5 * age) - 161;
+      let bmr = isMale 
+        ? (10 * weight) + (6.25 * height) - (5 * age) + 5 
+        : (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
       let metabolicAge = age;
       const idealFat = isMale ? 15 : 23;
@@ -410,6 +424,7 @@ async function handleShareLink() {
       let visceralFat = isMale ? Math.round((waistToHeightRatio - 0.45) * 40) : Math.round((waistToHeightRatio - 0.42) * 40);
       visceralFat = Math.max(1, Math.min(visceralFat, 30));
 
+      // 6. Atualização Mágica
       setForm(prev => ({
         ...prev,
         body_fat: bodyFat.toFixed(1).replace('.', ','),
@@ -419,11 +434,14 @@ async function handleShareLink() {
         body_fat_index: visceralFat.toString()
       }));
 
-      // 🔴 AVISO DE SUCESSO ADICIONADO AQUI
-      Alert.alert("✅ Sucesso", "Os dados foram calculados e preenchidos automaticamente!");
+      Alert.alert("✅ Sucesso", "Os dados foram calculados via IA e preenchidos!");
 
-    }, 150); // Um pequeno tempo para o teclado sumir antes de calcular
+    } catch (error: any) {
+      // 🔴 SE ALGO DEU ERRADO NO CÓDIGO, ELE VAI MOSTRAR NA TELA EM VEZ DE FICAR MORTO
+      Alert.alert("Erro Crítico", "Falha no cálculo: " + error.message);
+    }
   };
+
 
   async function handleSaveAssessment() {
     setSaving(true);
