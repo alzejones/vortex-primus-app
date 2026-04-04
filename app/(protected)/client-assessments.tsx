@@ -361,38 +361,39 @@ async function handleShareLink() {
     });
   }
 
-// 🪄 IA ANTROPOMÉTRICA BLINDADA (Sem falhas silenciosas)
+// 🪄 IA ANTROPOMÉTRICA (Com correção do Bug do Modal na Web)
   const calculateRemoteAssessment = () => {
+    // Função mágica que garante que o aviso vai aparecer na Web ou no App
+    const showMsg = (title: string, msg: string) => {
+      if (Platform.OS === 'web') {
+        window.alert(`${title}\n\n${msg}`);
+      } else {
+        Alert.alert(title, msg);
+      }
+    };
+
     try {
-      // 1. Tenta fechar o teclado, mas se não conseguir (ex: na Web), ignora e segue em frente
-      if (Platform.OS !== 'web') {
-        Keyboard.dismiss();
-      }
+      if (Platform.OS !== 'web') Keyboard.dismiss();
 
-      // 2. Garante que a altura é um texto válido, mesmo que venha nula do banco
-      const heightVal = form.height ? String(form.height) : String(client?.height_cm || "");
-      
-      // 3. Validação inicial rigorosa
-      if (!form.weight || !heightVal || heightVal === "undefined" || !form.waist) {
-        Alert.alert("⚠️ Atenção", "Preencha primeiro o Peso (kg) e Cintura (cm).");
+      // Conversão ultra-segura (mesmo se o usuário digitar com vírgula ou ponto)
+      const pesoStr = String(form.weight || "").replace(',', '.');
+      const cinturaStr = String(form.waist || "").replace(',', '.');
+      const alturaStr = form.height ? String(form.height).replace(',', '.') : String(client?.height_cm || "").replace(',', '.');
+
+      const weight = parseFloat(pesoStr);
+      const waist = parseFloat(cinturaStr);
+      const height = parseFloat(alturaStr);
+
+      // Validação: Se faltar peso, altura ou cintura, mostra o aviso na cara do usuário
+      if (isNaN(weight) || isNaN(waist) || isNaN(height) || weight === 0 || waist === 0 || height === 0) {
+        showMsg("⚠️ Atenção", "Preencha o Peso e a Cintura na grade antes de calcular.\n\n(A Altura será puxada do seu cadastro se você não preencher).");
         return;
       }
 
-      // 4. Conversão segura para números
-      const weight = parseFloat(form.weight.replace(',', '.'));
-      const height = parseFloat(heightVal.replace(',', '.'));
-      const waist = parseFloat(form.waist.replace(',', '.'));
+      // --- INÍCIO DA IA DE CÁLCULO ---
+      const isMale = (client?.gender === 'M' || client?.gender === 'Masculino' || client?.gender === 'masculino');
       
-      if (isNaN(weight) || isNaN(height) || isNaN(waist) || height === 0 || waist === 0) {
-        Alert.alert("❌ Erro", "Os valores digitados não são números válidos.");
-        return;
-      }
-      
-      // 5. Garantia de gênero e idade para evitar cálculos quebrados
-      const clientGenderStr = client?.gender ? String(client.gender).toUpperCase() : 'M';
-      const isMale = (clientGenderStr === 'M' || clientGenderStr === 'MASCULINO');
-      
-      let age = 30; // Idade base segura
+      let age = 30; // Idade base
       if (client?.birth_date) {
         const birth = new Date(client.birth_date);
         const today = new Date();
@@ -402,7 +403,6 @@ async function handleShareLink() {
         }
       }
 
-      // --- CÁLCULOS ---
       let bodyFat = isMale ? 64 - (20 * (height / waist)) : 76 - (20 * (height / waist));
       bodyFat = Math.max(3, Math.min(bodyFat, 60));
 
@@ -424,7 +424,7 @@ async function handleShareLink() {
       let visceralFat = isMale ? Math.round((waistToHeightRatio - 0.45) * 40) : Math.round((waistToHeightRatio - 0.42) * 40);
       visceralFat = Math.max(1, Math.min(visceralFat, 30));
 
-      // 6. Atualização Mágica
+      // Injeta os dados na tela
       setForm(prev => ({
         ...prev,
         body_fat: bodyFat.toFixed(1).replace('.', ','),
@@ -434,14 +434,13 @@ async function handleShareLink() {
         body_fat_index: visceralFat.toString()
       }));
 
-      Alert.alert("✅ Sucesso", "Os dados foram calculados via IA e preenchidos!");
+      // Aviso de que funcionou
+      showMsg("✅ Sucesso", "Os dados foram calculados e preenchidos automaticamente na tela!");
 
     } catch (error: any) {
-      // 🔴 SE ALGO DEU ERRADO NO CÓDIGO, ELE VAI MOSTRAR NA TELA EM VEZ DE FICAR MORTO
-      Alert.alert("Erro Crítico", "Falha no cálculo: " + error.message);
+      showMsg("❌ Erro Crítico", "Falha no cálculo: " + error.message);
     }
   };
-
 
   async function handleSaveAssessment() {
     setSaving(true);
