@@ -4,7 +4,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert, Dimensions, KeyboardAvoidingView,
+  Alert, Dimensions,
+  Keyboard,
+  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -361,6 +363,8 @@ async function handleShareLink() {
 
  // 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
   const calculateRemoteAssessment = () => {
+    Keyboard.dismiss(); // 🔴 Força o fechamento do teclado imediatamente
+
     setTimeout(() => {
       const heightVal = form.height ? form.height : client?.height_cm?.toString();
       
@@ -374,7 +378,7 @@ async function handleShareLink() {
       const waist = parseFloat(form.waist.replace(',', '.'));
       
       if (isNaN(weight) || isNaN(height) || isNaN(waist) || height === 0 || waist === 0) {
-        Alert.alert("Erro", "Valores numéricos inválidos.");
+        Alert.alert("Erro", "Valores numéricos inválidos nas medidas.");
         return;
       }
       
@@ -414,9 +418,12 @@ async function handleShareLink() {
         metabolic_age: Math.round(metabolicAge).toString(),
         body_fat_index: visceralFat.toString()
       }));
-    }, 100);
-  };
 
+      // 🔴 AVISO DE SUCESSO ADICIONADO AQUI
+      Alert.alert("✅ Sucesso", "Os dados foram calculados e preenchidos automaticamente!");
+
+    }, 150); // Um pequeno tempo para o teclado sumir antes de calcular
+  };
 
   async function handleSaveAssessment() {
     setSaving(true);
@@ -586,7 +593,7 @@ async function handleShareLink() {
         </Modal>
 
         {/* TELA PRINCIPAL */}
-        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 }}>
           <View style={styles.stickyHeader}>
             <View style={styles.headerRow}>
               <Text style={styles.headerItem}><Text style={styles.bold}>Nome: </Text>{client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}</Text>
