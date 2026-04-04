@@ -1,7 +1,9 @@
+import { useStripe } from '@stripe/stripe-react-native';
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,11 +19,14 @@ interface Plan {
   name: string;
   price_monthly: number;
   max_clients: number | null;
+  stripe_price_id: string;
 }
 
 export default function PlansScreen() {
   const { trainerId, plan: currentPlan, subscription, loadingTrainer } =
     useTrainer();
+  
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -55,27 +60,80 @@ export default function PlansScreen() {
   async function confirmUpgrade() {
     if (!trainerId || !selectedPlan || !subscription) return;
 
-    // Desativar assinatura atual
-    await supabase
-      .from("trainer_subscriptions")
-      .update({ is_active: false })
-      .eq("id", subscription.id);
+    try {
+      setModalVisible(false);
+      
+      if (!selectedPlan.stripe_price_id) {
+        Alert.alert("Erro", "Este plano ainda não está configurado no Stripe.");
+        return;
+      }
 
-    // Criar nova assinatura
-    const { error } = await supabase.from("trainer_subscriptions").insert({
-      trainer_id: trainerId,
-      plan_id: selectedPlan.id,
-      is_active: true,
-      start_date: new Date().toISOString(),
-    });
+      Alert.alert("Aguarde...", "Conectando ao ambiente seguro de pagamento.");
 
-    if (error) {
-      console.error("Erro no upgrade:", error);
-      return;
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
+        body: { 
+          priceId: selectedPlan.stripe_price_id,
+          email: session?.user?.email,
+          name: session?.user?.user_metadata?.name || 'Treinador Vortex'
+        }
+      });
+
+      if (backendError || checkoutData?.error) {
+        throw new Error(checkoutData?.error || backendError?.message || "Falha ao contatar o servidor financeiro");
+      }
+
+      const { paymentIntent, ephemeralKey, customer } = checkoutData;
+
+      const { error: initError } = await initPaymentSheet({
+        merchantDisplayName: 'Vortex Primus',
+        customerId: customer,
+        customerEphemeralKeySecret: ephemeralKey,
+        paymentIntentClientSecret: paymentIntent,
+        allowsDelayedPaymentMethods: true,
+      });
+
+      if (initError) throw new Error(initError.message);
+
+      const { error: presentError } = await presentPaymentSheet();
+
+      if (presentError) {
+        if (presentError.code === 'Canceled') {
+          Alert.alert("Cancelado", "O pagamento não foi concluído.");
+        } else {
+          throw new Error(presentError.message);
+        }
+        return;
+      }
+
+      Alert.alert("Pagamento Aprovado! 🎉", "Bem-vindo ao plano " + selectedPlan.name);
+
+      // Desativar assinatura atual
+      await supabase
+        .from("trainer_subscriptions")
+        .update({ is_active: false })
+        .eq("id", subscription.id);
+
+      // Criar nova assinatura
+      const { error } = await supabase.from("trainer_subscriptions").insert({
+        trainer_id: trainerId,
+        plan_id: selectedPlan.id,
+        is_active: true,
+        start_date: new Date().toISOString(),
+      });
+
+      if (error) {
+        console.error("Erro no upgrade:", error);
+        return;
+      }
+
+      router.replace("/" as any);
+
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Erro no pagamento", error.message);
     }
-
-    setModalVisible(false);
-    router.replace("/dashboard");
   }
 
   if (loadingTrainer || loadingPlans) {
@@ -281,3 +339,4 @@ const styles = StyleSheet.create({
     color: "red",
   },
 });
+
