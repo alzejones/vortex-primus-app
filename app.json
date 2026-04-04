@@ -41,10 +41,17 @@
         }
       ],
       "expo-web-browser",
-      "@stripe/stripe-react-native"
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.vortexprimus",
+          "enableGooglePay": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     }
   }
 }
+
