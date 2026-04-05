@@ -48,31 +48,24 @@ export default function PlansScreen() {
     } else {
       setPlans(data || []);
     }
-
     setLoadingPlans(false);
   }
 
   function handleUpgrade(plan: Plan) {
-    console.log("=== DEBUG: Botão Upgrade Clicado na Lista ===");
-    console.log("Plano escolhido:", plan.name);
+    // Alerta imediato para garantir que o botão não está falhando em silêncio
+    Alert.alert("Atenção", `Você selecionou o plano: ${plan.name}`);
     setSelectedPlan(plan);
     setModalVisible(true);
   }
 
   async function confirmUpgrade() {
-    console.log("=== DEBUG: Botão Confirmar Upgrade no Modal Clicado ===");
-    console.log("1. trainerId:", trainerId);
-    console.log("2. selectedPlan:", selectedPlan?.name);
-    console.log("3. subscription (assinatura atual):", subscription?.id || "Nenhuma/Nova");
-
-    // Travas com avisos em vez de falhas silenciosas
     if (!trainerId) {
-      Alert.alert("Debug de Erro", "Falta o trainerId. Você está logado corretamente?");
+      Alert.alert("Erro", "Treinador não identificado. Faça login novamente.");
       return;
     }
 
     if (!selectedPlan) {
-      Alert.alert("Debug de Erro", "Nenhum plano selecionado.");
+      Alert.alert("Erro", "Nenhum plano selecionado.");
       return;
     }
 
@@ -80,12 +73,11 @@ export default function PlansScreen() {
       setModalVisible(false);
       
       if (!selectedPlan.stripe_price_id) {
-        Alert.alert("Erro", "Este plano ainda não está configurado no Stripe.");
+        Alert.alert("Erro", "Este plano ainda não tem um ID do Stripe configurado.");
         return;
       }
 
-      Alert.alert("Aguarde...", "Conectando ao ambiente seguro de pagamento.");
-      console.log("Iniciando requisição para Edge Function stripe-checkout...");
+      Alert.alert("Aguarde", "Conectando ao Stripe...");
 
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -98,15 +90,11 @@ export default function PlansScreen() {
       });
 
       if (backendError || checkoutData?.error) {
-        console.error("DEBUG Erro Backend:", backendError || checkoutData?.error);
-        throw new Error(checkoutData?.error || backendError?.message || "Falha ao contatar o servidor financeiro");
+        throw new Error(checkoutData?.error || backendError?.message || "Falha na Edge Function");
       }
-
-      console.log("Resposta da Edge Function recebida:", checkoutData ? "Sucesso" : "Vazio");
 
       const { paymentIntent, ephemeralKey, customer } = checkoutData;
 
-      console.log("Iniciando PaymentSheet...");
       const { error: initError } = await initPaymentSheet({
         merchantDisplayName: 'Vortex Primus',
         customerId: customer,
@@ -117,22 +105,15 @@ export default function PlansScreen() {
 
       if (initError) throw new Error(initError.message);
 
-      console.log("Apresentando tela do Stripe...");
       const { error: presentError } = await presentPaymentSheet();
 
       if (presentError) {
-        if (presentError.code === 'Canceled') {
-          Alert.alert("Cancelado", "O pagamento não foi concluído.");
-        } else {
-          throw new Error(presentError.message);
-        }
-        return;
+        if (presentError.code === 'Canceled') return; // Usuário apenas fechou a tela
+        throw new Error(presentError.message);
       }
 
-      console.log("Pagamento Aprovado no Stripe. Atualizando banco de dados...");
-      Alert.alert("Pagamento Aprovado! 🎉", "Bem-vindo ao plano " + selectedPlan.name);
+      Alert.alert("Sucesso! 🎉", "Pagamento aprovado!");
 
-      // Desativar assinatura atual SOMENTE se ela existir
       if (subscription) {
         await supabase
           .from("trainer_subscriptions")
@@ -140,7 +121,6 @@ export default function PlansScreen() {
           .eq("id", subscription.id);
       }
 
-      // Criar nova assinatura
       const { error } = await supabase.from("trainer_subscriptions").insert({
         trainer_id: trainerId,
         plan_id: selectedPlan.id,
@@ -148,16 +128,11 @@ export default function PlansScreen() {
         start_date: new Date().toISOString(),
       });
 
-      if (error) {
-        console.error("DEBUG Erro ao inserir nova assinatura:", error);
-        return;
-      }
+      if (error) throw new Error("Erro ao salvar no banco de dados.");
 
-      console.log("Banco de dados atualizado com sucesso. Redirecionando...");
       router.replace("/" as any);
 
     } catch (error: any) {
-      console.error("DEBUG Erro Catch Geral:", error);
       Alert.alert("Erro no pagamento", error.message);
     }
   }
@@ -176,9 +151,8 @@ export default function PlansScreen() {
 
       {plans.map((plan) => {
         const isCurrent = currentPlan?.id === plan.id;
-        const isUpgrade =
-          currentPlan &&
-          plan.price_monthly > currentPlan.price_monthly;
+        // Correção de lógica: Permite assinar se NÃO tiver plano OU se for mais caro
+        const canSubscribe = !currentPlan || plan.price_monthly > currentPlan.price_monthly;
 
         return (
           <View
@@ -192,10 +166,7 @@ export default function PlansScreen() {
             </Text>
 
             <Text style={styles.limit}>
-              Limite:{" "}
-              {plan.max_clients
-                ? `${plan.max_clients} alunos`
-                : "Ilimitado"}
+              Limite: {plan.max_clients ? `${plan.max_clients} alunos` : "Ilimitado"}
             </Text>
 
             {isCurrent && (
@@ -204,19 +175,17 @@ export default function PlansScreen() {
               </View>
             )}
 
-            {!isCurrent && isUpgrade && (
+            {!isCurrent && canSubscribe && (
               <TouchableOpacity
                 style={styles.upgradeButton}
                 onPress={() => handleUpgrade(plan)}
               >
-                <Text style={styles.upgradeText}>Fazer Upgrade</Text>
+                <Text style={styles.upgradeText}>Assinar Plano</Text>
               </TouchableOpacity>
             )}
 
-            {!isCurrent && !isUpgrade && (
-              <Text style={styles.blockedText}>
-                Downgrade indisponível
-              </Text>
+            {!isCurrent && !canSubscribe && (
+              <Text style={styles.blockedText}>Downgrade indisponível</Text>
             )}
           </View>
         );
@@ -225,24 +194,20 @@ export default function PlansScreen() {
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Confirmar Upgrade</Text>
+            <Text style={styles.modalTitle}>Confirmar Assinatura</Text>
 
             <Text style={styles.modalText}>
-              De {currentPlan?.name || "Sem plano"} para {selectedPlan?.name}
+              Plano selecionado: {selectedPlan?.name}
             </Text>
 
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={confirmUpgrade}
             >
-              <Text style={styles.confirmText}>
-                Confirmar Upgrade
-              </Text>
+              <Text style={styles.confirmText}>Confirmar e Pagar</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-            >
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
               <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
@@ -253,116 +218,25 @@ export default function PlansScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-
-  card: {
-    padding: 20,
-    borderRadius: 12,
-    backgroundColor: "#f2f2f2",
-    marginBottom: 15,
-  },
-
-  currentCard: {
-    borderWidth: 2,
-    borderColor: "#4CAF50",
-  },
-
-  planName: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  price: {
-    marginTop: 5,
-  },
-
-  limit: {
-    marginTop: 5,
-  },
-
-  currentBadge: {
-    marginTop: 15,
-    backgroundColor: "#4CAF50",
-    padding: 8,
-    borderRadius: 8,
-  },
-
-  currentText: {
-    color: "white",
-    textAlign: "center",
-  },
-
-  upgradeButton: {
-    marginTop: 15,
-    backgroundColor: "#000",
-    padding: 10,
-    borderRadius: 8,
-  },
-
-  upgradeText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-
-  blockedText: {
-    marginTop: 15,
-    color: "gray",
-  },
-
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 20,
-  },
-
-  modalBox: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 12,
-  },
-
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-
-  modalText: {
-    marginBottom: 20,
-  },
-
-  confirmButton: {
-    backgroundColor: "#000",
-    padding: 12,
-    borderRadius: 8,
-  },
-
-  confirmText: {
-    color: "white",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
-
-  cancelText: {
-    marginTop: 15,
-    textAlign: "center",
-    color: "red",
-  },
+  container: { padding: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  card: { padding: 20, borderRadius: 12, backgroundColor: "#f2f2f2", marginBottom: 15 },
+  currentCard: { borderWidth: 2, borderColor: "#4CAF50" },
+  planName: { fontSize: 18, fontWeight: "bold" },
+  price: { marginTop: 5 },
+  limit: { marginTop: 5 },
+  currentBadge: { marginTop: 15, backgroundColor: "#4CAF50", padding: 8, borderRadius: 8 },
+  currentText: { color: "white", textAlign: "center" },
+  upgradeButton: { marginTop: 15, backgroundColor: "#000", padding: 10, borderRadius: 8 },
+  upgradeText: { color: "white", textAlign: "center", fontWeight: "bold" },
+  blockedText: { marginTop: 15, color: "gray" },
+  modalOverlay: { flex: 1, justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 20 },
+  modalBox: { backgroundColor: "white", padding: 20, borderRadius: 12 },
+  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  modalText: { marginBottom: 20 },
+  confirmButton: { backgroundColor: "#000", padding: 12, borderRadius: 8 },
+  confirmText: { color: "white", textAlign: "center", fontWeight: "bold" },
+  cancelText: { marginTop: 15, textAlign: "center", color: "red" },
 });
 
