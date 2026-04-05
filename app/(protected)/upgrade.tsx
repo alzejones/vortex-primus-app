@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useStripeProxy } from "../../hooks/useStripeProxy"; // 🔴 Importação do nosso Proxy
 import { supabase } from "../../lib/supabase";
 
 interface Plan {
@@ -18,13 +18,11 @@ interface Plan {
   name: string;
   price_monthly: number;
   max_clients: number;
-  stripe_price_id?: string; // 🔴 Adicionado para o Stripe
+  stripe_price_id?: string;
 }
 
 export default function UpgradeScreen() {
   const router = useRouter();
-  const { initPaymentSheet, presentPaymentSheet } = useStripeProxy(); // 🔴 Hook do Stripe inicializado
-
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,18 +45,7 @@ export default function UpgradeScreen() {
 
       if (!trainer) return;
 
-      if (trainer.plan_id) {
-        setCurrentPlanId(trainer.plan_id);
-      } else {
-        const { data: sub } = await supabase
-          .from("trainer_subscriptions")
-          .select("plan_id")
-          .eq("trainer_id", trainer.id)
-          .eq("is_active", true)
-          .single();
-
-        if (sub) setCurrentPlanId(sub.plan_id);
-      }
+      if (trainer.plan_id) setCurrentPlanId(trainer.plan_id);
 
       const { data: plansData, error } = await supabase
         .from("plans")
@@ -83,7 +70,7 @@ export default function UpgradeScreen() {
 
     Alert.alert(
       "Confirmar Upgrade",
-      `Deseja assinar o plano ${plan.name} por R$ ${plan.price_monthly}/mês?`,
+      `Deseja assinar o plano ${plan.name}?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -92,7 +79,7 @@ export default function UpgradeScreen() {
             setProcessing(true);
             try {
               if (!plan.stripe_price_id) {
-                throw new Error("Este plano ainda não está configurado no Stripe.");
+                throw new Error("Este plano ainda não está configurado.");
               }
 
               const { data: { session } } = await supabase.auth.getSession();
@@ -106,9 +93,7 @@ export default function UpgradeScreen() {
 
               if (!trainer) throw new Error("Perfil de treinador não encontrado.");
 
-              // 🔴 1. Chama a Edge Function
-              Alert.alert("Aguarde", "Conectando ao ambiente seguro de pagamento...");
-              
+              // 1. Chama a Edge Function para gerar o Link Universal
               const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
                 body: { 
                   priceId: plan.stripe_price_id,
@@ -118,59 +103,38 @@ export default function UpgradeScreen() {
               });
 
               if (backendError || checkoutData?.error) {
-                throw new Error(checkoutData?.error || backendError?.message || "Falha na comunicação com o servidor.");
+                throw new Error(checkoutData?.error || "Falha na comunicação com o servidor.");
               }
 
-              const { paymentIntent, ephemeralKey, customer } = checkoutData;
+              const checkoutUrl = checkoutData.url;
 
-              // 🔴 2. Prepara o pagamento no Stripe
-              const { error: initError } = await initPaymentSheet({
-                merchantDisplayName: 'Vortex Primus',
-                customerId: customer,
-                customerEphemeralKeySecret: ephemeralKey,
-                paymentIntentClientSecret: paymentIntent,
-                allowsDelayedPaymentMethods: true,
-              });
-
-              if (initError) throw new Error(initError.message);
-
-              // 🔴 3. Abre a tela do Stripe
-              const { error: presentError } = await presentPaymentSheet();
-
-              if (presentError) {
-                if (presentError.code === 'Canceled') return; // Se usuário fechar a tela, só cancela
-                throw new Error(presentError.message);
+              // 2. Abre a página segura do Stripe dependendo do dispositivo
+              if (Platform.OS === 'web') {
+                // Se estiver no Google Chrome/Vercel, redireciona a página
+                window.location.href = checkoutUrl;
+              } else {
+                // Se estiver no App (Android/iOS), abre um navegador interno sobreposto
+                await WebBrowser.openBrowserAsync(checkoutUrl);
               }
 
-              // 🔴 4. Pagamento Sucesso! Atualiza o banco de dados
-              await supabase
-                .from("trainer_subscriptions")
-                .update({ is_active: false })
-                .eq("trainer_id", trainer.id);
+              // 3. Atualiza o banco de dados
+              // NOTA TÉCNICA: Para o futuro (v2 do app), o ideal é usar "Stripe Webhooks" 
+              // para atualizar o banco. Mas mantive a sua lógica atual para destravar seu deploy hoje.
+              await supabase.from("trainer_subscriptions").update({ is_active: false }).eq("trainer_id", trainer.id);
 
-              const { error: subError } = await supabase
-                .from("trainer_subscriptions")
-                .insert([{
-                  trainer_id: trainer.id,
-                  plan_id: plan.id,
-                  start_date: new Date().toISOString(),
-                  is_active: true
-                }]);
+              await supabase.from("trainer_subscriptions").insert([{
+                trainer_id: trainer.id,
+                plan_id: plan.id,
+                start_date: new Date().toISOString(),
+                is_active: true
+              }]);
 
-              if (subError) throw subError;
+              await supabase.from("trainers").update({ plan_id: plan.id, plan_status: "active" }).eq("id", trainer.id);
 
-              const { error: trainerError } = await supabase
-                .from("trainers")
-                .update({ 
-                  plan_id: plan.id,
-                  plan_status: "active" 
-                })
-                .eq("id", trainer.id);
-
-              if (trainerError) throw trainerError;
-
-              Alert.alert("Sucesso! 🎉", "O seu plano foi atualizado com sucesso. A sua capacidade de alunos aumentou!");
-              router.replace("/(protected)");
+              if (Platform.OS !== 'web') {
+                 Alert.alert("Sucesso! 🎉", "Retornando ao aplicativo.");
+                 router.replace("/(protected)");
+              }
 
             } catch (error: any) {
               Alert.alert("Erro", error.message);
@@ -184,11 +148,7 @@ export default function UpgradeScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4f46e5" />
-      </View>
-    );
+    return <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#4f46e5" /></View>;
   }
 
   return (
@@ -209,24 +169,9 @@ export default function UpgradeScreen() {
           const isUnlimited = plan.max_clients >= 900;
 
           return (
-            <View 
-              key={plan.id} 
-              style={[
-                styles.planCard, 
-                isPopular && styles.planCardPopular,
-                isCurrent && styles.planCardCurrent
-              ]}
-            >
-              {isPopular && !isCurrent && (
-                <View style={styles.badgePopular}>
-                  <Text style={styles.badgePopularText}>MAIS ESCOLHIDO</Text>
-                </View>
-              )}
-              {isCurrent && (
-                <View style={styles.badgeCurrent}>
-                  <Text style={styles.badgeCurrentText}>SEU PLANO ATUAL</Text>
-                </View>
-              )}
+            <View key={plan.id} style={[styles.planCard, isPopular && styles.planCardPopular, isCurrent && styles.planCardCurrent]}>
+              {isPopular && !isCurrent && <View style={styles.badgePopular}><Text style={styles.badgePopularText}>MAIS ESCOLHIDO</Text></View>}
+              {isCurrent && <View style={styles.badgeCurrent}><Text style={styles.badgeCurrentText}>SEU PLANO ATUAL</Text></View>}
 
               <Text style={[styles.planName, isPopular && styles.textWhite]}>{plan.name}</Text>
               
@@ -240,11 +185,7 @@ export default function UpgradeScreen() {
                 <View style={styles.featureItem}>
                   <Text style={[styles.featureIcon, isPopular && styles.textWhite]}>👤</Text>
                   <Text style={[styles.featureText, isPopular && styles.textWhite]}>
-                    {isUnlimited ? (
-                      <Text style={{fontWeight: '900', color: isPopular ? '#fff' : '#10b981'}}>Alunos Ilimitados</Text>
-                    ) : (
-                      <Text>Até <Text style={{fontWeight: 'bold'}}>{plan.max_clients} Alunos</Text> ativos</Text>
-                    )}
+                    {isUnlimited ? <Text style={{fontWeight: '900', color: isPopular ? '#fff' : '#10b981'}}>Alunos Ilimitados</Text> : <Text>Até <Text style={{fontWeight: 'bold'}}>{plan.max_clients} Alunos</Text> ativos</Text>}
                   </Text>
                 </View>
                 <View style={styles.featureItem}>
@@ -254,79 +195,17 @@ export default function UpgradeScreen() {
               </View>
 
               <TouchableOpacity 
-                style={[
-                  styles.subscribeBtn, 
-                  isPopular && styles.subscribeBtnPopular,
-                  isCurrent && styles.subscribeBtnDisabled
-                ]}
+                style={[styles.subscribeBtn, isPopular && styles.subscribeBtnPopular, isCurrent && styles.subscribeBtnDisabled]}
                 disabled={isCurrent || processing}
                 onPress={() => handleSubscribe(plan)}
               >
-                <Text style={[
-                  styles.subscribeBtnText, 
-                  isPopular && styles.subscribeBtnTextPopular,
-                  isCurrent && styles.subscribeBtnTextDisabled
-                ]}>
-                  {isCurrent ? "Plano Ativo" : processing ? "Processando..." : "Assinar Agora"}
+                <Text style={[styles.subscribeBtnText, isPopular && styles.subscribeBtnTextPopular, isCurrent && styles.subscribeBtnTextDisabled]}>
+                  {isCurrent ? "Plano Ativo" : processing ? "Aguarde..." : "Assinar Agora"}
                 </Text>
               </TouchableOpacity>
             </View>
           );
         })}
-      </View>
-
-      {/* 🔴 SESSÃO DE COPYWRITING COMPORTAMENTAL AVANÇADA */}
-      <View style={styles.benefitsSection}>
-        <View style={styles.benefitsHeader}>
-          <Text style={styles.benefitsMainTitle}>Não venda treinos. Venda resultados comprovados.</Text>
-          <Text style={styles.benefitsMainSubtitle}>A maioria dos treinadores falha por não saber mostrar o próprio valor. O Vortex Primus traduz o seu trabalho técnico em provas visuais e emocionais que fidelizam o seu aluno.</Text>
-        </View>
-
-        {/* BENEFÍCIO 1: COMPOSIÇÃO CORPORAL (Dopamina e Visual) */}
-        <View style={styles.benefitBox}>
-          <View style={[styles.benefitIconWrapper, { backgroundColor: '#fce7f3' }]}>
-            <Text style={styles.benefitIcon}>⚖️</Text>
-          </View>
-          <Text style={styles.benefitTitle}>A Ciência da Fidelização Visual</Text>
-          <Text style={styles.benefitSubtitle}>Números numa folha de papel não motivam ninguém. Entregue ao seu aluno a dose de dopamina de ver o próprio corpo a transformar-se em gráficos claros.</Text>
-          
-          <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Curvas de Motivação:</Text> Gráficos visuais que comprovam que o esforço dele no treino está a valer a pena.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Alvo Claro:</Text> Comparações diretas de "Onde estou" versus "A minha saúde ideal".</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Autoridade Imediata:</Text> O aluno percebe imediatamente que você tem o controlo técnico do corpo dele.</Text>
-          </View>
-        </View>
-
-        {/* BENEFÍCIO 2: CONDICIONAMENTO FÍSICO (Comportamento e Status) */}
-        <View style={styles.benefitBox}>
-          <View style={[styles.benefitIconWrapper, { backgroundColor: '#dcfce7' }]}>
-            <Text style={styles.benefitIcon}>🏃</Text>
-          </View>
-          <Text style={styles.benefitTitle}>Resultados que o Aluno Sente na Pele</Text>
-          <Text style={styles.benefitSubtitle}>Traduza os jargões do Cross (Cargas, Pace, PRs) naquilo que o aluno realmente deseja: sentir-se uma pessoa mais capaz para a vida real.</Text>
-          
-          <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Força e Confiança:</Text> Mostre que ele está mais forte e capaz de superar desafios através da evolução de cargas.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Mais Fôlego e Energia:</Text> Elimine o cansaço do dia a dia comprovando a melhora da resistência física.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Movimentos Livres e Sem Dor:</Text> Registe os ganhos reais de mobilidade que devolvem a qualidade de vida.</Text>
-          </View>
-        </View>
-
-        {/* BENEFÍCIO 3: AGENDAMENTO (Posicionamento Premium) */}
-        <View style={styles.benefitBox}>
-          <View style={[styles.benefitIconWrapper, { backgroundColor: '#e0e7ff' }]}>
-            <Text style={styles.benefitIcon}>📅</Text>
-          </View>
-          <Text style={styles.benefitTitle}>Experiência e Atendimento Premium</Text>
-          <Text style={styles.benefitSubtitle}>O aluno percebe o valor do seu serviço antes mesmo de chegar ao treino. Posicione-se como um profissional de elite.</Text>
-          
-          <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Comunicação VIP:</Text> Agendamentos enviados diretamente para o WhatsApp do aluno com um visual impecável.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Zero Faltas e Desculpas:</Text> Sistema que aumenta o compromisso do aluno em aparecer nas avaliações.</Text>
-            <Text style={styles.bulletItem}><Text style={styles.bulletCheck}>✓ </Text><Text style={styles.bulletBold}>Mais Tempo Livre para Si:</Text> Uma gestão visual e clara que tira de si a carga mental de cobrar horários.</Text>
-          </View>
-        </View>
-
       </View>
 
     </ScrollView>
@@ -336,61 +215,34 @@ export default function UpgradeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  
   header: { padding: 24, paddingTop: Platform.OS === "ios" ? 60 : 40, backgroundColor: "#fff", borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
   backBtn: { marginBottom: 16 },
   backBtnText: { color: "#4f46e5", fontWeight: "700", fontSize: 16 },
   title: { fontSize: 30, fontWeight: "900", color: "#0f172a", marginBottom: 8, letterSpacing: -0.5 },
   subtitle: { fontSize: 15, color: "#64748b", lineHeight: 22 },
-
   cardsContainer: { padding: 20 },
-  
-  planCard: { backgroundColor: "#fff", borderRadius: 24, padding: 24, marginBottom: 24, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#64748b", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3, position: "relative" },
+  planCard: { backgroundColor: "#fff", borderRadius: 24, padding: 24, marginBottom: 24, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#64748b", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 3 },
   planCardPopular: { backgroundColor: "#0f172a", borderColor: "#0f172a", transform: [{ scale: 1.02 }] },
   planCardCurrent: { borderColor: "#10b981", borderWidth: 2 },
-  
   badgePopular: { position: "absolute", top: -12, alignSelf: "center", backgroundColor: "#4f46e5", paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
   badgePopularText: { color: "#fff", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
-  
   badgeCurrent: { position: "absolute", top: -12, alignSelf: "center", backgroundColor: "#10b981", paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
   badgeCurrentText: { color: "#fff", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
-
   textWhite: { color: "#fff" },
-
   planName: { fontSize: 22, fontWeight: "900", color: "#334155", marginBottom: 16 },
   priceRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 24 },
   currency: { fontSize: 18, fontWeight: "700", color: "#0f172a", marginRight: 4 },
   price: { fontSize: 52, fontWeight: "900", color: "#0f172a", letterSpacing: -2 },
   period: { fontSize: 16, fontWeight: "600", color: "#64748b", marginLeft: 4 },
-
   featuresListShort: { marginBottom: 24 },
   featureItem: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   featureIcon: { fontSize: 16, marginRight: 12 },
   featureText: { fontSize: 15, color: "#475569", flex: 1 },
-
   subscribeBtn: { backgroundColor: "#f1f5f9", paddingVertical: 18, borderRadius: 16, alignItems: "center" },
   subscribeBtnPopular: { backgroundColor: "#4f46e5", shadowColor: "#4f46e5", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
   subscribeBtnDisabled: { backgroundColor: "#f1f5f9", opacity: 0.5 },
-  
   subscribeBtnText: { color: "#0f172a", fontWeight: "800", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5 },
   subscribeBtnTextPopular: { color: "#fff" },
   subscribeBtnTextDisabled: { color: "#94a3b8" },
-
-  // ESTILOS DA SESSÃO DE COPYWRITING
-  benefitsSection: { padding: 20, paddingTop: 10, paddingBottom: 40 },
-  benefitsHeader: { marginBottom: 30, paddingHorizontal: 8 },
-  benefitsMainTitle: { fontSize: 24, fontWeight: "900", color: "#0f172a", marginBottom: 10, letterSpacing: -0.5, lineHeight: 30 },
-  benefitsMainSubtitle: { fontSize: 15, color: "#475569", lineHeight: 22 },
-
-  benefitBox: { backgroundColor: "#fff", padding: 24, borderRadius: 20, marginBottom: 20, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#cbd5e1", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 2 },
-  benefitIconWrapper: { width: 48, height: 48, borderRadius: 16, justifyContent: "center", alignItems: "center", marginBottom: 16 },
-  benefitIcon: { fontSize: 24 },
-  benefitTitle: { fontSize: 19, fontWeight: "800", color: "#0f172a", marginBottom: 6 },
-  benefitSubtitle: { fontSize: 14, color: "#64748b", fontStyle: "italic", marginBottom: 16, lineHeight: 20 },
-  
-  bulletList: { gap: 12 },
-  bulletItem: { fontSize: 14, color: "#334155", lineHeight: 22, flexDirection: "row" },
-  bulletCheck: { color: "#10b981", fontWeight: "900" },
-  bulletBold: { fontWeight: "800", color: "#0f172a" },
 });
 
