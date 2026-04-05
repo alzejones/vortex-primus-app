@@ -44,7 +44,6 @@ export default function UpgradeScreen() {
         .single();
 
       if (!trainer) return;
-
       if (trainer.plan_id) setCurrentPlanId(trainer.plan_id);
 
       const { data: plansData, error } = await supabase
@@ -62,89 +61,86 @@ export default function UpgradeScreen() {
     }
   }
 
-  async function handleSubscribe(plan: Plan) {
+  // Função isolada apenas para processar o pagamento
+  async function processPayment(plan: Plan) {
+    console.log("=== DEBUG 1: Iniciando processPayment ===");
+    setProcessing(true);
+    
+    try {
+      if (!plan.stripe_price_id) {
+        throw new Error("Este plano ainda não está configurado no banco de dados.");
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Sessão inválida. Faça login novamente.");
+
+      console.log("=== DEBUG 2: Chamando Edge Function stripe-checkout ===");
+      
+      const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
+        body: { 
+          priceId: plan.stripe_price_id,
+          email: session.user.email,
+          name: session.user.user_metadata?.name || 'Treinador Vortex'
+        }
+      });
+
+      if (backendError || checkoutData?.error) {
+        console.error("=== DEBUG ERRO BACKEND ===", backendError || checkoutData?.error);
+        throw new Error(checkoutData?.error || "Falha na comunicação com o servidor.");
+      }
+
+      const checkoutUrl = checkoutData.url;
+      console.log("=== DEBUG 3: Link do Stripe recebido! ===", checkoutUrl);
+
+      if (Platform.OS === 'web') {
+        console.log("=== DEBUG 4: Redirecionando na WEB ===");
+        window.location.href = checkoutUrl;
+      } else {
+        console.log("=== DEBUG 4: Abrindo WebBrowser no APP ===");
+        await WebBrowser.openBrowserAsync(checkoutUrl);
+      }
+
+    } catch (error: any) {
+      console.error("=== DEBUG ERRO GERAL ===", error);
+      if (Platform.OS === 'web') {
+        window.alert("Erro: " + error.message);
+      } else {
+        Alert.alert("Erro", error.message);
+      }
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  function handleSubscribe(plan: Plan) {
+    console.log(`=== DEBUG 0: Botão Clicado -> Plano: ${plan.name} ===`);
+
     if (plan.id === currentPlanId) {
-      Alert.alert("Aviso", "Este já é o seu plano atual!");
+      if (Platform.OS === 'web') window.alert("Este já é o seu plano atual!");
+      else Alert.alert("Aviso", "Este já é o seu plano atual!");
       return;
     }
 
-    Alert.alert(
-      "Confirmar Upgrade",
-      `Deseja assinar o plano ${plan.name}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: async () => {
-            setProcessing(true);
-            try {
-              if (!plan.stripe_price_id) {
-                throw new Error("Este plano ainda não está configurado.");
-              }
-
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session?.user) throw new Error("Sessão inválida.");
-
-              const { data: trainer } = await supabase
-                .from("trainers")
-                .select("id")
-                .eq("user_id", session.user.id)
-                .single();
-
-              if (!trainer) throw new Error("Perfil de treinador não encontrado.");
-
-              // 1. Chama a Edge Function para gerar o Link Universal
-              const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
-                body: { 
-                  priceId: plan.stripe_price_id,
-                  email: session.user.email,
-                  name: session.user.user_metadata?.name || 'Treinador Vortex'
-                }
-              });
-
-              if (backendError || checkoutData?.error) {
-                throw new Error(checkoutData?.error || "Falha na comunicação com o servidor.");
-              }
-
-              const checkoutUrl = checkoutData.url;
-
-              // 2. Abre a página segura do Stripe dependendo do dispositivo
-              if (Platform.OS === 'web') {
-                // Se estiver no Google Chrome/Vercel, redireciona a página
-                window.location.href = checkoutUrl;
-              } else {
-                // Se estiver no App (Android/iOS), abre um navegador interno sobreposto
-                await WebBrowser.openBrowserAsync(checkoutUrl);
-              }
-
-              // 3. Atualiza o banco de dados
-              // NOTA TÉCNICA: Para o futuro (v2 do app), o ideal é usar "Stripe Webhooks" 
-              // para atualizar o banco. Mas mantive a sua lógica atual para destravar seu deploy hoje.
-              await supabase.from("trainer_subscriptions").update({ is_active: false }).eq("trainer_id", trainer.id);
-
-              await supabase.from("trainer_subscriptions").insert([{
-                trainer_id: trainer.id,
-                plan_id: plan.id,
-                start_date: new Date().toISOString(),
-                is_active: true
-              }]);
-
-              await supabase.from("trainers").update({ plan_id: plan.id, plan_status: "active" }).eq("id", trainer.id);
-
-              if (Platform.OS !== 'web') {
-                 Alert.alert("Sucesso! 🎉", "Retornando ao aplicativo.");
-                 router.replace("/(protected)");
-              }
-
-            } catch (error: any) {
-              Alert.alert("Erro", error.message);
-            } finally {
-              setProcessing(false);
-            }
-          }
-        }
-      ]
-    );
+    // TRAVA DE SEGURANÇA PARA A WEB: Usamos window.confirm nativo do navegador
+    if (Platform.OS === 'web') {
+      const userConfirmed = window.confirm(`Deseja assinar o plano ${plan.name}?\n\nClique em OK para gerar seu link de pagamento.`);
+      if (userConfirmed) {
+        processPayment(plan);
+      } else {
+        console.log("=== DEBUG: Usuário cancelou na Web ===");
+      }
+    } 
+    // FLUXO DO APLICATIVO NATIVO: Usamos o Alert.alert do React Native
+    else {
+      Alert.alert(
+        "Confirmar Upgrade",
+        `Deseja assinar o plano ${plan.name}?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Confirmar", onPress: () => processPayment(plan) }
+        ]
+      );
+    }
   }
 
   if (loading) {
@@ -158,7 +154,10 @@ export default function UpgradeScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>← Voltar</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Eleve a sua Autoridade Profissional</Text>
+        
+        {/* TÍTULO PROVISÓRIO DE DEBUG PARA CONFIRMAR O DEPLOY DA VERCEL */}
+        <Text style={styles.title}>🔥 TELA DE UPGRADE (DEBUG)</Text>
+        
         <Text style={styles.subtitle}>Escolha o plano ideal para escalar a sua faturação. Ferramentas criadas para que os seus alunos vejam o seu valor real e nunca queiram parar de treinar.</Text>
       </View>
 
@@ -200,7 +199,7 @@ export default function UpgradeScreen() {
                 onPress={() => handleSubscribe(plan)}
               >
                 <Text style={[styles.subscribeBtnText, isPopular && styles.subscribeBtnTextPopular, isCurrent && styles.subscribeBtnTextDisabled]}>
-                  {isCurrent ? "Plano Ativo" : processing ? "Aguarde..." : "Assinar Agora"}
+                  {isCurrent ? "Plano Ativo" : processing ? "Processando..." : "Assinar Agora"}
                 </Text>
               </TouchableOpacity>
             </View>
