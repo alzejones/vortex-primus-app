@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useStripeProxy } from "../../hooks/useStripeProxy"; // 🔴 Importação do nosso Proxy
 import { supabase } from "../../lib/supabase";
 
 interface Plan {
@@ -17,10 +18,13 @@ interface Plan {
   name: string;
   price_monthly: number;
   max_clients: number;
+  stripe_price_id?: string; // 🔴 Adicionado para o Stripe
 }
 
 export default function UpgradeScreen() {
   const router = useRouter();
+  const { initPaymentSheet, presentPaymentSheet } = useStripeProxy(); // 🔴 Hook do Stripe inicializado
+
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,17 +91,58 @@ export default function UpgradeScreen() {
           onPress: async () => {
             setProcessing(true);
             try {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) throw new Error("Sessão inválida.");
+              if (!plan.stripe_price_id) {
+                throw new Error("Este plano ainda não está configurado no Stripe.");
+              }
+
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session?.user) throw new Error("Sessão inválida.");
 
               const { data: trainer } = await supabase
                 .from("trainers")
                 .select("id")
-                .eq("user_id", user.id)
+                .eq("user_id", session.user.id)
                 .single();
 
               if (!trainer) throw new Error("Perfil de treinador não encontrado.");
 
+              // 🔴 1. Chama a Edge Function
+              Alert.alert("Aguarde", "Conectando ao ambiente seguro de pagamento...");
+              
+              const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
+                body: { 
+                  priceId: plan.stripe_price_id,
+                  email: session.user.email,
+                  name: session.user.user_metadata?.name || 'Treinador Vortex'
+                }
+              });
+
+              if (backendError || checkoutData?.error) {
+                throw new Error(checkoutData?.error || backendError?.message || "Falha na comunicação com o servidor.");
+              }
+
+              const { paymentIntent, ephemeralKey, customer } = checkoutData;
+
+              // 🔴 2. Prepara o pagamento no Stripe
+              const { error: initError } = await initPaymentSheet({
+                merchantDisplayName: 'Vortex Primus',
+                customerId: customer,
+                customerEphemeralKeySecret: ephemeralKey,
+                paymentIntentClientSecret: paymentIntent,
+                allowsDelayedPaymentMethods: true,
+              });
+
+              if (initError) throw new Error(initError.message);
+
+              // 🔴 3. Abre a tela do Stripe
+              const { error: presentError } = await presentPaymentSheet();
+
+              if (presentError) {
+                if (presentError.code === 'Canceled') return; // Se usuário fechar a tela, só cancela
+                throw new Error(presentError.message);
+              }
+
+              // 🔴 4. Pagamento Sucesso! Atualiza o banco de dados
               await supabase
                 .from("trainer_subscriptions")
                 .update({ is_active: false })
