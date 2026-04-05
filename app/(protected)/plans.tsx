@@ -1,4 +1,3 @@
-import { useStripe } from '@stripe/stripe-react-native';
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useStripeProxy } from "../../hooks/useStripeProxy";
 import { useTrainer } from "../../hooks/useTrainer";
 import { supabase } from "../../lib/supabase";
 
@@ -26,7 +26,7 @@ export default function PlansScreen() {
   const { trainerId, plan: currentPlan, subscription, loadingTrainer } =
     useTrainer();
   
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = useStripeProxy();
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
