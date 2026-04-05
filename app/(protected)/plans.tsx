@@ -32,6 +32,7 @@ export default function PlansScreen() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Trava visual para o botão
 
   useEffect(() => {
     fetchPlans();
@@ -58,19 +59,23 @@ export default function PlansScreen() {
   }
 
   async function confirmUpgrade() {
-    if (!trainerId || !selectedPlan || !subscription) return;
+    if (!trainerId || !selectedPlan || !subscription) {
+      Alert.alert("Erro", "Dados do treinador ou plano não carregados.");
+      return;
+    }
+
+    if (!selectedPlan.stripe_price_id) {
+      Alert.alert("Aviso", "Este plano ainda não tem um ID do Stripe configurado no banco de dados.");
+      return;
+    }
 
     try {
-      setModalVisible(false);
+      setIsProcessing(true); // Impede duplo clique
+      setModalVisible(false); // Fecha o modal imediatamente
       
-      if (!selectedPlan.stripe_price_id) {
-        Alert.alert("Erro", "Este plano ainda não está configurado no Stripe.");
-        return;
-      }
-
-      Alert.alert("Aguarde...", "Conectando ao ambiente seguro de pagamento.");
-
       const { data: { session } } = await supabase.auth.getSession();
+      
+      console.log("Iniciando chamada para a Edge Function...");
       
       const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
         body: { 
@@ -80,11 +85,25 @@ export default function PlansScreen() {
         }
       });
 
-      if (backendError || checkoutData?.error) {
-        throw new Error(checkoutData?.error || backendError?.message || "Falha ao contatar o servidor financeiro");
+      if (backendError) {
+        console.error("Erro no invoke:", backendError);
+        throw new Error("Falha na comunicação com o servidor de pagamentos.");
       }
 
+      if (checkoutData?.error) {
+        console.error("Erro retornado pela Edge Function:", checkoutData.error);
+        throw new Error(checkoutData.error);
+      }
+
+      console.log("Dados recebidos da Edge Function com sucesso!");
+
       const { paymentIntent, ephemeralKey, customer } = checkoutData;
+
+      if (!paymentIntent || !ephemeralKey || !customer) {
+        throw new Error("Dados de pagamento incompletos retornados pelo servidor.");
+      }
+
+      console.log("Inicializando o Payment Sheet do Stripe...");
 
       const { error: initError } = await initPaymentSheet({
         merchantDisplayName: 'Vortex Primus',
@@ -94,45 +113,60 @@ export default function PlansScreen() {
         allowsDelayedPaymentMethods: true,
       });
 
-      if (initError) throw new Error(initError.message);
+      if (initError) {
+        console.error("Erro no initPaymentSheet:", initError);
+        throw new Error(`Erro ao preparar pagamento: ${initError.message}`);
+      }
+
+      console.log("Abrindo a tela nativa do Stripe...");
 
       const { error: presentError } = await presentPaymentSheet();
 
       if (presentError) {
         if (presentError.code === 'Canceled') {
-          Alert.alert("Cancelado", "O pagamento não foi concluído.");
+          console.log("Usuário fechou a tela de pagamento.");
+          // Não tratamos como erro crítico se ele apenas desistiu
+          return; 
         } else {
+           console.error("Erro no presentPaymentSheet:", presentError);
           throw new Error(presentError.message);
         }
-        return;
       }
 
-      Alert.alert("Pagamento Aprovado! 🎉", "Bem-vindo ao plano " + selectedPlan.name);
+      // Se passou pelo presentPaymentSheet sem erro, o pagamento foi um sucesso!
+      console.log("Pagamento confirmado no Stripe!");
+      Alert.alert("Sucesso! 🎉", `Seu plano foi alterado para ${selectedPlan.name}.`);
 
       // Desativar assinatura atual
-      await supabase
+      const { error: deactivateError } = await supabase
         .from("trainer_subscriptions")
         .update({ is_active: false })
         .eq("id", subscription.id);
+        
+      if (deactivateError) console.error("Erro ao desativar plano antigo", deactivateError);
 
       // Criar nova assinatura
-      const { error } = await supabase.from("trainer_subscriptions").insert({
+      const { error: createError } = await supabase.from("trainer_subscriptions").insert({
         trainer_id: trainerId,
         plan_id: selectedPlan.id,
         is_active: true,
         start_date: new Date().toISOString(),
       });
 
-      if (error) {
-        console.error("Erro no upgrade:", error);
+      if (createError) {
+        console.error("Erro ao criar nova assinatura:", createError);
+        Alert.alert("Aviso", "O pagamento foi aprovado, mas houve um erro ao atualizar seu status no banco. Contate o suporte.");
         return;
       }
 
+      // Volta para a home atualizada
       router.replace("/" as any);
 
     } catch (error: any) {
-      console.error(error);
-      Alert.alert("Erro no pagamento", error.message);
+      console.error("Erro geral no fluxo de pagamento:", error);
+      Alert.alert("Ops!", error.message || "Ocorreu um erro inesperado ao processar o pagamento.");
+    } finally {
+      setIsProcessing(false); // Libera o botão novamente
     }
   }
 
@@ -180,10 +214,13 @@ export default function PlansScreen() {
 
             {!isCurrent && isUpgrade && (
               <TouchableOpacity
-                style={styles.upgradeButton}
+                style={[styles.upgradeButton, isProcessing && { opacity: 0.5 }]}
                 onPress={() => handleUpgrade(plan)}
+                disabled={isProcessing}
               >
-                <Text style={styles.upgradeText}>Fazer Upgrade</Text>
+                <Text style={styles.upgradeText}>
+                   {isProcessing ? "Aguarde..." : "Fazer Upgrade"}
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -208,14 +245,20 @@ export default function PlansScreen() {
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={confirmUpgrade}
+              disabled={isProcessing}
             >
-              <Text style={styles.confirmText}>
-                Confirmar Upgrade
-              </Text>
+              {isProcessing ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.confirmText}>
+                  Confirmar Upgrade
+                </Text>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
+              disabled={isProcessing}
             >
               <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
@@ -325,6 +368,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     padding: 12,
     borderRadius: 8,
+    height: 45, // Fixa a altura para não pular quando o spinner aparece
+    justifyContent: "center"
   },
 
   confirmText: {
