@@ -37,27 +37,30 @@ export default function TrainerProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Busca dados do treinador e faz um "join" com a tabela plans para pegar o nome do plano
-      const { data: trainer, error } = await supabase
+      // 1. Busca dados básicos do treinador
+      const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select(`
-          id, name, email, plan_status,
-          plans ( name )
-        `)
+        .select("id, name, email")
         .eq("user_id", user.id)
         .single();
 
-      if (error) throw error;
+      if (trainerError) throw trainerError;
 
-      if (trainer) {
-        setTrainerId(trainer.id);
-        setName(trainer.name || "");
-        setEmail(trainer.email || "");
-        
-        // Formata o nome do plano
-        const planData = trainer.plans as any;
-        setPlanName(planData?.name ? `${planData.name} (${trainer.plan_status})` : "Sem Plano Ativo");
-      }
+      setTrainerId(trainer.id);
+      setName(trainer.name || "");
+      setEmail(trainer.email || "");
+
+      // 2. Busca assinatura ativa + plano via trainer_subscriptions
+      const { data: sub } = await supabase
+        .from("trainer_subscriptions")
+        .select("is_active, plans ( name )")
+        .eq("trainer_id", trainer.id)
+        .eq("is_active", true)
+        .single();
+
+      const planData = sub?.plans as any;
+      setPlanName(planData?.name ? `${planData.name} (Ativo)` : "Sem Plano Ativo");
+
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
       setStatusMsg({ text: "Não foi possível carregar os seus dados.", type: "error" });
