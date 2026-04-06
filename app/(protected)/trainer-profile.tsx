@@ -67,6 +67,11 @@ export default function TrainerProfile() {
   }
 
   async function handleUpdateProfile() {
+    if (!trainerId) {
+      setStatusMsg({ text: "Dados do perfil não foram carregados. Recarregue a tela.", type: "error" });
+      return;
+    }
+
     if (!name.trim()) {
       setStatusMsg({ text: "O nome não pode estar vazio.", type: "error" });
       return;
@@ -166,7 +171,7 @@ export default function TrainerProfile() {
         <TouchableOpacity 
           style={styles.saveButton} 
           onPress={handleUpdateProfile} 
-          disabled={saving}
+          disabled={saving || !trainerId}
         >
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>SALVAR ALTERAÇÕES</Text>}
         </TouchableOpacity>
