@@ -168,6 +168,23 @@ Todo plugin nativo **deve ser declarado** no array `plugins`:
 
 ---
 
+## Histórico de Manutenção
+
+### 2026-04-07 — Bug da tela Meu Perfil (trainer-profile.tsx)
+
+**1. Trigger `handle_new_user()` engolia erros silenciosamente**
+O trigger disparado em `auth.users` após INSERT tinha `EXCEPTION WHEN OTHERS THEN RETURN NEW`, o que fazia erros no INSERT de `trainers` serem ignorados. Resultado: usuários criados no Auth sem registro correspondente em `trainers` (órfãos). Corrigido removendo o bloco de exceção e adicionando `email` no INSERT.
+
+**2. Trigger `create_default_subscription()` buscava plano inexistente**
+A função buscava `WHERE name = 'FREE'`, mas o plano gratuito se chama `'TESTE'`. Como `plan_id` tem NOT NULL, o INSERT em `trainer_subscriptions` falhava, derrubando todo o INSERT em `trainers`. Corrigido para `'TESTE'` + guard `IF free_plan_id IS NOT NULL`.
+
+**3. Query `loadProfile()` selecionava coluna inexistente**
+A query em `trainer-profile.tsx` selecionava `plan_status` (coluna que não existe em `trainers`) e fazia join direto com `plans` (que deve ser feito via `trainer_subscriptions`). Corrigido para duas queries separadas seguindo o padrão de `useTrainer.ts`.
+
+> ⚠️ O plano padrão de novos treinadores é `TESTE` (price_monthly = 0). Qualquer renomeação desse plano quebra o trigger `create_default_subscription()`.
+
+---
+
 ## Regras para o Claude Code
 
 - Respeitar sempre o padrão de extensões `.web.ts` / `.web.tsx`.

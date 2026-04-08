@@ -155,16 +155,16 @@ export default function AssessmentDetailsModal({
               </Text> 
 
               <View style={{ alignItems: 'center', marginBottom: 24 }}>
-                <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, elevation: 4 }}>
+                <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 16, borderRadius: 16, elevation: 4 }}>
                   <LineChart
                     data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
                     data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
-                    height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved
-                    spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+                    height={220} width={screenWidth - 100} isAnimated animationDuration={1200} curved
+                    spacing={Math.max(35, (screenWidth - 160) / (fatData.length > 1 ? fatData.length - 1 : 1))}
                     initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
                     thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
                     yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
-                    yAxisLabelSuffix="%" stepValue={5}
+                    yAxisLabelSuffix="%" yAxisLabelWidth={48} stepValue={5}
                     maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
                     noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
                     rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
