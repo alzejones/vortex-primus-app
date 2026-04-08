@@ -57,12 +57,11 @@ export default function ConditioningAssessment() {
             .single();
 
           if (assessData) {
-            const d = new Date(assessData.date);
-            const dia = d.getDate().toString().padStart(2, '0');
-            const mes = (d.getMonth() + 1).toString().padStart(2, '0');
-            const ano = d.getFullYear();
-            const h = d.getHours().toString().padStart(2, '0');
-            const min = d.getMinutes().toString().padStart(2, '0');
+            // Parse direto da string ISO para evitar conversão de timezone
+            const raw: string = assessData.date || '';
+            const [datePart, timePart] = raw.split('T');
+            const [ano, mes, dia] = (datePart || '').split('-');
+            const [h, min] = (timePart || '00:00').split(':');
             setAssessmentDate(`${dia}/${mes}/${ano} ${h}:${min}`);
 
             const cond = assessData.conditioning?.[0];
@@ -239,15 +238,12 @@ export default function ConditioningAssessment() {
   };
 
   const handleDateChange = (text: string) => {
-    let cleaned = text.replace(/\D/g, '');
-    if (cleaned.length > 12) cleaned = cleaned.substring(0, 12);
-
-    let formatted = cleaned;
-    if (cleaned.length > 2) formatted = `${cleaned.substring(0, 2)}/${cleaned.substring(2)}`;
-    if (cleaned.length > 4) formatted = `${formatted.substring(0, 5)}/${cleaned.substring(4)}`;
-    if (cleaned.length > 8) formatted = `${formatted.substring(0, 10)} ${cleaned.substring(8)}`;
-    if (cleaned.length > 10) formatted = `${formatted.substring(0, 13)}:${cleaned.substring(10)}`;
-
+    const digits = text.replace(/\D/g, '').substring(0, 12);
+    let formatted = digits.substring(0, 2);
+    if (digits.length >= 3) formatted += '/' + digits.substring(2, 4);
+    if (digits.length >= 5) formatted += '/' + digits.substring(4, 8);
+    if (digits.length >= 9) formatted += ' ' + digits.substring(8, 10);
+    if (digits.length >= 11) formatted += ':' + digits.substring(10, 12);
     setAssessmentDate(formatted);
   };
 
