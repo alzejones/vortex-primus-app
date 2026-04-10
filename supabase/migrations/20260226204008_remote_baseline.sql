@@ -1,0 +1,2 @@
+-- Migration aplicada diretamente no Supabase Dashboard antes da adoção do CLI.
+-- Arquivo criado como baseline local para sincronizar o histórico de migrations.

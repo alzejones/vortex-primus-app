@@ -12,6 +12,12 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import {
+  ACTIVITY_LABELS,
+  ActivityLevel,
+  OBJECTIVE_LABELS,
+  Objective,
+} from "../../utils/dietCalculations";
 
 export default function ClientCreate() {
   const router = useRouter();
@@ -27,7 +33,10 @@ export default function ClientCreate() {
     birth_date: "",
     gender: "",
     height_cm: "",
-    notes: "", 
+    notes: "",
+    objective: "" as Objective | "",
+    activity_level: "" as ActivityLevel | "",
+    food_restrictions: "",
   });
 
   function handleChange(field: string, value: string) {
@@ -126,6 +135,9 @@ export default function ClientCreate() {
         gender: safeGenderDB,
         height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
         observation: (form.notes || "").trim() || null,
+        objective: form.objective || null,
+        activity_level: form.activity_level || null,
+        food_restrictions: (form.food_restrictions || "").trim() || null,
       };
 
       const { error } = await supabase.from("clients").insert([payload]);
@@ -284,6 +296,49 @@ export default function ClientCreate() {
           />
         </View>
 
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Objetivo</Text>
+          {(Object.keys(OBJECTIVE_LABELS) as Objective[]).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.optionBtn, form.objective === key && styles.optionBtnActive]}
+              onPress={() => handleChange("objective", key)}
+            >
+              <Text style={[styles.optionBtnText, form.objective === key && styles.optionBtnTextActive]}>
+                {OBJECTIVE_LABELS[key]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Nível de Atividade</Text>
+          {(Object.keys(ACTIVITY_LABELS) as ActivityLevel[]).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.optionBtn, form.activity_level === key && styles.optionBtnActive]}
+              onPress={() => handleChange("activity_level", key)}
+            >
+              <Text style={[styles.optionBtnText, form.activity_level === key && styles.optionBtnTextActive]}>
+                {ACTIVITY_LABELS[key]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Restrições Alimentares</Text>
+          <TextInput
+            placeholder="Ex: intolerância à lactose, alergia a amendoim..."
+            value={form.food_restrictions}
+            onChangeText={(v) => handleChange("food_restrictions", v)}
+            style={[styles.input, styles.textArea]}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+        </View>
+
         <TouchableOpacity onPress={handleSave} style={styles.button} disabled={loading}>
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -321,5 +376,9 @@ const styles = StyleSheet.create({
   textArea: { minHeight: 100 },
   button: { backgroundColor: "#000", padding: 16, borderRadius: 12, alignItems: "center", marginTop: 10, elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
   buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#d1d5db", backgroundColor: "#fff", marginBottom: 8 },
+  optionBtnActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  optionBtnText: { color: "#374151", fontWeight: "600", fontSize: 14 },
+  optionBtnTextActive: { color: "#fff" },
 });
 

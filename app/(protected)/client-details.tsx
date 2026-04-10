@@ -13,6 +13,12 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../../lib/supabase";
+import {
+  ACTIVITY_LABELS,
+  ActivityLevel,
+  OBJECTIVE_LABELS,
+  Objective,
+} from "../../utils/dietCalculations";
 
 // --- FUNÇÕES DE UTILIDADE ---
 const formatDateInput = (text: string) => {
@@ -53,8 +59,12 @@ export default function ClientDetails() {
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
   const [heightCm, setHeightCm] = useState("");
-  const [observation, setObservation] = useState(""); 
+  const [observation, setObservation] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [objective, setObjective] = useState<Objective | "">("");
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
+  const [foodRestrictions, setFoodRestrictions] = useState("");
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
     if (clientId) loadClient();
@@ -77,8 +87,11 @@ export default function ClientDetails() {
         setBirthDate(sqlToDate(data.birth_date));
         setGender(data.gender || "");
         setHeightCm(data.height_cm ? data.height_cm.toString() : "");
-        setObservation(data.observation || ""); 
+        setObservation(data.observation || "");
         setIsActive(data.is_active ?? true);
+        setObjective((data.objective as Objective) || "");
+        setActivityLevel((data.activity_level as ActivityLevel) || "");
+        setFoodRestrictions(data.food_restrictions || "");
       }
     } catch (error) {
       console.error("Erro ao carregar:", error);
@@ -107,9 +120,12 @@ export default function ClientDetails() {
           birth_date: dateToSql(birthDate),
           gender: gender || null,
           height_cm: heightCm ? parseFloat(heightCm) : null,
-          observation: observation || null, 
+          observation: observation || null,
           is_active: isActive,
-          updated_at: new Date().toISOString(), 
+          objective: objective || null,
+          activity_level: activityLevel || null,
+          food_restrictions: foodRestrictions.trim() || null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", clientId);
 
@@ -120,6 +136,39 @@ export default function ClientDetails() {
       setStatusMsg({ text: error.message || "Falha ao salvar alterações.", type: "error" });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleInvite() {
+    if (!email.trim()) {
+      setStatusMsg({ text: "Cadastre um e-mail para o aluno antes de enviar o convite.", type: "error" });
+      return;
+    }
+    try {
+      setInviting(true);
+      setStatusMsg({ text: "", type: "" });
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `https://qgeezszpcuypqujplkde.supabase.co/functions/v1/invite-client`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnZWV6c3pwY3V5cHF1anBsa2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MjU5OTYsImV4cCI6MjA4NDUwMTk5Nn0.OLdh9gNyaz8x2c9-QXpqE5FH2r0-8r54vyvhWjowwJo",
+          },
+          body: JSON.stringify({ client_id: clientId }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Erro ao enviar convite");
+
+      setStatusMsg({ text: "Convite enviado para " + email, type: "success" });
+    } catch (err: any) {
+      setStatusMsg({ text: err.message || "Falha ao enviar convite.", type: "error" });
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -212,20 +261,40 @@ export default function ClientDetails() {
           </View>
         )}
 
-        {/* NOVA ÁREA DE BOTÕES LADO A LADO */}
-        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-          <TouchableOpacity 
+        {/* BOTÕES DE AÇÃO */}
+        <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+          <TouchableOpacity
             style={[styles.assessmentsButton, { flex: 1, marginRight: 6, marginBottom: 0 }]}
             onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}`)}
           >
             <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>📈 HISTÓRICO</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#0f172a', shadowColor: '#0f172a' }]}
             onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}&openForm=true`)}
           >
-            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>➕ NOVA AVALIAÇÃO</Text>
+            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>➕ AVALIAÇÃO</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+          <TouchableOpacity
+            style={[styles.assessmentsButton, { flex: 1, marginRight: 6, marginBottom: 0, backgroundColor: '#059669', shadowColor: '#059669' }]}
+            onPress={() => router.push(`/(protected)/client-diet?id=${clientId}` as any)}
+          >
+            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>🥗 DIETA</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#7c3aed', shadowColor: '#7c3aed', opacity: inviting ? 0.7 : 1 }]}
+            onPress={handleInvite}
+            disabled={inviting}
+          >
+            {inviting
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>✉️ CONVITE</Text>
+            }
           </TouchableOpacity>
         </View>
 
@@ -280,13 +349,49 @@ export default function ClientDetails() {
           <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="email@exemplo.com" />
 
           <Text style={styles.label}>Observações</Text>
-          <TextInput 
-            style={[styles.input, styles.textArea]} 
-            value={observation} 
-            onChangeText={setObservation} 
-            multiline 
-            numberOfLines={4} 
-            placeholder="Anotações, histórico de lesões, objetivos..." 
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            value={observation}
+            onChangeText={setObservation}
+            multiline
+            numberOfLines={4}
+            placeholder="Anotações, histórico de lesões, objetivos..."
+          />
+
+          <Text style={styles.label}>Objetivo</Text>
+          {(Object.keys(OBJECTIVE_LABELS) as Objective[]).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.optionBtn, objective === key && styles.optionBtnActive]}
+              onPress={() => setObjective(key)}
+            >
+              <Text style={[styles.optionBtnText, objective === key && styles.optionBtnTextActive]}>
+                {OBJECTIVE_LABELS[key]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <Text style={[styles.label, { marginTop: 8 }]}>Nível de Atividade</Text>
+          {(Object.keys(ACTIVITY_LABELS) as ActivityLevel[]).map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.optionBtn, activityLevel === key && styles.optionBtnActive]}
+              onPress={() => setActivityLevel(key)}
+            >
+              <Text style={[styles.optionBtnText, activityLevel === key && styles.optionBtnTextActive]}>
+                {ACTIVITY_LABELS[key]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+
+          <Text style={[styles.label, { marginTop: 8 }]}>Restrições Alimentares</Text>
+          <TextInput
+            style={[styles.input, styles.textArea, { marginBottom: 0 }]}
+            value={foodRestrictions}
+            onChangeText={setFoodRestrictions}
+            multiline
+            numberOfLines={3}
+            placeholder="Ex: intolerância à lactose, alergia a amendoim..."
           />
         </View>
 
@@ -359,4 +464,8 @@ const styles = StyleSheet.create({
   
   deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2" },
   deleteButtonText: { color: "#dc2626", fontSize: 14, fontWeight: "bold" },
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#d1d5db", backgroundColor: "#f9fafb", marginBottom: 8 },
+  optionBtnActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  optionBtnText: { color: "#374151", fontWeight: "600", fontSize: 14 },
+  optionBtnTextActive: { color: "#fff" },
 });
