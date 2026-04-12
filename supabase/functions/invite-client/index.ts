@@ -94,7 +94,7 @@ serve(async (req) => {
 
     const inviteOptions = {
       data: { role: 'client', client_id: client.id },
-      redirectTo: 'https://vortex-primus-app.vercel.app/',
+      redirectTo: 'https://vortex-primus-app.vercel.app/set-password',
     }
 
     // 3a. Canal e-mail: Supabase envia o e-mail automaticamente
