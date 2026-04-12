@@ -70,7 +70,7 @@ export default function MealCard({ meal }: MealCardProps) {
               ) : null}
             </View>
             {food.calories != null && (
-              <Text style={styles.foodCal}>{food.calories} kcal</Text>
+              <Text style={styles.foodCal}>{parseFloat(food.calories.toFixed(1))} kcal</Text>
             )}
           </View>
         ))
@@ -79,10 +79,10 @@ export default function MealCard({ meal }: MealCardProps) {
       {/* Totais da refeição */}
       {meal.meal_plan_foods.length > 0 && (
         <View style={styles.totalsRow}>
-          <Text style={styles.total}>{totals.calories} kcal</Text>
-          <Text style={styles.total}>P: {totals.protein}g</Text>
-          <Text style={styles.total}>C: {totals.carbs}g</Text>
-          <Text style={styles.total}>G: {totals.fat}g</Text>
+          <Text style={styles.total}>{parseFloat(totals.calories.toFixed(1))} kcal</Text>
+          <Text style={styles.total}>P: {parseFloat(totals.protein.toFixed(1))}g</Text>
+          <Text style={styles.total}>C: {parseFloat(totals.carbs.toFixed(1))}g</Text>
+          <Text style={styles.total}>G: {parseFloat(totals.fat.toFixed(1))}g</Text>
         </View>
       )}
     </View>

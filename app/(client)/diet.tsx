@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +13,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
+import AIDietPDF from "../../components/AIDietPDF";
 import { supabase } from "../../lib/supabase";
 import {
   ACTIVITY_LABELS,
@@ -19,11 +22,20 @@ import {
   OBJECTIVE_LABELS,
   Objective,
   calculateDietPlan,
+  GeneratedPlan,
 } from "../../utils/dietCalculations";
 
 // ------------------------------------------------------------
 // Tipos
 // ------------------------------------------------------------
+interface LastBio {
+  weight: number;
+  body_fat: number;
+  muscle_mass_percentage: number | null;
+  basal_metabolic_rate: number | null;
+  metabolic_age: number | null;
+}
+
 interface MealPlan {
   id: string;
   title: string;
@@ -75,11 +87,18 @@ export default function ClientDietView() {
   // Dados calculados / plano
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan]     = useState<MealPlan | null>(null);
+  const [lastBio, setLastBio]       = useState<LastBio | null>(null);
 
   // Guarda parâmetros físicos para recálculo após salvar preferências
   const [physicalParams, setPhysicalParams] = useState<{
     weight: number; heightCm: number; birthDate: string; gender: string; bodyFat: number;
   } | null>(null);
+
+  // IA
+  const [generatingAI, setGeneratingAI] = useState(false);
+  const [aiResult, setAiResult] = useState<{ plan: GeneratedPlan; trainer_name: string } | null>(null);
+  const [showAIModal, setShowAIModal] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   useEffect(() => {
     if (session?.user?.id) load(session.user.id);
@@ -118,13 +137,20 @@ export default function ClientDietView() {
       if (assessments && assessments.length > 0) {
         const { data: anthro } = await supabase
           .from("anthropometry")
-          .select("weight, body_fat")
+          .select("weight, body_fat, muscle_mass_percentage, basal_metabolic_rate, metabolic_age")
           .eq("assessment_id", assessments[0].id)
           .maybeSingle();
 
         if (anthro) {
           weight  = parseFloat(anthro.weight)   || 0;
           bodyFat = parseFloat(anthro.body_fat) || 20;
+          setLastBio({
+            weight,
+            body_fat:               parseFloat(anthro.body_fat) || 0,
+            muscle_mass_percentage: anthro.muscle_mass_percentage != null ? parseFloat(anthro.muscle_mass_percentage) : null,
+            basal_metabolic_rate:   anthro.basal_metabolic_rate   != null ? parseFloat(anthro.basal_metabolic_rate)   : null,
+            metabolic_age:          anthro.metabolic_age          != null ? parseFloat(anthro.metabolic_age)          : null,
+          });
         }
       }
 
@@ -227,6 +253,39 @@ export default function ClientDietView() {
     }
   }
 
+  async function handleGenerateAI() {
+    if (!dietResult || !clientId) {
+      setAiError("Configure seu objetivo e nível de atividade e aguarde uma avaliação física para gerar o plano com IA.");
+      return;
+    }
+    setAiError("");
+    setAiResult(null);
+    setGeneratingAI(true);
+    setShowAIModal(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const { data, error } = await supabase.functions.invoke("generate-diet", {
+        body: { client_id: clientId },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (error) {
+        let msg = "Erro ao gerar plano com IA.";
+        try {
+          const text = await (error as any).context?.text?.();
+          if (text) { const parsed = JSON.parse(text); msg = parsed.error ?? msg; }
+        } catch {}
+        throw new Error(msg);
+      }
+      setAiResult(data);
+    } catch (err: any) {
+      setShowAIModal(false);
+      setAiError(err.message || "Erro ao gerar plano com IA.");
+    } finally {
+      setGeneratingAI(false);
+    }
+  }
+
   // ------------------------------------------------------------
   // Render
   // ------------------------------------------------------------
@@ -293,6 +352,68 @@ export default function ClientDietView() {
           </Text>
         </View>
       )}
+
+      {/* Botão Gerar com IA */}
+      {aiError !== "" && (
+        <View style={[styles.macroCard, { backgroundColor: "#fef2f2", borderColor: "#fecaca", marginBottom: 12 }]}>
+          <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>⚠️ {aiError}</Text>
+        </View>
+      )}
+      <TouchableOpacity
+        style={[styles.aiBtn, (!dietResult || generatingAI) && { opacity: 0.5 }]}
+        onPress={handleGenerateAI}
+        disabled={!dietResult || generatingAI}
+      >
+        <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+      </TouchableOpacity>
+
+      {/* Modal IA */}
+      <Modal visible={showAIModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            {!aiResult ? (
+              <View style={styles.modalLoadingBox}>
+                <ActivityIndicator size="large" color="#D4AF37" />
+                <Text style={styles.modalLoadingText}>A IA está criando seu plano personalizado...</Text>
+                <Text style={styles.modalLoadingSub}>Isso pode levar alguns segundos</Text>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.modalTitle}>✨ Seu Plano Gerado pela IA</Text>
+                {aiResult.plan.observations ? (
+                  <View style={styles.modalObsBox}>
+                    <Text style={styles.modalObsText}>{aiResult.plan.observations}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.modalDaysTitle}>Resumo por dia</Text>
+                {aiResult.plan.days.map((day) => (
+                  <View key={day.day} style={styles.modalDayRow}>
+                    <Text style={styles.modalDayLabel}>{day.label}</Text>
+                    <Text style={styles.modalDayKcal}>{day.total_calories} kcal</Text>
+                  </View>
+                ))}
+                <View style={{ marginTop: 16 }}>
+                  <AIDietPDF
+                    data={{
+                      clientName:     clientName,
+                      clientInitials: clientName.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?",
+                      trainerName:    aiResult.trainer_name,
+                      objective:      objective,
+                      dietResult:     dietResult!,
+                      lastBio:        lastBio,
+                      plan:           aiResult.plan,
+                      generatedAt:    new Date().toISOString(),
+                    }}
+                  />
+                </View>
+                <Pressable style={styles.modalCloseBtn} onPress={() => setShowAIModal(false)}>
+                  <Text style={styles.modalCloseBtnText}>Fechar</Text>
+                </Pressable>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Plano Alimentar */}
       {mealPlan ? (
@@ -433,4 +554,22 @@ const styles = StyleSheet.create({
 
   saveBtn: { backgroundColor: "#059669", padding: 16, borderRadius: 14, alignItems: "center", marginTop: 4 },
   saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+
+  aiBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#D4AF37" },
+  aiBtnText: { color: "#D4AF37", fontWeight: "800", fontSize: 15 },
+
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalBox: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85%", minHeight: 200 },
+  modalLoadingBox: { alignItems: "center", paddingVertical: 40 },
+  modalLoadingText: { marginTop: 20, fontSize: 16, fontWeight: "700", color: "#111827", textAlign: "center" },
+  modalLoadingSub: { marginTop: 8, fontSize: 13, color: "#6b7280", textAlign: "center" },
+  modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827", marginBottom: 12 },
+  modalObsBox: { backgroundColor: "#fafaf5", borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, borderRadius: 8, marginBottom: 16 },
+  modalObsText: { fontSize: 13, color: "#374151", lineHeight: 20, fontStyle: "italic" },
+  modalDaysTitle: { fontSize: 12, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  modalDayRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  modalDayLabel: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  modalDayKcal: { fontSize: 14, fontWeight: "700", color: "#059669" },
+  modalCloseBtn: { marginTop: 20, padding: 14, alignItems: "center", backgroundColor: "#f3f4f6", borderRadius: 12 },
+  modalCloseBtnText: { fontWeight: "700", color: "#374151", fontSize: 15 },
 });

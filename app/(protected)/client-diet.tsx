@@ -1,7 +1,8 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +25,14 @@ import {
 // ------------------------------------------------------------
 // Tipos
 // ------------------------------------------------------------
+interface LastBio {
+  weight: number;
+  body_fat: number;
+  muscle_mass_percentage: number | null;
+  basal_metabolic_rate: number | null;
+  metabolic_age: number | null;
+}
+
 interface MealPlan {
   id: string;
   title: string;
@@ -66,12 +75,16 @@ export default function ClientDiet() {
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
+  const [lastBio, setLastBio] = useState<LastBio | null>(null);
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
 
-  useEffect(() => {
-    if (clientId) load();
-  }, [clientId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (clientId) load();
+    }, [clientId])
+  );
 
   async function load() {
     setLoading(true);
@@ -87,12 +100,14 @@ export default function ClientDiet() {
       setClient(clientData);
 
       // 2. Última avaliação física com antropometria
-      const { data: assessments } = await supabase
+      const { data: assessments, error: assessmentsErr } = await supabase
         .from("physical_assessments")
         .select("id")
         .eq("client_id", clientId)
-        .order("created_at", { ascending: false })
+        .order("date", { ascending: false })
         .limit(1);
+
+      if (assessmentsErr) throw assessmentsErr;
 
       let weight = 0;
       let bodyFat = 20; // fallback conservador
@@ -100,13 +115,26 @@ export default function ClientDiet() {
       if (assessments && assessments.length > 0) {
         const { data: anthro } = await supabase
           .from("anthropometry")
-          .select("weight, body_fat")
+          .select("weight, body_fat, muscle_mass_percentage, basal_metabolic_rate, metabolic_age")
           .eq("assessment_id", assessments[0].id)
           .maybeSingle();
 
         if (anthro) {
           weight   = parseFloat(anthro.weight)   || 0;
           bodyFat  = parseFloat(anthro.body_fat)  || 20;
+          setLastBio({
+            weight,
+            body_fat: parseFloat(anthro.body_fat) || 0,
+            muscle_mass_percentage: anthro.muscle_mass_percentage != null
+              ? parseFloat(anthro.muscle_mass_percentage)
+              : null,
+            basal_metabolic_rate: anthro.basal_metabolic_rate != null
+              ? parseFloat(anthro.basal_metabolic_rate)
+              : null,
+            metabolic_age: anthro.metabolic_age != null
+              ? parseFloat(anthro.metabolic_age)
+              : null,
+          });
         }
       }
 
@@ -171,6 +199,14 @@ export default function ClientDiet() {
     }
   }
 
+  function handleGenerateAI() {
+    Alert.alert(
+      "Em breve!",
+      "🚀 A geração automática de plano alimentar por Inteligência Artificial estará disponível na próxima atualização do Vortex Primus.",
+      [{ text: "OK" }]
+    );
+  }
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -182,7 +218,13 @@ export default function ClientDiet() {
   const allFoods = mealPlan
     ? mealPlan.meal_plan_meals.flatMap((m) => m.meal_plan_foods)
     : [];
-  const planTotals = sumMacros(allFoods);
+  const { calories, protein, carbs, fat } = sumMacros(allFoods);
+  const planTotals = {
+    calories: parseFloat(calories.toFixed(1)),
+    protein:  parseFloat(protein.toFixed(1)),
+    carbs:    parseFloat(carbs.toFixed(1)),
+    fat:      parseFloat(fat.toFixed(1)),
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }}>
@@ -203,7 +245,28 @@ export default function ClientDiet() {
         )}
       </View>
 
-      {/* Card de Macros Calculados */}
+      {/* ── Linha 1: Última Avaliação Corporal ── */}
+      {lastBio && lastBio.weight > 0 && (
+        <View style={styles.macroCard}>
+          <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
+          <View style={styles.macroRow}>
+            {[
+              { label: "Peso",         value: `${lastBio.weight}`,                                                                          unit: "kg",   color: "#374151" },
+              { label: "% Gordura",    value: `${lastBio.body_fat}`,                                                                         unit: "%",    color: "#dc2626" },
+              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? `${lastBio.muscle_mass_percentage}` : "—",             unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
+              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? `${lastBio.basal_metabolic_rate}`    : "—",             unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
+            ].map((item) => (
+              <View key={item.label} style={[styles.macroBox, { borderTopColor: item.color }]}>
+                <Text style={[styles.macroValue, { color: item.color }]}>{item.value}</Text>
+                <Text style={styles.macroUnit}>{item.unit}</Text>
+                <Text style={styles.macroLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* ── Linha 2: Metas Calculadas ── */}
       {dietResult ? (
         <View style={styles.macroCard}>
           <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
@@ -232,6 +295,11 @@ export default function ClientDiet() {
           </Text>
         </View>
       )}
+
+      {/* Botão Gerar com IA */}
+      <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI}>
+        <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+      </TouchableOpacity>
 
       {/* Plano alimentar */}
       {mealPlan ? (
@@ -265,8 +333,8 @@ export default function ClientDiet() {
             </View>
           </View>
 
-          {/* Barras de progresso macro: plano vs meta calculada */}
-          {allFoods.length > 0 && dietResult && (
+          {/* ── Linha 3: Plano vs Meta ── */}
+          {dietResult && (
             <View style={styles.macroBarsCard}>
               <Text style={styles.macroBarsTitle}>Plano vs Meta</Text>
               <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color="#059669" />
@@ -334,4 +402,7 @@ const styles = StyleSheet.create({
   emptyPlanText: { color: "#6b7280", fontSize: 15, marginBottom: 20 },
   createBtn: { backgroundColor: "#059669", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
   createBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+
+  aiBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#D4AF37" },
+  aiBtnText: { color: "#D4AF37", fontWeight: "800", fontSize: 15 },
 });

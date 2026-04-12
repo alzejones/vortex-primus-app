@@ -23,23 +23,31 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 async function detectRole(userId: string): Promise<UserRole> {
-  const { data: trainer } = await supabase
-    .from("trainers")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), 5000)
+  );
 
-  if (trainer) return "trainer";
+  const detect = async (): Promise<UserRole> => {
+    const { data: trainer } = await supabase
+      .from("trainers")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-  const { data: client } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
+    if (trainer) return "trainer";
 
-  if (client) return "client";
+    const { data: client } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-  return null;
+    if (client) return "client";
+
+    return null;
+  };
+
+  return Promise.race([detect(), timeout]);
 }
 
 // 🔐 Provider
@@ -56,17 +64,22 @@ export const AuthProvider = ({ children }: any) => {
         setRole(await detectRole(session.user.id));
       }
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        setSession(session);
-        if (session?.user?.id) {
-          setRole(await detectRole(session.user.id));
-        } else {
-          setRole(null);
+        try {
+          setSession(session);
+          if (session?.user?.id) {
+            setRole(await detectRole(session.user.id));
+          } else {
+            setRole(null);
+          }
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 

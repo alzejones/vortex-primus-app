@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Switch,
@@ -65,6 +68,7 @@ export default function ClientDetails() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [foodRestrictions, setFoodRestrictions] = useState("");
   const [inviting, setInviting] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   useEffect(() => {
     if (clientId) loadClient();
@@ -139,7 +143,30 @@ export default function ClientDetails() {
     }
   }
 
-  async function handleInvite() {
+  async function callInviteFunction(channel: "email" | "whatsapp") {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) {
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
+    const { data, error: invokeError } = await supabase.functions.invoke("invite-client", {
+      body: { client_id: clientId, channel },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (invokeError) {
+      const ctx = (invokeError as any).context;
+      const bodyText = ctx ? await ctx.text().catch(() => "") : "";
+      let friendlyMsg = "Erro ao enviar convite.";
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed?.error) friendlyMsg = parsed.error;
+      } catch {}
+      throw new Error(friendlyMsg);
+    }
+    if (data?.error) throw new Error(data.error);
+    return data;
+  }
+
+  async function handleInviteByEmail() {
     if (!email.trim()) {
       setStatusMsg({ text: "Cadastre um e-mail para o aluno antes de enviar o convite.", type: "error" });
       return;
@@ -147,26 +174,37 @@ export default function ClientDetails() {
     try {
       setInviting(true);
       setStatusMsg({ text: "", type: "" });
-
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `https://qgeezszpcuypqujplkde.supabase.co/functions/v1/invite-client`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-            apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnZWV6c3pwY3V5cHF1anBsa2RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg5MjU5OTYsImV4cCI6MjA4NDUwMTk5Nn0.OLdh9gNyaz8x2c9-QXpqE5FH2r0-8r54vyvhWjowwJo",
-          },
-          body: JSON.stringify({ client_id: clientId }),
-        }
-      );
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Erro ao enviar convite");
-
-      setStatusMsg({ text: "Convite enviado para " + email, type: "success" });
+      await callInviteFunction("email");
+      setStatusMsg({ text: "Convite enviado por e-mail para " + email, type: "success" });
     } catch (err: any) {
       setStatusMsg({ text: err.message || "Falha ao enviar convite.", type: "error" });
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function handleInviteByWhatsApp() {
+    if (!email.trim()) {
+      setStatusMsg({ text: "Cadastre um e-mail para o aluno antes de enviar o convite.", type: "error" });
+      return;
+    }
+    if (!phone.trim()) {
+      setStatusMsg({ text: "Cadastre um telefone para o aluno antes de enviar o convite por WhatsApp.", type: "error" });
+      return;
+    }
+    try {
+      setInviting(true);
+      setStatusMsg({ text: "", type: "" });
+      const data = await callInviteFunction("whatsapp");
+      const inviteLink: string = data?.invite_link ?? "";
+      if (!inviteLink) throw new Error("Link de convite não retornado. Tente novamente.");
+      const digits = phone.replace(/\D/g, "");
+      const waPhone = "55" + digits;
+      const msg = `Olá! Você foi convidado a acessar o Vortex Primus. Clique no link para criar seu acesso: ${inviteLink}`;
+      await Linking.openURL(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`);
+      setStatusMsg({ text: "WhatsApp aberto com o link de convite.", type: "success" });
+    } catch (err: any) {
+      setStatusMsg({ text: err.message || "Falha ao enviar convite por WhatsApp.", type: "error" });
     } finally {
       setInviting(false);
     }
@@ -274,7 +312,7 @@ export default function ClientDetails() {
             style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#0f172a', shadowColor: '#0f172a' }]}
             onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}&openForm=true`)}
           >
-            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>➕ AVALIAÇÃO</Text>
+            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>➕ Nova Avaliação Corporal</Text>
           </TouchableOpacity>
         </View>
 
@@ -288,7 +326,7 @@ export default function ClientDetails() {
 
           <TouchableOpacity
             style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#7c3aed', shadowColor: '#7c3aed', opacity: inviting ? 0.7 : 1 }]}
-            onPress={handleInvite}
+            onPress={() => setShowInviteModal(true)}
             disabled={inviting}
           >
             {inviting
@@ -413,6 +451,50 @@ export default function ClientDetails() {
         </TouchableOpacity>
 
       </ScrollView>
+
+      {/* MODAL: seleção de canal do convite */}
+      <Modal
+        visible={showInviteModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowInviteModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowInviteModal(false)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Enviar Convite</Text>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => { setShowInviteModal(false); handleInviteByEmail(); }}
+            >
+              <Text style={styles.modalOptionIcon}>✉️</Text>
+              <View>
+                <Text style={styles.modalOptionLabel}>Por E-mail</Text>
+                <Text style={styles.modalOptionSub}>Supabase envia o link automaticamente</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalOption}
+              onPress={() => { setShowInviteModal(false); handleInviteByWhatsApp(); }}
+            >
+              <Text style={styles.modalOptionIcon}>💬</Text>
+              <View>
+                <Text style={styles.modalOptionLabel}>Por WhatsApp</Text>
+                <Text style={styles.modalOptionSub}>Abre o WhatsApp com o link de acesso</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancel}
+              onPress={() => setShowInviteModal(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
     </KeyboardAvoidingView>
   );
 }
@@ -468,4 +550,15 @@ const styles = StyleSheet.create({
   optionBtnActive: { backgroundColor: "#111827", borderColor: "#111827" },
   optionBtnText: { color: "#374151", fontWeight: "600", fontSize: 14 },
   optionBtnTextActive: { color: "#fff" },
+
+  // Modal de seleção de canal
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalSheet: { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: "#111827", marginBottom: 20, textAlign: "center" },
+  modalOption: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  modalOptionIcon: { fontSize: 26, marginRight: 16 },
+  modalOptionLabel: { fontSize: 16, fontWeight: "700", color: "#111827" },
+  modalOptionSub: { fontSize: 13, color: "#6b7280", marginTop: 2 },
+  modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: "#f3f4f6" },
+  modalCancelText: { fontSize: 15, fontWeight: "700", color: "#6b7280" },
 });

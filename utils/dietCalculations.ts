@@ -141,6 +141,36 @@ export function calculateMacros(
 }
 
 // ------------------------------------------------------------
+// Tipos para plano gerado por IA
+// ------------------------------------------------------------
+export interface GeneratedFood {
+  name:     string;
+  quantity: string;
+  calories: number;
+  protein:  number;
+  carbs:    number;
+  fat:      number;
+}
+
+export interface GeneratedMeal {
+  name:            string;
+  time_suggestion: string;
+  foods:           GeneratedFood[];
+}
+
+export interface GeneratedDay {
+  day:            number;
+  label:          string;
+  total_calories: number;
+  meals:          GeneratedMeal[];
+}
+
+export interface GeneratedPlan {
+  observations: string;
+  days:         GeneratedDay[];
+}
+
+// ------------------------------------------------------------
 // Função principal — retorna tudo de uma vez
 // ------------------------------------------------------------
 export function calculateDietPlan(params: {

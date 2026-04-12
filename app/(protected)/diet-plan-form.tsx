@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,8 +12,17 @@ import {
   View,
 } from "react-native";
 import FoodSearchModal, { SelectedFood } from "../../components/FoodSearchModal";
+import MacroBar from "../../components/MacroBar";
 import { useTrainer } from "../../hooks/useTrainer";
 import { supabase } from "../../lib/supabase";
+import {
+  ActivityLevel,
+  DietCalculationResult,
+  ACTIVITY_LABELS,
+  OBJECTIVE_LABELS,
+  Objective,
+  calculateDietPlan,
+} from "../../utils/dietCalculations";
 
 // ------------------------------------------------------------
 // Tipos locais
@@ -36,6 +45,22 @@ interface MealEntry {
   name: string;
   time_suggestion: string;
   foods: FoodEntry[];
+}
+
+interface LastBio {
+  weight: number;
+  body_fat: number;
+  muscle_mass_percentage: number | null;
+  basal_metabolic_rate: number | null;
+}
+
+function calcAge(birthDate: string): number {
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
 }
 
 let _keyCounter = 0;
@@ -70,9 +95,16 @@ export default function DietPlanForm() {
   const [foodModalMealKey, setFoodModalMealKey] = useState<string | null>(null);
 
   const [clientName, setClientName] = useState("");
+  const [lastBio, setLastBio]       = useState<LastBio | null>(null);
+  const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [planTitle, setPlanTitle]   = useState("Plano Alimentar");
   const [planNotes, setPlanNotes]   = useState("");
   const [meals, setMeals]           = useState<MealEntry[]>([emptyMeal()]);
+
+  // Captura valores antes da edição de quantidade para recálculo proporcional
+  const preEditRef = useRef<Map<string, {
+    qty: string; calories: string; protein: string; carbs: string; fat: string;
+  }>>(new Map());
 
   // Carrega plano existente para edição
   useEffect(() => {
@@ -80,16 +112,67 @@ export default function DietPlanForm() {
     loadPlan();
   }, [planId]);
 
-  // Carrega nome do cliente
+  // Carrega dados do cliente e biometria da última avaliação
   useEffect(() => {
     if (!clientId) return;
     supabase
       .from("clients")
-      .select("name")
+      .select("name, birth_date, gender, height_cm, objective, activity_level")
       .eq("id", clientId)
       .single()
-      .then(({ data }) => { if (data) setClientName(data.name); });
+      .then(({ data }) => {
+        if (data) {
+          setClientName(data.name);
+          loadAssessment(data);
+        }
+      });
   }, [clientId]);
+
+  async function loadAssessment(clientData: any) {
+    const { data: assessments } = await supabase
+      .from("physical_assessments")
+      .select("id")
+      .eq("client_id", clientId)
+      .order("date", { ascending: false })
+      .limit(1);
+
+    if (!assessments || assessments.length === 0) return;
+
+    const { data: anthro } = await supabase
+      .from("anthropometry")
+      .select("weight, body_fat, muscle_mass_percentage, basal_metabolic_rate")
+      .eq("assessment_id", assessments[0].id)
+      .maybeSingle();
+
+    if (!anthro) return;
+
+    const bio: LastBio = {
+      weight:                   parseFloat(anthro.weight)   || 0,
+      body_fat:                 parseFloat(anthro.body_fat)  || 0,
+      muscle_mass_percentage:   anthro.muscle_mass_percentage != null ? parseFloat(anthro.muscle_mass_percentage) : null,
+      basal_metabolic_rate:     anthro.basal_metabolic_rate  != null ? parseFloat(anthro.basal_metabolic_rate)  : null,
+    };
+    setLastBio(bio);
+
+    if (
+      bio.weight > 0 &&
+      clientData.height_cm &&
+      clientData.birth_date &&
+      clientData.gender &&
+      clientData.objective &&
+      clientData.activity_level
+    ) {
+      setDietResult(calculateDietPlan({
+        weight_kg:        bio.weight,
+        height_cm:        clientData.height_cm,
+        age:              calcAge(clientData.birth_date),
+        gender:           clientData.gender as "M" | "F",
+        body_fat_percent: bio.body_fat,
+        activity:         clientData.activity_level as ActivityLevel,
+        objective:        clientData.objective as Objective,
+      }));
+    }
+  }
 
   async function loadPlan() {
     const { data, error } = await supabase
@@ -327,6 +410,15 @@ export default function DietPlanForm() {
     );
   }
 
+  // Totalização em tempo real derivada do estado meals
+  const allFormFoods = meals.flatMap((m) => m.foods);
+  const planTotals = {
+    calories: allFormFoods.reduce((s, f) => s + (parseFloat(f.calories) || 0), 0),
+    protein:  allFormFoods.reduce((s, f) => s + (parseFloat(f.protein)  || 0), 0),
+    carbs:    allFormFoods.reduce((s, f) => s + (parseFloat(f.carbs)    || 0), 0),
+    fat:      allFormFoods.reduce((s, f) => s + (parseFloat(f.fat)      || 0), 0),
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: "#f9fafb" }}
@@ -340,6 +432,59 @@ export default function DietPlanForm() {
         <Text style={styles.pageTitle}>
           {isEditing ? "Editar Plano" : "Novo Plano"}{clientName ? ` — ${clientName}` : ""}
         </Text>
+
+        {/* ── Linha 1: Última Avaliação Corporal ── */}
+        {lastBio && lastBio.weight > 0 && (
+          <View style={styles.bioCard}>
+            <Text style={styles.bioCardTitle}>Última Avaliação Corporal</Text>
+            <View style={styles.bioRow}>
+              {[
+                { label: "Peso",         value: `${lastBio.weight}`,                                                                              unit: "kg",   color: "#374151" },
+                { label: "% Gordura",    value: `${lastBio.body_fat}`,                                                                             unit: "%",    color: "#dc2626" },
+                { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? `${lastBio.muscle_mass_percentage}` : "—",                 unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
+                { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? `${lastBio.basal_metabolic_rate}`    : "—",                 unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
+              ].map((item) => (
+                <View key={item.label} style={[styles.bioBox, { borderTopColor: item.color }]}>
+                  <Text style={[styles.bioValue, { color: item.color }]}>{item.value}</Text>
+                  <Text style={styles.bioUnit}>{item.unit}</Text>
+                  <Text style={styles.bioLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ── Linha 2: Metas Calculadas ── */}
+        {dietResult && (
+          <View style={styles.macroCard}>
+            <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
+            <View style={styles.macroRow}>
+              {[
+                { label: "Calorias", value: `${dietResult.macros.calories}`, unit: "kcal", color: "#059669" },
+                { label: "Proteína", value: `${dietResult.macros.protein}`,  unit: "g",    color: "#2563eb" },
+                { label: "Carbs",    value: `${dietResult.macros.carbs}`,    unit: "g",    color: "#d97706" },
+                { label: "Gordura",  value: `${dietResult.macros.fat}`,      unit: "g",    color: "#dc2626" },
+              ].map((m) => (
+                <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
+                  <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
+                  <Text style={styles.macroUnit}>{m.unit}</Text>
+                  <Text style={styles.macroLabel}>{m.label}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ── Linha 3: Realizado vs Meta (tempo real) ── */}
+        {dietResult && (
+          <View style={styles.macroBarsCard}>
+            <Text style={styles.macroBarsTitle}>Realizado vs Meta</Text>
+            <MacroBar label="Calorias" current={Math.round(planTotals.calories)} target={dietResult.macros.calories} unit="kcal" color="#059669" />
+            <MacroBar label="Proteína" current={Math.round(planTotals.protein)}  target={dietResult.macros.protein}  unit="g"    color="#2563eb" />
+            <MacroBar label="Carbs"    current={Math.round(planTotals.carbs)}    target={dietResult.macros.carbs}    unit="g"    color="#d97706" />
+            <MacroBar label="Gordura"  current={Math.round(planTotals.fat)}      target={dietResult.macros.fat}      unit="g"    color="#dc2626" />
+          </View>
+        )}
 
         {statusMsg.text !== "" && (
           <View style={[styles.statusBox, statusMsg.type === "error" ? styles.statusError : styles.statusSuccess]}>
@@ -441,6 +586,48 @@ export default function DietPlanForm() {
                       style={styles.input}
                       value={food.quantity}
                       onChangeText={(v) => updateFood(meal._key, food._key, "quantity", v)}
+                      onFocus={() => {
+                        preEditRef.current.set(food._key, {
+                          qty:      food.quantity,
+                          calories: food.calories,
+                          protein:  food.protein,
+                          carbs:    food.carbs,
+                          fat:      food.fat,
+                        });
+                      }}
+                      onBlur={() => {
+                        const pre = preEditRef.current.get(food._key);
+                        if (!pre) return;
+                        setMeals((prev) => {
+                          const currentFood = prev
+                            .find((m) => m._key === meal._key)?.foods
+                            .find((f) => f._key === food._key);
+                          if (!currentFood) return prev;
+                          const oldQty = parseFloat(pre.qty.replace(/[^\d.]/g, ""));
+                          const newQty = parseFloat(currentFood.quantity.replace(/[^\d.]/g, ""));
+                          if (isNaN(oldQty) || oldQty <= 0 || isNaN(newQty) || newQty <= 0 || oldQty === newQty) return prev;
+                          const ratio = newQty / oldQty;
+                          const scale = (v: string) => {
+                            const n = parseFloat(v.replace(",", "."));
+                            return isNaN(n) ? v : parseFloat((n * ratio).toFixed(1)).toString();
+                          };
+                          return prev.map((m) =>
+                            m._key !== meal._key ? m : {
+                              ...m,
+                              foods: m.foods.map((f) =>
+                                f._key !== food._key ? f : {
+                                  ...f,
+                                  calories: scale(pre.calories),
+                                  protein:  scale(pre.protein),
+                                  carbs:    scale(pre.carbs),
+                                  fat:      scale(pre.fat),
+                                }
+                              ),
+                            }
+                          );
+                        });
+                        preEditRef.current.delete(food._key);
+                      }}
                       placeholder="Ex: 100g"
                     />
                   </View>
@@ -563,4 +750,23 @@ const styles = StyleSheet.create({
 
   saveBtn: { backgroundColor: "#059669", padding: 18, borderRadius: 14, alignItems: "center", elevation: 3, shadowColor: "#059669", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+
+  bioCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
+  bioCardTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  bioRow: { flexDirection: "row", justifyContent: "space-between" },
+  bioBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
+  bioValue: { fontSize: 16, fontWeight: "800" },
+  bioUnit: { fontSize: 10, color: "#6b7280" },
+  bioLabel: { fontSize: 10, color: "#374151", fontWeight: "600", marginTop: 2 },
+
+  macroCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroRow: { flexDirection: "row", justifyContent: "space-between" },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
+  macroValue: { fontSize: 16, fontWeight: "800" },
+  macroUnit: { fontSize: 10, color: "#6b7280" },
+  macroLabel: { fontSize: 10, color: "#374151", fontWeight: "600", marginTop: 2 },
+
+  macroBarsCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 });
