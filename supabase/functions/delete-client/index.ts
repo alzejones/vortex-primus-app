@@ -47,12 +47,14 @@ serve(async (req) => {
       throw new Error("Perfil de treinador não encontrado")
     }
 
-    // 2. Busca o client verificando que pertence a este treinador
+    // 2. Busca o client verificando que pertence a este treinador.
+    // Aceita trainer_id = trainer.id OU trainer_id IS NULL (registro órfão
+    // após ON DELETE SET NULL — o treinador logado pode limpar).
     const { data: client, error: clientError } = await supabaseAdmin
       .from('clients')
-      .select('id, user_id, name')
+      .select('id, user_id, name, trainer_id')
       .eq('id', client_id)
-      .eq('trainer_id', trainer.id)
+      .or(`trainer_id.eq.${trainer.id},trainer_id.is.null`)
       .single()
 
     if (clientError || !client) {
