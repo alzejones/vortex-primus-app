@@ -67,6 +67,7 @@ export default function ClientDetails() {
   const [objective, setObjective] = useState<Objective | "">("");
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | "">("");
   const [foodRestrictions, setFoodRestrictions] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
 
@@ -96,6 +97,7 @@ export default function ClientDetails() {
         setObjective((data.objective as Objective) || "");
         setActivityLevel((data.activity_level as ActivityLevel) || "");
         setFoodRestrictions(data.food_restrictions || "");
+        setUserId(data.user_id ?? null);
       }
     } catch (error) {
       console.error("Erro ao carregar:", error);
@@ -210,45 +212,46 @@ export default function ClientDetails() {
     }
   }
 
+  async function callDeleteFunction() {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session?.access_token) {
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
+    const { data, error: invokeError } = await supabase.functions.invoke("delete-client", {
+      body: { client_id: clientId },
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+    if (invokeError) {
+      const ctx = (invokeError as any).context;
+      const bodyText = ctx ? await ctx.text().catch(() => "") : "";
+      let friendlyMsg = "Erro ao excluir o aluno.";
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed?.error) friendlyMsg = parsed.error;
+      } catch {}
+      throw new Error(friendlyMsg);
+    }
+    if (data?.error) throw new Error(data.error);
+  }
+
   async function handleDelete() {
-    // 🔴 NOVO: Sistema de confirmação de 2 cliques (Ignora o bug do Alert)
     if (!confirmDelete) {
       setConfirmDelete(true);
-      // Se ele não clicar em 4 segundos, o botão volta ao normal
-      setTimeout(() => setConfirmDelete(false), 4000); 
+      setTimeout(() => setConfirmDelete(false), 4000);
       return;
     }
 
     try {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
-      
-      const { data, error } = await supabase
-        .from("clients")
-        .delete()
-        .eq("id", clientId)
-        .select();
 
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        setStatusMsg({ text: "Bloqueio de Segurança: O registo não pôde ser excluído.", type: "error" });
-        setConfirmDelete(false);
-        return;
-      }
+      await callDeleteFunction();
 
       setStatusMsg({ text: "Aluno excluído com sucesso!", type: "success" });
-      
-      setTimeout(() => {
-        router.back(); // Retorno 100% seguro para o dashboard
-      }, 1500);
+      setTimeout(() => router.back(), 1500);
 
     } catch (error: any) {
-      // 🔴 Captura o erro do banco de dados (ex: se o aluno estiver na agenda)
-      setStatusMsg({ 
-        text: "Erro ao excluir: O aluno possui agendamentos ou avaliações cadastradas. Apague o histórico dele primeiro.", 
-        type: "error" 
-      });
+      setStatusMsg({ text: error.message || "Erro ao excluir o aluno.", type: "error" });
       setConfirmDelete(false);
     } finally {
       setSaving(false);
