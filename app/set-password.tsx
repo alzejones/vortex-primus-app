@@ -12,67 +12,83 @@ import {
 } from "react-native";
 import { supabase } from "../lib/supabase";
 
-function isInviteUrl(): boolean {
-  if (Platform.OS !== "web" || typeof window === "undefined") return true;
+// Lê os tokens do hash da URL de forma síncrona.
+// Deve ser chamada o mais cedo possível — antes do Supabase limpar o hash.
+// O hash só é limpo pelo Supabase quando NÃO há sessão existente no storage.
+// Quando há sessão existente, o Supabase ignora o hash e ele permanece intacto.
+function parseInviteHash(): { accessToken: string; refreshToken: string } | null {
+  if (Platform.OS !== "web" || typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.hash.replace("#", ""));
-  return params.get("type") === "invite";
+  if (params.get("type") !== "invite") return null;
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token") ?? "";
+  if (!accessToken) return null;
+  return { accessToken, refreshToken };
 }
 
 export default function SetPassword() {
-  const [email, setEmail]           = useState("");
-  const [password, setPassword]     = useState("");
-  const [confirm, setConfirm]       = useState("");
-  const [message, setMessage]       = useState("");
-  const [isSuccess, setIsSuccess]   = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [ready, setReady]           = useState(false); // sessão disponível
+  const [email, setEmail]             = useState("");
+  const [password, setPassword]       = useState("");
+  const [confirm, setConfirm]         = useState("");
+  const [message, setMessage]         = useState("");
+  const [isSuccess, setIsSuccess]     = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [ready, setReady]             = useState(false);
   const [invalidLink, setInvalidLink] = useState(false);
 
   const confirmRef = useRef<TextInput>(null);
 
+  // Captura os tokens do hash na primeira renderização (fase síncrona),
+  // antes que qualquer efeito assíncrono do Supabase possa limpar o hash.
+  const inviteTokens = useRef(parseInviteHash());
+
   useEffect(() => {
-    // Supabase processa o hash automaticamente (detectSessionInUrl + implicit flow).
-    // Escutamos onAuthStateChange para capturar a sessão do convite,
-    // e getSession() para cobrir o caso em que já foi processada.
+    async function setup() {
+      const tokens = inviteTokens.current;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.user) {
-          setEmail(session.user.email ?? "");
-          setReady(true);
+      if (tokens) {
+        // ── Caso A: sessão existente no storage ─────────────────────────────
+        // O Supabase ignorou o hash do convite e preservou a sessão anterior.
+        // O hash ainda está na URL com os tokens do aluno.
+        // Solução: limpar a sessão local e estabelecer a sessão do aluno.
+
+        // scope:'local' encerra apenas este browser sem invalidar tokens de outros dispositivos
+        await supabase.auth.signOut({ scope: "local" });
+
+        const { data, error } = await supabase.auth.setSession({
+          access_token: tokens.accessToken,
+          refresh_token: tokens.refreshToken,
+        });
+
+        if (error || !data.session?.user) {
+          setInvalidLink(true);
+          return;
         }
-      }
-    );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+        setEmail(data.session.user.email ?? "");
+        setReady(true);
+      } else {
+        // ── Caso B: sem sessão prévia no storage ─────────────────────────────
+        // O Supabase processou o hash automaticamente via detectSessionInUrl,
+        // limpou o hash e estabeleceu a sessão do aluno por conta própria.
+        // getSession() aguarda o initializePromise internamente, então a sessão
+        // já está disponível quando a promise resolve.
+
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          // Nenhum token no hash e nenhuma sessão: link inválido ou acesso direto.
+          setInvalidLink(true);
+          return;
+        }
+
         setEmail(session.user.email ?? "");
         setReady(true);
-        return;
       }
-      // Sem sessão após o primeiro getSession — aguarda até 6 s pelo onAuthStateChange.
-      // Se nada chegar, considera o link inválido/expirado.
-      const timer = setTimeout(() => {
-        setInvalidLink(true);
-      }, 6000);
-
-      // Cancela o timer se onAuthStateChange entregar a sessão antes.
-      supabase.auth.onAuthStateChange((_e, s) => {
-        if (s?.user) clearTimeout(timer);
-      });
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Redireciona se cair nesta tela com uma sessão ativa mas sem ser convite.
-  useEffect(() => {
-    if (!ready) return;
-    if (!isInviteUrl()) {
-      // Sessão existente + não é convite: manda para a raiz (index decide a rota).
-      router.replace("/");
     }
-  }, [ready]);
+
+    setup();
+  }, []);
 
   async function handleSetPassword() {
     setMessage("");
@@ -109,15 +125,7 @@ export default function SetPassword() {
     return (
       <KeyboardAvoidingView style={styles.root}>
         <View style={styles.scrollContent}>
-          <View style={styles.brandingContainer}>
-            <View style={styles.logoBox}>
-              <Text style={styles.logoLetter}>V</Text>
-            </View>
-            <Text style={styles.appName}>
-              Vortex <Text style={styles.appTitleBlue}>Primus</Text>
-            </Text>
-            <Text style={styles.appSubtitle}>Performance & Gestão</Text>
-          </View>
+          <Branding />
           <View style={styles.card}>
             <Text style={styles.title}>Link inválido</Text>
             <Text style={styles.subtitle}>
@@ -136,19 +144,12 @@ export default function SetPassword() {
     );
   }
 
-  // ── Carregando sessão ───────────────────────────────────────────────────────
+  // ── Carregando / processando tokens ────────────────────────────────────────
   if (!ready) {
     return (
       <KeyboardAvoidingView style={styles.root}>
         <View style={[styles.scrollContent, { justifyContent: "center" }]}>
-          <View style={styles.brandingContainer}>
-            <View style={styles.logoBox}>
-              <Text style={styles.logoLetter}>V</Text>
-            </View>
-            <Text style={styles.appName}>
-              Vortex <Text style={styles.appTitleBlue}>Primus</Text>
-            </Text>
-          </View>
+          <Branding />
           <Text style={{ textAlign: "center", color: "#64748b", fontSize: 14 }}>
             Validando convite...
           </Text>
@@ -157,7 +158,7 @@ export default function SetPassword() {
     );
   }
 
-  // ── Formulário principal ────────────────────────────────────────────────────
+  // ── Formulário ──────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -175,15 +176,7 @@ export default function SetPassword() {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.brandingContainer}>
-          <View style={styles.logoBox}>
-            <Text style={styles.logoLetter}>V</Text>
-          </View>
-          <Text style={styles.appName}>
-            Vortex <Text style={styles.appTitleBlue}>Primus</Text>
-          </Text>
-          <Text style={styles.appSubtitle}>Performance & Gestão</Text>
-        </View>
+        <Branding />
 
         <View style={styles.card}>
           <Text style={styles.title}>Bem-vindo!</Text>
@@ -245,6 +238,20 @@ export default function SetPassword() {
   );
 }
 
+function Branding() {
+  return (
+    <View style={styles.brandingContainer}>
+      <View style={styles.logoBox}>
+        <Text style={styles.logoLetter}>V</Text>
+      </View>
+      <Text style={styles.appName}>
+        Vortex <Text style={styles.appTitleBlue}>Primus</Text>
+      </Text>
+      <Text style={styles.appSubtitle}>Performance & Gestão</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#f8fafc" },
 
@@ -258,18 +265,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 6,
   },
-  toastError:        { backgroundColor: "#fef2f2", borderLeftWidth: 4, borderLeftColor: "#ef4444" },
-  toastSuccess:      { backgroundColor: "#ecfdf5", borderLeftWidth: 4, borderLeftColor: "#10b981" },
-  toastText:         { fontSize: 14, fontWeight: "700", textAlign: "center" },
-  toastTextError:    { color: "#dc2626" },
-  toastTextSuccess:  { color: "#059669" },
+  toastError:       { backgroundColor: "#fef2f2", borderLeftWidth: 4, borderLeftColor: "#ef4444" },
+  toastSuccess:     { backgroundColor: "#ecfdf5", borderLeftWidth: 4, borderLeftColor: "#10b981" },
+  toastText:        { fontSize: 14, fontWeight: "700", textAlign: "center" },
+  toastTextError:   { color: "#dc2626" },
+  toastTextSuccess: { color: "#059669" },
 
-  scrollContent: {
-    flexGrow: 1,
-    padding: 24,
-    paddingTop: 60,
-    paddingBottom: 80,
-  },
+  scrollContent: { flexGrow: 1, padding: 24, paddingTop: 60, paddingBottom: 80 },
 
   brandingContainer: { alignItems: "center", marginBottom: 32 },
   logoBox: {
@@ -304,14 +306,7 @@ const styles = StyleSheet.create({
   },
   inputReadOnly: { color: "#94a3b8" },
 
-  primaryButton: {
-    backgroundColor: "#2563eb",
-    height: 54,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
+  primaryButton:         { backgroundColor: "#2563eb", height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 8 },
   primaryButtonDisabled: { backgroundColor: "#93c5fd" },
-  primaryButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  primaryButtonText:     { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
