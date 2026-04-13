@@ -48,7 +48,21 @@ export default function SetPassword() {
         return;
       }
 
-      setEmail(data.session.user.email ?? "");
+      // Vincula clients.user_id usando a sessão recém-estabelecida.
+      // O trigger link_client_user_id() não funciona no Supabase Cloud porque
+      // auth.uid() = NULL em contexto de trigger (sem JWT). O UPDATE aqui roda
+      // com auth.uid() = user.id correto, satisfazendo a RLS policy.
+      const user = data.session.user;
+      const clientId = user.user_metadata?.client_id as string | undefined;
+      if (clientId && user.user_metadata?.role === "client") {
+        await supabase
+          .from("clients")
+          .update({ user_id: user.id })
+          .eq("id", clientId)
+          .is("user_id", null);
+      }
+
+      setEmail(user.email ?? "");
       setReady(true);
     }
 
