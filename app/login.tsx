@@ -23,14 +23,14 @@ if (Platform.OS !== "web") {
 }
 
 export default function Login() {
-  const { session } = useAuth();
+  const { session, role } = useAuth();
 
-  // O REDIRECIONAMENTO QUE FALTAVA NA TELA DE DEBUG!
+  // Redireciona após login baseado no role — aguarda detectRole() resolver
   useEffect(() => {
-    if (session) {
-      router.replace("/(protected)" as any);
-    }
-  }, [session]);
+    if (!session || role === null) return;
+    if (role === "trainer") router.replace("/(protected)" as any);
+    if (role === "client")  router.replace("/(client)/diet" as any);
+  }, [session, role]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
