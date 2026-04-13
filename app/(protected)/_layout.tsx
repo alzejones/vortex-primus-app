@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function ProtectedLayout() {
-  const { session, loading } = useAuth();
+  const { session, loading, role } = useAuth();
 
   if (loading) {
     return (
@@ -13,7 +13,7 @@ export default function ProtectedLayout() {
     );
   }
 
-  if (!session) {
+  if (!session || role !== "trainer") {
     return <Redirect href="/login" />;
   }
 
