@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -70,10 +70,18 @@ export default function ClientDetails() {
   const [userId, setUserId] = useState<string | null>(null);
   const [inviting, setInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteEmailSent, setInviteEmailSent] = useState(false);
+  const inviteCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (clientId) loadClient();
   }, [clientId]);
+
+  useEffect(() => {
+    return () => {
+      if (inviteCooldownRef.current) clearTimeout(inviteCooldownRef.current);
+    };
+  }, []);
 
   async function loadClient() {
     try {
@@ -178,6 +186,8 @@ export default function ClientDetails() {
       setStatusMsg({ text: "", type: "" });
       await callInviteFunction("email");
       setStatusMsg({ text: "Convite enviado por e-mail para " + email, type: "success" });
+      setInviteEmailSent(true);
+      inviteCooldownRef.current = setTimeout(() => setInviteEmailSent(false), 60_000);
     } catch (err: any) {
       setStatusMsg({ text: err.message || "Falha ao enviar convite.", type: "error" });
     } finally {
@@ -467,13 +477,21 @@ export default function ClientDetails() {
             <Text style={styles.modalTitle}>Enviar Convite</Text>
 
             <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => { setShowInviteModal(false); handleInviteByEmail(); }}
+              style={[styles.modalOption, inviteEmailSent && { opacity: 0.5 }]}
+              onPress={() => {
+                if (inviteEmailSent) return;
+                setShowInviteModal(false);
+                handleInviteByEmail();
+              }}
             >
               <Text style={styles.modalOptionIcon}>✉️</Text>
               <View>
                 <Text style={styles.modalOptionLabel}>Por E-mail</Text>
-                <Text style={styles.modalOptionSub}>Supabase envia o link automaticamente</Text>
+                <Text style={styles.modalOptionSub}>
+                  {inviteEmailSent
+                    ? "Convite enviado — aguarde 60s para reenviar"
+                    : "Supabase envia o link automaticamente"}
+                </Text>
               </View>
             </TouchableOpacity>
 

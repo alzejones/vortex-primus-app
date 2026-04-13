@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -12,20 +12,6 @@ import {
 } from "react-native";
 import { supabase } from "../lib/supabase";
 
-// Lê os tokens do hash da URL de forma síncrona.
-// Deve ser chamada o mais cedo possível — antes do Supabase limpar o hash.
-// O hash só é limpo pelo Supabase quando NÃO há sessão existente no storage.
-// Quando há sessão existente, o Supabase ignora o hash e ele permanece intacto.
-function parseInviteHash(): { accessToken: string; refreshToken: string } | null {
-  if (Platform.OS !== "web" || typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.hash.replace("#", ""));
-  if (params.get("type") !== "invite") return null;
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token") ?? "";
-  if (!accessToken) return null;
-  return { accessToken, refreshToken };
-}
-
 export default function SetPassword() {
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
@@ -38,53 +24,32 @@ export default function SetPassword() {
 
   const confirmRef = useRef<TextInput>(null);
 
-  // Captura os tokens do hash na primeira renderização (fase síncrona),
-  // antes que qualquer efeito assíncrono do Supabase possa limpar o hash.
-  const inviteTokens = useRef(parseInviteHash());
+  // Lê token_hash e type dos query params da URL.
+  // O novo template de e-mail gera: /set-password?token_hash=ABC&type=invite
+  // O Gmail não consome o token ao escanear este link (apenas renderiza a página).
+  const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
+  const tokenHash = Array.isArray(params.token_hash) ? params.token_hash[0] : (params.token_hash ?? null);
+  const tokenType = Array.isArray(params.type) ? params.type[0] : (params.type ?? null);
 
   useEffect(() => {
     async function setup() {
-      const tokens = inviteTokens.current;
-
-      if (tokens) {
-        // ── Caso A: sessão existente no storage ─────────────────────────────
-        // O Supabase ignorou o hash do convite e preservou a sessão anterior.
-        // O hash ainda está na URL com os tokens do aluno.
-        // Solução: limpar a sessão local e estabelecer a sessão do aluno.
-
-        // scope:'local' encerra apenas este browser sem invalidar tokens de outros dispositivos
-        await supabase.auth.signOut({ scope: "local" });
-
-        const { data, error } = await supabase.auth.setSession({
-          access_token: tokens.accessToken,
-          refresh_token: tokens.refreshToken,
-        });
-
-        if (error || !data.session?.user) {
-          setInvalidLink(true);
-          return;
-        }
-
-        setEmail(data.session.user.email ?? "");
-        setReady(true);
-      } else {
-        // ── Caso B: sem sessão prévia no storage ─────────────────────────────
-        // O Supabase processou o hash automaticamente via detectSessionInUrl,
-        // limpou o hash e estabeleceu a sessão do aluno por conta própria.
-        // getSession() aguarda o initializePromise internamente, então a sessão
-        // já está disponível quando a promise resolve.
-
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session?.user) {
-          // Nenhum token no hash e nenhuma sessão: link inválido ou acesso direto.
-          setInvalidLink(true);
-          return;
-        }
-
-        setEmail(session.user.email ?? "");
-        setReady(true);
+      if (!tokenHash || tokenType !== "invite") {
+        setInvalidLink(true);
+        return;
       }
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: "invite",
+      });
+
+      if (error || !data.session?.user) {
+        setInvalidLink(true);
+        return;
+      }
+
+      setEmail(data.session.user.email ?? "");
+      setReady(true);
     }
 
     setup();
