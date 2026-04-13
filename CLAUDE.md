@@ -503,32 +503,46 @@ Todo plugin nativo **deve ser declarado** no array `plugins`:
 
 ### Bug 1 — `delete-client` retornava 401
 
-**Sintoma:** A Edge Function `delete-client` retornava 401 antes de executar qualquer lógica.
+**Status: ✅ RESOLVIDO. Deploy v5 em produção (2026-04-13).**
 
-**Causa:** O Supabase Gateway validava o JWT antes de entregar a requisição à função (`verify_jwt = true`, padrão). Como a função valida o token manualmente via `supabaseAdmin.auth.getUser(token)`, a validação dupla causava rejeição.
+Três correções aplicadas em sequência:
 
-**Fix aplicado:** Commit `9e28cd2` adicionou `[functions.delete-client] verify_jwt = false` em `supabase/config.toml`. O mesmo padrão já existia para `invite-client`.
-
-**Status:** Corrigido em código. Requer `npx supabase functions deploy delete-client` para surtir efeito em produção.
+- **`verify_jwt = false`** (commit `9e28cd2`, confirmado em produção): o Supabase Gateway estava rejeitando a requisição antes de chegar ao código porque validava o JWT duas vezes. A função valida o token manualmente via `supabaseAdmin.auth.getUser(token)`, então o Gateway deve ficar fora.
+- **Ordem de exclusão invertida:** `auth.users` é deletado ANTES de `clients`. Se `deleteUser` falhar, `clients` sobrevive e a operação pode ser retentada. Erro em `deleteUser` agora lança exceção (`throw`) em vez de log silencioso.
+- **Fallback por email:** quando `clients.user_id` é `NULL` (convite enviado mas não aceito — `link_client_user_id()` só preenche após o aluno confirmar o e-mail), a função busca `auth.users` pelo email do client via GoTrue Admin API (`GET /auth/v1/admin/users?filter=email`) antes de deletar.
+- **Migration `20260412000001_fix_handle_new_user_role_check.sql`** aplicada: trigger `handle_new_user()` agora verifica `raw_user_meta_data->>'role'` — se `role = 'client'`, retorna sem criar registro em `trainers`. Eliminado o bug que criava registros espúrios em `trainers` (e `trainer_subscriptions` por CASCADE) para cada aluno convidado.
 
 ---
 
-### Bug 2 — `set-password` exibia "Link inválido" mesmo com link válido
+### Bug 2 — `set-password` — link de convite rejeitado com `otp_expired`
 
-**Sintoma:** Aluno clica no link de convite (`/set-password#access_token=...&type=invite`) e vê a mensagem "Link inválido ou expirado" sem poder definir a senha.
+**Status: 🔄 EM INVESTIGAÇÃO (2026-04-13).**
 
-**Causa:** Quando o treinador estava logado no mesmo browser onde o aluno clicou no link, o Supabase SDK ignorava os tokens do hash e mantinha a sessão existente do treinador. A tela não encontrava tokens válidos e exibia o erro.
+O problema **não está** no `set-password.tsx` (fix do `a3ebad3` cobre o cenário de sessão prévia no browser e está correto).
 
-**Fix aplicado:** Commit `a3ebad3`. A função `parseInviteHash()` em `set-password.tsx` lê os tokens do hash de forma síncrona antes que qualquer efeito assíncrono do Supabase limpe o hash. Se tokens forem encontrados, faz `signOut({ scope: 'local' })` e estabelece a sessão do aluno via `setSession()`.
+**Sintoma atual:** URL de redirect após clique no convite chega com:
+```
+#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired
+```
+O Supabase rejeita o token no endpoint `/auth/v1/verify` **antes** de chegar na tela — o redirect já chegou com o erro embutido no hash.
 
-**Casos ainda problemáticos:**
-- Link expirado (TTL padrão Supabase: 24h) → exibe "Link inválido" corretamente.
-- Link já utilizado (tokens de single-use) → exibe "Link inválido" corretamente.
-- Aluno em dispositivo móvel nativo → `parseInviteHash` retorna `null` (só funciona na Web); o Supabase SDK móvel processa o deep link de forma diferente.
+**Causas descartadas:**
+- Expiração por tempo: OTP Expiry em produção está em 3600s (1 hora); o aluno clicou 2 minutos após receber o email.
+- Redirect URL inválida: se fosse esse o problema, o erro seria `redirect_uri_mismatch`, não `otp_expired`.
+
+**Hipótese principal (não confirmada):** `auth.users` residual de testes anteriores pode estar interferindo — um `inviteUserByEmail` sobre um email que já existe em `auth.users` gera novo OTP e invalida o anterior. Se o treinador pressionou CONVITE mais de uma vez (mesmo que com intervalo), cada chamada invalida o link anterior. O frontend reabilita o botão após cada chamada completar (`setInviting(false)`), não impedindo um segundo clique.
+
+**Próximo passo:** limpar completamente `auth.users` / `clients` / `trainers` do email de teste, fazer teste 100% limpo (cadastrar aluno → convite único → clicar no link sem reenviar) e verificar se o erro persiste.
 
 ---
 
 ## Histórico de Manutenção
+
+### 2026-04-13 — Correções delete-client e trigger handle_new_user
+
+- **`supabase/functions/delete-client/index.ts`** (v5, deploy confirmado): Ordem de exclusão invertida — `auth.users` é deletado antes de `clients`. Adicionado fallback por email via GoTrue Admin API para o cenário onde `clients.user_id` é `NULL` (convite enviado, não aceito pelo aluno). Erro em `deleteUser` agora lança exceção em vez de log silencioso. `select` da busca do client atualizado para incluir `email`. `supabaseUrl` e `serviceKey` extraídos como variáveis para reutilização no `fetch`.
+- **Migration `20260412000001_fix_handle_new_user_role_check.sql`**: Trigger `handle_new_user()` corrigido para verificar `raw_user_meta_data->>'role'` — se `role = 'client'`, retorna sem criar registro em `trainers`. Evita registros espúrios em `trainers` e `trainer_subscriptions` para alunos convidados. Query de limpeza de `trainers` espúrios incluída na migration.
+- **Bug 2 (set-password / otp_expired)**: Investigação iniciada. Causa raiz ainda não confirmada. Testes continuam com ambiente 100% limpo.
 
 ### 2026-04-12 — Fluxo de convite e exclusão de aluno
 
