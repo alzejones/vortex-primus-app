@@ -516,27 +516,67 @@ Três correções aplicadas em sequência:
 
 ### Bug 2 — `set-password` — link de convite rejeitado com `otp_expired`
 
-**Status: 🔄 EM INVESTIGAÇÃO (2026-04-13).**
+**Status: ✅ RESOLVIDO. Deploy em produção (2026-04-13, commit `e634aea`).**
 
-O problema **não está** no `set-password.tsx` (fix do `a3ebad3` cobre o cenário de sessão prévia no browser e está correto).
+**Causa raiz confirmada:** O Gmail (e outros serviços de segurança de e-mail) faz pre-fetch automático dos links no corpo do e-mail, fazendo GET no endpoint `/auth/v1/verify?token=...` do Supabase. Como o OTP é single-use, ele era consumido pelo scanner antes do aluno clicar. Evidência: `confirmation_token` em `auth.users` aparecia vazio e `confirmation_sent_at = null` com `updated_at` ~10 minutos após `created_at`, sem o aluno ter clicado.
 
-**Sintoma atual:** URL de redirect após clique no convite chega com:
-```
-#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired
-```
-O Supabase rejeita o token no endpoint `/auth/v1/verify` **antes** de chegar na tela — o redirect já chegou com o erro embutido no hash.
+**Correções aplicadas:**
 
-**Causas descartadas:**
-- Expiração por tempo: OTP Expiry em produção está em 3600s (1 hora); o aluno clicou 2 minutos após receber o email.
-- Redirect URL inválida: se fosse esse o problema, o erro seria `redirect_uri_mismatch`, não `otp_expired`.
+1. **Template de e-mail** (Supabase Dashboard → Authentication → Email Templates → Invite User): link alterado de `{{ .ConfirmationURL }}` (aponta para `/auth/v1/verify`) para `https://vortex-primus-app.vercel.app/set-password?token_hash={{ .TokenHash }}&type=invite`. O Gmail escaneia a URL do app (renderiza React estático, sem ação de auth) → token não é consumido.
 
-**Hipótese principal (não confirmada):** `auth.users` residual de testes anteriores pode estar interferindo — um `inviteUserByEmail` sobre um email que já existe em `auth.users` gera novo OTP e invalida o anterior. Se o treinador pressionou CONVITE mais de uma vez (mesmo que com intervalo), cada chamada invalida o link anterior. O frontend reabilita o botão após cada chamada completar (`setInviting(false)`), não impedindo um segundo clique.
+2. **`app/set-password.tsx`** (commit `e634aea`): removida lógica de hash (`parseInviteHash`, `setSession`) — substituída por `useLocalSearchParams` lendo `token_hash` e `type` dos query params, e chamada `supabase.auth.verifyOtp({ token_hash, type: 'invite' })`.
 
-**Próximo passo:** limpar completamente `auth.users` / `clients` / `trainers` do email de teste, fazer teste 100% limpo (cadastrar aluno → convite único → clicar no link sem reenviar) e verificar se o erro persiste.
+3. **`app/(protected)/client-details.tsx`** (commit `e634aea`): cooldown de 60 segundos na opção "Por E-mail" no modal de convite após envio bem-sucedido, impedindo reenvio acidental que invalidaria o link anterior.
+
+**Nota:** `flowType: 'pkce'` (Opção 1) **não** resolveria o problema — o formato do link do e-mail é determinado pelo template, não pelo `flowType` do cliente SDK.
+
+---
+
+### Bug 3 — Aluno detectado como trainer e redirecionado para o dashboard errado
+
+**Status: 🔴 PENDENTE — aguardando correção.**
+
+**Sintoma:** Após definir senha em `set-password.tsx`, o aluno é redirecionado corretamente para `/(client)/diet`. Mas ao acessar o app novamente (via `/` ou `/login`), cai no dashboard do treinador `/(protected)/index.tsx` exibindo "0 de 0 alunos" e plano inexistente.
+
+**Causa primária — Registro espúrio em `trainers`:**
+`detectRole()` em `contexts/AuthContext.tsx:31–37` consulta `trainers` PRIMEIRO. Se existir um registro em `trainers` com `user_id = auth.uid()` do aluno (criado pelo trigger `handle_new_user()` antes da migration `20260412000001` ser aplicada), retorna `"trainer"` sem verificar `clients`. Para confirmar: `SELECT * FROM trainers WHERE email = 'myboxiraja@gmail.com'`. Se houver linha, deletá-la (e o registro em `trainer_subscriptions` por cascade) resolve o sintoma para o usuário de teste.
+
+**Causa secundária — `(protected)/_layout.tsx` não verifica role:**
+`app/(protected)/_layout.tsx` só verifica `session`, não `role`. Qualquer usuário autenticado passa pelo guard de `/(protected)`, independente de ser trainer ou client. O guard correto está em `(client)/_layout.tsx` que verifica `role !== "client"`. A assimetria cria uma vulnerabilidade de autorização: um aluno com session válida pode acessar rotas de trainer se o redirect o levar para lá.
+
+**Correção necessária (não implementada):**
+- Limpeza do registro espúrio via SQL no Supabase Dashboard para o usuário de teste.
+- Adicionar verificação `role !== "trainer"` no `(protected)/_layout.tsx` (simetria com o pattern de `(client)/_layout.tsx`).
+
+---
+
+### Bug 4 — Tela em branco ao acessar `/` após logout do aluno
+
+**Status: 🔴 PENDENTE — aguardando correção.**
+
+**Sintoma:** Após logout do aluno (de `/(client)/diet`), a URL `/` exibe tela completamente em branco.
+
+**Causa:** `app/index.tsx` tem dois `return null` que produzem tela branca idêntica:
+- Linha 7: `if (loading) return null` — correto, transitório.
+- Linha 16: `if (role === null) return null` — problemático: quando `session` ainda está não-nulo no estado React (stale, antes do batching resolver) e `role` já é `null` após o início do logout, o componente cai nesta linha e exibe tela branca sem loading indicator nem redirect.
+
+O cenário preciso: `signOut()` em `AuthContext:92` chama `supabase.auth.signOut()` (dispara `onAuthStateChange` assincronamente) e em seguida `setSession(null)`, `setRole(null)`, `router.replace("/login")`. Se o usuário ou algum redirect aterra em `/` durante a janela de transição em que `session` ainda é truthy no estado React e `role` é `null`, o index trava na linha 16.
+
+**Correção necessária (não implementada):**
+- Colapsar as duas condições de `null` em uma única guarda com spinner: tratar "sessão existe mas role ainda não resolvido" da mesma forma que o loading inicial, em vez de retornar `null` silenciosamente.
+- Alternativa: adicionar verificação `!session` antes da linha 16 para garantir que o `return null` só ocorra quando a sessão está confirmada mas o role não resolveu ainda (caso legítimo de espera).
 
 ---
 
 ## Histórico de Manutenção
+
+### 2026-04-13 — Bug 2 resolvido; Bugs 3 e 4 identificados; correções set-password e client-details
+
+- **`app/set-password.tsx`** (commit `e634aea`): Reescrita completa da lógica de token. Removidas `parseInviteHash()`, `inviteTokens` ref e toda a lógica de `#access_token` no hash. Adicionado `useLocalSearchParams` lendo `token_hash` e `type` dos query params. Substituído `setSession()`/`getSession()` por `supabase.auth.verifyOtp({ token_hash, type: 'invite' })`.
+- **`app/(protected)/client-details.tsx`** (commit `e634aea`): Cooldown de 60s na opção "Por E-mail" do modal de convite após envio bem-sucedido. Implementado com `inviteEmailSent` state + `setTimeout` + cleanup em `useEffect`.
+- **Template de e-mail Supabase** (mudança manual no Dashboard): Link do convite alterado de `{{ .ConfirmationURL }}` para `https://vortex-primus-app.vercel.app/set-password?token_hash={{ .TokenHash }}&type=invite`. Resolve o pré-fetch do Gmail.
+- **Bug 3 identificado** (não corrigido): Aluno detectado como trainer por registro espúrio em `trainers` + `(protected)/_layout.tsx` sem verificação de role.
+- **Bug 4 identificado** (não corrigido): Tela branca em `/` após logout por `return null` na linha 16 de `index.tsx` durante transição de estado do logout.
 
 ### 2026-04-13 — Correções delete-client e trigger handle_new_user
 
