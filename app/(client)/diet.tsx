@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -323,6 +324,42 @@ export default function ClientDietView() {
         </View>
       )}
 
+      {/* Card Última Avaliação Corporal */}
+      {lastBio !== null ? (
+        <View style={styles.macroCard}>
+          <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
+          <View style={styles.macroRow}>
+            {[
+              { label: "Peso",         value: `${lastBio.weight}`,
+                unit: "kg",   color: "#374151" },
+              { label: "% Gordura",    value: `${lastBio.body_fat}`,
+                unit: "%",    color: "#dc2626" },
+              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null
+                                               ? `${lastBio.muscle_mass_percentage}` : "—",
+                unit: lastBio.muscle_mass_percentage != null ? "%" : "",
+                color: "#2563eb" },
+              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate != null
+                                               ? `${lastBio.basal_metabolic_rate}` : "—",
+                unit: lastBio.basal_metabolic_rate != null ? "kcal" : "",
+                color: "#059669" },
+            ].map((item) => (
+              <View key={item.label} style={[styles.macroChip, { borderTopColor: item.color }]}>
+                <Text style={[styles.macroChipValue, { color: item.color }]}>{item.value}</Text>
+                <Text style={styles.macroChipUnit}>{item.unit}</Text>
+                <Text style={styles.macroChipLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : (
+        <View style={[styles.macroCard, { backgroundColor: "#eff6ff", borderColor: "#bfdbfe" }]}>
+          <Text style={{ color: "#1d4ed8", fontSize: 13, fontWeight: "600",
+                         lineHeight: 20, textAlign: "center" }}>
+            Entre em contato com seu treinador para fazer sua avaliação de Composição Corporal.
+          </Text>
+        </View>
+      )}
+
       {/* Card de Macros */}
       {dietResult ? (
         <View style={styles.macroCard}>
@@ -444,7 +481,12 @@ export default function ClientDietView() {
       ) : (
         <View style={styles.emptyPlan}>
           <Text style={styles.emptyPlanText}>Nenhum plano disponível ainda.</Text>
-          <Text style={styles.emptyPlanSub}>Seu treinador irá criar seu plano em breve.</Text>
+          <TouchableOpacity
+            style={styles.createBtn}
+            onPress={() => router.push("/(client)/diet-plan-form" as any)}
+          >
+            <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -539,7 +581,9 @@ const styles = StyleSheet.create({
 
   emptyPlan: { alignItems: "center", padding: 32, backgroundColor: "#fff", borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
   emptyPlanText: { color: "#374151", fontSize: 15, fontWeight: "700", marginBottom: 6 },
-  emptyPlanSub: { color: "#9ca3af", fontSize: 13, textAlign: "center" },
+
+  createBtn: { backgroundColor: "#059669", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 12 },
+  createBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 
   prefCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb" },
   prefTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 4 },
