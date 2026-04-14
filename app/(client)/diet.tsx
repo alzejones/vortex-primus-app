@@ -390,19 +390,23 @@ export default function ClientDietView() {
         </View>
       )}
 
-      {/* Botão Gerar com IA */}
-      {aiError !== "" && (
-        <View style={[styles.macroCard, { backgroundColor: "#fef2f2", borderColor: "#fecaca", marginBottom: 12 }]}>
-          <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>⚠️ {aiError}</Text>
-        </View>
+      {/* Botão Gerar com IA — só aparece quando há avaliação corporal */}
+      {lastBio !== null && (
+        <>
+          {aiError !== "" && (
+            <View style={[styles.macroCard, { backgroundColor: "#fef2f2", borderColor: "#fecaca", marginBottom: 12 }]}>
+              <Text style={{ color: "#dc2626", fontSize: 13, fontWeight: "600" }}>⚠️ {aiError}</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            style={[styles.aiBtn, (!dietResult || generatingAI) && { opacity: 0.5 }]}
+            onPress={handleGenerateAI}
+            disabled={!dietResult || generatingAI}
+          >
+            <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+          </TouchableOpacity>
+        </>
       )}
-      <TouchableOpacity
-        style={[styles.aiBtn, (!dietResult || generatingAI) && { opacity: 0.5 }]}
-        onPress={handleGenerateAI}
-        disabled={!dietResult || generatingAI}
-      >
-        <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
-      </TouchableOpacity>
 
       {/* Modal IA */}
       <Modal visible={showAIModal} animationType="slide" transparent>
@@ -452,8 +456,8 @@ export default function ClientDietView() {
         </View>
       </Modal>
 
-      {/* Plano Alimentar */}
-      {mealPlan ? (
+      {/* Plano Alimentar — só aparece quando há avaliação corporal */}
+      {lastBio !== null && mealPlan ? (
         <View style={{ marginBottom: 8 }}>
           <View style={styles.planHeader}>
             <Text style={styles.planTitle}>{mealPlan.title}</Text>
@@ -478,7 +482,7 @@ export default function ClientDietView() {
             <MealCard key={meal.id} meal={meal} />
           ))}
         </View>
-      ) : (
+      ) : lastBio !== null ? (
         <View style={styles.emptyPlan}>
           <Text style={styles.emptyPlanText}>Nenhum plano disponível ainda.</Text>
           <TouchableOpacity
@@ -488,7 +492,7 @@ export default function ClientDietView() {
             <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
 
       {/* Seção de Preferências */}
       <View style={styles.prefCard}>
