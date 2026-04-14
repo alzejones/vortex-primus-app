@@ -534,41 +534,43 @@ Três correções aplicadas em sequência:
 
 ### Bug 3 — Aluno detectado como trainer e redirecionado para o dashboard errado
 
-**Status: 🔴 PENDENTE — aguardando correção.**
+**Status: ✅ RESOLVIDO. Commits `001e24d` e `1fe88c4` em produção (2026-04-13).**
 
-**Sintoma:** Após definir senha em `set-password.tsx`, o aluno é redirecionado corretamente para `/(client)/diet`. Mas ao acessar o app novamente (via `/` ou `/login`), cai no dashboard do treinador `/(protected)/index.tsx` exibindo "0 de 0 alunos" e plano inexistente.
+**Causa raiz confirmada — `login.tsx` redirecionava todos para `/(protected)` sem verificar role:**
+`login.tsx:29–33` tinha `useEffect([session])` que disparava `router.replace("/(protected)")` imediatamente ao detectar `session`, antes de `detectRole()` terminar. O role ainda era `null` nesse momento. Com o guard de `(protected)/_layout.tsx` sem verificação de role, o aluno atravessava para o dashboard do treinador.
 
-**Causa primária — Registro espúrio em `trainers`:**
-`detectRole()` em `contexts/AuthContext.tsx:31–37` consulta `trainers` PRIMEIRO. Se existir um registro em `trainers` com `user_id = auth.uid()` do aluno (criado pelo trigger `handle_new_user()` antes da migration `20260412000001` ser aplicada), retorna `"trainer"` sem verificar `clients`. Para confirmar: `SELECT * FROM trainers WHERE email = 'myboxiraja@gmail.com'`. Se houver linha, deletá-la (e o registro em `trainer_subscriptions` por cascade) resolve o sintoma para o usuário de teste.
+**Causa secundária — `(protected)/_layout.tsx` não verificava role:**
+O layout só checava `session`, não `role`. Qualquer usuário autenticado passava pelo guard independente de ser trainer ou client — vulnerabilidade de autorização.
 
-**Causa secundária — `(protected)/_layout.tsx` não verifica role:**
-`app/(protected)/_layout.tsx` só verifica `session`, não `role`. Qualquer usuário autenticado passa pelo guard de `/(protected)`, independente de ser trainer ou client. O guard correto está em `(client)/_layout.tsx` que verifica `role !== "client"`. A assimetria cria uma vulnerabilidade de autorização: um aluno com session válida pode acessar rotas de trainer se o redirect o levar para lá.
-
-**Correção necessária (não implementada):**
-- Limpeza do registro espúrio via SQL no Supabase Dashboard para o usuário de teste.
-- Adicionar verificação `role !== "trainer"` no `(protected)/_layout.tsx` (simetria com o pattern de `(client)/_layout.tsx`).
+**Correções aplicadas:**
+1. **`app/login.tsx`** (commit `1fe88c4`): `useEffect` agora observa `[session, role]`. Aguarda `role !== null` antes de redirecionar. Trainer → `/(protected)`, client → `/(client)/diet`. Elimina o loop infinito e o redirecionamento errado.
+2. **`app/(protected)/_layout.tsx`** (commit `001e24d`): Adicionado `role !== "trainer"` no guard — simetria com `(client)/_layout.tsx`. Alunos autenticados que cheguem à rota de trainer são devolvidos ao login.
 
 ---
 
 ### Bug 4 — Tela em branco ao acessar `/` após logout do aluno
 
-**Status: 🔴 PENDENTE — aguardando correção.**
+**Status: ✅ RESOLVIDO. Commit `001e24d` em produção (2026-04-13).**
 
-**Sintoma:** Após logout do aluno (de `/(client)/diet`), a URL `/` exibe tela completamente em branco.
+**Causa confirmada:** `app/index.tsx` tinha dois `return null` separados:
+- `if (loading) return null` — correto, transitório.
+- `if (role === null) return null` — problemático: quando `session` ainda era truthy no estado React e `role` já era `null` após início do logout, o componente ficava preso aqui indefinidamente, exibindo tela branca sem redirect.
 
-**Causa:** `app/index.tsx` tem dois `return null` que produzem tela branca idêntica:
-- Linha 7: `if (loading) return null` — correto, transitório.
-- Linha 16: `if (role === null) return null` — problemático: quando `session` ainda está não-nulo no estado React (stale, antes do batching resolver) e `role` já é `null` após o início do logout, o componente cai nesta linha e exibe tela branca sem loading indicator nem redirect.
-
-O cenário preciso: `signOut()` em `AuthContext:92` chama `supabase.auth.signOut()` (dispara `onAuthStateChange` assincronamente) e em seguida `setSession(null)`, `setRole(null)`, `router.replace("/login")`. Se o usuário ou algum redirect aterra em `/` durante a janela de transição em que `session` ainda é truthy no estado React e `role` é `null`, o index trava na linha 16.
-
-**Correção necessária (não implementada):**
-- Colapsar as duas condições de `null` em uma única guarda com spinner: tratar "sessão existe mas role ainda não resolvido" da mesma forma que o loading inicial, em vez de retornar `null` silenciosamente.
-- Alternativa: adicionar verificação `!session` antes da linha 16 para garantir que o `return null` só ocorra quando a sessão está confirmada mas o role não resolveu ainda (caso legítimo de espera).
+**Correção aplicada — `app/index.tsx`** (commit `001e24d`): As duas guardas foram colapsadas em uma única condição: `if (loading || (session && role === null)) return null`. Isso trata "session existe mas role ainda não resolvido" da mesma forma que o loading inicial. O `if (role === null) return null` redundante foi removido; usuário órfão (session sem role reconhecido) cai no `return <Redirect href="/login" />` final.
 
 ---
 
 ## Histórico de Manutenção
+
+### 2026-04-13 — Bugs 3 e 4 resolvidos; sistema de routing de auth completo
+
+- **`app/login.tsx`** (commit `1fe88c4`): `useEffect` reescrito para observar `[session, role]`. Aguarda `detectRole()` resolver antes de redirecionar. Trainer vai para `/(protected)`, client vai para `/(client)/diet`. Elimina loop infinito causado pelo redirect hardcoded para `/(protected)` antes do role estar disponível.
+- **`app/(protected)/_layout.tsx`** (commit `001e24d`): Adicionado `role` ao destructuring de `useAuth()`. Guard alterado de `!session` para `!session || role !== "trainer"` — simetria com `(client)/_layout.tsx`. Impede acesso de alunos autenticados às rotas de treinador.
+- **`app/index.tsx`** (commit `001e24d`): Colapsado `if (loading) return null` e `if (role === null) return null` em `if (loading || (session && role === null)) return null`. Remove tela branca durante transição de logout. `return <Redirect href="/login" />` no final cobre o caso de usuário órfão (session sem role reconhecido).
+- **`supabase/migrations/20260413000000_client_self_link_policy.sql`** (commit `3a23067`): RLS policy `client_self_link_on_invite` — autoriza o aluno a fazer UPDATE em `clients.user_id` apenas na própria linha ainda não vinculada (`USING (user_id IS NULL)`, `WITH CHECK (user_id = auth.uid())`). Necessária porque `set-password.tsx` faz o vínculo diretamente após `verifyOtp`, com a sessão do aluno ativa.
+- **`app/set-password.tsx`** (commit `3a23067`): Adicionado UPDATE em `clients.user_id` logo após `verifyOtp` retornar sucesso, usando o `client_id` do `user_metadata`. Garante o vínculo mesmo que o trigger `link_client_user_id()` não execute (limitação de `auth.uid()` em contexto de trigger no Supabase Cloud).
+
+---
 
 ### 2026-04-13 — Bug 2 resolvido; Bugs 3 e 4 identificados; correções set-password e client-details
 
