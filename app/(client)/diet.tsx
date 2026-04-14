@@ -132,7 +132,7 @@ export default function ClientDietView() {
         .from("physical_assessments")
         .select("id")
         .eq("client_id", cId)
-        .order("created_at", { ascending: false })
+        .order("date", { ascending: false })
         .limit(1);
 
       if (assessments && assessments.length > 0) {
