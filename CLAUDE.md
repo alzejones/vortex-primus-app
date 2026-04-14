@@ -562,6 +562,24 @@ O layout só checava `session`, não `role`. Qualquer usuário autenticado passa
 
 ## Histórico de Manutenção
 
+### 2026-04-13 — Sessão completa: Bugs 1-4 resolvidos + feature tela do aluno
+
+**Bug 1 — delete-client 401:** Resolvido. Edge Function v5: ordem de exclusão invertida (auth.users antes de clients) + fallback busca auth.users por email via GoTrue Admin API quando clients.user_id é NULL.
+
+**Bug 2 — set-password "Link inválido" (OTP expirado):** Resolvido. Causa raiz: Gmail pre-fetch consumia o token OTP ao escanear o link /auth/v1/verify. Fix: template de email customizado com {{ .TokenHash }} redireciona para /set-password?token_hash=...&type=invite (Gmail renderiza a página sem consumir token). set-password.tsx reescrito para usar verifyOtp({ token_hash, type: 'invite' }). Cooldown de 60s no botão de convite.
+
+**Bug 3 — Aluno caía no Dashboard do treinador:** Resolvido. Duas causas: (1) login.tsx redirecionava todos para /(protected) sem verificar role — corrigido para redirecionar por role. (2) clients.user_id não era preenchido após verifyOtp — adicionado UPDATE manual no set-password.tsx + RLS policy client_self_link_on_invite.
+
+**Bug 4 — Tela branca após logout:** Resolvido. index.tsx retornava null quando session existia mas role era null — colapsada guarda em loading || (session && role === null).
+
+**Feature — Tela do aluno (/(client)/diet):** Card de última avaliação corporal adicionado. Mensagem para contatar treinador quando sem avaliação. Botão "+ Criar Plano Alimentar" visível apenas com avaliação existente. Nova rota app/(client)/diet-plan-form.tsx para criação de plano pelo aluno. RLS policies para meal_plans, meal_plan_meals e meal_plan_foods. Fix .order("date") em vez de "created_at" inexistente (commit `5ff65cf`).
+
+**Correções estruturais:** Migration handle_new_user() com guard role='client'. Guard de role no (protected)/_layout.tsx. Template de email Invite User customizado no Dashboard.
+
+**Pendente para próxima sessão:** Testar se o card de avaliação aparece corretamente após fix do .order("date"). Testar fluxo completo de criação de plano alimentar pelo aluno.
+
+---
+
 ### 2026-04-13 — Bugs 3 e 4 resolvidos; sistema de routing de auth completo
 
 - **`app/login.tsx`** (commit `1fe88c4`): `useEffect` reescrito para observar `[session, role]`. Aguarda `detectRole()` resolver antes de redirecionar. Trainer vai para `/(protected)`, client vai para `/(client)/diet`. Elimina loop infinito causado pelo redirect hardcoded para `/(protected)` antes do role estar disponível.
