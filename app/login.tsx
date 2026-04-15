@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import {
   Image,
@@ -13,6 +14,8 @@ import {
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
+import { T, Typography } from "../utils/theme";
+import { GradientPrimary } from "../utils/gradients";
 
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
@@ -44,7 +47,6 @@ export default function Login() {
     if (message) setMessage("");
   };
 
-  // O MOTOR DO GOOGLE QUE PROVAMOS QUE FUNCIONA
   async function handleGoogleLogin() {
     setMessage("");
     try {
@@ -67,9 +69,7 @@ export default function Login() {
             queryParams: { prompt: "select_account" }
           },
         });
-
         if (error) throw error;
-
         if (data?.url) {
           await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         }
@@ -94,7 +94,6 @@ export default function Login() {
       setMessage(error.message.toLowerCase().includes("invalid login") ? "E-mail ou senha incorretos." : error.message);
       return;
     }
-    // router.replace é chamado pelo useEffect quando a sessão muda
   }
 
   async function handleSignup() {
@@ -109,7 +108,6 @@ export default function Login() {
       setMessage(error.message.toLowerCase().includes("already registered") ? "E-mail já cadastrado." : error.message);
       return;
     }
-    // O Gatilho do Supabase agora cria o Trainer e o Plano Free automaticamente!
   }
 
   async function handleRequestPasswordReset() {
@@ -157,51 +155,77 @@ export default function Login() {
     }
     setMessage("Senha atualizada com sucesso! Você já pode fazer login.");
     setIsResetting(false);
-    setPassword(""); 
+    setPassword("");
     setResetCode("");
   }
 
+  const isSuccess = message.includes("sucesso") || message.includes("enviado");
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#f8fafc" }}
+      style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {/* Glow radial simulado */}
+      <View style={styles.glowCenter} pointerEvents="none" />
+
+      {/* Toast */}
       {message ? (
-        <View style={[styles.toast, message.includes("sucesso") || message.includes("enviado") ? styles.toastSuccess : styles.toastError]}>
-          <Text style={[styles.toastText, message.includes("sucesso") || message.includes("enviado") ? styles.toastTextSuccess : styles.toastTextError]}>{message}</Text>
+        <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError]}>
+          <Text style={[styles.toastText, isSuccess ? styles.toastTextSuccess : styles.toastTextError]}>
+            {message}
+          </Text>
         </View>
       ) : null}
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        
+
+        {/* Branding */}
         <View style={styles.brandingContainer}>
-          <View style={styles.logoBox}>
+          <LinearGradient {...GradientPrimary} style={styles.logoBox}>
             <Text style={styles.logoLetter}>V</Text>
-          </View>
-          <Text style={styles.appName}>Vortex <Text style={styles.appTitleBlue}>Primus</Text></Text>
+          </LinearGradient>
+          <Text style={styles.appName}>
+            Vortex <Text style={styles.appNameBlue}>Primus</Text>
+          </Text>
           <Text style={styles.appSubtitle}>Performance & Gestão</Text>
         </View>
 
+        {/* Card */}
         <View style={styles.card}>
           {!isResetting ? (
             <>
+              {/* Google */}
               <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-                <Image 
-                  source={{ uri: "https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" }} 
-                  style={styles.googleIcon} 
+                <Image
+                  source={{ uri: "https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" }}
+                  style={styles.googleIcon}
                 />
                 <Text style={styles.googleButtonText}>Continuar com o Google</Text>
               </TouchableOpacity>
 
+              {/* Divider */}
               <View style={styles.divider}>
-                <View style={styles.line} /><Text style={styles.dividerText}>ou</Text><View style={styles.line} />
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>ou</Text>
+                <View style={styles.dividerLine} />
               </View>
 
+              {/* E-mail */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>E-mail</Text>
-                <TextInput style={styles.input} placeholder="seu@email.com" value={email} onChangeText={(t) => handleTyping(t, setEmail)} autoCapitalize="none" keyboardType="email-address" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="seu@email.com"
+                  placeholderTextColor={T.t3}
+                  value={email}
+                  onChangeText={(t) => handleTyping(t, setEmail)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
               </View>
 
+              {/* Senha */}
               <View style={styles.inputGroup}>
                 <View style={styles.row}>
                   <Text style={styles.label}>Senha</Text>
@@ -209,82 +233,193 @@ export default function Login() {
                     <Text style={styles.forgot}>Esqueceu?</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput style={styles.input} placeholder="••••••••" value={password} onChangeText={(t) => handleTyping(t, setPassword)} secureTextEntry onSubmitEditing={handleLogin} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="••••••••"
+                  placeholderTextColor={T.t3}
+                  value={password}
+                  onChangeText={(t) => handleTyping(t, setPassword)}
+                  secureTextEntry
+                  onSubmitEditing={handleLogin}
+                />
               </View>
 
-              <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-                <Text style={styles.primaryButtonText}>Entrar</Text>
+              {/* Botão Entrar */}
+              <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin} activeOpacity={0.85}>
+                <LinearGradient {...GradientPrimary} style={styles.primaryBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                  <Text style={styles.primaryBtnText}>Entrar</Text>
+                </LinearGradient>
               </TouchableOpacity>
 
+              {/* Cadastro */}
               <TouchableOpacity style={styles.signupBtn} onPress={handleSignup}>
-                <Text style={styles.signupText}>Ainda não tem conta? <Text style={styles.signupLink}>Crie agora</Text></Text>
+                <Text style={styles.signupText}>
+                  Ainda não tem conta?{" "}
+                  <Text style={styles.signupLink}>Crie agora</Text>
+                </Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
-              <Text style={{ fontSize: 20, fontWeight: "800", color: "#0f172a", marginBottom: 8, textAlign: "center" }}>Redefinir Senha</Text>
-              <Text style={{ fontSize: 14, color: "#64748b", textAlign: "center", marginBottom: 24 }}>Enviámos um código de 6 dígitos para o seu e-mail.</Text>
+              <Text style={styles.resetTitle}>Redefinir Senha</Text>
+              <Text style={styles.resetSubtitle}>
+                Enviámos um código de 6 dígitos para o seu e-mail.
+              </Text>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Código de Verificação</Text>
-                <TextInput style={styles.input} placeholder="Ex: 123456" value={resetCode} onChangeText={(t) => handleTyping(t, setResetCode)} keyboardType="number-pad" maxLength={6} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ex: 123456"
+                  placeholderTextColor={T.t3}
+                  value={resetCode}
+                  onChangeText={(t) => handleTyping(t, setResetCode)}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nova Senha</Text>
-                <TextInput style={styles.input} placeholder="Mínimo 6 caracteres" value={newPassword} onChangeText={(t) => handleTyping(t, setNewPassword)} secureTextEntry onSubmitEditing={handleVerifyAndResetPassword} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mínimo 6 caracteres"
+                  placeholderTextColor={T.t3}
+                  value={newPassword}
+                  onChangeText={(t) => handleTyping(t, setNewPassword)}
+                  secureTextEntry
+                  onSubmitEditing={handleVerifyAndResetPassword}
+                />
               </View>
 
-              <TouchableOpacity style={styles.primaryButton} onPress={handleVerifyAndResetPassword}>
-                <Text style={styles.primaryButtonText}>Salvar nova senha</Text>
+              <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyAndResetPassword} activeOpacity={0.85}>
+                <LinearGradient {...GradientPrimary} style={styles.primaryBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                  <Text style={styles.primaryBtnText}>Salvar nova senha</Text>
+                </LinearGradient>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => setIsResetting(false)} style={{ marginTop: 24, alignItems: "center" }}>
-                <Text style={{ color: "#64748b", fontSize: 14, fontWeight: "600" }}>← Voltar para o Login</Text>
+              <TouchableOpacity onPress={() => setIsResetting(false)} style={styles.backBtn}>
+                <Text style={styles.backBtnText}>← Voltar para o Login</Text>
               </TouchableOpacity>
             </>
           )}
         </View>
+
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { flexGrow: 1, padding: 24, paddingTop: 60, paddingBottom: 250 },
-  toast: { position: 'absolute', top: 50, left: 24, right: 24, padding: 16, borderRadius: 12, zIndex: 10, elevation: 6 },
-  toastError: { backgroundColor: "#fef2f2", borderLeftWidth: 4, borderLeftColor: "#ef4444" },
-  toastSuccess: { backgroundColor: "#ecfdf5", borderLeftWidth: 4, borderLeftColor: "#10b981" },
-  toastText: { fontSize: 14, fontWeight: "700", textAlign: "center" },
-  toastTextError: { color: "#dc2626" },
-  toastTextSuccess: { color: "#059669" },
+  root: { flex: 1, backgroundColor: T.bg },
 
-  brandingContainer: { alignItems: "center", marginBottom: 32 },
-  logoBox: { width: 64, height: 64, borderRadius: 18, backgroundColor: "#2563eb", alignItems: "center", justifyContent: "center", marginBottom: 12, elevation: 4 },
-  logoLetter: { fontSize: 32, fontWeight: "900", color: "#fff" },
-  appName: { fontSize: 30, fontWeight: "900", color: "#1e3a8a" },
-  appTitleBlue: { color: "#3b82f6" },
-  appSubtitle: { fontSize: 12, color: "#64748b", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" },
+  // Glow radial simulado — oval azul desfocado no centro-topo
+  glowCenter: {
+    position: "absolute",
+    top: -120,
+    alignSelf: "center",
+    width: 400,
+    height: 400,
+    borderRadius: 200,
+    backgroundColor: T.blueGlow,
+  },
 
-  card: { backgroundColor: "#fff", borderRadius: 24, padding: 24, elevation: 4 },
-  googleButton: { flexDirection: "row", height: 54, borderRadius: 12, borderWidth: 1, borderColor: "#dadce0", alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  googleIcon: { width: 20, height: 20, marginRight: 12 },
-  googleButtonText: { color: "#3c4043", fontWeight: "600", fontSize: 15 },
+  scrollContent: { flexGrow: 1, padding: 24, paddingTop: 80, paddingBottom: 60 },
 
-  divider: { flexDirection: "row", alignItems: "center", marginVertical: 16 },
-  line: { flex: 1, height: 1, backgroundColor: "#e2e8f0" },
-  dividerText: { marginHorizontal: 12, color: "#94a3b8", fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
+  // Toast
+  toast: {
+    position: "absolute",
+    top: 50, left: 24, right: 24,
+    padding: 16, borderRadius: 12,
+    zIndex: 10, elevation: 6,
+    backgroundColor: T.surfaceAlt,
+    borderLeftWidth: 4,
+  },
+  toastError:       { borderLeftColor: T.red },
+  toastSuccess:     { borderLeftColor: T.green },
+  toastText:        { fontSize: 14, ...Typography.subtitle, textAlign: "center" },
+  toastTextError:   { color: T.red },
+  toastTextSuccess: { color: T.green },
 
+  // Branding
+  brandingContainer: { alignItems: "center", marginBottom: 36 },
+  logoBox: {
+    width: 72, height: 72,
+    borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 16,
+    elevation: 8,
+    shadowColor: T.blue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  logoLetter: { fontSize: 36, fontWeight: "900", color: T.white },
+  appName:     { fontSize: 32, fontWeight: "900", color: T.white, letterSpacing: -0.5 },
+  appNameBlue: { color: T.blue },
+  appSubtitle: { fontSize: 11, color: T.t3, fontWeight: "700", letterSpacing: 2.5, textTransform: "uppercase", marginTop: 4 },
+
+  // Card
+  card: {
+    backgroundColor: T.card,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: T.border,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+  },
+
+  // Google
+  googleButton: {
+    flexDirection: "row",
+    height: 54, borderRadius: 12,
+    borderWidth: 1, borderColor: T.border,
+    backgroundColor: T.surface,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 16,
+  },
+  googleIcon:       { width: 20, height: 20, marginRight: 12 },
+  googleButtonText: { color: T.t1, fontWeight: "600", fontSize: 15 },
+
+  // Divider
+  divider:     { flexDirection: "row", alignItems: "center", marginVertical: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: T.border },
+  dividerText: { marginHorizontal: 12, color: T.t3, fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
+
+  // Inputs
   inputGroup: { marginBottom: 16 },
-  row: { flexDirection: "row", justifyContent: "space-between" },
-  label: { fontSize: 13, fontWeight: "700", color: "#475569", marginBottom: 8 },
-  forgot: { fontSize: 13, fontWeight: "600", color: "#2563eb" },
-  input: { backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 12, paddingHorizontal: 16, height: 50, fontSize: 16 },
+  row:        { flexDirection: "row", justifyContent: "space-between" },
+  label:      { fontSize: 13, color: T.t2, marginBottom: 8, ...Typography.subtitle },
+  forgot:     { fontSize: 13, color: T.blue, fontWeight: "600" },
+  input: {
+    backgroundColor: T.surface,
+    borderWidth: 1, borderColor: T.border,
+    borderRadius: 12,
+    paddingHorizontal: 16, height: 50,
+    fontSize: 16, color: T.white,
+  },
 
-  primaryButton: { backgroundColor: "#2563eb", height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 8 },
-  primaryButtonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  signupBtn: { marginTop: 24, alignItems: "center" },
-  signupText: { color: "#64748b", fontSize: 14 },
-  signupLink: { color: "#2563eb", fontWeight: "700" }
+  // Botão primário
+  primaryBtn: { borderRadius: 14, overflow: "hidden", marginTop: 8 },
+  primaryBtnGradient: {
+    height: 54,
+    alignItems: "center", justifyContent: "center",
+    borderRadius: 14,
+  },
+  primaryBtnText: { color: T.white, fontWeight: "700", fontSize: 16 },
+
+  // Cadastro
+  signupBtn:  { marginTop: 24, alignItems: "center" },
+  signupText: { color: T.t2, fontSize: 14 },
+  signupLink: { color: T.blue, fontWeight: "700" },
+
+  // Reset
+  resetTitle:    { fontSize: 20, color: T.white, marginBottom: 8, textAlign: "center", ...Typography.title },
+  resetSubtitle: { fontSize: 14, color: T.t2, textAlign: "center", marginBottom: 24 },
+  backBtn:       { marginTop: 24, alignItems: "center" },
+  backBtnText:   { color: T.t2, fontSize: 14, fontWeight: "600" },
 });
-
