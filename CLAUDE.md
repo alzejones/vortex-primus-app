@@ -562,6 +562,14 @@ O layout só checava `session`, não `role`. Qualquer usuário autenticado passa
 
 ## Histórico de Manutenção
 
+### 2026-04-14 — Ponto de versão pré-redesign (v1.0-stable)
+
+Todos os bugs resolvidos (1-4). Features implementadas: tela do aluno com card de avaliação, botão criar plano alimentar, diet-plan-form para client, RLS policies. Template de email customizado com token_hash. Sistema funcional e estável.
+
+**Tag: v1.0-stable** — ponto de retorno antes do redesign dark theme.
+
+---
+
 ### 2026-04-13 — Sessão completa: Bugs 1-4 resolvidos + feature tela do aluno
 
 **Bug 1 — delete-client 401:** Resolvido. Edge Function v5: ordem de exclusão invertida (auth.users antes de clients) + fallback busca auth.users por email via GoTrue Admin API quando clients.user_id é NULL.
