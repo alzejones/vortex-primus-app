@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -13,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GradientAI, GradientPrimary } from "../../utils/gradients";
+import { T } from "../../utils/theme";
 
 export default function AnthropometryForm() {
   const { assessment_id, client_id } = useLocalSearchParams();
@@ -22,8 +25,6 @@ export default function AnthropometryForm() {
   const clientId = client_id as string;
 
   const [loading, setLoading] = useState(false);
-  
-  // Dados do aluno necessários para os cálculos da IA
   const [clientData, setClientData] = useState<{gender: string, birth_date: string} | null>(null);
 
   const [form, setForm] = useState({
@@ -47,7 +48,6 @@ export default function AnthropometryForm() {
   });
 
   useEffect(() => {
-    // Busca dados do aluno para cálculos de idade e género
     async function loadClient() {
       if (clientId) {
         const { data } = await supabase.from("clients").select("gender, birth_date").eq("id", clientId).single();
@@ -91,20 +91,16 @@ export default function AnthropometryForm() {
     loadData();
   }, [assessmentId, clientId]);
 
-  // Função para calcular a idade exata
   const calculateAge = (birthDateString: string) => {
-    if (!birthDateString) return 30; // Idade média padrão caso falhe
+    if (!birthDateString) return 30;
     const birthDate = new Date(birthDateString);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
   };
 
-  // 🪄 IA ANTROPOMÉTRICA - AVALIAÇÃO À DISTÂNCIA
   function calculateRemoteAssessment() {
     if (!form.weight || !form.height || !form.waist) {
       Alert.alert("Atenção", "Para a IA calcular, preencha primeiro o Peso, Altura e Cintura.");
@@ -114,7 +110,7 @@ export default function AnthropometryForm() {
     const weight = parseFloat(form.weight.replace(',', '.'));
     const height = parseFloat(form.height.replace(',', '.'));
     const waist = parseFloat(form.waist.replace(',', '.'));
-    
+
     if (isNaN(weight) || isNaN(height) || isNaN(waist)) {
       Alert.alert("Erro", "Certifique-se de que os valores de Peso, Altura e Cintura contêm apenas números.");
       return;
@@ -123,30 +119,25 @@ export default function AnthropometryForm() {
     const gender = clientData?.gender || 'M';
     const age = calculateAge(clientData?.birth_date || new Date().toISOString());
 
-    // 1. % Gordura (RFM - Relative Fat Mass Cedars-Sinai)
-    let bodyFat = (gender === 'M' || gender === 'Masculino') 
-      ? 64 - (20 * (height / waist)) 
+    let bodyFat = (gender === 'M' || gender === 'Masculino')
+      ? 64 - (20 * (height / waist))
       : 76 - (20 * (height / waist));
-    bodyFat = Math.max(5, Math.min(bodyFat, 60)); 
+    bodyFat = Math.max(5, Math.min(bodyFat, 60));
 
-    // 2. Metabolismo Basal (Mifflin-St Jeor)
-    let bmr = (gender === 'M' || gender === 'Masculino') 
-      ? (10 * weight) + (6.25 * height) - (5 * age) + 5 
+    let bmr = (gender === 'M' || gender === 'Masculino')
+      ? (10 * weight) + (6.25 * height) - (5 * age) + 5
       : (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
-    // 3. Massa Muscular %
     const leanMass = weight * (1 - (bodyFat / 100));
     const skeletalMuscleMass = leanMass * 0.55;
     const musclePercentage = (skeletalMuscleMass / weight) * 100;
 
-    // 4. Gordura Visceral (Estimativa Omron)
     let visceral = (gender === 'M' || gender === 'Masculino') ? (waist / 10) - 2 : (waist / 10) - 3;
     visceral = Math.max(1, Math.round(visceral));
 
-    // 5. Idade Metabólica
     const idealFat = (gender === 'M' || gender === 'Masculino') ? 15 : 25;
     let metabolicAge = age + Math.round((bodyFat - idealFat) / 1.5);
-    metabolicAge = Math.max(18, metabolicAge); 
+    metabolicAge = Math.max(18, metabolicAge);
 
     setForm({
       ...form,
@@ -156,7 +147,7 @@ export default function AnthropometryForm() {
       body_fat_index: visceral.toString(),
       metabolic_age: metabolicAge.toString()
     });
-    
+
     Alert.alert("Cálculo Clínico Concluído! 🪄", "Os parâmetros foram preenchidos usando as equações avançadas de RFM e Mifflin-St Jeor.");
   }
 
@@ -198,14 +189,9 @@ export default function AnthropometryForm() {
     let error;
 
     if (existing) {
-      ({ error } = await supabase
-        .from("anthropometry")
-        .update(payload)
-        .eq("assessment_id", assessmentId));
+      ({ error } = await supabase.from("anthropometry").update(payload).eq("assessment_id", assessmentId));
     } else {
-      ({ error } = await supabase
-        .from("anthropometry")
-        .insert(payload));
+      ({ error } = await supabase.from("anthropometry").insert(payload));
     }
 
     setLoading(false);
@@ -216,35 +202,32 @@ export default function AnthropometryForm() {
     }
 
     Alert.alert("Sucesso", "Avaliação salva com sucesso.");
-
     router.replace(`/(protected)/client-details?id=${clientId}`);
   }
 
   function renderInput(label: string, key: keyof typeof form) {
     return (
       <View style={{ marginBottom: 14 }}>
-        <Text style={{ marginBottom: 4, fontWeight: "600", color: "#334155" }}>{label}</Text>
+        <Text style={{ marginBottom: 4, fontWeight: "600", color: T.t2 }}>{label}</Text>
         <TextInput
           style={styles.input}
           keyboardType="numeric"
           value={form[key]}
           onChangeText={(text) => setForm({ ...form, [key]: text })}
+          placeholderTextColor={T.t3}
         />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
-          
-          <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" }}>
-            <Text style={{ fontSize: 24, fontWeight: "900", color: "#0f172a" }}>Avaliação Corporal</Text>
-            <Text style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>Preencha os dados da bioimpedância ou fita métrica.</Text>
+
+          <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: T.border }}>
+            <Text style={{ fontSize: 24, fontWeight: "900", color: T.t1 }}>Avaliação Corporal</Text>
+            <Text style={{ fontSize: 14, color: T.t3, marginTop: 4 }}>Preencha os dados da bioimpedância ou fita métrica.</Text>
           </View>
 
           <View style={styles.card}>
@@ -254,16 +237,14 @@ export default function AnthropometryForm() {
             {renderInput("Cintura (cm)", "waist")}
           </View>
 
-          {/* 🔴 O BOTÃO MÁGICO DE AVALIAÇÃO À DISTÂNCIA */}
-          <TouchableOpacity 
-            style={{ backgroundColor: '#eff6ff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#3b82f6', marginBottom: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', shadowColor: "#3b82f6", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 3 }}
-            onPress={calculateRemoteAssessment}
-          >
-            <Text style={{ fontSize: 20, marginRight: 8 }}>🪄</Text>
-            <View>
-              <Text style={{ color: '#1d4ed8', fontWeight: '900', fontSize: 15 }}>Auto-Preencher via IA</Text>
-              <Text style={{ color: '#2563eb', fontSize: 11 }}>Calcula Gordura, Músculo e Metabolismo à distância</Text>
-            </View>
+          <TouchableOpacity style={styles.aiBtn} onPress={calculateRemoteAssessment}>
+            <LinearGradient {...GradientAI} style={styles.aiBtnGradient}>
+              <Text style={{ fontSize: 20, marginRight: 8 }}>🪄</Text>
+              <View>
+                <Text style={{ color: T.white, fontWeight: "900", fontSize: 15 }}>Auto-Preencher via IA</Text>
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 11 }}>Calcula Gordura, Músculo e Metabolismo à distância</Text>
+              </View>
+            </LinearGradient>
           </TouchableOpacity>
 
           <View style={styles.card}>
@@ -299,7 +280,9 @@ export default function AnthropometryForm() {
           </View>
 
           <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
-            <Text style={styles.saveBtnText}>{loading ? "Salvando..." : "SALVAR AVALIAÇÃO"}</Text>
+            <LinearGradient {...GradientPrimary} style={styles.saveBtnGradient}>
+              <Text style={styles.saveBtnText}>{loading ? "Salvando..." : "SALVAR AVALIAÇÃO"}</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
         </ScrollView>
@@ -310,48 +293,47 @@ export default function AnthropometryForm() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: T.card,
     padding: 16,
     borderRadius: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: T.border,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "800",
-    color: "#0f172a",
+    color: T.t1,
     marginBottom: 16,
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+  row: { flexDirection: "row", justifyContent: "space-between" },
   input: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: "#cbd5e1",
+    borderColor: T.border,
     padding: 12,
     borderRadius: 8,
     fontSize: 16,
-    color: "#0f172a",
+    color: T.t1,
   },
-  saveBtn: {
-    backgroundColor: "#0f172a",
-    padding: 18,
-    borderRadius: 12,
-    marginTop: 10,
-    marginBottom: 40,
+  aiBtn: { borderRadius: 12, overflow: "hidden", marginBottom: 24 },
+  aiBtnGradient: {
+    padding: 16,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    justifyContent: "center",
+    borderRadius: 12,
+  },
+  saveBtn: { borderRadius: 12, overflow: "hidden", marginTop: 10, marginBottom: 40 },
+  saveBtnGradient: {
+    padding: 18,
+    alignItems: "center",
+    borderRadius: 12,
   },
   saveBtnText: {
-    color: "#fff",
+    color: T.white,
     textAlign: "center",
     fontWeight: "900",
     fontSize: 16,

@@ -23,16 +23,17 @@ import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import EvolutionPanel from '../../components/EvolutionPanel';
 import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPanel';
+import { T } from "../../utils/theme";
 
 export default function ClientAssessments() {
-  
+
   const { id, openForm } = useLocalSearchParams();
   useEffect(() => {
     if (openForm === 'true') {
       setFormModalVisible(true);
     }
   }, [openForm]);
-  
+
   const { session } = useAuth();
   const clientId = id as string;
 
@@ -46,7 +47,6 @@ export default function ClientAssessments() {
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
   const [editingAnthropometryId, setEditingAnthropometryId] = useState<string | null>(null);
 
-  // 🔴 NOVOS ESTADOS PARA EXCLUSÃO SEGURA (Substitui o Alert.alert bugado)
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -71,14 +71,12 @@ export default function ClientAssessments() {
   };
 
   function handleDateChange(text: string) {
-    let v = text.replace(/\D/g, ""); 
+    let v = text.replace(/\D/g, "");
     if (v.length > 12) v = v.substring(0, 12);
-    
     v = v.replace(/^(\d{2})(\d)/, "$1/$2");
     v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
     v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4})(\d)/, "$1/$2/$3 $4");
     v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2})(\d)/, "$1/$2/$3 $4:$5");
-    
     setForm({ ...form, assessment_date: v });
   }
 
@@ -105,12 +103,11 @@ export default function ClientAssessments() {
         .order("date", { ascending: false });
 
       if (assessError) throw assessError;
-      
-      // 🔴 CORREÇÃO 1: Filtra as avaliações vazias criadas pelos testes de condicionamento
+
       const validAssessments = (assessmentsData || []).filter(
         (a: any) => a.anthropometry && a.anthropometry.length > 0
       );
-      
+
       setAssessments(validAssessments);
 
     } catch (error: any) {
@@ -129,14 +126,11 @@ export default function ClientAssessments() {
 
   const viewRef = useRef(null);
 
-async function handleShareLink() {
-    // 🔴 A ROTA CORRETA: O [id] na pasta significa que o ID vai direto na URL após a barra
+  async function handleShareLink() {
     const assessmentLink = `https://vortex-primus-app.vercel.app/evolution/${clientId}`;
-    
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     const firstName = client?.name ? client.name.split(' ')[0] : 'Aluno';
-    
     const message = `Olá, *${firstName}*!\n\nSua autoavaliação corporal já está disponível no *Vortex Primus*.\n\n_Clique e veja *agora*:_ 📊\n${assessmentLink}\n\nParabéns pela determinação e foco no processo! 🔥`;
 
     try {
@@ -151,8 +145,6 @@ async function handleShareLink() {
     }
   }
 
-
-
   const calculateAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
@@ -161,29 +153,29 @@ async function handleShareLink() {
     if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
     return age;
   };
-  
+
   const chronologicalAssessments = [...(assessments || [])].reverse();
   const chartAssessments = chronologicalAssessments.filter(a => a.anthropometry && a.anthropometry.length > 0);
 
-  const chartLabels = chartAssessments.length > 0 
-    ? chartAssessments.map((_, index) => `Av ${index + 1}`) 
+  const chartLabels = chartAssessments.length > 0
+    ? chartAssessments.map((_, index) => `Av ${index + 1}`)
     : ["-"];
 
-  const fatData = chartAssessments.length > 0 
+  const fatData = chartAssessments.length > 0
     ? chartAssessments.map(a => Number(a.anthropometry[0].body_fat) || 0)
     : [0];
 
-  const muscleData = chartAssessments.length > 0 
+  const muscleData = chartAssessments.length > 0
     ? chartAssessments.map(a => Number(a.anthropometry[0].muscle_mass_percentage) || 0)
     : [0];
 
-  const screenWidth = Dimensions.get("window").width - 60; 
+  const screenWidth = Dimensions.get("window").width - 60;
 
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
 
   const [form, setForm] = useState({
-    assessment_date: formatDateBR(new Date()), 
+    assessment_date: formatDateBR(new Date()),
     weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "",
   });
 
@@ -294,17 +286,17 @@ async function handleShareLink() {
   }
 
   function getColor(value: any, type: "fat" | "weight" | "muscle" = "weight") {
-    if (value === null || value === "-" || value === undefined) return "#666";
+    if (value === null || value === "-" || value === undefined) return T.t3;
     const num = Number(value);
     if (type === "fat" || type === "weight") {
-      if (num < 0) return "#16a34a"; 
-      if (num > 0) return "#dc2626"; 
+      if (num < 0) return "#16a34a";
+      if (num > 0) return "#dc2626";
     }
     if (type === "muscle") {
-      if (num > 0) return "#16a34a"; 
-      if (num < 0) return "#dc2626"; 
+      if (num > 0) return "#16a34a";
+      if (num < 0) return "#dc2626";
     }
-    return "#666";
+    return T.t3;
   }
 
   function formatValue(value: any) {
@@ -319,7 +311,6 @@ async function handleShareLink() {
     setViewModalVisible(true);
   }
 
-  // 🔴 CORREÇÃO 2: Substitui o Alert nativo por uma abertura do nosso próprio Modal seguro
   function deleteAssessment(id: string) {
     setAssessmentToDelete(id);
   }
@@ -333,7 +324,7 @@ async function handleShareLink() {
 
       setAssessments((prev) => prev.filter((a) => a.id !== assessmentToDelete));
       await fetchHistory();
-      setAssessmentToDelete(null); // Fecha o modal
+      setAssessmentToDelete(null);
     } catch (error: any) {
       console.error("Erro na exclusão:", error);
     } finally {
@@ -361,9 +352,7 @@ async function handleShareLink() {
     });
   }
 
-// 🪄 IA ANTROPOMÉTRICA (Com correção do Bug do Modal na Web)
   const calculateRemoteAssessment = () => {
-    // Função mágica que garante que o aviso vai aparecer na Web ou no App
     const showMsg = (title: string, msg: string) => {
       if (Platform.OS === 'web') {
         window.alert(`${title}\n\n${msg}`);
@@ -375,7 +364,6 @@ async function handleShareLink() {
     try {
       if (Platform.OS !== 'web') Keyboard.dismiss();
 
-      // Conversão ultra-segura (mesmo se o usuário digitar com vírgula ou ponto)
       const pesoStr = String(form.weight || "").replace(',', '.');
       const cinturaStr = String(form.waist || "").replace(',', '.');
       const alturaStr = form.height ? String(form.height).replace(',', '.') : String(client?.height_cm || "").replace(',', '.');
@@ -384,16 +372,14 @@ async function handleShareLink() {
       const waist = parseFloat(cinturaStr);
       const height = parseFloat(alturaStr);
 
-      // Validação: Se faltar peso, altura ou cintura, mostra o aviso na cara do usuário
       if (isNaN(weight) || isNaN(waist) || isNaN(height) || weight === 0 || waist === 0 || height === 0) {
         showMsg("⚠️ Atenção", "Preencha o Peso e a Cintura na grade antes de calcular.\n\n(A Altura será puxada do seu cadastro se você não preencher).");
         return;
       }
 
-      // --- INÍCIO DA IA DE CÁLCULO ---
       const isMale = (client?.gender === 'M' || client?.gender === 'Masculino' || client?.gender === 'masculino');
-      
-      let age = 30; // Idade base
+
+      let age = 30;
       if (client?.birth_date) {
         const birth = new Date(client.birth_date);
         const today = new Date();
@@ -409,9 +395,9 @@ async function handleShareLink() {
       const fatMassKg = weight * (bodyFat / 100);
       const muscleMassKg = isMale ? ((weight - fatMassKg) * 0.48) : ((weight - fatMassKg) * 0.40);
       let musclePercentage = (muscleMassKg / weight) * 100;
-      
-      let bmr = isMale 
-        ? (10 * weight) + (6.25 * height) - (5 * age) + 5 
+
+      let bmr = isMale
+        ? (10 * weight) + (6.25 * height) - (5 * age) + 5
         : (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
       let metabolicAge = age;
@@ -424,7 +410,6 @@ async function handleShareLink() {
       let visceralFat = isMale ? Math.round((waistToHeightRatio - 0.45) * 40) : Math.round((waistToHeightRatio - 0.42) * 40);
       visceralFat = Math.max(1, Math.min(visceralFat, 30));
 
-      // Injeta os dados na tela
       setForm(prev => ({
         ...prev,
         body_fat: bodyFat.toFixed(1),
@@ -434,7 +419,6 @@ async function handleShareLink() {
         body_fat_index: visceralFat.toString()
       }));
 
-      // Aviso de que funcionou
       showMsg("✅ Sucesso", "Os dados foram calculados e preenchidos automaticamente na tela!");
 
     } catch (error: any) {
@@ -523,10 +507,10 @@ async function handleShareLink() {
     });
   }
 
-    function renderGridInput(label: string, key: keyof typeof form) {
+  function renderGridInput(label: string, key: keyof typeof form) {
     return (
       <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
-        <Text style={{ fontSize: 12, marginBottom: 4, color: "#333", minHeight: 30 }} numberOfLines={2}>{label}</Text>
+        <Text style={{ fontSize: 12, marginBottom: 4, color: T.t2, minHeight: 30 }} numberOfLines={2}>{label}</Text>
         <TextInput style={styles.gridInput as any} keyboardType="numeric" value={form[key]} onChangeText={(text) => setForm({ ...form, [key]: text })} />
       </View>
     );
@@ -535,29 +519,29 @@ async function handleShareLink() {
   function handlePhysicalTests(assessment: any) {
     router.push({ pathname: "/(protected)/assessments/conditioning" as any, params: { assessment_id: assessment.id } } as any);
   }
-  
+
   const evolution = getEvolution();
   const relativeEvolution = selectedAssessment ? getRelativeEvolution(selectedAssessment.id) : null;
 
   if (loading || !client) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#000" />
-        <Text style={{ marginTop: 10 }}>Carregando dados do aluno...</Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg }}>
+        <ActivityIndicator size="large" color={T.blue} />
+        <Text style={{ marginTop: 10, color: T.t3 }}>Carregando dados do aluno...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", paddingTop: Platform.OS === "android" ? 48 : 0 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg, paddingTop: Platform.OS === "android" ? 48 : 0 }}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        
+
         {/* MODAL DE FORMULÁRIO */}
         <Modal visible={formModalVisible} animationType="slide" onRequestClose={() => setFormModalVisible(false)}>
-          <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: 16, paddingTop: 50 }}>
-              <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-              <TouchableOpacity onPress={() => setFormModalVisible(false)}><Text style={{ color: '#fca5a5', fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text></TouchableOpacity>
+          <View style={{ flex: 1, backgroundColor: T.bg }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: T.bgAlt, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: T.border }}>
+              <Text style={{ color: T.t1, fontSize: 18, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
+              <TouchableOpacity onPress={() => setFormModalVisible(false)}><Text style={{ color: T.red, fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text></TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
               <View style={styles.stickyHeader}>
@@ -570,40 +554,45 @@ async function handleShareLink() {
               <View style={{ padding: 16 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 10, marginBottom: 16 }}>
                   <View style={{ width: 140 }}>
-                    <Text style={{ fontSize: 10, color: '#666', marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                    <TextInput style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]} value={form.assessment_date} onChangeText={handleDateChange} placeholder="DD/MM/AAAA HH:mm" keyboardType="numeric" maxLength={16} />
+                    <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
+                    <TextInput style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]} value={form.assessment_date} onChangeText={handleDateChange} placeholder="DD/MM/AAAA HH:mm" placeholderTextColor={T.t3} keyboardType="numeric" maxLength={16} />
                   </View>
                 </View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
 
-{/* 🪄 BOTÃO DA IA - AVALIAÇÃO À DISTÂNCIA */}
-                <TouchableOpacity 
-                  style={{ backgroundColor: '#eff6ff', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', marginTop: 4, marginBottom: 16 }} 
+                <TouchableOpacity
+                  style={{ backgroundColor: T.blueGlow, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.borderActive, marginTop: 4, marginBottom: 16 }}
                   onPress={calculateRemoteAssessment}
                 >
-                  <Text style={{ textAlign: 'center', color: '#2563eb', fontWeight: 'bold', fontSize: 15 }}>
+                  <Text style={{ textAlign: 'center', color: T.blue, fontWeight: 'bold', fontSize: 15 }}>
                     🪄 Calcular Avaliação à Distância (IA)
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); if(!editingAssessmentId) setFormModalVisible(false); }} disabled={saving}><Text style={{ color: "#fff", textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); if(!editingAssessmentId) setFormModalVisible(false); }} disabled={saving}>
+                  <Text style={{ color: T.white, textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text>
+                </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
         </Modal>
 
-        {/* 🔴 MODAL DE CONFIRMAÇÃO DE EXCLUSÃO SEGURO (Substitui o Alert) */}
+        {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
         <Modal visible={!!assessmentToDelete} transparent={true} animationType="fade" onRequestClose={() => setAssessmentToDelete(null)}>
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <View style={{ backgroundColor: '#fff', padding: 24, borderRadius: 16, width: '100%', maxWidth: 400, alignItems: 'center' }}>
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ backgroundColor: T.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: T.border, width: '100%', maxWidth: 400, alignItems: 'center' }}>
               <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 8, textAlign: 'center' }}>Excluir Avaliação?</Text>
-              <Text style={{ fontSize: 15, color: '#64748b', textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar esta avaliação permanentemente? Esta ação não pode ser desfeita.</Text>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: T.t1, marginBottom: 8, textAlign: 'center' }}>Excluir Avaliação?</Text>
+              <Text style={{ fontSize: 15, color: T.t3, textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar esta avaliação permanentemente? Esta ação não pode ser desfeita.</Text>
               <View style={{ flexDirection: 'row', width: '100%', gap: 12 }}>
-                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: '#f1f5f9', borderRadius: 10, alignItems: 'center' }} onPress={() => setAssessmentToDelete(null)} disabled={isDeleting}><Text style={{ color: '#475569', fontWeight: 'bold', fontSize: 15 }}>Cancelar</Text></TouchableOpacity>
-                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: '#ef4444', borderRadius: 10, alignItems: 'center' }} onPress={executeDelete} disabled={isDeleting}>{isDeleting ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Sim, Excluir</Text>}</TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: T.surfaceAlt, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: T.border }} onPress={() => setAssessmentToDelete(null)} disabled={isDeleting}>
+                  <Text style={{ color: T.t2, fontWeight: 'bold', fontSize: 15 }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: T.red, borderRadius: 10, alignItems: 'center' }} onPress={executeDelete} disabled={isDeleting}>
+                  {isDeleting ? <ActivityIndicator color={T.white} /> : <Text style={{ color: T.white, fontWeight: 'bold', fontSize: 15 }}>Sim, Excluir</Text>}
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -622,9 +611,9 @@ async function handleShareLink() {
           <View style={{ padding: 16 }}>
             {evolution && <EvolutionPanel evolutionData={evolution} currentAssessment={assessments[0]} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} formatValue={formatValue} />}
             {evolution && assessments?.length > 1 && <MeasurementsEvolutionPanel currentAssessment={assessments[0]} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} />}
-            
-            <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: '#fff', borderRadius: 10, padding: 10 }}>
-              <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 5 }}>
+
+            <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: T.card, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: T.border }}>
+              <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 }}>
                 <LineChart data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))} data2={muscleData.map((val) => ({ value: Number(val) || 0 }))} height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))} initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e" thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)" yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }} yAxisLabelSuffix="%" stepValue={5} maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5} noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)} rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)" />
                 <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
@@ -634,8 +623,8 @@ async function handleShareLink() {
               </View>
             </View>
 
-            <TouchableOpacity style={{ backgroundColor: '#1e293b', padding: 16, borderRadius: 12, marginBottom: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }} onPress={() => router.push({ pathname: "/(protected)/assessments/conditioning-evolution" as any, params: { client_id: clientId } } as any)}>
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>📈 Ver Evolução de Performance</Text>
+            <TouchableOpacity style={{ backgroundColor: T.bgAlt, padding: 16, borderRadius: 12, marginBottom: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: T.border }} onPress={() => router.push({ pathname: "/(protected)/assessments/conditioning-evolution" as any, params: { client_id: clientId } } as any)}>
+              <Text style={{ color: T.t1, fontSize: 16, fontWeight: 'bold' }}>📈 Ver Evolução de Performance</Text>
             </TouchableOpacity>
 
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
@@ -653,7 +642,7 @@ async function handleShareLink() {
                   onEdit={handleEditAssessment}
                   onDelete={deleteAssessment}
                   onWhatsApp={handleSendWhatsApp}
-                  onPhysicalTests={() => handlePhysicalTests(assessment)} 
+                  onPhysicalTests={() => handlePhysicalTests(assessment)}
                 />
               );
             })}
@@ -667,17 +656,17 @@ async function handleShareLink() {
 }
 
 const styles = StyleSheet.create({
-  stickyHeader: { backgroundColor: "#f8f9fa", paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: "#eee", elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  stickyHeader: { backgroundColor: T.bgAlt, paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: T.border, elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerItem: { fontSize: 14, color: "#333" },
+  headerItem: { fontSize: 14, color: T.t2 },
   bold: { fontWeight: "bold" },
-  pageTitle: { fontSize: 18, fontWeight: "bold", marginTop: 10, marginBottom: 16, color: "#000" },
-  card: { padding: 12, borderWidth: 1, borderColor: "#e0e0e0", borderRadius: 10, backgroundColor: '#fff', marginBottom: 16 },
-  cardTitle: { fontSize: 14, fontWeight: "bold", marginBottom: 8, color: "#444" },
+  pageTitle: { fontSize: 18, fontWeight: "bold", marginTop: 10, marginBottom: 16, color: T.t1 },
+  card: { padding: 12, borderWidth: 1, borderColor: T.border, borderRadius: 10, backgroundColor: T.card, marginBottom: 16 },
+  cardTitle: { fontSize: 14, fontWeight: "bold", marginBottom: 8, color: T.t2 },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  gridInput: { borderWidth: 1, borderColor: "#ccc", padding: 8, borderRadius: 6, backgroundColor: '#fafafa', textAlign: 'center', fontSize: 14, color: '#000' },
-  button: { backgroundColor: "#000", padding: 16, borderRadius: 8, marginTop: 10 },
-  historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: "#eee", borderRadius: 8, backgroundColor: "#fafafa" },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#fff', borderRadius: 15, padding: 20, width: '100%', maxHeight: '90%' }
+  gridInput: { borderWidth: 1, borderColor: T.border, padding: 8, borderRadius: 6, backgroundColor: T.surface, textAlign: 'center', fontSize: 14, color: T.t1 },
+  button: { backgroundColor: T.blue, padding: 16, borderRadius: 8, marginTop: 10 },
+  historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: T.border, borderRadius: 8, backgroundColor: T.card },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalContent: { backgroundColor: T.card, borderRadius: 15, padding: 20, width: '100%', maxHeight: '90%', borderWidth: 1, borderColor: T.border }
 });

@@ -1,5 +1,7 @@
 import { Redirect, Slot } from "expo-router";
+import { View } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { T } from "../../utils/theme";
 
 export default function ClientLayout() {
   const { session, loading, role } = useAuth();
@@ -7,5 +9,9 @@ export default function ClientLayout() {
   if (loading) return null;
   if (!session || role !== "client") return <Redirect href="/login" />;
 
-  return <Slot />;
+  return (
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
+      <Slot />
+    </View>
+  );
 }

@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -11,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { GradientPrimary } from "../utils/gradients";
+import { T } from "../utils/theme";
 
 export default function SetPassword() {
   const [email, setEmail]             = useState("");
@@ -24,9 +27,6 @@ export default function SetPassword() {
 
   const confirmRef = useRef<TextInput>(null);
 
-  // Lê token_hash e type dos query params da URL.
-  // O novo template de e-mail gera: /set-password?token_hash=ABC&type=invite
-  // O Gmail não consome o token ao escanear este link (apenas renderiza a página).
   const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
   const tokenHash = Array.isArray(params.token_hash) ? params.token_hash[0] : (params.token_hash ?? null);
   const tokenType = Array.isArray(params.type) ? params.type[0] : (params.type ?? null);
@@ -48,10 +48,6 @@ export default function SetPassword() {
         return;
       }
 
-      // Vincula clients.user_id usando a sessão recém-estabelecida.
-      // O trigger link_client_user_id() não funciona no Supabase Cloud porque
-      // auth.uid() = NULL em contexto de trigger (sem JWT). O UPDATE aqui roda
-      // com auth.uid() = user.id correto, satisfazendo a RLS policy.
       const user = data.session.user;
       const clientId = user.user_metadata?.client_id as string | undefined;
       if (clientId && user.user_metadata?.role === "client") {
@@ -99,7 +95,6 @@ export default function SetPassword() {
     }, 1200);
   }
 
-  // ── Link inválido / expirado ────────────────────────────────────────────────
   if (invalidLink) {
     return (
       <KeyboardAvoidingView style={styles.root}>
@@ -111,11 +106,10 @@ export default function SetPassword() {
               Este link de convite é inválido ou expirou.{"\n"}
               Solicite um novo convite ao seu treinador.
             </Text>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => router.replace("/login")}
-            >
-              <Text style={styles.primaryButtonText}>Ir para o Login</Text>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/login")}>
+              <LinearGradient {...GradientPrimary} style={styles.primaryButtonGradient}>
+                <Text style={styles.primaryButtonText}>Ir para o Login</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -123,13 +117,12 @@ export default function SetPassword() {
     );
   }
 
-  // ── Carregando / processando tokens ────────────────────────────────────────
   if (!ready) {
     return (
       <KeyboardAvoidingView style={styles.root}>
         <View style={[styles.scrollContent, { justifyContent: "center" }]}>
           <Branding />
-          <Text style={{ textAlign: "center", color: "#64748b", fontSize: 14 }}>
+          <Text style={{ textAlign: "center", color: T.t3, fontSize: 14 }}>
             Validando convite...
           </Text>
         </View>
@@ -137,7 +130,6 @@ export default function SetPassword() {
     );
   }
 
-  // ── Formulário ──────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -151,10 +143,7 @@ export default function SetPassword() {
         </View>
       ) : null}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Branding />
 
         <View style={styles.card}>
@@ -178,6 +167,7 @@ export default function SetPassword() {
             <TextInput
               style={styles.input}
               placeholder="Mínimo 6 caracteres"
+              placeholderTextColor={T.t3}
               value={password}
               onChangeText={(t) => { setPassword(t); setMessage(""); }}
               secureTextEntry
@@ -193,6 +183,7 @@ export default function SetPassword() {
               ref={confirmRef}
               style={styles.input}
               placeholder="Repita a senha"
+              placeholderTextColor={T.t3}
               value={confirm}
               onChangeText={(t) => { setConfirm(t); setMessage(""); }}
               secureTextEntry
@@ -203,13 +194,15 @@ export default function SetPassword() {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, loading && { opacity: 0.6 }]}
             onPress={handleSetPassword}
             disabled={loading}
           >
-            <Text style={styles.primaryButtonText}>
-              {loading ? "Salvando..." : "Definir Senha e Entrar"}
-            </Text>
+            <LinearGradient {...GradientPrimary} style={styles.primaryButtonGradient}>
+              <Text style={styles.primaryButtonText}>
+                {loading ? "Salvando..." : "Definir Senha e Entrar"}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -220,9 +213,9 @@ export default function SetPassword() {
 function Branding() {
   return (
     <View style={styles.brandingContainer}>
-      <View style={styles.logoBox}>
+      <LinearGradient {...GradientPrimary} style={styles.logoBox}>
         <Text style={styles.logoLetter}>V</Text>
-      </View>
+      </LinearGradient>
       <Text style={styles.appName}>
         Vortex <Text style={styles.appTitleBlue}>Primus</Text>
       </Text>
@@ -232,7 +225,7 @@ function Branding() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#f8fafc" },
+  root: { flex: 1, backgroundColor: T.bg },
 
   toast: {
     position: "absolute",
@@ -244,11 +237,11 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 6,
   },
-  toastError:       { backgroundColor: "#fef2f2", borderLeftWidth: 4, borderLeftColor: "#ef4444" },
-  toastSuccess:     { backgroundColor: "#ecfdf5", borderLeftWidth: 4, borderLeftColor: "#10b981" },
+  toastError:       { backgroundColor: "rgba(239,68,68,0.1)", borderLeftWidth: 4, borderLeftColor: T.red },
+  toastSuccess:     { backgroundColor: "rgba(16,185,129,0.1)", borderLeftWidth: 4, borderLeftColor: T.green },
   toastText:        { fontSize: 14, fontWeight: "700", textAlign: "center" },
-  toastTextError:   { color: "#dc2626" },
-  toastTextSuccess: { color: "#059669" },
+  toastTextError:   { color: T.red },
+  toastTextSuccess: { color: T.green },
 
   scrollContent: { flexGrow: 1, padding: 24, paddingTop: 60, paddingBottom: 80 },
 
@@ -257,35 +250,40 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 18,
-    backgroundColor: "#2563eb",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
-    elevation: 4,
   },
-  logoLetter:   { fontSize: 32, fontWeight: "900", color: "#fff" },
-  appName:      { fontSize: 30, fontWeight: "900", color: "#1e3a8a" },
-  appTitleBlue: { color: "#3b82f6" },
-  appSubtitle:  { fontSize: 12, color: "#64748b", fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" },
+  logoLetter:   { fontSize: 32, fontWeight: "900", color: T.white },
+  appName:      { fontSize: 30, fontWeight: "900", color: T.t1 },
+  appTitleBlue: { color: T.blue },
+  appSubtitle:  { fontSize: 12, color: T.t3, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" },
 
-  card:     { backgroundColor: "#fff", borderRadius: 24, padding: 24, elevation: 4 },
-  title:    { fontSize: 20, fontWeight: "800", color: "#0f172a", marginBottom: 6, textAlign: "center" },
-  subtitle: { fontSize: 14, color: "#64748b", textAlign: "center", marginBottom: 24, lineHeight: 20 },
+  card: {
+    backgroundColor: T.card,
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  title:    { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 6, textAlign: "center" },
+  subtitle: { fontSize: 14, color: T.t3, textAlign: "center", marginBottom: 24, lineHeight: 20 },
 
   inputGroup: { marginBottom: 16 },
-  label:      { fontSize: 13, fontWeight: "700", color: "#475569", marginBottom: 8 },
+  label:      { fontSize: 13, fontWeight: "700", color: T.t2, marginBottom: 8 },
   input: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderColor: T.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 50,
     fontSize: 16,
+    color: T.t1,
   },
-  inputReadOnly: { color: "#94a3b8" },
+  inputReadOnly: { color: T.t3 },
 
-  primaryButton:         { backgroundColor: "#2563eb", height: 54, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 8 },
-  primaryButtonDisabled: { backgroundColor: "#93c5fd" },
-  primaryButtonText:     { color: "#fff", fontWeight: "700", fontSize: 16 },
+  primaryButton:         { borderRadius: 14, overflow: "hidden", marginTop: 8 },
+  primaryButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
+  primaryButtonText:     { color: T.white, fontWeight: "700", fontSize: 16 },
 });
