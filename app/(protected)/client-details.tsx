@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -22,6 +23,8 @@ import {
   OBJECTIVE_LABELS,
   Objective,
 } from "../../utils/dietCalculations";
+import { GradientPrimary } from "../../utils/gradients";
+import { T } from "../../utils/theme";
 
 // --- FUNÇÕES DE UTILIDADE ---
 const formatDateInput = (text: string) => {
@@ -51,11 +54,9 @@ export default function ClientDetails() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // 🔴 NOVO: Estado para substituir os Alerts falhos e botão de confirmação dupla
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Estados
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -124,7 +125,7 @@ export default function ClientDetails() {
     try {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
-      
+
       const { error } = await supabase
         .from("clients")
         .update({
@@ -144,7 +145,7 @@ export default function ClientDetails() {
         .eq("id", clientId);
 
       if (error) throw error;
-      
+
       setStatusMsg({ text: "Perfil atualizado com sucesso!", type: "success" });
     } catch (error: any) {
       setStatusMsg({ text: error.message || "Falha ao salvar alterações.", type: "error" });
@@ -271,35 +272,34 @@ export default function ClientDetails() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#111827" />
+        <ActivityIndicator size="large" color={T.blue} />
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
+
         <View style={styles.header}>
-            <Text style={styles.title}>Perfil do Aluno</Text>
-            <View style={styles.statusRow}>
-                <Text style={styles.statusLabel}>{isActive ? "Ativo" : "Inativo"}</Text>
-                <Switch 
-                    value={isActive} 
-                    onValueChange={setIsActive}
-                    trackColor={{ false: "#d1d5db", true: "#10b981" }}
-                    thumbColor="#fff"
-                />
-            </View>
+          <Text style={styles.title}>Perfil do Aluno</Text>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusLabel}>{isActive ? "Ativo" : "Inativo"}</Text>
+            <Switch
+              value={isActive}
+              onValueChange={setIsActive}
+              trackColor={{ false: T.t4, true: T.green }}
+              thumbColor={T.white}
+            />
+          </View>
         </View>
 
-        {/* 🔴 CAIXA DE MENSAGENS VISUAIS (SUBSTITUI OS ALERTS) */}
         {statusMsg.text !== "" && (
           <View style={[
-            styles.statusBox, 
+            styles.statusBox,
             statusMsg.type === "error" ? styles.statusError : styles.statusSuccess
           ]}>
             <Text style={[
@@ -313,91 +313,114 @@ export default function ClientDetails() {
         )}
 
         {/* BOTÕES DE AÇÃO */}
-        <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        <View style={{ flexDirection: "row", marginBottom: 10 }}>
           <TouchableOpacity
-            style={[styles.assessmentsButton, { flex: 1, marginRight: 6, marginBottom: 0 }]}
+            style={[styles.actionBtn, { flex: 1, marginRight: 6 }]}
             onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}`)}
           >
-            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>📈 HISTÓRICO</Text>
+            <Text style={styles.actionBtnText}>📈 HISTÓRICO</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#0f172a', shadowColor: '#0f172a' }]}
+            style={[styles.actionBtn, { flex: 1, marginLeft: 6 }]}
             onPress={() => router.push(`/(protected)/client-assessments?id=${clientId}&openForm=true`)}
           >
-            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>➕ Nova Avaliação Corporal</Text>
+            <Text style={styles.actionBtnText}>➕ Nova Avaliação</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+        <View style={{ flexDirection: "row", marginBottom: 20 }}>
           <TouchableOpacity
-            style={[styles.assessmentsButton, { flex: 1, marginRight: 6, marginBottom: 0, backgroundColor: '#059669', shadowColor: '#059669' }]}
+            style={[styles.actionBtn, { flex: 1, marginRight: 6, borderColor: T.green }]}
             onPress={() => router.push(`/(protected)/client-diet?id=${clientId}` as any)}
           >
-            <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>🥗 DIETA</Text>
+            <Text style={[styles.actionBtnText, { color: T.green }]}>🥗 DIETA</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.assessmentsButton, { flex: 1, marginLeft: 6, marginBottom: 0, backgroundColor: '#7c3aed', shadowColor: '#7c3aed', opacity: inviting ? 0.7 : 1 }]}
+            style={[styles.actionBtn, { flex: 1, marginLeft: 6, borderColor: T.purple, opacity: inviting ? 0.7 : 1 }]}
             onPress={() => setShowInviteModal(true)}
             disabled={inviting}
           >
             {inviting
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={[styles.assessmentsButtonText, { fontSize: 13 }]}>✉️ CONVITE</Text>
+              ? <ActivityIndicator color={T.purple} />
+              : <Text style={[styles.actionBtnText, { color: T.purple }]}>✉️ CONVITE</Text>
             }
           </TouchableOpacity>
         </View>
 
         <View style={styles.formCard}>
           <Text style={styles.label}>Nome Completo *</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Nome do aluno" />
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            placeholder="Nome do aluno"
+            placeholderTextColor={T.t3}
+          />
 
           <View style={styles.row}>
             <View style={{ flex: 1, marginRight: 10 }}>
-                <Text style={styles.label}>Nascimento</Text>
-                <TextInput 
-                    style={styles.input} 
-                    value={birthDate} 
-                    onChangeText={(t) => setBirthDate(formatDateInput(t))} 
-                    placeholder="DD/MM/AAAA"
-                    keyboardType="numeric"
-                    maxLength={10}
-                />
+              <Text style={styles.label}>Nascimento</Text>
+              <TextInput
+                style={styles.input}
+                value={birthDate}
+                onChangeText={(t) => setBirthDate(formatDateInput(t))}
+                placeholder="DD/MM/AAAA"
+                placeholderTextColor={T.t3}
+                keyboardType="numeric"
+                maxLength={10}
+              />
             </View>
             <View style={{ width: 110 }}>
-                <Text style={styles.label}>Altura (cm)</Text>
-                <TextInput 
-                    style={styles.input} 
-                    value={heightCm} 
-                    onChangeText={setHeightCm} 
-                    placeholder="Ex: 175"
-                    keyboardType="numeric"
-                />
+              <Text style={styles.label}>Altura (cm)</Text>
+              <TextInput
+                style={styles.input}
+                value={heightCm}
+                onChangeText={setHeightCm}
+                placeholder="Ex: 175"
+                placeholderTextColor={T.t3}
+                keyboardType="numeric"
+              />
             </View>
           </View>
 
           <Text style={styles.label}>Gênero</Text>
           <View style={styles.genderRow}>
-            <TouchableOpacity 
-                style={[styles.genderBtn, gender === 'M' && styles.genderBtnActive]} 
-                onPress={() => setGender('M')}
+            <TouchableOpacity
+              style={[styles.genderBtn, gender === "M" && styles.genderBtnActive]}
+              onPress={() => setGender("M")}
             >
-                <Text style={[styles.genderBtnText, gender === 'M' && styles.genderBtnTextActive]}>Masculino</Text>
+              <Text style={[styles.genderBtnText, gender === "M" && styles.genderBtnTextActive]}>Masculino</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-                style={[styles.genderBtn, gender === 'F' && styles.genderBtnActive]} 
-                onPress={() => setGender('F')}
+            <TouchableOpacity
+              style={[styles.genderBtn, gender === "F" && styles.genderBtnActive]}
+              onPress={() => setGender("F")}
             >
-                <Text style={[styles.genderBtnText, gender === 'F' && styles.genderBtnTextActive]}>Feminino</Text>
+              <Text style={[styles.genderBtnText, gender === "F" && styles.genderBtnTextActive]}>Feminino</Text>
             </TouchableOpacity>
           </View>
 
           <Text style={styles.label}>WhatsApp / Telefone</Text>
-          <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="(16) 99999-9999" />
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            placeholder="(16) 99999-9999"
+            placeholderTextColor={T.t3}
+          />
 
           <Text style={styles.label}>E-mail</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="email@exemplo.com" />
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="email@exemplo.com"
+            placeholderTextColor={T.t3}
+          />
 
           <Text style={styles.label}>Observações</Text>
           <TextInput
@@ -407,6 +430,7 @@ export default function ClientDetails() {
             multiline
             numberOfLines={4}
             placeholder="Anotações, histórico de lesões, objetivos..."
+            placeholderTextColor={T.t3}
           />
 
           <Text style={styles.label}>Objetivo</Text>
@@ -443,21 +467,23 @@ export default function ClientDetails() {
             multiline
             numberOfLines={3}
             placeholder="Ex: intolerância à lactose, alergia a amendoim..."
+            placeholderTextColor={T.t3}
           />
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleUpdate} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>SALVAR ALTERAÇÕES</Text>}
+        <TouchableOpacity style={styles.saveButton} onPress={handleUpdate} disabled={saving} activeOpacity={0.85}>
+          <LinearGradient {...GradientPrimary} style={styles.saveButtonGradient}>
+            {saving ? <ActivityIndicator color={T.white} /> : <Text style={styles.saveButtonText}>SALVAR ALTERAÇÕES</Text>}
+          </LinearGradient>
         </TouchableOpacity>
 
-        {/* 🔴 BOTÃO DE EXCLUIR INTELIGENTE */}
-        <TouchableOpacity 
-          style={[styles.deleteButton, confirmDelete && { backgroundColor: "#ef4444", borderColor: "#dc2626" }]} 
-          onPress={handleDelete} 
+        <TouchableOpacity
+          style={[styles.deleteButton, confirmDelete && styles.deleteButtonConfirm]}
+          onPress={handleDelete}
           disabled={saving}
         >
-          {saving ? <ActivityIndicator color={confirmDelete ? "#fff" : "#dc2626"} /> : (
-            <Text style={[styles.deleteButtonText, confirmDelete && { color: "#fff" }]}>
+          {saving ? <ActivityIndicator color={confirmDelete ? T.white : T.red} /> : (
+            <Text style={[styles.deleteButtonText, confirmDelete && { color: T.white }]}>
               {confirmDelete ? "⚠️ TEM CERTEZA? CLIQUE PARA EXCLUIR" : "EXCLUIR ALUNO"}
             </Text>
           )}
@@ -521,65 +547,65 @@ export default function ClientDetails() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: T.bg },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
   scrollContent: { padding: 20, paddingBottom: 40 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: "800", color: "#111827" },
-  statusRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 8, borderRadius: 12, borderWidth: 1, borderColor: '#e5e7eb' },
-  statusLabel: { marginRight: 8, fontWeight: '700', color: '#374151', fontSize: 12, textTransform: 'uppercase' },
-  
+
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: "800", color: T.t1 },
+  statusRow: { flexDirection: "row", alignItems: "center", backgroundColor: T.surface, padding: 8, borderRadius: 12, borderWidth: 1, borderColor: T.border },
+  statusLabel: { marginRight: 8, fontWeight: "700", color: T.t2, fontSize: 12, textTransform: "uppercase" },
+
   statusBox: { padding: 14, borderRadius: 10, marginBottom: 20, borderWidth: 1 },
-  statusError: { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
-  statusSuccess: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
+  statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
+  statusSuccess: { backgroundColor: "rgba(16,185,129,0.08)", borderColor: T.green },
   statusText: { fontWeight: "bold", fontSize: 14, lineHeight: 20 },
-  statusTextError: { color: "#dc2626" },
-  statusTextSuccess: { color: "#16a34a" },
+  statusTextError: { color: T.red },
+  statusTextSuccess: { color: T.green },
 
-  assessmentsButton: {
-    backgroundColor: "#2563eb",
-    padding: 18,
+  actionBtn: {
+    padding: 16,
     borderRadius: 14,
-    marginBottom: 20,
     alignItems: "center",
-    shadowColor: "#2563eb",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: T.card,
+    borderWidth: 1,
+    borderColor: T.border,
   },
-  assessmentsButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  
-  formCard: { backgroundColor: "#fff", padding: 20, borderRadius: 16, borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: "800", color: "#6b7280", marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { backgroundColor: "#f9fafb", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, padding: 14, fontSize: 16, color: "#111827", marginBottom: 16 },
-  row: { flexDirection: 'row' },
-  textArea: { height: 100, textAlignVertical: "top" }, 
-  
-  genderRow: { flexDirection: 'row', marginBottom: 16 },
-  genderBtn: { flex: 1, padding: 14, borderWidth: 1, borderColor: '#d1d5db', alignItems: 'center', borderRadius: 10, marginRight: 5, backgroundColor: '#fff' },
-  genderBtnActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  genderBtnText: { color: '#4b5563', fontWeight: '700' },
-  genderBtnTextActive: { color: '#fff' },
+  actionBtnText: { color: T.t1, fontSize: 13, fontWeight: "800" },
 
-  saveButton: { backgroundColor: "#10b981", padding: 18, borderRadius: 14, alignItems: "center", marginBottom: 16 },
-  saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  
-  deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: "#fecaca", backgroundColor: "#fef2f2" },
-  deleteButtonText: { color: "#dc2626", fontSize: 14, fontWeight: "bold" },
-  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#d1d5db", backgroundColor: "#f9fafb", marginBottom: 8 },
-  optionBtnActive: { backgroundColor: "#111827", borderColor: "#111827" },
-  optionBtnText: { color: "#374151", fontWeight: "600", fontSize: 14 },
-  optionBtnTextActive: { color: "#fff" },
+  formCard: { backgroundColor: T.card, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: T.border, marginBottom: 20 },
+  label: { fontSize: 12, fontWeight: "800", color: T.t2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 14, fontSize: 16, color: T.t1, marginBottom: 16 },
+  row: { flexDirection: "row" },
+  textArea: { height: 100, textAlignVertical: "top" },
+
+  genderRow: { flexDirection: "row", marginBottom: 16 },
+  genderBtn: { flex: 1, padding: 14, borderWidth: 1, borderColor: T.border, alignItems: "center", borderRadius: 10, marginRight: 5, backgroundColor: T.surface },
+  genderBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
+  genderBtnText: { color: T.t2, fontWeight: "700" },
+  genderBtnTextActive: { color: T.white },
+
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, marginBottom: 8 },
+  optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
+  optionBtnText: { color: T.t2, fontWeight: "600", fontSize: 14 },
+  optionBtnTextActive: { color: T.white },
+
+  saveButton: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
+  saveButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
+  saveButtonText: { color: T.white, fontSize: 16, fontWeight: "800" },
+
+  deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: T.red, backgroundColor: "transparent" },
+  deleteButtonConfirm: { backgroundColor: T.red, borderColor: T.red },
+  deleteButtonText: { color: T.red, fontSize: 14, fontWeight: "700" },
 
   // Modal de seleção de canal
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  modalSheet: { backgroundColor: "#fff", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: "#111827", marginBottom: 20, textAlign: "center" },
-  modalOption: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
+  modalSheet: { backgroundColor: T.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36, borderTopWidth: 1, borderColor: T.border },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 20, textAlign: "center" },
+  modalOption: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: T.border },
   modalOptionIcon: { fontSize: 26, marginRight: 16 },
-  modalOptionLabel: { fontSize: 16, fontWeight: "700", color: "#111827" },
-  modalOptionSub: { fontSize: 13, color: "#6b7280", marginTop: 2 },
-  modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: "#f3f4f6" },
-  modalCancelText: { fontSize: 15, fontWeight: "700", color: "#6b7280" },
+  modalOptionLabel: { fontSize: 16, fontWeight: "700", color: T.t1 },
+  modalOptionSub: { fontSize: 13, color: T.t3, marginTop: 2 },
+  modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: T.surface, borderWidth: 1, borderColor: T.border },
+  modalCancelText: { fontSize: 15, fontWeight: "700", color: T.t2 },
 });

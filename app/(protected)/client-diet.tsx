@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -21,6 +22,8 @@ import {
   Objective,
   calculateDietPlan,
 } from "../../utils/dietCalculations";
+import { GradientAI, GradientSuccess } from "../../utils/gradients";
+import { T } from "../../utils/theme";
 
 // ------------------------------------------------------------
 // Tipos
@@ -79,7 +82,6 @@ export default function ClientDiet() {
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
 
-
   useFocusEffect(
     useCallback(() => {
       if (clientId) load();
@@ -89,7 +91,6 @@ export default function ClientDiet() {
   async function load() {
     setLoading(true);
     try {
-      // 1. Dados do cliente
       const { data: clientData, error: clientErr } = await supabase
         .from("clients")
         .select("id, name, height_cm, birth_date, gender, objective, activity_level")
@@ -99,7 +100,6 @@ export default function ClientDiet() {
       if (clientErr || !clientData) throw clientErr;
       setClient(clientData);
 
-      // 2. Última avaliação física com antropometria
       const { data: assessments, error: assessmentsErr } = await supabase
         .from("physical_assessments")
         .select("id")
@@ -110,7 +110,7 @@ export default function ClientDiet() {
       if (assessmentsErr) throw assessmentsErr;
 
       let weight = 0;
-      let bodyFat = 20; // fallback conservador
+      let bodyFat = 20;
 
       if (assessments && assessments.length > 0) {
         const { data: anthro } = await supabase
@@ -138,7 +138,6 @@ export default function ClientDiet() {
         }
       }
 
-      // 3. Calcula macros se tiver dados suficientes
       if (
         weight > 0 &&
         clientData.height_cm &&
@@ -159,7 +158,6 @@ export default function ClientDiet() {
         setDietResult(result);
       }
 
-      // 4. Plano ativo com refeições e alimentos
       const { data: plan } = await supabase
         .from("meal_plans")
         .select(`
@@ -178,7 +176,6 @@ export default function ClientDiet() {
         .maybeSingle();
 
       if (plan) {
-        // Ordena refeições e alimentos
         const sorted: MealPlan = {
           ...plan,
           meal_plan_meals: (plan.meal_plan_meals as MealItem[])
@@ -210,7 +207,7 @@ export default function ClientDiet() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={T.green} />
       </View>
     );
   }
@@ -245,16 +242,16 @@ export default function ClientDiet() {
         )}
       </View>
 
-      {/* ── Linha 1: Última Avaliação Corporal ── */}
+      {/* ── Última Avaliação Corporal ── */}
       {lastBio && lastBio.weight > 0 && (
         <View style={styles.macroCard}>
           <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Peso",         value: Number(lastBio.weight).toFixed(1),                                                                                          unit: "kg",   color: "#374151" },
-              { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),                                                                                         unit: "%",    color: "#dc2626" },
-              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",             unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
-              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? Number(lastBio.basal_metabolic_rate).toFixed(1)    : "—",             unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
+              { label: "Peso",         value: Number(lastBio.weight).toFixed(1),                                                                      unit: "kg",   color: "#94a3b8" },
+              { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),                                                                     unit: "%",    color: T.red },
+              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",         unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: T.blue },
+              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? Number(lastBio.basal_metabolic_rate).toFixed(1)    : "—",         unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: T.green },
             ].map((item) => (
               <View key={item.label} style={[styles.macroBox, { borderTopColor: item.color }]}>
                 <Text style={[styles.macroValue, { color: item.color }]}>{item.value}</Text>
@@ -266,16 +263,16 @@ export default function ClientDiet() {
         </View>
       )}
 
-      {/* ── Linha 2: Metas Calculadas ── */}
+      {/* ── Metas Calculadas ── */}
       {dietResult ? (
         <View style={styles.macroCard}>
           <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: "#059669" },
-              { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: "#2563eb" },
-              { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: "#d97706" },
-              { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: "#dc2626" },
+              { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: T.green },
+              { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: T.blue },
+              { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: T.orange },
+              { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: T.red },
             ].map((m) => (
               <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
                 <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
@@ -289,16 +286,18 @@ export default function ClientDiet() {
           </Text>
         </View>
       ) : (
-        <View style={[styles.macroCard, { backgroundColor: "#fef3c7" }]}>
-          <Text style={{ color: "#92400e", fontSize: 13, fontWeight: "600" }}>
+        <View style={styles.warnCard}>
+          <Text style={styles.warnText}>
             Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma avaliação física.
           </Text>
         </View>
       )}
 
       {/* Botão Gerar com IA */}
-      <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI}>
-        <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+      <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI} activeOpacity={0.85}>
+        <LinearGradient {...GradientAI} style={styles.aiBtnGradient}>
+          <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Plano alimentar */}
@@ -333,18 +332,17 @@ export default function ClientDiet() {
             </View>
           </View>
 
-          {/* ── Linha 3: Plano vs Meta ── */}
+          {/* ── Plano vs Meta ── */}
           {dietResult && (
             <View style={styles.macroBarsCard}>
               <Text style={styles.macroBarsTitle}>Plano vs Meta</Text>
-              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color="#059669" />
-              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color="#2563eb" />
-              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color="#d97706" />
-              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color="#dc2626" />
+              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color={T.green} />
+              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color={T.blue} />
+              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color={T.orange} />
+              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color={T.red} />
             </View>
           )}
 
-          {/* Refeições */}
           {mealPlan.meal_plan_meals.map((meal) => (
             <MealCard key={meal.id} meal={meal} />
           ))}
@@ -357,8 +355,11 @@ export default function ClientDiet() {
             onPress={() =>
               router.push(`/(protected)/diet-plan-form?client_id=${clientId}` as any)
             }
+            activeOpacity={0.85}
           >
-            <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
+            <LinearGradient {...GradientSuccess} style={styles.createBtnGradient}>
+              <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
@@ -370,39 +371,44 @@ export default function ClientDiet() {
 // Estilos
 // ------------------------------------------------------------
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
 
   header: { marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "800", color: "#111827", marginBottom: 6 },
-  badge: { alignSelf: "flex-start", backgroundColor: "#d1fae5", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 4 },
-  badgeText: { color: "#065f46", fontWeight: "700", fontSize: 12 },
-  subLabel: { color: "#6b7280", fontSize: 12 },
+  title: { fontSize: 26, fontWeight: "800", color: T.t1, marginBottom: 6 },
+  badge: { alignSelf: "flex-start", backgroundColor: "rgba(16,185,129,0.12)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 4, borderWidth: 1, borderColor: "rgba(16,185,129,0.25)" },
+  badgeText: { color: T.green, fontWeight: "700", fontSize: 12 },
+  subLabel: { color: T.t3, fontSize: 12 },
 
-  macroCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
-  macroCardTitle: { fontSize: 13, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  macroCard: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
   macroRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
   macroValue: { fontSize: 20, fontWeight: "800" },
-  macroUnit: { fontSize: 11, color: "#6b7280" },
-  macroLabel: { fontSize: 11, color: "#374151", fontWeight: "600", marginTop: 2 },
-  macroSub: { fontSize: 11, color: "#9ca3af", textAlign: "center" },
+  macroUnit: { fontSize: 11, color: T.t3 },
+  macroLabel: { fontSize: 11, color: T.t2, fontWeight: "600", marginTop: 2 },
+  macroSub: { fontSize: 11, color: T.t3, textAlign: "center" },
+
+  warnCard: { backgroundColor: "rgba(245,158,11,0.08)", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "rgba(245,158,11,0.25)" },
+  warnText: { color: T.orange, fontSize: 13, fontWeight: "600" },
 
   planHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
   planActions: { flexDirection: "row", alignItems: "center" },
-  planTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
-  planNotes: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  editBtn: { backgroundColor: "#f3f4f6", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: "#e5e7eb" },
-  editBtnText: { fontWeight: "700", color: "#374151", fontSize: 13 },
+  planTitle: { fontSize: 18, fontWeight: "800", color: T.t1 },
+  planNotes: { fontSize: 12, color: T.t3, marginTop: 2 },
+  editBtn: { backgroundColor: T.surfaceAlt, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: T.border },
+  editBtnText: { fontWeight: "700", color: T.t1, fontSize: 13 },
 
-  macroBarsCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroBarsCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+
+  aiBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
+  aiBtnGradient: { paddingVertical: 14, alignItems: "center", justifyContent: "center", borderRadius: 14 },
+  aiBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
 
   emptyPlan: { alignItems: "center", padding: 40 },
-  emptyPlanText: { color: "#6b7280", fontSize: 15, marginBottom: 20 },
-  createBtn: { backgroundColor: "#059669", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
-  createBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
-
-  aiBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#D4AF37" },
-  aiBtnText: { color: "#D4AF37", fontWeight: "800", fontSize: 15 },
+  emptyPlanText: { color: T.t2, fontSize: 15, marginBottom: 20 },
+  createBtn: { borderRadius: 14, overflow: "hidden" },
+  createBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
+  createBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
 });

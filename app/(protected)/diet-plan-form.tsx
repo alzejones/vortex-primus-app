@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -23,14 +24,16 @@ import {
   Objective,
   calculateDietPlan,
 } from "../../utils/dietCalculations";
+import { GradientPrimary } from "../../utils/gradients";
+import { T } from "../../utils/theme";
 
 // ------------------------------------------------------------
 // Tipos locais
 // ------------------------------------------------------------
 interface FoodEntry {
-  _key: string;       // chave local temporária
-  id?: string;        // uuid do banco (apenas em edição)
-  food_id?: string;   // FK foods (preenchido pela FoodSearchModal na Fase 9)
+  _key: string;
+  id?: string;
+  food_id?: string;
   name: string;
   quantity: string;
   calories: string;
@@ -87,11 +90,10 @@ export default function DietPlanForm() {
 
   const { trainerId, loadingTrainer } = useTrainer();
 
-  const [loading, setLoading]   = useState(isEditing);
-  const [saving, setSaving]     = useState(false);
+  const [loading, setLoading]     = useState(isEditing);
+  const [saving, setSaving]       = useState(false);
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
 
-  // Controle do FoodSearchModal
   const [foodModalMealKey, setFoodModalMealKey] = useState<string | null>(null);
 
   const [clientName, setClientName] = useState("");
@@ -101,18 +103,15 @@ export default function DietPlanForm() {
   const [planNotes, setPlanNotes]   = useState("");
   const [meals, setMeals]           = useState<MealEntry[]>([emptyMeal()]);
 
-  // Captura valores antes da edição de quantidade para recálculo proporcional
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
   }>>(new Map());
 
-  // Carrega plano existente para edição
   useEffect(() => {
     if (!isEditing) return;
     loadPlan();
   }, [planId]);
 
-  // Carrega dados do cliente e biometria da última avaliação
   useEffect(() => {
     if (!clientId) return;
     supabase
@@ -322,7 +321,6 @@ export default function DietPlanForm() {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
-      // 1. Upsert meal_plan
       let currentPlanId = planId;
       if (isEditing && currentPlanId) {
         const { error } = await supabase
@@ -346,12 +344,10 @@ export default function DietPlanForm() {
         currentPlanId = data.id;
       }
 
-      // 2. Em edição: remove refeições antigas e recria (mais simples que diff)
       if (isEditing) {
         await supabase.from("meal_plan_meals").delete().eq("meal_plan_id", currentPlanId);
       }
 
-      // 3. Insere refeições e alimentos
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
         if (!meal.name.trim()) continue;
@@ -405,12 +401,11 @@ export default function DietPlanForm() {
   if (loading || loadingTrainer) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#059669" />
+        <ActivityIndicator size="large" color={T.green} />
       </View>
     );
   }
 
-  // Totalização em tempo real derivada do estado meals
   const allFormFoods = meals.flatMap((m) => m.foods);
   const planTotals = {
     calories: allFormFoods.reduce((s, f) => s + (parseFloat(f.calories) || 0), 0),
@@ -421,7 +416,7 @@ export default function DietPlanForm() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: "#f9fafb" }}
+      style={{ flex: 1, backgroundColor: T.bg }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
@@ -433,16 +428,16 @@ export default function DietPlanForm() {
           {isEditing ? "Editar Plano" : "Novo Plano"}{clientName ? ` — ${clientName}` : ""}
         </Text>
 
-        {/* ── Linha 1: Última Avaliação Corporal ── */}
+        {/* ── Última Avaliação Corporal ── */}
         {lastBio && lastBio.weight > 0 && (
           <View style={styles.bioCard}>
             <Text style={styles.bioCardTitle}>Última Avaliação Corporal</Text>
             <View style={styles.bioRow}>
               {[
-                { label: "Peso",         value: `${lastBio.weight}`,                                                                              unit: "kg",   color: "#374151" },
-                { label: "% Gordura",    value: `${lastBio.body_fat}`,                                                                             unit: "%",    color: "#dc2626" },
-                { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? `${lastBio.muscle_mass_percentage}` : "—",                 unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
-                { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? `${lastBio.basal_metabolic_rate}`    : "—",                 unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
+                { label: "Peso",         value: Number(lastBio.weight).toFixed(1),                                                                       unit: "kg",   color: "#94a3b8" },
+                { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),                                                                      unit: "%",    color: T.red },
+                { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",          unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: T.blue },
+                { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? Number(lastBio.basal_metabolic_rate).toFixed(1)    : "—",          unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: T.green },
               ].map((item) => (
                 <View key={item.label} style={[styles.bioBox, { borderTopColor: item.color }]}>
                   <Text style={[styles.bioValue, { color: item.color }]}>{item.value}</Text>
@@ -454,16 +449,16 @@ export default function DietPlanForm() {
           </View>
         )}
 
-        {/* ── Linha 2: Metas Calculadas ── */}
+        {/* ── Metas Calculadas ── */}
         {dietResult && (
           <View style={styles.macroCard}>
             <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
             <View style={styles.macroRow}>
               {[
-                { label: "Calorias", value: `${dietResult.macros.calories}`, unit: "kcal", color: "#059669" },
-                { label: "Proteína", value: `${dietResult.macros.protein}`,  unit: "g",    color: "#2563eb" },
-                { label: "Carbs",    value: `${dietResult.macros.carbs}`,    unit: "g",    color: "#d97706" },
-                { label: "Gordura",  value: `${dietResult.macros.fat}`,      unit: "g",    color: "#dc2626" },
+                { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: T.green },
+                { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: T.blue },
+                { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: T.orange },
+                { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: T.red },
               ].map((m) => (
                 <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
                   <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
@@ -475,14 +470,14 @@ export default function DietPlanForm() {
           </View>
         )}
 
-        {/* ── Linha 3: Realizado vs Meta (tempo real) ── */}
+        {/* ── Realizado vs Meta (tempo real) ── */}
         {dietResult && (
           <View style={styles.macroBarsCard}>
             <Text style={styles.macroBarsTitle}>Realizado vs Meta</Text>
-            <MacroBar label="Calorias" current={Math.round(planTotals.calories)} target={dietResult.macros.calories} unit="kcal" color="#059669" />
-            <MacroBar label="Proteína" current={Math.round(planTotals.protein)}  target={dietResult.macros.protein}  unit="g"    color="#2563eb" />
-            <MacroBar label="Carbs"    current={Math.round(planTotals.carbs)}    target={dietResult.macros.carbs}    unit="g"    color="#d97706" />
-            <MacroBar label="Gordura"  current={Math.round(planTotals.fat)}      target={dietResult.macros.fat}      unit="g"    color="#dc2626" />
+            <MacroBar label="Calorias" current={Math.round(planTotals.calories)} target={dietResult.macros.calories} unit="kcal" color={T.green} />
+            <MacroBar label="Proteína" current={Math.round(planTotals.protein)}  target={dietResult.macros.protein}  unit="g"    color={T.blue} />
+            <MacroBar label="Carbs"    current={Math.round(planTotals.carbs)}    target={dietResult.macros.carbs}    unit="g"    color={T.orange} />
+            <MacroBar label="Gordura"  current={Math.round(planTotals.fat)}      target={dietResult.macros.fat}      unit="g"    color={T.red} />
           </View>
         )}
 
@@ -502,6 +497,7 @@ export default function DietPlanForm() {
             value={planTitle}
             onChangeText={setPlanTitle}
             placeholder="Ex: Plano de Hipertrofia"
+            placeholderTextColor={T.t3}
           />
           <Text style={styles.label}>Notas Gerais</Text>
           <TextInput
@@ -509,6 +505,7 @@ export default function DietPlanForm() {
             value={planNotes}
             onChangeText={setPlanNotes}
             placeholder="Orientações gerais, horários, hidratação..."
+            placeholderTextColor={T.t3}
             multiline
             numberOfLines={3}
             textAlignVertical="top"
@@ -535,6 +532,7 @@ export default function DietPlanForm() {
                   value={meal.name}
                   onChangeText={(v) => updateMeal(meal._key, "name", v)}
                   placeholder="Ex: Café da manhã"
+                  placeholderTextColor={T.t3}
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -544,6 +542,7 @@ export default function DietPlanForm() {
                   value={meal.time_suggestion}
                   onChangeText={(v) => updateMeal(meal._key, "time_suggestion", v)}
                   placeholder="07:00"
+                  placeholderTextColor={T.t3}
                   keyboardType="numbers-and-punctuation"
                 />
               </View>
@@ -569,6 +568,7 @@ export default function DietPlanForm() {
                       value={food.name}
                       onChangeText={(v) => updateFood(meal._key, food._key, "name", v)}
                       placeholder="Ex: Arroz integral cozido"
+                      placeholderTextColor={T.t3}
                     />
                   </View>
                   <TouchableOpacity
@@ -629,6 +629,7 @@ export default function DietPlanForm() {
                         preEditRef.current.delete(food._key);
                       }}
                       placeholder="Ex: 100g"
+                      placeholderTextColor={T.t3}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -639,6 +640,7 @@ export default function DietPlanForm() {
                       onChangeText={(v) => updateFood(meal._key, food._key, "calories", v)}
                       keyboardType="decimal-pad"
                       placeholder="0"
+                      placeholderTextColor={T.t3}
                     />
                   </View>
                 </View>
@@ -652,6 +654,7 @@ export default function DietPlanForm() {
                       onChangeText={(v) => updateFood(meal._key, food._key, "protein", v)}
                       keyboardType="decimal-pad"
                       placeholder="0"
+                      placeholderTextColor={T.t3}
                     />
                   </View>
                   <View style={{ flex: 1, marginRight: 4 }}>
@@ -662,6 +665,7 @@ export default function DietPlanForm() {
                       onChangeText={(v) => updateFood(meal._key, food._key, "carbs", v)}
                       keyboardType="decimal-pad"
                       placeholder="0"
+                      placeholderTextColor={T.t3}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -672,6 +676,7 @@ export default function DietPlanForm() {
                       onChangeText={(v) => updateFood(meal._key, food._key, "fat", v)}
                       keyboardType="decimal-pad"
                       placeholder="0"
+                      placeholderTextColor={T.t3}
                     />
                   </View>
                 </View>
@@ -688,15 +693,17 @@ export default function DietPlanForm() {
           <Text style={styles.addMealBtnText}>+ Adicionar Refeição</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
-          {saving
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveBtnText}>SALVAR PLANO</Text>
-          }
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
+          <LinearGradient {...GradientPrimary} style={styles.saveBtnGradient}>
+            {saving
+              ? <ActivityIndicator color={T.white} />
+              : <Text style={styles.saveBtnText}>SALVAR PLANO</Text>
+            }
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Modal de busca TACO — abre por refeição */}
+      {/* Modal de busca TACO */}
       <FoodSearchModal
         visible={foodModalMealKey !== null}
         onClose={() => setFoodModalMealKey(null)}
@@ -712,61 +719,63 @@ export default function DietPlanForm() {
 // Estilos
 // ------------------------------------------------------------
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  pageTitle: { fontSize: 22, fontWeight: "800", color: "#111827", marginBottom: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+  pageTitle: { fontSize: 22, fontWeight: "800", color: T.t1, marginBottom: 16 },
 
   statusBox: { padding: 12, borderRadius: 10, marginBottom: 16, borderWidth: 1 },
-  statusError: { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
-  statusSuccess: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
+  statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
+  statusSuccess: { backgroundColor: "rgba(16,185,129,0.08)", borderColor: T.green },
   statusText: { fontWeight: "bold", fontSize: 14 },
-  statusTextError: { color: "#dc2626" },
-  statusTextSuccess: { color: "#16a34a" },
+  statusTextError: { color: T.red },
+  statusTextSuccess: { color: T.green },
 
-  card: { backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
+  card: { backgroundColor: T.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: T.border },
 
-  label: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
-  input: { backgroundColor: "#f9fafb", borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, padding: 12, fontSize: 15, color: "#111827", marginBottom: 12 },
+  label: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 12, fontSize: 15, color: T.t1, marginBottom: 12 },
   textArea: { height: 80, textAlignVertical: "top" },
 
-  mealCard: { backgroundColor: "#fff", borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#d1d5db" },
+  mealCard: { backgroundColor: T.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: T.border },
   mealCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  mealIndex: { fontSize: 15, fontWeight: "800", color: "#059669" },
+  mealIndex: { fontSize: 15, fontWeight: "800", color: T.green },
   mealRow: { flexDirection: "row" },
-  removeText: { color: "#dc2626", fontWeight: "700", fontSize: 13 },
+  removeText: { color: T.red, fontWeight: "700", fontSize: 13 },
 
-  foodBlock: { backgroundColor: "#f9fafb", borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: "#e5e7eb" },
+  foodBlock: { backgroundColor: T.surfaceAlt, borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: T.border },
   foodBlockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  foodBlockTitle: { fontSize: 12, fontWeight: "800", color: "#374151", textTransform: "uppercase" },
+  foodBlockTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase" },
   foodRow: { flexDirection: "row" },
 
   foodNameRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  tacoBtn: { backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#059669", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 12, marginBottom: 12, justifyContent: "center" },
-  tacoBtnText: { color: "#059669", fontWeight: "800", fontSize: 12 },
-  addFoodBtn: { borderWidth: 1, borderColor: "#059669", borderRadius: 10, padding: 10, alignItems: "center", borderStyle: "dashed" },
-  addFoodBtnText: { color: "#059669", fontWeight: "700", fontSize: 14 },
+  tacoBtn: { backgroundColor: "rgba(16,185,129,0.1)", borderWidth: 1, borderColor: T.green, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 12, marginBottom: 12, justifyContent: "center" },
+  tacoBtnText: { color: T.green, fontWeight: "800", fontSize: 12 },
 
-  addMealBtn: { backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#059669", borderRadius: 14, padding: 16, alignItems: "center", marginBottom: 12 },
-  addMealBtnText: { color: "#059669", fontWeight: "800", fontSize: 15 },
+  addFoodBtn: { borderWidth: 1, borderColor: T.green, borderRadius: 10, padding: 10, alignItems: "center", borderStyle: "dashed" },
+  addFoodBtnText: { color: T.green, fontWeight: "700", fontSize: 14 },
 
-  saveBtn: { backgroundColor: "#059669", padding: 18, borderRadius: 14, alignItems: "center", elevation: 3, shadowColor: "#059669", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-  saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
+  addMealBtn: { backgroundColor: "rgba(16,185,129,0.08)", borderWidth: 1, borderColor: T.green, borderRadius: 14, padding: 16, alignItems: "center", marginBottom: 12 },
+  addMealBtnText: { color: T.green, fontWeight: "800", fontSize: 15 },
 
-  bioCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  bioCardTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  saveBtn: { borderRadius: 14, overflow: "hidden" },
+  saveBtnGradient: { height: 56, alignItems: "center", justifyContent: "center", borderRadius: 14 },
+  saveBtnText: { color: T.white, fontWeight: "800", fontSize: 16 },
+
+  bioCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  bioCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   bioRow: { flexDirection: "row", justifyContent: "space-between" },
-  bioBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
+  bioBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
   bioValue: { fontSize: 16, fontWeight: "800" },
-  bioUnit: { fontSize: 10, color: "#6b7280" },
-  bioLabel: { fontSize: 10, color: "#374151", fontWeight: "600", marginTop: 2 },
+  bioUnit: { fontSize: 10, color: T.t3 },
+  bioLabel: { fontSize: 10, color: T.t2, fontWeight: "600", marginTop: 2 },
 
-  macroCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  macroCardTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   macroRow: { flexDirection: "row", justifyContent: "space-between" },
-  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
   macroValue: { fontSize: 16, fontWeight: "800" },
-  macroUnit: { fontSize: 10, color: "#6b7280" },
-  macroLabel: { fontSize: 10, color: "#374151", fontWeight: "600", marginTop: 2 },
+  macroUnit: { fontSize: 10, color: T.t3 },
+  macroLabel: { fontSize: 10, color: T.t2, fontWeight: "600", marginTop: 2 },
 
-  macroBarsCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroBarsCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 });

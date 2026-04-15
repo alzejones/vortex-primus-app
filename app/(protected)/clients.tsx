@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -10,6 +11,8 @@ import {
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
+import { GradientPrimary } from "../../utils/gradients";
+import { T } from "../../utils/theme";
 
 export default function Clients() {
   const { session } = useAuth();
@@ -84,8 +87,11 @@ export default function Clients() {
       <TouchableOpacity
         style={styles.newButton}
         onPress={() => router.push("/(protected)/client-create")}
+        activeOpacity={0.85}
       >
-        <Text style={styles.buttonText}>+ Novo Cliente</Text>
+        <LinearGradient {...GradientPrimary} style={styles.newButtonGradient}>
+          <Text style={styles.newButtonText}>+ Novo Cliente</Text>
+        </LinearGradient>
       </TouchableOpacity>
 
       <FlatList
@@ -93,72 +99,71 @@ export default function Clients() {
         keyExtractor={(item: any) => item.id}
         renderItem={({ item }: any) => (
           <View style={styles.card}>
-            {/* Clique no nome abre ClientDetails */}
             <TouchableOpacity
               onPress={() =>
-                router.push(
-                  `/(protected)/client-details?id=${item.id}`
-                )
+                router.push(`/(protected)/client-details?id=${item.id}`)
               }
             >
               <Text style={styles.name}>{item.name}</Text>
+              {item.email ? (
+                <Text style={styles.email}>{item.email}</Text>
+              ) : null}
             </TouchableOpacity>
 
-            {/* Ações */}
             <View style={styles.actions}>
-              {/* Editar agora abre a mesma tela de detalhes */}
               <TouchableOpacity
                 onPress={() =>
-                  router.push(
-                    `/(protected)/client-details?id=${item.id}`
-                  )
+                  router.push(`/(protected)/client-details?id=${item.id}`)
                 }
               >
-                <Text style={styles.link}>Editar</Text>
+                <Text style={styles.linkEdit}>Editar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                <Text style={[styles.link, { color: "red" }]}>
-                  Excluir
-                </Text>
+                <Text style={styles.linkDelete}>Excluir</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>Nenhum aluno cadastrado.</Text>
+            <Text style={styles.emptySubText}>Toque em "+ Novo Cliente" para começar.</Text>
+          </View>
+        }
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  newButton: {
-    backgroundColor: "#000",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
+  container: { flex: 1, backgroundColor: T.bg, padding: 20 },
+
+  newButton: { borderRadius: 14, overflow: "hidden", marginBottom: 20 },
+  newButtonGradient: {
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
   },
-  buttonText: {
-    color: "#fff",
-    textAlign: "center",
-    fontWeight: "bold",
-  },
+  newButtonText: { color: T.white, fontWeight: "800", fontSize: 15 },
+
   card: {
-    backgroundColor: "#f4f4f4",
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: T.card,
+    padding: 16,
+    borderRadius: 16,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: T.border,
   },
-  name: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  actions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  link: {
-    fontWeight: "bold",
-  },
+  name: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
+  email: { fontSize: 13, color: T.t3, marginBottom: 8 },
+
+  actions: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
+  linkEdit: { fontWeight: "700", color: T.blue, fontSize: 13 },
+  linkDelete: { fontWeight: "700", color: T.red, fontSize: 13 },
+
+  emptyState: { alignItems: "center", paddingTop: 60 },
+  emptyText: { color: T.t2, fontSize: 16, fontWeight: "700", marginBottom: 6 },
+  emptySubText: { color: T.t3, fontSize: 13 },
 });
