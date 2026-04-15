@@ -31,7 +31,7 @@ function sumMacros(foods: FoodItem[]) {
 }
 
 function fmt(n: number | null): string {
-  return n != null ? String(n) : "—";
+  return n != null ? Number(n).toFixed(1) : "—";
 }
 
 export function generateDietHTML(data: DietPDFData): string {
@@ -54,27 +54,27 @@ export function generateDietHTML(data: DietPDFData): string {
     ? `
       <div class="macros-grid">
         <div class="macro-box" style="border-top-color:#059669">
-          <span class="macro-val" style="color:#059669">${dietResult.macros.calories}</span>
+          <span class="macro-val" style="color:#059669">${Number(dietResult.macros.calories).toFixed(1)}</span>
           <span class="macro-unit">kcal</span>
           <span class="macro-lbl">Calorias</span>
         </div>
         <div class="macro-box" style="border-top-color:#2563eb">
-          <span class="macro-val" style="color:#2563eb">${dietResult.macros.protein}</span>
+          <span class="macro-val" style="color:#2563eb">${Number(dietResult.macros.protein).toFixed(1)}</span>
           <span class="macro-unit">g</span>
           <span class="macro-lbl">Proteína</span>
         </div>
         <div class="macro-box" style="border-top-color:#d97706">
-          <span class="macro-val" style="color:#d97706">${dietResult.macros.carbs}</span>
+          <span class="macro-val" style="color:#d97706">${Number(dietResult.macros.carbs).toFixed(1)}</span>
           <span class="macro-unit">g</span>
           <span class="macro-lbl">Carboidratos</span>
         </div>
         <div class="macro-box" style="border-top-color:#dc2626">
-          <span class="macro-val" style="color:#dc2626">${dietResult.macros.fat}</span>
+          <span class="macro-val" style="color:#dc2626">${Number(dietResult.macros.fat).toFixed(1)}</span>
           <span class="macro-unit">g</span>
           <span class="macro-lbl">Gordura</span>
         </div>
       </div>
-      <p class="macros-sub">BMR ${dietResult.bmr} kcal &nbsp;·&nbsp; TDEE ${dietResult.tdee} kcal &nbsp;·&nbsp; Massa magra ${dietResult.lean_mass} kg</p>
+      <p class="macros-sub">BMR ${Number(dietResult.bmr).toFixed(1)} kcal &nbsp;·&nbsp; TDEE ${Number(dietResult.tdee).toFixed(1)} kcal &nbsp;·&nbsp; Massa magra ${Number(dietResult.lean_mass).toFixed(1)} kg</p>
     `
     : `<p class="no-macros">Avaliação física incompleta — metas não calculadas.</p>`;
 
@@ -137,10 +137,10 @@ export function generateDietHTML(data: DietPDFData): string {
     ? `
       <div class="grand-total">
         <strong>Total do Plano:</strong>
-        &nbsp; ${grandTotal.calories} kcal
-        &nbsp;·&nbsp; Prot. ${grandTotal.protein}g
-        &nbsp;·&nbsp; Carbs ${grandTotal.carbs}g
-        &nbsp;·&nbsp; Gord. ${grandTotal.fat}g
+        &nbsp; ${Number(grandTotal.calories).toFixed(1)} kcal
+        &nbsp;·&nbsp; Prot. ${Number(grandTotal.protein).toFixed(1)}g
+        &nbsp;·&nbsp; Carbs ${Number(grandTotal.carbs).toFixed(1)}g
+        &nbsp;·&nbsp; Gord. ${Number(grandTotal.fat).toFixed(1)}g
       </div>`
     : "";
 

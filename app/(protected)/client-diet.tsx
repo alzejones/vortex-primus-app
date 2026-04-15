@@ -251,10 +251,10 @@ export default function ClientDiet() {
           <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Peso",         value: `${lastBio.weight}`,                                                                          unit: "kg",   color: "#374151" },
-              { label: "% Gordura",    value: `${lastBio.body_fat}`,                                                                         unit: "%",    color: "#dc2626" },
-              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? `${lastBio.muscle_mass_percentage}` : "—",             unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
-              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? `${lastBio.basal_metabolic_rate}`    : "—",             unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
+              { label: "Peso",         value: Number(lastBio.weight).toFixed(1),                                                                                          unit: "kg",   color: "#374151" },
+              { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),                                                                                         unit: "%",    color: "#dc2626" },
+              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",             unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
+              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? Number(lastBio.basal_metabolic_rate).toFixed(1)    : "—",             unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
             ].map((item) => (
               <View key={item.label} style={[styles.macroBox, { borderTopColor: item.color }]}>
                 <Text style={[styles.macroValue, { color: item.color }]}>{item.value}</Text>
@@ -272,10 +272,10 @@ export default function ClientDiet() {
           <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Calorias", value: `${dietResult.macros.calories}`, unit: "kcal", color: "#059669" },
-              { label: "Proteína", value: `${dietResult.macros.protein}`,  unit: "g",    color: "#2563eb" },
-              { label: "Carbs",    value: `${dietResult.macros.carbs}`,    unit: "g",    color: "#d97706" },
-              { label: "Gordura",  value: `${dietResult.macros.fat}`,      unit: "g",    color: "#dc2626" },
+              { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: "#059669" },
+              { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: "#2563eb" },
+              { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: "#d97706" },
+              { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: "#dc2626" },
             ].map((m) => (
               <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
                 <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
@@ -285,7 +285,7 @@ export default function ClientDiet() {
             ))}
           </View>
           <Text style={styles.macroSub}>
-            BMR {dietResult.bmr} kcal · TDEE {dietResult.tdee} kcal · Massa magra {dietResult.lean_mass} kg
+            BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Massa magra {Number(dietResult.lean_mass).toFixed(1)} kg
           </Text>
         </View>
       ) : (

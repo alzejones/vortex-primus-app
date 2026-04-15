@@ -60,19 +60,19 @@ export function generateAIDietHTML(data: AIDietPDFData): string {
       <div class="bio-item"><span class="bio-val">${fmt(lastBio.body_fat, 1)}</span><span class="bio-unit">%</span><span class="bio-lbl">Gordura</span></div>
       <div class="bio-item"><span class="bio-val">${lastBio.muscle_mass_percentage != null ? fmt(lastBio.muscle_mass_percentage, 1) : "—"}</span><span class="bio-unit">${lastBio.muscle_mass_percentage != null ? "%" : ""}</span><span class="bio-lbl">Músculo</span></div>
       <div class="bio-item"><span class="bio-val">${lastBio.basal_metabolic_rate != null ? fmt(lastBio.basal_metabolic_rate, 0) : "—"}</span><span class="bio-unit">${lastBio.basal_metabolic_rate != null ? "kcal" : ""}</span><span class="bio-lbl">Met. Basal</span></div>
-      <div class="bio-item"><span class="bio-val">${lastBio.metabolic_age != null ? String(lastBio.metabolic_age) : "—"}</span><span class="bio-unit">${lastBio.metabolic_age != null ? "anos" : ""}</span><span class="bio-lbl">Idade Met.</span></div>
+      <div class="bio-item"><span class="bio-val">${lastBio.metabolic_age != null ? fmt(lastBio.metabolic_age, 1) : "—"}</span><span class="bio-unit">${lastBio.metabolic_age != null ? "anos" : ""}</span><span class="bio-lbl">Idade Met.</span></div>
       ${dietResult ? `<div class="bio-item"><span class="bio-val">${fmt(dietResult.lean_mass, 1)}</span><span class="bio-unit">kg</span><span class="bio-lbl">Massa Magra</span></div>` : ""}
     </div>` : `<p class="no-data">Avaliação física não disponível.</p>`;
 
   // ── Metas de macros ──
   const macroCards = macros ? `
     <div class="macro-grid">
-      <div class="macro-card cal"><span class="macro-num">${macros.calories}</span><span class="macro-unit">kcal</span><span class="macro-lbl">Calorias</span></div>
-      <div class="macro-card prot"><span class="macro-num">${macros.protein}g</span><span class="macro-unit">proteína</span><span class="macro-lbl">por dia</span></div>
-      <div class="macro-card carb"><span class="macro-num">${macros.carbs}g</span><span class="macro-unit">carboidratos</span><span class="macro-lbl">por dia</span></div>
-      <div class="macro-card fat"><span class="macro-num">${macros.fat}g</span><span class="macro-unit">gorduras</span><span class="macro-lbl">por dia</span></div>
+      <div class="macro-card cal"><span class="macro-num">${fmt(macros.calories, 1)}</span><span class="macro-unit">kcal</span><span class="macro-lbl">Calorias</span></div>
+      <div class="macro-card prot"><span class="macro-num">${fmt(macros.protein, 1)}g</span><span class="macro-unit">proteína</span><span class="macro-lbl">por dia</span></div>
+      <div class="macro-card carb"><span class="macro-num">${fmt(macros.carbs, 1)}g</span><span class="macro-unit">carboidratos</span><span class="macro-lbl">por dia</span></div>
+      <div class="macro-card fat"><span class="macro-num">${fmt(macros.fat, 1)}g</span><span class="macro-unit">gorduras</span><span class="macro-lbl">por dia</span></div>
     </div>
-    ${dietResult ? `<p class="macro-sub">BMR ${dietResult.bmr} kcal · TDEE ${dietResult.tdee} kcal</p>` : ""}
+    ${dietResult ? `<p class="macro-sub">BMR ${fmt(dietResult.bmr, 1)} kcal · TDEE ${fmt(dietResult.tdee, 1)} kcal</p>` : ""}
   ` : `<p class="no-data">Metas não disponíveis.</p>`;
 
   // ── 7 dias ──

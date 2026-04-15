@@ -15,6 +15,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import AIDietPDF from "../../components/AIDietPDF";
+import DietPlanPDF from "../../components/DietPlanPDF";
 import { supabase } from "../../lib/supabase";
 import {
   ACTIVITY_LABELS,
@@ -330,16 +331,16 @@ export default function ClientDietView() {
           <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Peso",         value: `${lastBio.weight}`,
+              { label: "Peso",         value: Number(lastBio.weight).toFixed(1),
                 unit: "kg",   color: "#374151" },
-              { label: "% Gordura",    value: `${lastBio.body_fat}`,
+              { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),
                 unit: "%",    color: "#dc2626" },
               { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null
-                                               ? `${lastBio.muscle_mass_percentage}` : "—",
+                                               ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",
                 unit: lastBio.muscle_mass_percentage != null ? "%" : "",
                 color: "#2563eb" },
               { label: "Metab. Basal", value: lastBio.basal_metabolic_rate != null
-                                               ? `${lastBio.basal_metabolic_rate}` : "—",
+                                               ? Number(lastBio.basal_metabolic_rate).toFixed(1) : "—",
                 unit: lastBio.basal_metabolic_rate != null ? "kcal" : "",
                 color: "#059669" },
             ].map((item) => (
@@ -372,14 +373,14 @@ export default function ClientDietView() {
               { label: "Gordura",  value: dietResult.macros.fat,      unit: "g",    color: "#dc2626" },
             ].map((m) => (
               <View key={m.label} style={[styles.macroChip, { borderTopColor: m.color }]}>
-                <Text style={[styles.macroChipValue, { color: m.color }]}>{m.value}</Text>
+                <Text style={[styles.macroChipValue, { color: m.color }]}>{Number(m.value).toFixed(1)}</Text>
                 <Text style={styles.macroChipUnit}>{m.unit}</Text>
                 <Text style={styles.macroChipLabel}>{m.label}</Text>
               </View>
             ))}
           </View>
           <Text style={styles.macroSub}>
-            BMR {dietResult.bmr} kcal · TDEE {dietResult.tdee} kcal · Objetivo: {OBJECTIVE_LABELS[objective as Objective] ?? "—"}
+            BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Objetivo: {OBJECTIVE_LABELS[objective as Objective] ?? "—"}
           </Text>
         </View>
       ) : (
@@ -476,6 +477,22 @@ export default function ClientDietView() {
               <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color="#dc2626" />
             </View>
           )}
+
+          {/* Botões de ação do plano */}
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => router.push(`/(client)/diet-plan-form?plan_id=${mealPlan.id}` as any)}
+          >
+            <Text style={styles.editBtnText}>✏️ Editar Plano Alimentar</Text>
+          </TouchableOpacity>
+          <DietPlanPDF
+            data={{
+              clientName,
+              objective: objective || null,
+              mealPlan,
+              dietResult,
+            }}
+          />
 
           {/* Refeições */}
           {mealPlan.meal_plan_meals.map((meal) => (
@@ -588,6 +605,9 @@ const styles = StyleSheet.create({
 
   createBtn: { backgroundColor: "#059669", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, marginTop: 12 },
   createBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+
+  editBtn: { backgroundColor: "#065f46", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginBottom: 10, alignItems: "center" },
+  editBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
 
   prefCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, borderWidth: 1, borderColor: "#e5e7eb" },
   prefTitle: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 4 },

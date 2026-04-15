@@ -24,7 +24,7 @@ export default function MacroBar({ label, current, target, unit, color }: MacroB
       <View style={styles.row}>
         <Text style={styles.label}>{label}</Text>
         <Text style={[styles.values, { color: barColor }]}>
-          {current} / {target} {unit}
+          {Number(current).toFixed(1)} / {Number(target).toFixed(1)} {unit}
         </Text>
       </View>
       <View style={styles.track}>
