@@ -13,12 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 
 export default function Index() {
-  const { signOut } = useAuth();
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -252,13 +249,7 @@ const renderHeader = () => (
     </View>
   );
 
-  const renderFooter = () => (
-    <View style={{ paddingTop: 30, paddingBottom: 20 }}>
-      <TouchableOpacity onPress={signOut} style={styles.logoutButton} activeOpacity={0.7}>
-        <Text style={styles.logoutButtonText}>SAIR DO SISTEMA</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderFooter = () => null;
 
   if (loading) return (
     <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#4f46e5" /><Text style={styles.loadingText}>Carregando seu painel...</Text></View>
@@ -456,9 +447,6 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 40, marginBottom: 12 },
   emptyTitle: { fontSize: 18, fontWeight: "bold", color: "#0f172a", marginBottom: 8 },
   emptyText: { color: "#64748b", fontSize: 15, textAlign: "center", lineHeight: 22 },
-
-  logoutButton: { backgroundColor: "transparent", padding: 16, borderRadius: 16, borderWidth: 1.5, borderColor: "#fca5a5", alignItems: "center" },
-  logoutButtonText: { color: "#ef4444", fontWeight: "bold", fontSize: 14, letterSpacing: 1 },
 
   modalHeader: { padding: 20, backgroundColor: "#fff", borderBottomWidth: 1, borderColor: "#e2e8f0", paddingTop: Platform.OS === "android" ? 40 : 20 },
   modalHeaderTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
