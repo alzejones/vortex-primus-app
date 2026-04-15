@@ -58,7 +58,7 @@ export default function TabBar() {
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    backgroundColor: "rgba(8,11,20,0.92)",
+    backgroundColor: T.surface,
     borderTopWidth: 1,
     borderTopColor: T.border,
     height: 64,
@@ -85,17 +85,18 @@ const styles = StyleSheet.create({
     backgroundColor: T.blue,
   },
 
-  icon:       { fontSize: 18, marginBottom: 3, opacity: 0.35 },
-  iconActive: { opacity: 1 },
+  icon:       { fontSize: 22, marginBottom: 3, color: T.t2 },
+  iconActive: { fontSize: 24, color: T.blue },
 
   label: {
     fontSize: 9,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    color: T.t4,
+    color: T.t2,
   },
   labelActive: {
     color: T.blue,
+    fontWeight: "800",
   },
 });
