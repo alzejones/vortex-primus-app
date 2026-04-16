@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { T } from '../utils/theme';
 
 interface MeasurementsEvolutionPanelProps {
   currentAssessment: any;
@@ -12,7 +13,7 @@ export default function MeasurementsEvolutionPanel({
   prevAssessment,
   firstAssessment
 }: MeasurementsEvolutionPanelProps) {
-  
+
   const currAnthro = currentAssessment?.anthropometry?.[0];
   const prevAnthro = prevAssessment?.anthropometry?.[0];
   const firstAnthro = firstAssessment?.anthropometry?.[0];
@@ -52,8 +53,8 @@ export default function MeasurementsEvolutionPanel({
 
   const MeasureRow = ({ label, diffValue }: { label: string, diffValue: number | null }) => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-      <Text style={{ fontSize: 12, color: '#475569', fontWeight: '500' }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontWeight: '900', color: diffValue === null ? '#94a3b8' : '#1e293b' }}>
+      <Text style={{ fontSize: 12, color: T.t3, fontWeight: '500' }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '900', color: diffValue === null ? T.t3 : T.t1 }}>
         {formatDiff(diffValue)}
       </Text>
     </View>
@@ -61,8 +62,8 @@ export default function MeasurementsEvolutionPanel({
 
   const LimbRow = ({ label, diffLeft, diffRight }: { label: string, diffLeft: number | null, diffRight: number | null }) => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-      <Text style={{ fontSize: 12, color: '#475569', fontWeight: '500' }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontWeight: '900', color: (diffLeft === null && diffRight === null) ? '#94a3b8' : '#1e293b' }}>
+      <Text style={{ fontSize: 12, color: T.t3, fontWeight: '500' }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '900', color: (diffLeft === null && diffRight === null) ? T.t3 : T.t1 }}>
         {formatLimbDiff(diffLeft, diffRight)}
       </Text>
     </View>
@@ -70,53 +71,53 @@ export default function MeasurementsEvolutionPanel({
 
   return (
     <View style={{ marginBottom: 24 }}>
-      <Text style={{ fontSize: 16, fontWeight: '900', color: '#0f172a', marginBottom: 16, textTransform: 'uppercase', textAlign: 'center' }}>
+      <Text style={{ fontSize: 16, fontWeight: '900', color: T.t1, marginBottom: 16, textTransform: 'uppercase', textAlign: 'center' }}>
         📏 Evolução de Medidas Corporais
       </Text>
-      
+
       <View style={{ flexDirection: 'row', gap: 12 }}>
-        
+
         {/* Cartão 1: Última vs Anterior */}
-        <View style={{ flex: 1, backgroundColor: '#fff', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3 }}>
+        <View style={{ flex: 1, backgroundColor: T.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: T.border }}>
           <Text style={{ fontSize: 12, fontWeight: '900', color: '#ea580c', marginBottom: 10, textAlign: 'center' }}>ÚLTIMA VS ANTERIOR</Text>
-          
-          <View style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#f1f5f9' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: '#64748b' }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e293b' }}>{currDate}</Text></View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: '#64748b' }}>Anterior:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e293b' }}>{prevDate}</Text></View>
+
+          <View style={{ backgroundColor: T.surface, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: T.t3 }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{currDate}</Text></View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: T.t3 }}>Anterior:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{prevDate}</Text></View>
           </View>
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#94a3b8', marginBottom: 6 }}>TRONCO</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>TRONCO</Text>
           <MeasureRow label="Peitoral" diffValue={calcDiff(currAnthro?.chest, prevAnthro?.chest)} />
           <MeasureRow label="Abdômen" diffValue={calcDiff(currAnthro?.abdomen, prevAnthro?.abdomen)} />
           <MeasureRow label="Cintura" diffValue={calcDiff(currAnthro?.waist, prevAnthro?.waist)} />
           <MeasureRow label="Quadril" diffValue={calcDiff(currAnthro?.hip, prevAnthro?.hip)} />
-          
-          <View style={{ height: 1, backgroundColor: '#e2e8f0', marginVertical: 8 }} />
-          
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#94a3b8', marginBottom: 6 }}>MEMBROS (E/D)</Text>
+
+          <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+
+          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>MEMBROS (E/D)</Text>
           <LimbRow label="Braço" diffLeft={calcDiff(currAnthro?.arm_left, prevAnthro?.arm_left)} diffRight={calcDiff(currAnthro?.arm_right, prevAnthro?.arm_right)} />
           <LimbRow label="Coxa" diffLeft={calcDiff(currAnthro?.thigh_left, prevAnthro?.thigh_left)} diffRight={calcDiff(currAnthro?.thigh_right, prevAnthro?.thigh_right)} />
           <LimbRow label="Panturrilha" diffLeft={calcDiff(currAnthro?.calf_left, prevAnthro?.calf_left)} diffRight={calcDiff(currAnthro?.calf_right, prevAnthro?.calf_right)} />
         </View>
 
         {/* Cartão 2: Evolução Total */}
-        <View style={{ flex: 1, backgroundColor: '#fff', padding: 12, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', elevation: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 3 }}>
+        <View style={{ flex: 1, backgroundColor: T.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: T.border }}>
           <Text style={{ fontSize: 12, fontWeight: '900', color: '#ea580c', marginBottom: 10, textAlign: 'center' }}>EVOLUÇÃO TOTAL</Text>
-          
-          <View style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: '#f1f5f9' }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: '#64748b' }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e293b' }}>{currDate}</Text></View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: '#64748b' }}>Início:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: '#1e293b' }}>{firstDate}</Text></View>
+
+          <View style={{ backgroundColor: T.surface, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: T.t3 }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{currDate}</Text></View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: T.t3 }}>Início:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{firstDate}</Text></View>
           </View>
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#94a3b8', marginBottom: 6 }}>TRONCO</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>TRONCO</Text>
           <MeasureRow label="Peitoral" diffValue={calcDiff(currAnthro?.chest, firstAnthro?.chest)} />
           <MeasureRow label="Abdômen" diffValue={calcDiff(currAnthro?.abdomen, firstAnthro?.abdomen)} />
           <MeasureRow label="Cintura" diffValue={calcDiff(currAnthro?.waist, firstAnthro?.waist)} />
           <MeasureRow label="Quadril" diffValue={calcDiff(currAnthro?.hip, firstAnthro?.hip)} />
-          
-          <View style={{ height: 1, backgroundColor: '#e2e8f0', marginVertical: 8 }} />
-          
-          <Text style={{ fontSize: 11, fontWeight: '800', color: '#94a3b8', marginBottom: 6 }}>MEMBROS (E/D)</Text>
+
+          <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+
+          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>MEMBROS (E/D)</Text>
           <LimbRow label="Braço" diffLeft={calcDiff(currAnthro?.arm_left, firstAnthro?.arm_left)} diffRight={calcDiff(currAnthro?.arm_right, firstAnthro?.arm_right)} />
           <LimbRow label="Coxa" diffLeft={calcDiff(currAnthro?.thigh_left, firstAnthro?.thigh_left)} diffRight={calcDiff(currAnthro?.thigh_right, firstAnthro?.thigh_right)} />
           <LimbRow label="Panturrilha" diffLeft={calcDiff(currAnthro?.calf_left, firstAnthro?.calf_left)} diffRight={calcDiff(currAnthro?.calf_right, firstAnthro?.calf_right)} />
@@ -126,4 +127,3 @@ export default function MeasurementsEvolutionPanel({
     </View>
   );
 }
-

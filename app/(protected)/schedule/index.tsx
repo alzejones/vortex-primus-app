@@ -252,7 +252,26 @@ export default function ScheduleIndex() {
                 <Text style={styles.modalArrow}>→</Text>
               </TouchableOpacity>
             )}
-            ListEmptyComponent={<Text style={{ textAlign: "center", color: T.t3, marginTop: 20 }}>Nenhum aluno encontrado.</Text>}
+            ListEmptyComponent={
+              <View style={{ alignItems: "center", marginTop: 24, paddingHorizontal: 16 }}>
+                <Text style={{ textAlign: "center", color: T.t3, marginBottom: 20 }}>
+                  {clientSearchQuery.trim()
+                    ? `Nenhum aluno encontrado para "${clientSearchQuery}".`
+                    : "Nenhum aluno cadastrado ainda."}
+                </Text>
+                <TouchableOpacity
+                  style={{ borderRadius: 12, overflow: "hidden" }}
+                  onPress={() => {
+                    setClientModalVisible(false);
+                    router.push("/(protected)/client-create" as any);
+                  }}
+                >
+                  <LinearGradient {...GradientPrimary} style={{ paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12, alignItems: "center" }}>
+                    <Text style={{ color: T.white, fontWeight: "800", fontSize: 14 }}>+ Adicionar Aluno</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            }
           />
         </View>
       </Modal>
