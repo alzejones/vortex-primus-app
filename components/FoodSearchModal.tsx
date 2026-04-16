@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { T } from "../utils/theme";
 
 // ------------------------------------------------------------
 // Tipos
@@ -144,13 +145,14 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar alimento (ex: arroz, frango...)"
+            placeholderTextColor={T.t3}
             value={query}
             onChangeText={setQuery}
             autoFocus
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
-          {searching && <ActivityIndicator style={{ marginLeft: 8 }} color="#059669" />}
+          {searching && <ActivityIndicator style={{ marginLeft: 8 }} color={T.green} />}
         </View>
 
         {results.length === 0 && query.length >= 2 && !searching && (
@@ -203,6 +205,7 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
           onChangeText={setGrams}
           keyboardType="decimal-pad"
           placeholder="100"
+          placeholderTextColor={T.t3}
           selectTextOnFocus
         />
 
@@ -211,10 +214,10 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
           <View style={styles.previewCard}>
             <Text style={styles.previewTitle}>Macros para {g}g</Text>
             <View style={styles.previewRow}>
-              <PreviewChip label="kcal"  value={preview.calories} color="#059669" />
-              <PreviewChip label="Prot." value={preview.protein}  color="#2563eb" />
-              <PreviewChip label="Carbs" value={preview.carbs}    color="#d97706" />
-              <PreviewChip label="Gord." value={preview.fat}      color="#dc2626" />
+              <PreviewChip label="kcal"  value={preview.calories} color={T.green} />
+              <PreviewChip label="Prot." value={preview.protein}  color={T.blue} />
+              <PreviewChip label="Carbs" value={preview.carbs}    color={T.orange} />
+              <PreviewChip label="Gord." value={preview.fat}      color={T.red} />
             </View>
           </View>
         )}
@@ -273,7 +276,7 @@ function PreviewChip({ label, value, color }: { label: string; value: number; co
 // Estilos
 // ------------------------------------------------------------
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
+  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
 
   header: {
     flexDirection: "row",
@@ -282,59 +285,59 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: T.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
-  closeBtn: { fontSize: 20, color: "#6b7280", fontWeight: "700" },
+  headerTitle: { fontSize: 18, fontWeight: "800", color: T.t1 },
+  closeBtn: { fontSize: 20, color: T.t3, fontWeight: "700" },
 
   // Busca
   searchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   searchInput: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: T.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#111827",
+    color: T.t1,
   },
-  noResults: { color: "#9ca3af", textAlign: "center", marginTop: 24, fontSize: 14 },
+  noResults: { color: T.t3, textAlign: "center", marginTop: 24, fontSize: 14 },
   resultRow: { paddingVertical: 14, paddingHorizontal: 4 },
-  resultName: { fontSize: 15, color: "#111827", fontWeight: "600", marginBottom: 2 },
-  resultMeta: { fontSize: 12, color: "#6b7280" },
-  separator: { height: 1, backgroundColor: "#f3f4f6" },
+  resultName: { fontSize: 15, color: T.t1, fontWeight: "600", marginBottom: 2 },
+  resultMeta: { fontSize: 12, color: T.t2 },
+  separator: { height: 1, backgroundColor: T.border },
 
   // Quantidade
   backBtn: { marginBottom: 16 },
-  backBtnText: { color: "#059669", fontWeight: "700", fontSize: 14 },
-  selectedName: { fontSize: 20, fontWeight: "800", color: "#111827", marginBottom: 6 },
-  selectedMeta: { fontSize: 12, color: "#6b7280", marginBottom: 20, lineHeight: 18 },
-  qtyLabel: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  backBtnText: { color: T.green, fontWeight: "700", fontSize: 14 },
+  selectedName: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 6 },
+  selectedMeta: { fontSize: 12, color: T.t2, marginBottom: 20, lineHeight: 18 },
+  qtyLabel: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
   qtyInput: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: T.surface,
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: T.border,
     borderRadius: 12,
     padding: 14,
     fontSize: 22,
     fontWeight: "800",
-    color: "#111827",
+    color: T.t1,
     marginBottom: 16,
     textAlign: "center",
   },
 
   // Preview
   previewCard: {
-    backgroundColor: "#f0fdf4",
+    backgroundColor: T.surfaceAlt,
     borderRadius: 14,
     padding: 14,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#bbf7d0",
+    borderColor: T.greenGlow,
   },
-  previewTitle: { fontSize: 12, fontWeight: "800", color: "#065f46", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  previewTitle: { fontSize: 12, fontWeight: "800", color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   previewRow: { flexDirection: "row", justifyContent: "space-between" },
   previewChip: {
     flex: 1,
@@ -343,19 +346,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     marginHorizontal: 2,
-    backgroundColor: "#fff",
+    backgroundColor: T.surface,
   },
   previewChipValue: { fontSize: 16, fontWeight: "800" },
-  previewChipLabel: { fontSize: 10, color: "#6b7280" },
+  previewChipLabel: { fontSize: 10, color: T.t3 },
 
   // Confirmar
   confirmBtn: {
-    backgroundColor: "#059669",
+    backgroundColor: T.green,
     padding: 18,
     borderRadius: 14,
     alignItems: "center",
     elevation: 3,
-    shadowColor: "#059669",
+    shadowColor: T.green,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

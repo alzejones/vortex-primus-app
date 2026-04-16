@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { T } from "../utils/theme";
 
 // ------------------------------------------------------------
 // Tipos
@@ -94,12 +95,12 @@ export default function MealCard({ meal }: MealCardProps) {
 // ------------------------------------------------------------
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: T.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: T.border,
   },
   header: {
     flexDirection: "row",
@@ -107,26 +108,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  mealName: { fontSize: 15, fontWeight: "800", color: "#111827" },
-  mealTime: { fontSize: 12, color: "#059669", fontWeight: "700" },
-  empty: { color: "#9ca3af", fontSize: 13, fontStyle: "italic" },
+  mealName: { fontSize: 15, fontWeight: "800", color: T.t1 },
+  mealTime: { fontSize: 12, color: T.green, fontWeight: "700" },
+  empty: { color: T.t3, fontSize: 13, fontStyle: "italic" },
   foodRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: T.border,
   },
-  foodName: { fontSize: 14, color: "#111827", fontWeight: "600" },
-  foodQty: { fontSize: 12, color: "#6b7280" },
-  foodCal: { fontSize: 13, color: "#374151", fontWeight: "700" },
+  foodName: { fontSize: 14, color: T.t1, fontWeight: "600" },
+  foodQty: { fontSize: 12, color: T.t3 },
+  foodCal: { fontSize: 13, color: T.t2, fontWeight: "700" },
   totalsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
+    borderTopColor: T.border,
   },
-  total: { fontSize: 11, color: "#6b7280", fontWeight: "700" },
+  total: { fontSize: 11, color: T.t2, fontWeight: "700" },
 });

@@ -1,8 +1,10 @@
 // DietPlanPDF.web.tsx — versão WEB
 // Abre o HTML em nova aba e dispara window.print() automaticamente.
+import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { DietPDFData, generateDietHTML } from "../utils/dietPDFTemplate";
+import { GradientPrimary } from "../utils/gradients";
 
 interface DietPlanPDFProps {
   data: DietPDFData;
@@ -40,23 +42,27 @@ export default function DietPlanPDF({ data }: DietPlanPDFProps) {
 
   return (
     <TouchableOpacity style={styles.btn} onPress={handleExport} disabled={loading}>
-      {loading
-        ? <ActivityIndicator color="#fff" size="small" />
-        : <Text style={styles.btnText}>📄 Exportar PDF</Text>
-      }
+      <LinearGradient {...GradientPrimary} style={styles.btnGradient}>
+        {loading
+          ? <ActivityIndicator color="#fff" size="small" />
+          : <Text style={styles.btnText}>📄 Exportar PDF</Text>
+        }
+      </LinearGradient>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   btn: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  btnGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1e40af",
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 12,
   },
   btnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
 });

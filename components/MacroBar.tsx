@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { T } from "../utils/theme";
 
 interface MacroBarProps {
   label: string;
@@ -37,11 +38,11 @@ export default function MacroBar({ label, current, target, unit, color }: MacroB
 const styles = StyleSheet.create({
   container: { marginBottom: 10 },
   row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  label: { fontSize: 12, fontWeight: "700", color: "#374151" },
+  label: { fontSize: 12, fontWeight: "700", color: T.t2 },
   values: { fontSize: 12, fontWeight: "800" },
   track: {
     height: 8,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: T.surfaceAlt,
     borderRadius: 99,
     overflow: "hidden",
   },
