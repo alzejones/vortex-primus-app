@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -24,6 +24,7 @@ import { T } from "../../utils/theme";
 
 export default function ClientCreate() {
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
 
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
@@ -134,15 +135,21 @@ export default function ClientCreate() {
         food_restrictions: (form.food_restrictions || "").trim() || null,
       };
 
-      const { error } = await supabase.from("clients").insert([payload]);
+      const { data: newClient, error } = await supabase.from("clients").insert([payload]).select("id").single();
 
       if (error) throw error;
 
       setStatusMsg({ text: "Cliente guardado com sucesso!", type: "success" });
 
-      setTimeout(() => {
-        router.back();
-      }, 1500);
+      if (from === "schedule" && newClient?.id) {
+        setTimeout(() => {
+          router.replace({ pathname: "/(protected)/schedule/new" as any, params: { client_id: newClient.id } });
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          router.back();
+        }, 1500);
+      }
 
     } catch (error: any) {
       console.log("Erro no catch:", error);

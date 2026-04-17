@@ -192,6 +192,12 @@ export default function NewAppointment() {
             <Text style={styles.saveBtnText}>{loading ? "Agendando..." : "CONFIRMAR AGENDAMENTO"}</Text>
           </LinearGradient>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addClientBtn}
+          onPress={() => router.push("/(protected)/client-create?from=schedule" as any)}
+        >
+          <Text style={styles.addClientBtnText}>＋ Cadastrar novo aluno</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -211,7 +217,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "900", color: T.t1, marginBottom: 4, letterSpacing: -0.5 },
   subtitle: { fontSize: 16, color: T.t3, fontWeight: "600" },
 
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  scrollContent: { padding: 20, paddingBottom: 20 },
   section: { marginBottom: 30 },
   sectionTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 16 },
 
@@ -280,4 +286,6 @@ const styles = StyleSheet.create({
   saveBtn: { borderRadius: 16, overflow: "hidden" },
   saveBtnGradient: { paddingVertical: 18, alignItems: "center", borderRadius: 16 },
   saveBtnText: { color: T.white, fontWeight: "900", fontSize: 16, letterSpacing: 1 },
+  addClientBtn: { marginTop: 12, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, alignItems: "center" },
+  addClientBtnText: { color: T.blue, fontWeight: "700", fontSize: 15 },
 });

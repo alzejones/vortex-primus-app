@@ -259,19 +259,19 @@ export default function ScheduleIndex() {
                   : "Nenhum aluno cadastrado ainda."}
               </Text>
             }
-            ListFooterComponent={
-              <TouchableOpacity
-                style={styles.addClientFooterBtn}
-                onPress={() => {
-                  setClientModalVisible(false);
-                  router.push("/(protected)/client-create" as any);
-                }}
-              >
-                <Text style={styles.addClientFooterIcon}>＋</Text>
-                <Text style={styles.addClientFooterText}>Cadastrar novo aluno</Text>
-              </TouchableOpacity>
-            }
           />
+          <View style={styles.addClientFixedFooter}>
+            <TouchableOpacity
+              style={styles.addClientFooterBtn}
+              onPress={() => {
+                setClientModalVisible(false);
+                router.push("/(protected)/client-create?from=schedule" as any);
+              }}
+            >
+              <Text style={styles.addClientFooterIcon}>＋</Text>
+              <Text style={styles.addClientFooterText}>Cadastrar novo aluno</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
@@ -435,7 +435,8 @@ const styles = StyleSheet.create({
   modalCloseBtn: { color: T.red, fontWeight: "800", fontSize: 16 },
   modalInput: { backgroundColor: T.surface, padding: 16, borderRadius: 12, fontSize: 16, color: T.t1, borderWidth: 1, borderColor: T.border },
   modalClientItem: { padding: 16, backgroundColor: T.card, borderBottomWidth: 1, borderColor: T.border, flexDirection: "row", alignItems: "center" },
-  addClientFooterBtn: { flexDirection: "row", alignItems: "center", padding: 16, marginTop: 8, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1, borderColor: T.border },
+  addClientFixedFooter: { backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border, padding: 12 },
+  addClientFooterBtn: { flexDirection: "row", alignItems: "center", padding: 14, backgroundColor: T.card, borderRadius: 12, borderWidth: 1, borderColor: T.border },
   addClientFooterIcon: { fontSize: 18, color: T.blue, marginRight: 10, fontWeight: "800" },
   addClientFooterText: { fontSize: 15, color: T.blue, fontWeight: "700" },
   modalClientEmoji: { fontSize: 24, marginRight: 16 },

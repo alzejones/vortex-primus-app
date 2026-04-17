@@ -282,54 +282,56 @@ export default function Index() {
 
       {/* Modal de Agendamento */}
       <Modal visible={isScheduleModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setScheduleModalVisible(false)}>
-        <View style={styles.modalHeader}>
-          <View style={styles.modalHeaderTop}>
-            <Text style={styles.modalTitle}>Agendar Avaliação</Text>
-            <TouchableOpacity onPress={() => setScheduleModalVisible(false)}>
-              <Text style={styles.modalCloseBtn}>Fechar</Text>
-            </TouchableOpacity>
+        <View style={{ flex: 1, backgroundColor: T.bg }}>
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderTop}>
+              <Text style={styles.modalTitle}>Agendar Avaliação</Text>
+              <TouchableOpacity onPress={() => setScheduleModalVisible(false)}>
+                <Text style={styles.modalCloseBtn}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Qual aluno será avaliado?"
+              placeholderTextColor={T.t3}
+              value={scheduleSearchQuery}
+              onChangeText={setScheduleSearchQuery}
+              autoFocus
+            />
           </View>
-          <TextInput
-            style={styles.modalInput}
-            placeholder="Qual aluno será avaliado?"
-            placeholderTextColor={T.t3}
-            value={scheduleSearchQuery}
-            onChangeText={setScheduleSearchQuery}
-            autoFocus
+          <FlatList
+            data={scheduleFilteredClients}
+            keyExtractor={(item) => item.id}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ padding: 16, backgroundColor: T.bg, flexGrow: 1 }}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.modalClientItem}
+                onPress={() => {
+                  setScheduleModalVisible(false);
+                  router.push(`/schedule/new?client_id=${item.id}` as any);
+                }}
+              >
+                <Text style={styles.modalClientEmoji}>👤</Text>
+                <Text style={styles.modalClientName}>{item.name}</Text>
+                <Text style={styles.modalArrow}>→</Text>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={<Text style={{ textAlign: "center", color: T.t3, marginTop: 20 }}>Nenhum aluno encontrado.</Text>}
           />
-        </View>
-        <FlatList
-          data={scheduleFilteredClients}
-          keyExtractor={(item) => item.id}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 16, backgroundColor: T.bg, flexGrow: 1 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.modalClientItem}
-              onPress={() => {
-                setScheduleModalVisible(false);
-                router.push(`/schedule/new?client_id=${item.id}` as any);
-              }}
-            >
-              <Text style={styles.modalClientEmoji}>👤</Text>
-              <Text style={styles.modalClientName}>{item.name}</Text>
-              <Text style={styles.modalArrow}>→</Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={<Text style={{ textAlign: "center", color: T.t3, marginTop: 20 }}>Nenhum aluno encontrado.</Text>}
-          ListFooterComponent={
+          <View style={styles.addClientFixedFooter}>
             <TouchableOpacity
               style={styles.addClientFooterBtn}
               onPress={() => {
                 setScheduleModalVisible(false);
-                router.push("/(protected)/client-create");
+                router.push("/(protected)/client-create?from=schedule" as any);
               }}
             >
               <Text style={styles.addClientFooterIcon}>＋</Text>
               <Text style={styles.addClientFooterText}>Cadastrar novo aluno</Text>
             </TouchableOpacity>
-          }
-        />
+          </View>
+        </View>
       </Modal>
 
       <FlatList
@@ -518,7 +520,8 @@ const styles = StyleSheet.create({
   modalClientEmoji:{ fontSize: 24, marginRight: 16 },
   modalClientName: { fontSize: 16, fontWeight: "700", color: T.t1, flex: 1 },
   modalArrow:      { fontSize: 18, color: T.t3 },
-  addClientFooterBtn:  { flexDirection: "row", alignItems: "center", padding: 16, marginTop: 8, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1, borderColor: T.border },
+  addClientFixedFooter: { backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border, padding: 12 },
+  addClientFooterBtn:  { flexDirection: "row", alignItems: "center", padding: 14, backgroundColor: T.card, borderRadius: 12, borderWidth: 1, borderColor: T.border },
   addClientFooterIcon: { fontSize: 18, color: T.blue, marginRight: 10, fontWeight: "800" },
   addClientFooterText: { fontSize: 15, color: T.blue, fontWeight: "700" },
 });
