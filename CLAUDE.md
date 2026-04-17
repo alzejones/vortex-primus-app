@@ -562,13 +562,18 @@ O layout só checava `session`, não `role`. Qualquer usuário autenticado passa
 
 ## Histórico de Manutenção
 
-### 2026-04-17 — Correções de truncamento + navegação agenda
+### 2026-04-17 — Análise de refeição por foto (Fases 2 e 3) + fix logout meal-capture
 
-- Fix: título "COMPOSIÇÃO CORPORAL" em `evolution/[id].tsx` truncando em dispositivos com fonte grande (`adjustsFontSizeToFit` + `flex:1` no container)
-- Fix: botão "Consultar" em `AssessmentHistoryCard.tsx` truncando — adicionado `minWidth: 82` e `adjustsFontSizeToFit`
-- Fix: botão "Excluir Aluno" em `client-details.tsx` truncando para "Exclusivo Aluno" — adicionado `width: '100%'` no estilo e `adjustsFontSizeToFit` no Text
-- Fix: botão "Cadastrar novo aluno" ausente ao agendar via card "Novo Agendamento" do Dashboard — adicionado `ListFooterComponent` no modal de seleção de aluno em `index.tsx` (o botão já existia em `schedule/index.tsx` mas não no modal do Dashboard)
-- Feature pendente em andamento: análise de refeição por foto (Fases 2 e 3 do meal-capture)
+- **feat**: `app/(client)/meal-capture.tsx` criado — tela de captura/análise de foto com IA em 3 steps (capture → analyzing → review). Revisão editável de alimentos, recálculo proporcional de macros, integração com FoodSearchModal (TACO), "Registrar hoje" e "Adicionar ao plano".
+- **feat**: `app/(client)/diet.tsx` — FAB 📷 (`position: absolute`, `bottom: 84`, `right: 20`, `GradientSuccess`) aparece quando `lastBio !== null`. Seção "Histórico de Refeições" com últimos 10 registros de `meal_log`.
+- **feat**: `app/(protected)/client-diet.tsx` — seção "Refeições Registradas pelo Aluno" read-only para o treinador, carregada via RLS.
+- **fix (crítico)**: `useMemo` em `meal-capture.tsx` trocado por `useEffect` para carregar `clientId`. `useMemo` com `setState` em `.then()` viola as regras do React e causa comportamento imprevisível.
+- **fix**: Authorization header removido da chamada `supabase.functions.invoke` — o cliente já injeta automaticamente. Header manual pode criar conflito com token expirado.
+- **fix**: `quality` da imagem reduzido de 0.7 → 0.5 para diminuir payload base64.
+- **fix**: Todos os caminhos de erro em `startAnalysis` chamam `setStep("capture")` — nunca navegam para `/login`.
+- **pendente**: deploy manual da Edge Function `analyze-meal-photo` (log adicionado). Rodar: `supabase functions deploy analyze-meal-photo` após `supabase login`.
+
+**Regra crítica aprendida**: Nunca usar `useMemo` como substituto de `useEffect` para side-effects com chamadas assíncronas ou `setState`.
 
 ---
 
