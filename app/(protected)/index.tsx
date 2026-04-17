@@ -317,6 +317,18 @@ export default function Index() {
             </TouchableOpacity>
           )}
           ListEmptyComponent={<Text style={{ textAlign: "center", color: T.t3, marginTop: 20 }}>Nenhum aluno encontrado.</Text>}
+          ListFooterComponent={
+            <TouchableOpacity
+              style={styles.addClientFooterBtn}
+              onPress={() => {
+                setScheduleModalVisible(false);
+                router.push("/(protected)/client-create");
+              }}
+            >
+              <Text style={styles.addClientFooterIcon}>＋</Text>
+              <Text style={styles.addClientFooterText}>Cadastrar novo aluno</Text>
+            </TouchableOpacity>
+          }
         />
       </Modal>
 
@@ -506,4 +518,7 @@ const styles = StyleSheet.create({
   modalClientEmoji:{ fontSize: 24, marginRight: 16 },
   modalClientName: { fontSize: 16, fontWeight: "700", color: T.t1, flex: 1 },
   modalArrow:      { fontSize: 18, color: T.t3 },
+  addClientFooterBtn:  { flexDirection: "row", alignItems: "center", padding: 16, marginTop: 8, backgroundColor: T.surface, borderRadius: 12, borderWidth: 1, borderColor: T.border },
+  addClientFooterIcon: { fontSize: 18, color: T.blue, marginRight: 10, fontWeight: "800" },
+  addClientFooterText: { fontSize: 15, color: T.blue, fontWeight: "700" },
 });

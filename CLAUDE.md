@@ -562,6 +562,16 @@ O layout só checava `session`, não `role`. Qualquer usuário autenticado passa
 
 ## Histórico de Manutenção
 
+### 2026-04-17 — Correções de truncamento + navegação agenda
+
+- Fix: título "COMPOSIÇÃO CORPORAL" em `evolution/[id].tsx` truncando em dispositivos com fonte grande (`adjustsFontSizeToFit` + `flex:1` no container)
+- Fix: botão "Consultar" em `AssessmentHistoryCard.tsx` truncando — adicionado `minWidth: 82` e `adjustsFontSizeToFit`
+- Fix: botão "Excluir Aluno" em `client-details.tsx` truncando para "Exclusivo Aluno" — adicionado `width: '100%'` no estilo e `adjustsFontSizeToFit` no Text
+- Fix: botão "Cadastrar novo aluno" ausente ao agendar via card "Novo Agendamento" do Dashboard — adicionado `ListFooterComponent` no modal de seleção de aluno em `index.tsx` (o botão já existia em `schedule/index.tsx` mas não no modal do Dashboard)
+- Feature pendente em andamento: análise de refeição por foto (Fases 2 e 3 do meal-capture)
+
+---
+
 ### 2026-04-14 — Ponto de versão pré-redesign (v1.0-stable)
 
 Todos os bugs resolvidos (1-4). Features implementadas: tela do aluno com card de avaliação, botão criar plano alimentar, diet-plan-form para client, RLS policies. Template de email customizado com token_hash. Sistema funcional e estável.

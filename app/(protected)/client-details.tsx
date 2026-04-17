@@ -483,7 +483,7 @@ export default function ClientDetails() {
           disabled={saving}
         >
           {saving ? <ActivityIndicator color={confirmDelete ? T.white : T.red} /> : (
-            <Text style={[styles.deleteButtonText, confirmDelete && { color: T.white }]}>
+            <Text style={[styles.deleteButtonText, confirmDelete && { color: T.white }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {confirmDelete ? "⚠️ TEM CERTEZA? CLIQUE PARA EXCLUIR" : "EXCLUIR ALUNO"}
             </Text>
           )}
@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
   saveButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
   saveButtonText: { color: T.white, fontSize: 16, fontWeight: "800" },
 
-  deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: T.red, backgroundColor: "transparent" },
+  deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: T.red, backgroundColor: "transparent", width: "100%" },
   deleteButtonConfirm: { backgroundColor: T.red, borderColor: T.red },
   deleteButtonText: { color: T.red, fontSize: 14, fontWeight: "700" },
 

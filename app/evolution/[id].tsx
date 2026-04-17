@@ -216,9 +216,9 @@ export default function PublicAssessmentView() {
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                 <Text style={{ fontSize: 16 }}>📊</Text>
-                <Text style={{ fontSize: 14, fontWeight: '900', color: T.t1, marginLeft: 6, textTransform: 'uppercase' }}>Composição Corporal</Text>
+                <Text style={{ fontSize: 14, fontWeight: '900', color: T.t1, marginLeft: 6, textTransform: 'uppercase', flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Composição Corporal</Text>
               </View>
             </View>
 

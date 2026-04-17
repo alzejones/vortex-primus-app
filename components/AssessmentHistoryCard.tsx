@@ -66,8 +66,8 @@ export default function AssessmentHistoryCard({
           <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>{formattedDate}</Text>
           <Text style={{ fontSize: 11, color: '#64748b' }}>{formattedTime}</Text>
         </View>
-        <TouchableOpacity onPress={() => onViewDetails(assessment)} style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#475569' }}>Consultar</Text>
+        <TouchableOpacity onPress={() => onViewDetails(assessment)} style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, minWidth: 82 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: '#475569', textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Consultar</Text>
         </TouchableOpacity>
       </View>
 
