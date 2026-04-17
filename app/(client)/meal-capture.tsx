@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -85,7 +85,7 @@ export default function MealCapture() {
   const [clientId, setClientId] = useState<string | null>(null);
 
   // Carrega clientId assim que a sessão está disponível
-  useMemo(() => {
+  useEffect(() => {
     if (!session?.user?.id || clientId) return;
     supabase
       .from("clients")
@@ -117,7 +117,7 @@ export default function MealCapture() {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: "images",
-      quality: 0.7,
+      quality: 0.5,
       base64: true,
     });
     if (!result.canceled && result.assets[0]) {
@@ -136,7 +136,7 @@ export default function MealCapture() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
-      quality: 0.7,
+      quality: 0.5,
       base64: true,
     });
     if (!result.canceled && result.assets[0]) {
@@ -148,34 +148,45 @@ export default function MealCapture() {
   }
 
   async function startAnalysis(base64: string | null) {
-    if (!base64 || !clientId) {
-      if (!clientId) Alert.alert("Erro", "Perfil do aluno não encontrado.");
+    if (!base64) {
+      setStep("capture");
       return;
     }
+    if (!clientId) {
+      Alert.alert("Erro", "Perfil do aluno não encontrado. Tente novamente.");
+      setStep("capture");
+      return;
+    }
+
     setStep("analyzing");
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-
+      // supabase.functions.invoke já injeta o Authorization automaticamente
       const { data, error } = await supabase.functions.invoke("analyze-meal-photo", {
         body: { client_id: clientId, image_base64: base64, meal_type: mealType },
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
-      if (error || !data) {
-        let msg = "Erro ao analisar a foto.";
+      // Erro de transporte (rede, timeout, 5xx)
+      if (error) {
+        let msg = "Não foi possível analisar a imagem. Tente novamente.";
         try {
           const text = await (error as any)?.context?.text?.();
           if (text) { const p = JSON.parse(text); msg = p.error ?? msg; }
         } catch {}
-        Alert.alert("Erro", msg);
+        Alert.alert("Erro na análise", msg);
         setStep("capture");
         return;
       }
 
-      if (data.error) {
+      // Resposta 422: imagem não é uma refeição
+      if (data?.error) {
         Alert.alert("Foto inválida", data.error);
+        setStep("capture");
+        return;
+      }
+
+      if (!data) {
+        Alert.alert("Erro na análise", "Resposta inesperada do servidor. Tente novamente.");
         setStep("capture");
         return;
       }
@@ -184,7 +195,8 @@ export default function MealCapture() {
       setEditableFoods((data as AnalysisResult).foods.map((f, i) => ({ ...f, order_index: i })));
       setStep("review");
     } catch (err: any) {
-      Alert.alert("Erro", err.message ?? "Erro inesperado.");
+      // Nunca navegar para login — sempre voltar para captura
+      Alert.alert("Erro na análise", err.message ?? "Erro inesperado. Tente novamente.");
       setStep("capture");
     }
   }

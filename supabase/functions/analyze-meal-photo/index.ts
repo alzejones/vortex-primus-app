@@ -54,6 +54,8 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
     if (userError || !user) throw new Error('Sessão inválida')
 
+    console.log('[analyze-meal-photo] iniciando análise para client_id:', client_id)
+
     // 3. Busca o cliente e verifica autorização
     const { data: client, error: clientErr } = await supabaseAdmin
       .from('clients')
