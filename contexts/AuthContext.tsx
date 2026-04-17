@@ -70,17 +70,22 @@ export const AuthProvider = ({ children }: any) => {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[AuthContext] evento:', event, '| session:', !!session, '| user:', session?.user?.id ?? 'null');
         try {
           setSession(session);
           // TOKEN_REFRESHED e USER_UPDATED não mudam o role — apenas atualiza a sessão.
           // Re-executar detectRole nesses eventos causa logout acidental se a rede demorar
           // mais de 5s (timeout de detectRole) → setRole(null) com sessão válida.
           if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+            console.log('[AuthContext] evento ignorado para role:', event);
             return;
           }
           if (session?.user?.id) {
-            setRole(await detectRole(session.user.id));
+            const detectedRole = await detectRole(session.user.id);
+            console.log('[AuthContext] role detectado:', detectedRole);
+            setRole(detectedRole);
           } else {
+            console.log('[AuthContext] sem sessão — setRole(null)');
             setRole(null);
           }
         } finally {

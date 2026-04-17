@@ -160,19 +160,26 @@ export default function MealCapture() {
 
     setStep("analyzing");
 
+    console.log('[meal-capture] iniciando análise — clientId:', clientId, 'base64 length:', base64.length);
+
     try {
       // supabase.functions.invoke já injeta o Authorization automaticamente
       const { data, error } = await supabase.functions.invoke("analyze-meal-photo", {
         body: { client_id: clientId, image_base64: base64, meal_type: mealType },
       });
 
+      console.log('[meal-capture] invoke result — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
+
       // Erro de transporte (rede, timeout, 5xx)
       if (error) {
         let msg = "Não foi possível analisar a imagem. Tente novamente.";
         try {
           const text = await (error as any)?.context?.text?.();
+          console.log('[meal-capture] error.context.text():', text);
           if (text) { const p = JSON.parse(text); msg = p.error ?? msg; }
-        } catch {}
+        } catch (ctxErr) {
+          console.log('[meal-capture] falha ao ler error.context:', ctxErr);
+        }
         Alert.alert("Erro na análise", msg);
         setStep("capture");
         return;
@@ -195,6 +202,9 @@ export default function MealCapture() {
       setEditableFoods((data as AnalysisResult).foods.map((f, i) => ({ ...f, order_index: i })));
       setStep("review");
     } catch (err: any) {
+      console.error('[meal-capture] ERRO COMPLETO:', JSON.stringify(err));
+      console.error('[meal-capture] err.message:', err?.message);
+      console.error('[meal-capture] err.context:', err?.context);
       // Nunca navegar para login — sempre voltar para captura
       Alert.alert("Erro na análise", err.message ?? "Erro inesperado. Tente novamente.");
       setStep("capture");
