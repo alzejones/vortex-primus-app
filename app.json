@@ -42,6 +42,13 @@
       ],
       "expo-web-browser",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Vortex precisa acessar suas fotos para analisar suas refeições",
+          "cameraPermission": "O Vortex precisa acessar sua câmera para analisar suas refeições"
+        }
+      ],
+      [
         "@stripe/stripe-react-native",
         {
           "merchantIdentifier": "merchant.com.vortexprimus",

@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -81,12 +81,26 @@ export default function ClientDiet() {
   const [lastBio, setLastBio] = useState<LastBio | null>(null);
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [mealLogs, setMealLogs] = useState<any[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      if (clientId) load();
+      if (clientId) {
+        load();
+        loadMealLogs();
+      }
     }, [clientId])
   );
+
+  async function loadMealLogs() {
+    const { data } = await supabase
+      .from("meal_log")
+      .select("id, consumed_at, meal_type, total_calories, total_protein, total_carbs, total_fat, notes")
+      .eq("client_id", clientId)
+      .order("consumed_at", { ascending: false })
+      .limit(10);
+    if (data) setMealLogs(data);
+  }
 
   async function load() {
     setLoading(true);
@@ -363,6 +377,32 @@ export default function ClientDiet() {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* ── Refeições Registradas pelo Aluno ── */}
+      <View style={styles.logSection}>
+        <Text style={styles.logSectionTitle}>📖 Refeições Registradas pelo Aluno</Text>
+        {mealLogs.length === 0 ? (
+          <Text style={styles.logEmpty}>O aluno ainda não registrou nenhuma refeição.</Text>
+        ) : (
+          mealLogs.map((log) => {
+            const dt = new Date(log.consumed_at);
+            const dateStr = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+            const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <View key={log.id} style={styles.logCard}>
+                <View style={styles.logCardHeader}>
+                  <Text style={styles.logDate}>{dateStr} {timeStr}</Text>
+                  {log.meal_type ? <Text style={styles.logType}>{log.meal_type}</Text> : null}
+                </View>
+                <Text style={styles.logMacros}>
+                  {Number(log.total_calories ?? 0).toFixed(0)} kcal · P {Number(log.total_protein ?? 0).toFixed(1)}g · C {Number(log.total_carbs ?? 0).toFixed(1)}g · G {Number(log.total_fat ?? 0).toFixed(1)}g
+                </Text>
+                {log.notes ? <Text style={styles.logNotes}>{log.notes}</Text> : null}
+              </View>
+            );
+          })
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -411,4 +451,14 @@ const styles = StyleSheet.create({
   createBtn: { borderRadius: 14, overflow: "hidden" },
   createBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
   createBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+
+  logSection: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: T.border },
+  logSectionTitle: { fontSize: 15, fontWeight: "800", color: T.t1, marginBottom: 12 },
+  logEmpty: { color: T.t3, fontSize: 13, fontStyle: "italic" },
+  logCard: { backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: T.border },
+  logCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  logDate: { fontSize: 12, color: T.t2, fontWeight: "600" },
+  logType: { fontSize: 11, color: T.green, fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  logMacros: { fontSize: 13, color: T.t1, fontWeight: "700" },
+  logNotes: { fontSize: 11, color: T.t3, fontStyle: "italic", marginTop: 4 },
 });

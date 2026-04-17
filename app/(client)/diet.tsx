@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Modal,
@@ -92,9 +92,27 @@ export default function ClientDietView() {
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiError, setAiError] = useState("");
 
+  const [mealLogs, setMealLogs] = useState<any[]>([]);
+
   useEffect(() => {
     if (session?.user?.id) load(session.user.id);
   }, [session]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (clientId) loadMealLogs(clientId);
+    }, [clientId])
+  );
+
+  async function loadMealLogs(cId: string) {
+    const { data } = await supabase
+      .from("meal_log")
+      .select("id, consumed_at, meal_type, total_calories, total_protein, total_carbs, total_fat, notes")
+      .eq("client_id", cId)
+      .order("consumed_at", { ascending: false })
+      .limit(10);
+    if (data) setMealLogs(data);
+  }
 
   async function load(userId: string) {
     setLoading(true);
@@ -109,6 +127,7 @@ export default function ClientDietView() {
 
       const cId = clientData.id;
       setClientId(cId);
+      loadMealLogs(cId);
       setClientName(clientData.name || "");
       setObjective((clientData.objective as Objective) || "");
       setActivityLevel((clientData.activity_level as ActivityLevel) || "");
@@ -285,7 +304,8 @@ export default function ClientDietView() {
   const planTotals = sumMacros(allFoods);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 80 }}>
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 160 }}>
 
       {/* Cabeçalho */}
       <View style={styles.header}>
@@ -491,6 +511,35 @@ export default function ClientDietView() {
         </View>
       ) : null}
 
+      {/* Histórico de Refeições Registradas */}
+      <View style={[styles.prefCard, { marginTop: 16 }]}>
+        <Text style={styles.prefTitle}>📖 Histórico de Refeições</Text>
+        <Text style={styles.prefSub}>Últimas 10 refeições analisadas por foto.</Text>
+        {mealLogs.length === 0 ? (
+          <Text style={{ color: T.t3, fontSize: 13, fontStyle: "italic" }}>
+            Nenhuma refeição registrada ainda. Use o botão de câmera para começar.
+          </Text>
+        ) : (
+          mealLogs.map((log) => {
+            const dt = new Date(log.consumed_at);
+            const dateStr = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+            const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <View key={log.id} style={styles.mealLogCard}>
+                <View style={styles.mealLogHeader}>
+                  <Text style={styles.mealLogDate}>{dateStr} {timeStr}</Text>
+                  {log.meal_type ? <Text style={styles.mealLogType}>{log.meal_type}</Text> : null}
+                </View>
+                <Text style={styles.mealLogMacros}>
+                  {Number(log.total_calories ?? 0).toFixed(0)} kcal · P {Number(log.total_protein ?? 0).toFixed(1)}g · C {Number(log.total_carbs ?? 0).toFixed(1)}g · G {Number(log.total_fat ?? 0).toFixed(1)}g
+                </Text>
+                {log.notes ? <Text style={styles.mealLogNotes}>{log.notes}</Text> : null}
+              </View>
+            );
+          })
+        )}
+      </View>
+
       {/* Seção de Preferências */}
       <View style={styles.prefCard}>
         <Text style={styles.prefTitle}>Minhas Preferências</Text>
@@ -544,6 +593,20 @@ export default function ClientDietView() {
       </View>
 
     </ScrollView>
+
+    {/* FAB de câmera — só aparece se lastBio existir */}
+    {lastBio !== null && (
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/(client)/meal-capture" as any)}
+        activeOpacity={0.85}
+      >
+        <LinearGradient {...GradientSuccess} style={styles.fabGradient}>
+          <Text style={styles.fabIcon}>📷</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    )}
+    </View>
   );
 }
 
@@ -622,4 +685,17 @@ const styles = StyleSheet.create({
   modalDayKcal: { fontSize: 14, fontWeight: "700", color: T.green },
   modalCloseBtn: { marginTop: 20, padding: 14, alignItems: "center", backgroundColor: T.surfaceAlt, borderRadius: 12 },
   modalCloseBtnText: { fontWeight: "700", color: T.t2, fontSize: 15 },
+
+  // FAB câmera
+  fab: { position: "absolute", bottom: 84, right: 20, width: 60, height: 60, borderRadius: 30, overflow: "hidden", shadowColor: T.green, shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  fabGradient: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
+  fabIcon: { fontSize: 28 },
+
+  // Histórico de refeições
+  mealLogCard: { backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: T.border },
+  mealLogHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  mealLogDate: { fontSize: 12, color: T.t2, fontWeight: "600" },
+  mealLogType: { fontSize: 11, color: T.green, fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  mealLogMacros: { fontSize: 13, color: T.t1, fontWeight: "700" },
+  mealLogNotes: { fontSize: 11, color: T.t3, fontStyle: "italic", marginTop: 4 },
 });
