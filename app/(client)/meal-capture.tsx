@@ -117,7 +117,7 @@ export default function MealCapture() {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: "images",
-      quality: 0.5,
+      quality: 0.3,
       base64: true,
     });
     if (!result.canceled && result.assets[0]) {
@@ -136,7 +136,7 @@ export default function MealCapture() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: "images",
-      quality: 0.5,
+      quality: 0.3,
       base64: true,
     });
     if (!result.canceled && result.assets[0]) {
@@ -163,36 +163,41 @@ export default function MealCapture() {
     console.log('[meal-capture] iniciando análise — clientId:', clientId, 'base64 length:', base64.length);
 
     try {
-      // supabase.functions.invoke já injeta o Authorization automaticamente
-      const { data, error } = await supabase.functions.invoke("analyze-meal-photo", {
+      // Timeout de 30s para não ficar travado indefinidamente
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Tempo esgotado. Tente com uma foto menor.")), 30000)
+      );
+
+      // A Edge Function agora retorna SEMPRE status 200 — erros vêm em data.error
+      const invokePromise = supabase.functions.invoke("analyze-meal-photo", {
         body: { client_id: clientId, image_base64: base64, meal_type: mealType },
       });
 
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as Awaited<typeof invokePromise>;
+
       console.log('[meal-capture] invoke result — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
 
-      // Erro de transporte (rede, timeout, 5xx)
+      // Erro de transporte (sem rede, DNS, etc.) — não deveria acontecer com a nova Edge Function
       if (error) {
-        let msg = "Não foi possível analisar a imagem. Tente novamente.";
+        let msg = "Não foi possível conectar ao servidor. Verifique sua conexão.";
         try {
           const text = await (error as any)?.context?.text?.();
           console.log('[meal-capture] error.context.text():', text);
           if (text) { const p = JSON.parse(text); msg = p.error ?? msg; }
-        } catch (ctxErr) {
-          console.log('[meal-capture] falha ao ler error.context:', ctxErr);
-        }
+        } catch {}
         Alert.alert("Erro na análise", msg);
         setStep("capture");
         return;
       }
 
-      // Resposta 422: imagem não é uma refeição
+      // Todos os erros lógicos chegam aqui como data.error (status 200)
       if (data?.error) {
         Alert.alert("Foto inválida", data.error);
         setStep("capture");
         return;
       }
 
-      if (!data) {
+      if (!data?.meal_log_id) {
         Alert.alert("Erro na análise", "Resposta inesperada do servidor. Tente novamente.");
         setStep("capture");
         return;
@@ -204,7 +209,6 @@ export default function MealCapture() {
     } catch (err: any) {
       console.error('[meal-capture] ERRO COMPLETO:', JSON.stringify(err));
       console.error('[meal-capture] err.message:', err?.message);
-      console.error('[meal-capture] err.context:', err?.context);
       // Nunca navegar para login — sempre voltar para captura
       Alert.alert("Erro na análise", err.message ?? "Erro inesperado. Tente novamente.");
       setStep("capture");

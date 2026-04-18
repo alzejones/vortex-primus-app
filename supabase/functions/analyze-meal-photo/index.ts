@@ -6,7 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Prompt estruturado para o Claude Vision
+// Retorna sempre HTTP 200 — erros vêm em { error: "..." }
+// Isso evita que o Supabase JS client trate 4xx/5xx como erro de auth e dispare SIGNED_OUT.
+function ok(body: Record<string, any>) {
+  return new Response(
+    JSON.stringify(body),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+  )
+}
+
 const VISION_PROMPT = `Você é um nutricionista especializado em culinária brasileira. Analise esta foto de refeição e retorne APENAS um JSON válido (sem markdown, sem explicações) com esta estrutura:
 
 {
@@ -37,12 +45,12 @@ serve(async (req) => {
     const body = await req.json()
     const { client_id, image_base64, meal_type } = body
 
-    if (!client_id)     throw new Error('client_id é obrigatório')
-    if (!image_base64)  throw new Error('image_base64 é obrigatório')
+    if (!client_id)    return ok({ error: 'client_id é obrigatório' })
+    if (!image_base64) return ok({ error: 'image_base64 é obrigatório' })
 
     // 2. Valida token
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) throw new Error('Não autorizado')
+    if (!authHeader) return ok({ error: 'Não autorizado' })
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -52,9 +60,9 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
-    if (userError || !user) throw new Error('Sessão inválida')
+    if (userError || !user) return ok({ error: 'Sessão inválida. Faça login novamente.' })
 
-    console.log('[analyze-meal-photo] iniciando análise para client_id:', client_id)
+    console.log('[analyze-meal-photo] iniciando análise para client_id:', client_id, '| user:', user.id)
 
     // 3. Busca o cliente e verifica autorização
     const { data: client, error: clientErr } = await supabaseAdmin
@@ -63,11 +71,9 @@ serve(async (req) => {
       .eq('id', client_id)
       .single()
 
-    if (clientErr || !client) throw new Error('Cliente não encontrado')
+    if (clientErr || !client) return ok({ error: 'Cliente não encontrado' })
 
-    // Aceita: o próprio aluno OU o treinador responsável
     const isClient = client.user_id === user.id
-
     let isTrainer = false
     if (!isClient) {
       const { data: trainer } = await supabaseAdmin
@@ -78,14 +84,11 @@ serve(async (req) => {
       isTrainer = trainer != null && trainer.id === client.trainer_id
     }
 
-    if (!isClient && !isTrainer) throw new Error('Acesso negado')
+    if (!isClient && !isTrainer) return ok({ error: 'Acesso negado' })
 
-    // 4. Detecta o media type da imagem a partir do prefixo base64
-    //    Aceita jpeg, png, gif, webp (formatos suportados pela Claude Vision)
+    // 4. Detecta media type
     let mediaType = 'image/jpeg'
-    if (image_base64.startsWith('/9j/') || image_base64.startsWith('data:image/jpeg')) {
-      mediaType = 'image/jpeg'
-    } else if (image_base64.startsWith('iVBORw0KGgo') || image_base64.startsWith('data:image/png')) {
+    if (image_base64.startsWith('iVBORw0KGgo') || image_base64.startsWith('data:image/png')) {
       mediaType = 'image/png'
     } else if (image_base64.startsWith('R0lGOD') || image_base64.startsWith('data:image/gif')) {
       mediaType = 'image/gif'
@@ -93,50 +96,53 @@ serve(async (req) => {
       mediaType = 'image/webp'
     }
 
-    // Remove prefixo data URI se presente (ex: "data:image/jpeg;base64,")
     const cleanBase64 = image_base64.includes(',')
       ? image_base64.split(',')[1]
       : image_base64
 
-    // 5. Chama Claude API com Vision
+    // 5. Chama Claude API com timeout de 25 segundos
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
-    if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY não configurada')
+    if (!anthropicKey) return ok({ error: 'Serviço de IA não configurado. Contate o suporte.' })
 
-    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': anthropicKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: mediaType,
-                  data: cleanBase64,
-                },
-              },
-              {
-                type: 'text',
-                text: VISION_PROMPT,
-              },
-            ],
-          },
-        ],
-      }),
-    })
+    const controller = new AbortController()
+    const claudeTimeout = setTimeout(() => controller.abort(), 25000)
+
+    let claudeResponse: Response
+    try {
+      claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-6',
+          max_tokens: 1024,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'image', source: { type: 'base64', media_type: mediaType, data: cleanBase64 } },
+                { type: 'text', text: VISION_PROMPT },
+              ],
+            },
+          ],
+        }),
+      })
+    } catch (fetchErr: any) {
+      clearTimeout(claudeTimeout)
+      const isTimeout = fetchErr?.name === 'AbortError'
+      console.error('[analyze-meal-photo] erro fetch Claude:', fetchErr?.name, fetchErr?.message)
+      return ok({ error: isTimeout ? 'Análise demorou muito. Tente com uma foto menor.' : 'Serviço de IA indisponível. Tente novamente.' })
+    }
+    clearTimeout(claudeTimeout)
 
     if (!claudeResponse.ok) {
       const errText = await claudeResponse.text()
-      throw new Error(`Claude API error: ${claudeResponse.status} — ${errText}`)
+      console.error('[analyze-meal-photo] Claude API status:', claudeResponse.status, errText.substring(0, 200))
+      return ok({ error: `Erro na análise (${claudeResponse.status}). Tente novamente.` })
     }
 
     const claudeData = await claudeResponse.json()
@@ -145,22 +151,19 @@ serve(async (req) => {
     // 6. Parse do JSON retornado pelo Claude
     let analysis: Record<string, any>
     try {
-      // Remove possível markdown (```json ... ```) por segurança
       const cleaned = rawContent.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
       analysis = JSON.parse(cleaned)
     } catch {
-      throw new Error(`Resposta da IA inválida: ${rawContent.substring(0, 200)}`)
+      console.error('[analyze-meal-photo] JSON inválido do Claude:', rawContent.substring(0, 300))
+      return ok({ error: 'Resposta da IA inválida. Tente novamente.' })
     }
 
-    // 7. Se Claude detectou que não é comida, retorna o erro sem salvar
+    // 7. Imagem não é uma refeição
     if (analysis.error) {
-      return new Response(
-        JSON.stringify({ error: analysis.error }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 422 }
-      )
+      return ok({ error: analysis.error })
     }
 
-    // 8. Garante campos obrigatórios e formata valores numéricos
+    // 8. Formata os alimentos
     const foods: any[] = (analysis.foods ?? []).map((f: any, idx: number) => ({
       name:           String(f.name ?? 'Alimento desconhecido'),
       quantity_grams: parseFloat(Number(f.quantity_grams ?? 100).toFixed(1)),
@@ -197,38 +200,38 @@ serve(async (req) => {
       .select('id')
       .single()
 
-    if (logErr || !logEntry) throw new Error('Erro ao salvar registro: ' + logErr?.message)
-
-    // 10. Persiste os alimentos individuais
-    if (foods.length > 0) {
-      const foodRows = foods.map((f) => ({
-        meal_log_id:   logEntry.id,
-        name:          f.name,
-        quantity_grams: f.quantity_grams,
-        calories:       f.calories,
-        protein:        f.protein,
-        carbs:          f.carbs,
-        fat:            f.fat,
-        order_index:    f.order_index,
-      }))
-
-      const { error: foodsErr } = await supabaseAdmin
-        .from('meal_log_foods')
-        .insert(foodRows)
-
-      if (foodsErr) throw new Error('Erro ao salvar alimentos: ' + foodsErr.message)
+    if (logErr || !logEntry) {
+      console.error('[analyze-meal-photo] erro ao salvar meal_log:', logErr?.message)
+      return ok({ error: 'Erro ao salvar registro. Tente novamente.' })
     }
 
-    // 11. Retorna análise + id do registro salvo
-    return new Response(
-      JSON.stringify({ meal_log_id: logEntry.id, ...result }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    // 10. Persiste os alimentos
+    if (foods.length > 0) {
+      const { error: foodsErr } = await supabaseAdmin
+        .from('meal_log_foods')
+        .insert(foods.map((f) => ({
+          meal_log_id:    logEntry.id,
+          name:           f.name,
+          quantity_grams: f.quantity_grams,
+          calories:       f.calories,
+          protein:        f.protein,
+          carbs:          f.carbs,
+          fat:            f.fat,
+          order_index:    f.order_index,
+        })))
+
+      if (foodsErr) {
+        console.error('[analyze-meal-photo] erro ao salvar meal_log_foods:', foodsErr.message)
+        // Não falha — meal_log foi salvo, apenas os detalhes de alimentos falharam
+      }
+    }
+
+    console.log('[analyze-meal-photo] análise concluída — meal_log_id:', logEntry.id)
+
+    return ok({ meal_log_id: logEntry.id, ...result })
 
   } catch (err: any) {
-    return new Response(
-      JSON.stringify({ error: err.message ?? 'Erro interno' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    )
+    console.error('[analyze-meal-photo] erro inesperado:', err?.message)
+    return ok({ error: err?.message ?? 'Erro interno inesperado. Tente novamente.' })
   }
 })

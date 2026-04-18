@@ -72,14 +72,31 @@ export const AuthProvider = ({ children }: any) => {
       async (event, session) => {
         console.log('[AuthContext] evento:', event, '| session:', !!session, '| user:', session?.user?.id ?? 'null');
         try {
-          setSession(session);
-          // TOKEN_REFRESHED e USER_UPDATED não mudam o role — apenas atualiza a sessão.
-          // Re-executar detectRole nesses eventos causa logout acidental se a rede demorar
-          // mais de 5s (timeout de detectRole) → setRole(null) com sessão válida.
+          // TOKEN_REFRESHED e USER_UPDATED: apenas atualiza a sessão, nunca muda role.
+          // Re-detectar role nesses eventos causa logout acidental se detectRole demorar >5s.
           if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
             console.log('[AuthContext] evento ignorado para role:', event);
+            setSession(session);
             return;
           }
+
+          // SIGNED_OUT só deve limpar sessão se realmente não há sessão válida.
+          // Verifica diretamente antes de aceitar o sinal de logout.
+          if (event === "SIGNED_OUT") {
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession) {
+              // Sessão ainda válida — ignora o SIGNED_OUT espúrio (pode vir de erro de network)
+              console.log('[AuthContext] SIGNED_OUT ignorado — sessão ainda válida:', currentSession.user?.id);
+              setSession(currentSession);
+              return;
+            }
+            console.log('[AuthContext] SIGNED_OUT confirmado — limpando sessão');
+            setSession(null);
+            setRole(null);
+            return;
+          }
+
+          setSession(session);
           if (session?.user?.id) {
             const detectedRole = await detectRole(session.user.id);
             console.log('[AuthContext] role detectado:', detectedRole);
