@@ -562,18 +562,39 @@ O layout só checava `session`, não `role`. Qualquer usuário autenticado passa
 
 ## Histórico de Manutenção
 
-### 2026-04-17 — Análise de refeição por foto (Fases 2 e 3) + fix logout meal-capture
+### 2026-04-17 — Sessão completa: redesign dark theme + TabBar + agenda + análise de refeição por foto (Fases 1-3)
 
-- **feat**: `app/(client)/meal-capture.tsx` criado — tela de captura/análise de foto com IA em 3 steps (capture → analyzing → review). Revisão editável de alimentos, recálculo proporcional de macros, integração com FoodSearchModal (TACO), "Registrar hoje" e "Adicionar ao plano".
-- **feat**: `app/(client)/diet.tsx` — FAB 📷 (`position: absolute`, `bottom: 84`, `right: 20`, `GradientSuccess`) aparece quando `lastBio !== null`. Seção "Histórico de Refeições" com últimos 10 registros de `meal_log`.
-- **feat**: `app/(protected)/client-diet.tsx` — seção "Refeições Registradas pelo Aluno" read-only para o treinador, carregada via RLS.
-- **fix (crítico)**: `useMemo` em `meal-capture.tsx` trocado por `useEffect` para carregar `clientId`. `useMemo` com `setState` em `.then()` viola as regras do React e causa comportamento imprevisível.
-- **fix**: Authorization header removido da chamada `supabase.functions.invoke` — o cliente já injeta automaticamente. Header manual pode criar conflito com token expirado.
-- **fix**: `quality` da imagem reduzido de 0.7 → 0.5 para diminuir payload base64.
-- **fix**: Todos os caminhos de erro em `startAnalysis` chamam `setStep("capture")` — nunca navegam para `/login`.
-- **pendente**: deploy manual da Edge Function `analyze-meal-photo` (log adicionado). Rodar: `supabase functions deploy analyze-meal-photo` após `supabase login`.
+**Redesign dark theme (Fases 1–6 completas)**
+- Todas as telas convertidas para dark theme usando tokens de `utils/theme.ts` (T.bg, T.card, T.border, etc.) e gradientes de `utils/gradients.ts`
+- Login, Dashboard, Clientes, Detalhes do Aluno, Avaliações, Agenda, Planos, Perfil do Treinador, Dieta — todas com dark theme consistente
 
-**Regra crítica aprendida**: Nunca usar `useMemo` como substituto de `useEffect` para side-effects com chamadas assíncronas ou `setState`.
+**TabBar de navegação**
+- `components/TabBar.tsx` criado — barra de navegação inferior com 4 abas: Home / Alunos / Agenda / Config
+- Substituiu o sistema de navegação por gestos/back button
+
+**Fix truncamentos de texto**
+- Título "COMPOSIÇÃO CORPORAL" em `evolution/[id].tsx`: `adjustsFontSizeToFit` + `flex:1` no container
+- Botão "Consultar" em `AssessmentHistoryCard.tsx`: `minWidth: 82` + `adjustsFontSizeToFit`
+- Botão "Excluir Aluno" em `client-details.tsx` truncava para "Exclusivo Aluno": `width: '100%'` + `adjustsFontSizeToFit`
+
+**Fix agenda**
+- Botão "Cadastrar novo aluno" fixo no rodapé da agenda (`ListFooterComponent` no modal de seleção de aluno do Dashboard)
+- Fluxo de retorno inteligente após cadastro: parâmetro `from=schedule` redireciona de volta para agenda em vez do dashboard
+
+**Feature: Análise de refeição por foto (Fases 1–3) — STATUS: COMPLETA E FUNCIONAL**
+- Migration `20260415000000_meal_log.sql`: tabelas `meal_log` + `meal_log_foods` com RLS completa (aluno vê/edita próprios registros; treinador lê registros dos seus alunos)
+- Edge Function `analyze-meal-photo`: recebe `image_base64`, chama Claude Vision API (claude-opus-4-6), retorna alimentos identificados com macros estimados usando culinária brasileira. Todos os erros retornam HTTP 200 com `{ error: "..." }` para evitar que o Supabase JS client trate 4xx como erro de auth. `AbortController` com timeout de 25s na chamada Claude.
+- `app/(client)/meal-capture.tsx`: tela com 3 steps (capture → analyzing → review). Seletor de tipo de refeição (chips). Revisão editável de alimentos (nome e quantidade por toque), recálculo proporcional de macros. FoodSearchModal para adicionar manualmente. "Registrar hoje" e "Adicionar ao plano". `handleCamera` salva tokens antes de abrir câmera e restaura sessão ao retornar (PWA pausa contexto ao ativar câmera). `Promise.race` com timeout de 30s.
+- `app/(client)/diet.tsx`: FAB 📷 flutuante (`bottom: 84`, `GradientSuccess`, 60×60) aparece quando `lastBio !== null`. Seção "Histórico de Refeições" com últimas 10 refeições.
+- `app/(protected)/client-diet.tsx`: seção read-only "Refeições Registradas pelo Aluno".
+- `contexts/AuthContext.tsx`: guarda contra `SIGNED_OUT` espúrio — verifica `getSession()` antes de limpar sessão. `TOKEN_REFRESHED`/`USER_UPDATED` nunca mudam role.
+- **Requer créditos na conta Anthropic**: `console.anthropic.com` → Plans & Billing. A chave `ANTHROPIC_API_KEY` já está configurada nas secrets do Supabase.
+
+**Regras críticas aprendidas nesta sessão**
+- Nunca usar `useMemo` como substituto de `useEffect` para side-effects com chamadas assíncronas ou `setState`
+- `supabase.functions.invoke` injeta Authorization automaticamente — nunca passar header manual (pode criar conflito com token expirado)
+- Edge Functions que retornam 4xx/5xx podem disparar SIGNED_OUT no cliente — sempre retornar HTTP 200 com `{ error: "..." }`
+- Em PWA, abrir câmera pausa o contexto da página — salvar tokens antes e restaurar após retorno
 
 ---
 

@@ -70,27 +70,22 @@ export const AuthProvider = ({ children }: any) => {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[AuthContext] evento:', event, '| session:', !!session, '| user:', session?.user?.id ?? 'null');
         try {
           // TOKEN_REFRESHED e USER_UPDATED: apenas atualiza a sessão, nunca muda role.
           // Re-detectar role nesses eventos causa logout acidental se detectRole demorar >5s.
           if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-            console.log('[AuthContext] evento ignorado para role:', event);
             setSession(session);
             return;
           }
 
-          // SIGNED_OUT só deve limpar sessão se realmente não há sessão válida.
-          // Verifica diretamente antes de aceitar o sinal de logout.
+          // SIGNED_OUT só limpa sessão se realmente não há sessão válida.
+          // Guarda contra SIGNED_OUT espúrio disparado por erros de network durante chamadas longas.
           if (event === "SIGNED_OUT") {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             if (currentSession) {
-              // Sessão ainda válida — ignora o SIGNED_OUT espúrio (pode vir de erro de network)
-              console.log('[AuthContext] SIGNED_OUT ignorado — sessão ainda válida:', currentSession.user?.id);
               setSession(currentSession);
               return;
             }
-            console.log('[AuthContext] SIGNED_OUT confirmado — limpando sessão');
             setSession(null);
             setRole(null);
             return;
@@ -98,11 +93,8 @@ export const AuthProvider = ({ children }: any) => {
 
           setSession(session);
           if (session?.user?.id) {
-            const detectedRole = await detectRole(session.user.id);
-            console.log('[AuthContext] role detectado:', detectedRole);
-            setRole(detectedRole);
+            setRole(await detectRole(session.user.id));
           } else {
-            console.log('[AuthContext] sem sessão — setRole(null)');
             setRole(null);
           }
         } finally {

@@ -62,8 +62,6 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
     if (userError || !user) return ok({ error: 'Sessão inválida. Faça login novamente.' })
 
-    console.log('[analyze-meal-photo] iniciando análise para client_id:', client_id, '| user:', user.id)
-
     // 3. Busca o cliente e verifica autorização
     const { data: client, error: clientErr } = await supabaseAdmin
       .from('clients')
@@ -225,8 +223,6 @@ serve(async (req) => {
         // Não falha — meal_log foi salvo, apenas os detalhes de alimentos falharam
       }
     }
-
-    console.log('[analyze-meal-photo] análise concluída — meal_log_id:', logEntry.id)
 
     return ok({ meal_log_id: logEntry.id, ...result })
 

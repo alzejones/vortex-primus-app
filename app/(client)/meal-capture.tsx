@@ -83,7 +83,6 @@ export default function MealCapture() {
   const [saving, setSaving] = useState(false);
 
   const [clientId, setClientId] = useState<string | null>(null);
-  const [debugMsg, setDebugMsg] = useState("");
 
   // Carrega clientId assim que a sessão está disponível
   useEffect(() => {
@@ -133,7 +132,6 @@ export default function MealCapture() {
     // Verifica sessão após retorno da câmera
     const { data: { session: sessionAfter } } = await supabase.auth.getSession();
     if (!sessionAfter && savedAccessToken && savedRefreshToken) {
-      console.log('[meal-capture] sessão perdida ao fechar câmera — restaurando');
       await supabase.auth.setSession({
         access_token:  savedAccessToken,
         refresh_token: savedRefreshToken,
@@ -179,9 +177,6 @@ export default function MealCapture() {
     }
 
     setStep("analyzing");
-    setDebugMsg("");
-
-    console.log('[meal-capture] iniciando análise — clientId:', clientId, 'base64 length:', base64.length);
 
     try {
       // Timeout de 30s para não ficar travado indefinidamente
@@ -196,30 +191,27 @@ export default function MealCapture() {
 
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as Awaited<typeof invokePromise>;
 
-      console.log('[meal-capture] invoke result — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
-
       // Erro de transporte (sem rede, DNS, etc.)
       if (error) {
         let msg = "Não foi possível conectar ao servidor. Verifique sua conexão.";
         try {
           const text = await (error as any)?.context?.text?.();
-          console.log('[meal-capture] error.context.text():', text);
           if (text) { const p = JSON.parse(text); msg = p.error ?? msg; }
         } catch {}
-        setDebugMsg(`[transport error] ${msg}`);
+        Alert.alert("Erro na análise", msg);
         setStep("capture");
         return;
       }
 
       // Todos os erros lógicos chegam aqui como data.error (status 200)
       if (data?.error) {
-        setDebugMsg(`[data.error] ${data.error}`);
+        Alert.alert("Foto inválida", data.error);
         setStep("capture");
         return;
       }
 
       if (!data?.meal_log_id) {
-        setDebugMsg(`[sem meal_log_id] data=${JSON.stringify(data)}`);
+        Alert.alert("Erro na análise", "Resposta inesperada do servidor. Tente novamente.");
         setStep("capture");
         return;
       }
@@ -228,10 +220,7 @@ export default function MealCapture() {
       setEditableFoods((data as AnalysisResult).foods.map((f, i) => ({ ...f, order_index: i })));
       setStep("review");
     } catch (err: any) {
-      const msg = err?.message ?? err?.context?.message ?? JSON.stringify(err) ?? "Erro desconhecido";
-      console.error('[meal-capture] ERRO COMPLETO:', JSON.stringify(err));
-      console.error('[meal-capture] err.message:', err?.message);
-      setDebugMsg(`[catch] ${msg}`);
+      Alert.alert("Erro na análise", err?.message ?? "Erro inesperado. Tente novamente.");
       setStep("capture");
     }
   }
@@ -439,9 +428,6 @@ export default function MealCapture() {
           </LinearGradient>
         </TouchableOpacity>
 
-        {debugMsg ? (
-          <Text style={styles.debugMsg}>{debugMsg}</Text>
-        ) : null}
       </View>
     );
   }
@@ -652,7 +638,6 @@ const styles = StyleSheet.create({
   analyzeThumb: { width: 120, height: 120, borderRadius: 16, marginBottom: 8 },
   analyzingText: { marginTop: 20, fontSize: 18, fontWeight: "700", color: T.t1, textAlign: "center" },
   analyzingSub: { marginTop: 8, fontSize: 13, color: T.t3, textAlign: "center" },
-  debugMsg: { marginTop: 16, fontSize: 11, color: T.red, textAlign: "center", paddingHorizontal: 16, lineHeight: 16 },
 
   // Review
   reviewHeader: { padding: 16, gap: 12 },
