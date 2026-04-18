@@ -675,6 +675,33 @@ A query em `trainer-profile.tsx` selecionava `plan_status` (coluna que não exis
 
 ---
 
+## Histórico de Manutenção
+
+### 2026-04-18 — Fix de redirecionamentos intermitentes para login
+
+**Problema relatado:** Redirecionamentos inesperados para tela de login em várias partes do app, especialmente na tela de Physical Conditioning assessment.
+
+**Causa raiz confirmada:** Race condition no sistema de auth causado por:
+1. Timeout de 5s na função `detectRole()` em redes lentas
+2. Layout guards muito restritivos que não toleravam estados temporários de `role === null`
+
+**Correções aplicadas (commit `875610b`):**
+
+**`contexts/AuthContext.tsx`**
+- Timeout de `detectRole()` aumentado de 5s → 15s
+- Adicionada lógica de retry: se primeira tentativa falha, tenta novamente com timeout de 10s
+- Preservação de role: se `detectRole()` retorna `null` mas `session` é válida, mantém o role existente em vez de resetar para `null`
+
+**`app/(protected)/_layout.tsx`**
+- Guard de auth reorganizado em 3 condições distintas:
+  1. `!session` → redirect (logout legítimo)
+  2. `role === null` → loading (nunca redireciona, aguarda resolução)
+  3. `role !== "trainer"` → redirect (role errado)
+
+**Resultado:** Redirecionamentos intermitentes resolvidos. App agora tolera latência de rede e falhas temporárias de detecção de role sem deslogar o usuário.
+
+---
+
 ## Regras para o Claude Code
 
 - Respeitar sempre o padrão de extensões `.web.ts` / `.web.tsx`.
