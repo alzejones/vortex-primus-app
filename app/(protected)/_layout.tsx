@@ -15,7 +15,22 @@ export default function ProtectedLayout() {
     );
   }
 
-  if (!session || role !== "trainer") {
+  // No session = legitimate logout → redirect
+  if (!session) {
+    return <Redirect href="/login" />;
+  }
+  
+  // Session exists but role still resolving → show loading, never redirect
+  if (role === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg }}>
+        <ActivityIndicator size="large" color={T.blue} />
+      </View>
+    );
+  }
+  
+  // Session exists but role is not trainer → redirect
+  if (role !== "trainer") {
     return <Redirect href="/login" />;
   }
 

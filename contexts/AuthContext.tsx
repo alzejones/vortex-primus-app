@@ -24,7 +24,7 @@ export const useAuth = () => useContext(AuthContext);
 
 async function detectRole(userId: string): Promise<UserRole> {
   const timeout = new Promise<null>((resolve) =>
-    setTimeout(() => resolve(null), 5000)
+    setTimeout(() => resolve(null), 15000)
   );
 
   const detect = async (): Promise<UserRole> => {
@@ -47,7 +47,17 @@ async function detectRole(userId: string): Promise<UserRole> {
     return null;
   };
 
-  return Promise.race([detect(), timeout]);
+  const firstAttempt = await Promise.race([detect(), timeout]);
+  
+  // Retry once if first attempt timed out
+  if (firstAttempt === null) {
+    const retryTimeout = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), 10000)
+    );
+    return Promise.race([detect(), retryTimeout]);
+  }
+  
+  return firstAttempt;
 }
 
 // 🔐 Provider
@@ -93,7 +103,13 @@ export const AuthProvider = ({ children }: any) => {
 
           setSession(session);
           if (session?.user?.id) {
-            setRole(await detectRole(session.user.id));
+            const currentRole = role; // Capture existing role
+            const detectedRole = await detectRole(session.user.id);
+            // Only update role if detection succeeded OR session is gone
+            if (detectedRole !== null || !session) {
+              setRole(detectedRole);
+            }
+            // If detectRole returned null but session is valid, keep existing role
           } else {
             setRole(null);
           }
