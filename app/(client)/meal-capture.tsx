@@ -83,6 +83,7 @@ export default function MealCapture() {
   const [saving, setSaving] = useState(false);
 
   const [clientId, setClientId] = useState<string | null>(null);
+  const [debugMsg, setDebugMsg] = useState("");
 
   // Carrega clientId assim que a sessão está disponível
   useEffect(() => {
@@ -115,11 +116,30 @@ export default function MealCapture() {
       Alert.alert("Permissão negada", "Permita o acesso à câmera nas configurações.");
       return;
     }
+
+    // Em PWA (Chrome Android), abrir a câmera pausa o contexto da página.
+    // O Supabase pode interpretar como inatividade e disparar SIGNED_OUT.
+    // Salvamos o token antes e restauramos a sessão ao retornar se necessário.
+    const { data: { session: sessionBefore } } = await supabase.auth.getSession();
+    const savedAccessToken  = sessionBefore?.access_token ?? null;
+    const savedRefreshToken = sessionBefore?.refresh_token ?? null;
+
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: "images",
       quality: 0.3,
       base64: true,
     });
+
+    // Verifica sessão após retorno da câmera
+    const { data: { session: sessionAfter } } = await supabase.auth.getSession();
+    if (!sessionAfter && savedAccessToken && savedRefreshToken) {
+      console.log('[meal-capture] sessão perdida ao fechar câmera — restaurando');
+      await supabase.auth.setSession({
+        access_token:  savedAccessToken,
+        refresh_token: savedRefreshToken,
+      });
+    }
+
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       setPhotoUri(asset.uri);
@@ -159,6 +179,7 @@ export default function MealCapture() {
     }
 
     setStep("analyzing");
+    setDebugMsg("");
 
     console.log('[meal-capture] iniciando análise — clientId:', clientId, 'base64 length:', base64.length);
 
@@ -177,7 +198,7 @@ export default function MealCapture() {
 
       console.log('[meal-capture] invoke result — data:', JSON.stringify(data), 'error:', JSON.stringify(error));
 
-      // Erro de transporte (sem rede, DNS, etc.) — não deveria acontecer com a nova Edge Function
+      // Erro de transporte (sem rede, DNS, etc.)
       if (error) {
         let msg = "Não foi possível conectar ao servidor. Verifique sua conexão.";
         try {
@@ -185,20 +206,20 @@ export default function MealCapture() {
           console.log('[meal-capture] error.context.text():', text);
           if (text) { const p = JSON.parse(text); msg = p.error ?? msg; }
         } catch {}
-        Alert.alert("Erro na análise", msg);
+        setDebugMsg(`[transport error] ${msg}`);
         setStep("capture");
         return;
       }
 
       // Todos os erros lógicos chegam aqui como data.error (status 200)
       if (data?.error) {
-        Alert.alert("Foto inválida", data.error);
+        setDebugMsg(`[data.error] ${data.error}`);
         setStep("capture");
         return;
       }
 
       if (!data?.meal_log_id) {
-        Alert.alert("Erro na análise", "Resposta inesperada do servidor. Tente novamente.");
+        setDebugMsg(`[sem meal_log_id] data=${JSON.stringify(data)}`);
         setStep("capture");
         return;
       }
@@ -207,10 +228,10 @@ export default function MealCapture() {
       setEditableFoods((data as AnalysisResult).foods.map((f, i) => ({ ...f, order_index: i })));
       setStep("review");
     } catch (err: any) {
+      const msg = err?.message ?? err?.context?.message ?? JSON.stringify(err) ?? "Erro desconhecido";
       console.error('[meal-capture] ERRO COMPLETO:', JSON.stringify(err));
       console.error('[meal-capture] err.message:', err?.message);
-      // Nunca navegar para login — sempre voltar para captura
-      Alert.alert("Erro na análise", err.message ?? "Erro inesperado. Tente novamente.");
+      setDebugMsg(`[catch] ${msg}`);
       setStep("capture");
     }
   }
@@ -417,6 +438,10 @@ export default function MealCapture() {
             <Text style={styles.captureBtnText}>Escolher da Galeria</Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {debugMsg ? (
+          <Text style={styles.debugMsg}>{debugMsg}</Text>
+        ) : null}
       </View>
     );
   }
@@ -627,6 +652,7 @@ const styles = StyleSheet.create({
   analyzeThumb: { width: 120, height: 120, borderRadius: 16, marginBottom: 8 },
   analyzingText: { marginTop: 20, fontSize: 18, fontWeight: "700", color: T.t1, textAlign: "center" },
   analyzingSub: { marginTop: 8, fontSize: 13, color: T.t3, textAlign: "center" },
+  debugMsg: { marginTop: 16, fontSize: 11, color: T.red, textAlign: "center", paddingHorizontal: 16, lineHeight: 16 },
 
   // Review
   reviewHeader: { padding: 16, gap: 12 },
