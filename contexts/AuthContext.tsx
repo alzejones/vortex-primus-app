@@ -142,7 +142,11 @@ export const AuthProvider = ({ children }: any) => {
       setSession(null); // 2. Limpa a memória do app
       setRole(null);
       setSigningOut(false);
-      router.replace("/login"); // 3. O PULO DO GATO: Força a ida para o login
+      
+      // Delay para garantir que o estado seja propagado antes do redirect
+      setTimeout(() => {
+        router.replace("/login");
+      }, 200);
     }
   };
 
