@@ -302,7 +302,7 @@ export default function ClientDiet() {
       ) : (
         <View style={styles.warnCard}>
           <Text style={styles.warnText}>
-            Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma avaliação física.
+            Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma Avaliação de Composição Corporal.
           </Text>
         </View>
       )}
