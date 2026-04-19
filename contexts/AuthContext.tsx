@@ -126,10 +126,17 @@ export const AuthProvider = ({ children }: any) => {
 
   // 🚪 FUNÇÃO OFICIAL PARA SAIR DO SISTEMA
   const signOut = async () => {
-    await supabase.auth.signOut(); // 1. Apaga no Supabase
-    setSession(null); // 2. Limpa a memória do app
-    setRole(null);
-    router.replace("/login"); // 3. O PULO DO GATO: Força a ida para o login
+    try {
+      await supabase.auth.signOut(); // 1. Apaga no Supabase
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      // Mesmo com erro no servidor, force logout local para segurança
+    } finally {
+      // Sempre limpe o estado local e redirecione, independente do erro
+      setSession(null); // 2. Limpa a memória do app
+      setRole(null);
+      router.replace("/login"); // 3. O PULO DO GATO: Força a ida para o login
+    }
   };
 
   return (
