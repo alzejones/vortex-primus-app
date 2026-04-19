@@ -29,41 +29,25 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 async function detectRole(userId: string): Promise<UserRole> {
-  const timeout = new Promise<null>((resolve) =>
-    setTimeout(() => resolve(null), 15000)
-  );
-
   const detect = async (): Promise<UserRole> => {
-    const { data: trainer } = await supabase
-      .from("trainers")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (trainer) return "trainer";
-
-    const { data: client } = await supabase
-      .from("clients")
-      .select("id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (client) return "client";
-
+    const [trainerResult, clientResult] = await Promise.all([
+      supabase.from('trainers').select('id').eq('user_id', userId).maybeSingle(),
+      supabase.from('clients').select('id').eq('user_id', userId).maybeSingle(),
+    ]);
+    if (trainerResult.data) return 'trainer';
+    if (clientResult.data) return 'client';
     return null;
   };
 
-  const firstAttempt = await Promise.race([detect(), timeout]);
-  
-  // Retry once if first attempt timed out
-  if (firstAttempt === null) {
-    const retryTimeout = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), 10000)
-    );
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+  const result = await Promise.race([detect(), timeout]);
+
+  if (result === null) {
+    const retryTimeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
     return Promise.race([detect(), retryTimeout]);
   }
-  
-  return firstAttempt;
+
+  return result;
 }
 
 // 🔐 Provider

@@ -179,17 +179,6 @@ export default function TrainerProfile() {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Debug Messages */}
-        {debugMessages.length > 0 && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugTitle}>DEBUG LOG:</Text>
-            <ScrollView style={styles.debugScroll} nestedScrollEnabled>
-              {debugMessages.slice(-10).map((msg, index) => (
-                <Text key={index} style={styles.debugText}>{msg}</Text>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
         <TouchableOpacity 
           style={[styles.signOutBtn, signingOut && { opacity: 0.5 }]} 
