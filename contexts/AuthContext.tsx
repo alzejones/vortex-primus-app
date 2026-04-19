@@ -104,13 +104,9 @@ export const AuthProvider = ({ children }: any) => {
           // SIGNED_OUT só limpa sessão se realmente não há sessão válida.
           // Guarda contra SIGNED_OUT espúrio disparado por erros de network durante chamadas longas.
           if (event === "SIGNED_OUT") {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
-            if (currentSession) {
-              setSession(currentSession);
-              return;
-            }
             setSession(null);
             setRole(null);
+            setLoading(false);
             return;
           }
 
@@ -150,11 +146,7 @@ export const AuthProvider = ({ children }: any) => {
     try {
       addDebug("2. Chamando supabase.auth.signOut()");
       
-      // Promise.race com timeout de 3 segundos
-      await Promise.race([
-        supabase.auth.signOut(),
-        new Promise(resolve => setTimeout(resolve, 3000))
-      ]);
+      await supabase.auth.signOut();
       
       addDebug("3. Supabase signOut retornou - sucesso ou timeout");
     } catch (err) {
