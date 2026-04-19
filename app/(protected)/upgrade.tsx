@@ -138,8 +138,8 @@ export default function UpgradeScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>← Voltar</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>🔥 TELA DE UPGRADE (DEBUG)</Text>
-        <Text style={styles.subtitle}>Escolha o plano ideal para escalar a sua faturação. Ferramentas criadas para que os seus alunos vejam o seu valor real e nunca queiram parar de treinar.</Text>
+        <Text style={styles.title}>🔥 TELA DE UPGRADE</Text>
+        <Text style={styles.subtitle}>Escolha o plano ideal para escalar a sua lucratividade. Ferramentas criadas para que os seus alunos vejam o seu valor real e nunca queiram parar de treinar.</Text>
       </View>
 
       <View style={styles.cardsContainer}>
