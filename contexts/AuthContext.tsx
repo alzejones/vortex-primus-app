@@ -129,7 +129,6 @@ export const AuthProvider = ({ children }: any) => {
 
   // 🚪 FUNÇÃO OFICIAL PARA SAIR DO SISTEMA
   const signOut = async () => {
-    console.log("SIGNOUT INICIADO");
     if (signingOut) return; // Previne múltiplos cliques
     
     setSigningOut(true);
@@ -148,7 +147,7 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, role, signOut }}>
+    <AuthContext.Provider value={{ session, loading, role, signingOut, signOut }}>
       {children}
     </AuthContext.Provider>
   );

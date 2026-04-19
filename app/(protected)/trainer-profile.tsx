@@ -181,10 +181,7 @@ export default function TrainerProfile() {
 
         <TouchableOpacity 
           style={[styles.signOutBtn, signingOut && { opacity: 0.5 }]} 
-          onPress={() => {
-            console.log("CLICOU SAIR");
-            signOut();
-          }} 
+          onPress={() => signOut()} 
           disabled={signingOut}
         >
           <Text style={styles.signOutText}>
