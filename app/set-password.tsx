@@ -28,19 +28,28 @@ export default function SetPassword() {
   const confirmRef = useRef<TextInput>(null);
 
   const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
-  const tokenHash = Array.isArray(params.token_hash) ? params.token_hash[0] : (params.token_hash ?? null);
-  const tokenType = Array.isArray(params.type) ? params.type[0] : (params.type ?? null);
 
   useEffect(() => {
     async function setup() {
-      if (!tokenHash || tokenType !== "invite") {
+      // Tenta query params primeiro (fluxo normal)
+      let tokenHash = Array.isArray(params.token_hash) ? params.token_hash[0] : (params.token_hash ?? null);
+      let tokenType = Array.isArray(params.type) ? params.type[0] : (params.type ?? null);
+
+      // Fallback: extrai do hash da URL (comportamento padrão do Supabase na web)
+      if ((!tokenHash || !tokenType) && typeof window !== 'undefined' && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        if (!tokenHash) tokenHash = hashParams.get('token_hash');
+        if (!tokenType) tokenType = hashParams.get('type');
+      }
+
+      if (!tokenHash || tokenType !== 'invite') {
         setInvalidLink(true);
         return;
       }
 
       const { data, error } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
-        type: "invite",
+        type: 'invite',
       });
 
       if (error || !data.session?.user) {
@@ -50,15 +59,15 @@ export default function SetPassword() {
 
       const user = data.session.user;
       const clientId = user.user_metadata?.client_id as string | undefined;
-      if (clientId && user.user_metadata?.role === "client") {
+      if (clientId && user.user_metadata?.role === 'client') {
         await supabase
-          .from("clients")
+          .from('clients')
           .update({ user_id: user.id })
-          .eq("id", clientId)
-          .is("user_id", null);
+          .eq('id', clientId)
+          .is('user_id', null);
       }
 
-      setEmail(user.email ?? "");
+      setEmail(user.email ?? '');
       setReady(true);
     }
 
