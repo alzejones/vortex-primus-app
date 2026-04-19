@@ -19,7 +19,7 @@ import { T } from "../../utils/theme";
 
 export default function TrainerProfile() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, signingOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -179,8 +179,14 @@ export default function TrainerProfile() {
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={() => signOut()}>
-          <Text style={styles.signOutText}>Sair da conta</Text>
+        <TouchableOpacity 
+          style={[styles.signOutBtn, signingOut && { opacity: 0.5 }]} 
+          onPress={() => signOut()} 
+          disabled={signingOut}
+        >
+          <Text style={styles.signOutText}>
+            {signingOut ? "Saindo..." : "Sair da conta"}
+          </Text>
         </TouchableOpacity>
 
       </ScrollView>

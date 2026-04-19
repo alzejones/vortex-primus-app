@@ -9,6 +9,7 @@ type AuthContextType = {
   session: any;
   loading: boolean;
   role: UserRole;
+  signingOut: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   role: null,
+  signingOut: false,
   signOut: async () => {},
 });
 
@@ -65,6 +67,7 @@ export const AuthProvider = ({ children }: any) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<UserRole>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   // 🧠 PEGAR SESSÃO INICIAL E OUVIR MUDANÇAS
   useEffect(() => {
@@ -126,6 +129,9 @@ export const AuthProvider = ({ children }: any) => {
 
   // 🚪 FUNÇÃO OFICIAL PARA SAIR DO SISTEMA
   const signOut = async () => {
+    if (signingOut) return; // Previne múltiplos cliques
+    
+    setSigningOut(true);
     try {
       await supabase.auth.signOut(); // 1. Apaga no Supabase
     } catch (error) {
@@ -135,6 +141,7 @@ export const AuthProvider = ({ children }: any) => {
       // Sempre limpe o estado local e redirecione, independente do erro
       setSession(null); // 2. Limpa a memória do app
       setRole(null);
+      setSigningOut(false);
       router.replace("/login"); // 3. O PULO DO GATO: Força a ida para o login
     }
   };
