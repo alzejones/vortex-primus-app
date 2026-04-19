@@ -71,7 +71,7 @@ export default function MeasurementsEvolutionPanel({
 
   return (
     <View style={{ marginBottom: 24 }}>
-      <Text style={{ fontSize: 16, fontWeight: '900', color: T.t1, marginBottom: 16, textTransform: 'uppercase', textAlign: 'center' }}>
+      <Text style={{ fontSize: 16, fontWeight: '900', color: T.white, marginBottom: 16, textTransform: 'uppercase', textAlign: 'center' }}>
         📏 Evolução de Medidas Corporais
       </Text>
 
