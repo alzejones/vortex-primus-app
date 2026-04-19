@@ -19,7 +19,7 @@ import { T } from "../../utils/theme";
 
 export default function TrainerProfile() {
   const router = useRouter();
-  const { signOut, signingOut } = useAuth();
+  const { signOut, signingOut, debugMessages } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -179,6 +179,18 @@ export default function TrainerProfile() {
           </LinearGradient>
         </TouchableOpacity>
 
+        {/* Debug Messages */}
+        {debugMessages.length > 0 && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugTitle}>DEBUG LOG:</Text>
+            <ScrollView style={styles.debugScroll} nestedScrollEnabled>
+              {debugMessages.slice(-10).map((msg, index) => (
+                <Text key={index} style={styles.debugText}>{msg}</Text>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         <TouchableOpacity 
           style={[styles.signOutBtn, signingOut && { opacity: 0.5 }]} 
           onPress={() => signOut()} 
@@ -232,4 +244,9 @@ const styles = StyleSheet.create({
 
   signOutBtn: { alignItems: "center", paddingVertical: 12 },
   signOutText: { color: T.t4, fontSize: 13, fontWeight: "500" },
+
+  debugContainer: { backgroundColor: T.surfaceAlt, padding: 12, borderRadius: 8, marginBottom: 16, maxHeight: 200 },
+  debugTitle: { color: T.orange, fontSize: 12, fontWeight: "800", marginBottom: 8 },
+  debugScroll: { maxHeight: 160 },
+  debugText: { color: T.orange, fontSize: 10, fontWeight: "500", marginBottom: 2, fontFamily: 'monospace' },
 });

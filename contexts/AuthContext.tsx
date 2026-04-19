@@ -10,6 +10,8 @@ type AuthContextType = {
   loading: boolean;
   role: UserRole;
   signingOut: boolean;
+  debugMessages: string[];
+  addDebug: (msg: string) => void;
   signOut: () => Promise<void>;
 };
 
@@ -18,6 +20,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   role: null,
   signingOut: false,
+  debugMessages: [],
+  addDebug: () => {},
   signOut: async () => {},
 });
 
@@ -68,6 +72,12 @@ export const AuthProvider = ({ children }: any) => {
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<UserRole>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [debugMessages, setDebugMessages] = useState<string[]>([]);
+
+  const addDebug = (msg: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugMessages(prev => [...prev, `${timestamp}: ${msg}`]);
+  };
 
   // 🧠 PEGAR SESSÃO INICIAL E OUVIR MUDANÇAS
   useEffect(() => {
@@ -129,29 +139,43 @@ export const AuthProvider = ({ children }: any) => {
 
   // 🚪 FUNÇÃO OFICIAL PARA SAIR DO SISTEMA
   const signOut = async () => {
-    if (signingOut) return; // Previne múltiplos cliques
+    addDebug("1. signOut() chamado");
+    if (signingOut) {
+      addDebug("🚨 BUG AQUI: signOut já em execução - return");
+      return;
+    }
     
     setSigningOut(true);
+    let error = null;
     try {
+      addDebug("2. Chamando supabase.auth.signOut()");
       await supabase.auth.signOut(); // 1. Apaga no Supabase
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      addDebug("3. Supabase signOut retornou - erro: null");
+    } catch (err) {
+      error = err;
+      addDebug(`3. Supabase signOut retornou - erro: ${err}`);
+      addDebug(`ERRO: ${err}`);
+      console.error("Erro ao fazer logout:", err);
       // Mesmo com erro no servidor, force logout local para segurança
     } finally {
+      addDebug("4. Limpando estado local");
       // Sempre limpe o estado local e redirecione, independente do erro
       setSession(null); // 2. Limpa a memória do app
       setRole(null);
       setSigningOut(false);
+      addDebug(`5. Estado limpo - user: ${session?.user?.email || 'null'}`);
       
       // Delay para garantir que o estado seja propagado antes do redirect
       setTimeout(() => {
+        addDebug("6. Chamando router.replace(/login)");
         router.replace("/login");
+        addDebug("7. router.replace executado");
       }, 200);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, role, signingOut, signOut }}>
+    <AuthContext.Provider value={{ session, loading, role, signingOut, debugMessages, addDebug, signOut }}>
       {children}
     </AuthContext.Provider>
   );
