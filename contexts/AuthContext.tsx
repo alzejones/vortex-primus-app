@@ -149,8 +149,14 @@ export const AuthProvider = ({ children }: any) => {
     let error = null;
     try {
       addDebug("2. Chamando supabase.auth.signOut()");
-      await supabase.auth.signOut(); // 1. Apaga no Supabase
-      addDebug("3. Supabase signOut retornou - erro: null");
+      
+      // Promise.race com timeout de 3 segundos
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise(resolve => setTimeout(resolve, 3000))
+      ]);
+      
+      addDebug("3. Supabase signOut retornou - sucesso ou timeout");
     } catch (err) {
       error = err;
       addDebug(`3. Supabase signOut retornou - erro: ${err}`);
