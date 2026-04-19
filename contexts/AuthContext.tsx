@@ -129,6 +129,7 @@ export const AuthProvider = ({ children }: any) => {
 
   // 🚪 FUNÇÃO OFICIAL PARA SAIR DO SISTEMA
   const signOut = async () => {
+    console.log("SIGNOUT INICIADO");
     if (signingOut) return; // Previne múltiplos cliques
     
     setSigningOut(true);
