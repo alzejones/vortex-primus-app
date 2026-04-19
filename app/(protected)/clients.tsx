@@ -51,19 +51,18 @@ export default function Clients() {
   }
 
   async function handleDelete(id: string) {
-    Alert.alert("Excluir", "Deseja realmente excluir?", [
-      { text: "Cancelar" },
+    Alert.alert('Excluir aluno', 'Deseja realmente excluir este aluno? Esta ação não pode ser desfeita.', [
+      { text: 'Cancelar', style: 'cancel' },
       {
-        text: "Excluir",
-        style: "destructive",
+        text: 'Excluir',
+        style: 'destructive',
         onPress: async () => {
-          const { error } = await supabase
-            .from("clients")
-            .delete()
-            .eq("id", id);
+          const { data, error } = await supabase.functions.invoke('delete-client', {
+            body: { client_id: id },
+          });
 
-          if (error) {
-            Alert.alert("Erro ao excluir", error.message);
+          if (error || data?.error) {
+            Alert.alert('Erro ao excluir', data?.error ?? error?.message ?? 'Erro desconhecido');
           } else if (trainerId) {
             fetchClients(trainerId);
           }
