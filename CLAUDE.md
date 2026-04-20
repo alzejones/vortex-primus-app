@@ -121,22 +121,22 @@ components/StripeWrapper.web.tsx   → retorna apenas children
 
 ---
 
-## Responsividade Web
+## Layout Mobile-Only
 
-Breakpoint mobile/desktop: 768px via `utils/useBreakpoint.ts`
+**Status:** Aplicação configurada apenas para mobile. Funcionalidades web/desktop removidas para garantir estabilidade.
 
-Padrão de plataforma: arquivos `.web.tsx` são resolvidos automaticamente pelo Expo na web. O arquivo `.tsx` base é sempre o mobile — nunca alterá-lo para adicionar lógica web.
+**Layout atual:**
+- `app/(protected)/_layout.tsx` — TabBar inferior absoluta (mobile-only)
+- `components/TabBar.tsx` — navegação fixa inferior com 4 abas
+- Sem breakpoints ou lógica responsiva
 
-Arquivos web implementados:
-- `components/TabBar.web.tsx` — sidebar 240px com brand, indicador lateral, hover states
-- `components/layout/LayoutBase.web.tsx` — ScrollView centralizado, maxWidth 1100px, padding 32px
-- `components/dashboard/DashboardLayout.web.tsx` — grid 2 colunas (flex:1 + 320px sidebar), hover actions nos cards de aluno, modal com overlay
+**Arquivos web mantidos apenas para funcionalidades essenciais:**
+- `components/StripeWrapper.web.tsx` — compatibilidade Stripe web
+- `components/DietPlanPDF.web.tsx` — export PDF via window.print()  
+- `components/AIDietPDF.web.tsx` — export PDF IA via window.print()
+- `hooks/useStripeProxy.web.ts` — proxy Stripe web
 
-Layout desktop `(protected)/_layout.tsx`:
-- Desktop: `<TabBar /> | <Slot />` lado a lado em flexDirection row
-- Mobile: TabBar absolute bottom 0, paddingBottom 64
-
-Regra de expansão: ao tornar qualquer nova tela responsiva, sempre criar `.web.tsx` separado. Nunca usar condicionais de plataforma dentro do `.tsx` base.
+> ⚠️ **Responsividade web foi removida** após problemas de compatibilidade e scroll. O app funciona perfeitamente no mobile e usa versão mobile no navegador.
 
 ---
 
@@ -184,6 +184,12 @@ Todo plugin nativo **deve ser declarado** no array `plugins`:
 ---
 
 ## Histórico de Manutenção
+
+### 2026-04-20 — Rollback para mobile-only funcional
+- Hard reset para commit `137e9cc` (estado pré-responsividade)
+- Removidos todos os arquivos responsivos: `TabBar.web.tsx`, `DashboardLayout.web.tsx`, `LayoutBase.web.tsx`, `useBreakpoint.ts`
+- Layout `(protected)/_layout.tsx` revertido para mobile-only com TabBar inferior
+- Estado estável: aplicação funciona perfeitamente no mobile e navegador (modo mobile)
 
 ### 2026-04-19 — Otimização auth system + cleanup debug UI
 - `detectRole()` otimizada: queries paralelas via `Promise.all()`, timeout 5s, ~50% performance gain
