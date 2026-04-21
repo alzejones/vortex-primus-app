@@ -185,6 +185,15 @@ Todo plugin nativo **deve ser declarado** no array `plugins`:
 
 ## Histórico de Manutenção
 
+### 2026-04-21 — Responsividade Web — fase 1
+- `app/login.tsx`: responsivo com Dimensions (mobile idêntico, desktop card centralizado maxWidth 480)
+- `app/index.tsx`: removido addDebug() durante render (fix setState-in-render no Concurrent Mode)
+- `components/TabBar.tsx`: useSafeAreaInsets para Android safe area
+- `app/(protected)/_layout.tsx`: TabBar oculto no desktop (isDesktop >= 768), paddingBottom condicional
+- `components/dashboard/DashboardLayout.tsx`: wrapper responsivo com maxWidth 960, modal overlay desktop
+- Branch: `feature/responsive-ui` (pendente merge para main após testes completos)
+- Próxima sessão: continuar responsividade tela a tela a partir do Dashboard e seguir para demais telas de (protected)
+
 ### 2026-04-20 — Rollback para mobile-only funcional
 - Hard reset para commit `137e9cc` (estado pré-responsividade)
 - Removidos todos os arquivos responsivos: `TabBar.web.tsx`, `DashboardLayout.web.tsx`, `LayoutBase.web.tsx`, `useBreakpoint.ts`
