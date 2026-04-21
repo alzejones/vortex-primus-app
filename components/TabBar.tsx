@@ -3,6 +3,7 @@
 // ============================================================
 import { router, usePathname } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { T } from "../utils/theme";
 
 const TABS = [
@@ -23,10 +24,11 @@ function isActive(key: string, pathname: string): boolean {
 }
 
 export default function TabBar() {
+  const insets = useSafeAreaInsets();
   const pathname = usePathname();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: 64 + insets.bottom, paddingBottom: insets.bottom + 8 }]}>
       {TABS.map((tab) => {
         const active = isActive(tab.key, pathname);
         return (
@@ -61,8 +63,6 @@ const styles = StyleSheet.create({
     backgroundColor: T.surface,
     borderTopWidth: 1,
     borderTopColor: T.border,
-    height: 64,
-    paddingBottom: 8,
   },
   tab: {
     flex: 1,

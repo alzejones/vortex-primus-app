@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Dimensions,
   View,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
@@ -28,6 +29,23 @@ if (Platform.OS !== "web") {
 export default function Login() {
   const { session, role } = useAuth();
 
+  // ─── Responsividade ───────────────────────────────────────────────
+  const [screenWidth, setScreenWidth] = useState(
+    () => Dimensions.get('window').width || 375
+  );
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+    });
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
+  const CARD_MAX_WIDTH = 480;
+  const toastSide = isDesktop
+    ? Math.max(24, (screenWidth - CARD_MAX_WIDTH) / 2)
+    : 24;
+  // ──────────────────────────────────────────────────────────────────
+
   // Redireciona após login baseado no role — aguarda detectRole() resolver
   useEffect(() => {
     if (!session || role === null) return;
@@ -42,7 +60,10 @@ export default function Login() {
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
-  const handleTyping = (text: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
+  const handleTyping = (
+    text: string,
+    setter: React.Dispatch<React.SetStateAction<string>>
+  ) => {
     setter(text);
     if (message) setMessage("");
   };
@@ -55,7 +76,7 @@ export default function Login() {
           provider: "google",
           options: {
             redirectTo: "https://vortex-primus-app.vercel.app/login",
-            queryParams: { prompt: "select_account" }
+            queryParams: { prompt: "select_account" },
           },
         });
         if (error) throw error;
@@ -66,7 +87,7 @@ export default function Login() {
           options: {
             redirectTo,
             skipBrowserRedirect: true,
-            queryParams: { prompt: "select_account" }
+            queryParams: { prompt: "select_account" },
           },
         });
         if (error) throw error;
@@ -91,7 +112,11 @@ export default function Login() {
       password,
     });
     if (error) {
-      setMessage(error.message.toLowerCase().includes("invalid login") ? "E-mail ou senha incorretos." : error.message);
+      setMessage(
+        error.message.toLowerCase().includes("invalid login")
+          ? "E-mail ou senha incorretos."
+          : error.message
+      );
       return;
     }
   }
@@ -103,9 +128,16 @@ export default function Login() {
       setMessage("E-mail válido e senha de 6 dígitos são necessários.");
       return;
     }
-    const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
+    const { data, error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+    });
     if (error) {
-      setMessage(error.message.toLowerCase().includes("already registered") ? "E-mail já cadastrado." : error.message);
+      setMessage(
+        error.message.toLowerCase().includes("already registered")
+          ? "E-mail já cadastrado."
+          : error.message
+      );
       return;
     }
   }
@@ -159,7 +191,8 @@ export default function Login() {
     setResetCode("");
   }
 
-  const isSuccess = message.includes("sucesso") || message.includes("enviado");
+  const isSuccess =
+    message.includes("sucesso") || message.includes("enviado");
 
   return (
     <KeyboardAvoidingView
@@ -167,41 +200,82 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {/* Glow radial simulado */}
-      <View style={styles.glowCenter} pointerEvents="none" />
+      <View
+        style={[
+          styles.glowCenter,
+          isDesktop && styles.glowCenterDesktop,
+        ]}
+        pointerEvents="none"
+      />
 
-      {/* Toast */}
+      {/* Toast — alinhado com o card em qualquer resolução */}
       {message ? (
-        <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError]}>
-          <Text style={[styles.toastText, isSuccess ? styles.toastTextSuccess : styles.toastTextError]}>
+        <View
+          style={[
+            styles.toast,
+            isSuccess ? styles.toastSuccess : styles.toastError,
+            { left: toastSide, right: toastSide },
+          ]}
+        >
+          <Text
+            style={[
+              styles.toastText,
+              isSuccess ? styles.toastTextSuccess : styles.toastTextError,
+            ]}
+          >
             {message}
           </Text>
         </View>
       ) : null}
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          isDesktop && styles.scrollContentDesktop,
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Branding */}
         <View style={styles.brandingContainer}>
-          <LinearGradient {...GradientPrimary} style={styles.logoBox}>
-            <Text style={styles.logoLetter}>V</Text>
+          <LinearGradient
+            {...GradientPrimary}
+            style={[styles.logoBox, isDesktop && styles.logoBoxDesktop]}
+          >
+            <Text
+              style={[
+                styles.logoLetter,
+                isDesktop && styles.logoLetterDesktop,
+              ]}
+            >
+              V
+            </Text>
           </LinearGradient>
-          <Text style={styles.appName}>
+          <Text
+            style={[styles.appName, isDesktop && styles.appNameDesktop]}
+          >
             Vortex <Text style={styles.appNameBlue}>Primus</Text>
           </Text>
           <Text style={styles.appSubtitle}>Performance & Gestão</Text>
         </View>
 
         {/* Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, isDesktop && styles.cardDesktop]}>
           {!isResetting ? (
             <>
               {/* Google */}
-              <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
+              <TouchableOpacity
+                style={styles.googleButton}
+                onPress={handleGoogleLogin}
+              >
                 <Image
-                  source={{ uri: "https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png" }}
+                  source={{
+                    uri: "https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png",
+                  }}
                   style={styles.googleIcon}
                 />
-                <Text style={styles.googleButtonText}>Continuar com o Google</Text>
+                <Text style={styles.googleButtonText}>
+                  Continuar com o Google
+                </Text>
               </TouchableOpacity>
 
               {/* Divider */}
@@ -245,14 +319,26 @@ export default function Login() {
               </View>
 
               {/* Botão Entrar */}
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin} activeOpacity={0.85}>
-                <LinearGradient {...GradientPrimary} style={styles.primaryBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={handleLogin}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  {...GradientPrimary}
+                  style={styles.primaryBtnGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
                   <Text style={styles.primaryBtnText}>Entrar</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
               {/* Cadastro */}
-              <TouchableOpacity style={styles.signupBtn} onPress={handleSignup}>
+              <TouchableOpacity
+                style={styles.signupBtn}
+                onPress={handleSignup}
+              >
                 <Text style={styles.signupText}>
                   Ainda não tem conta?{" "}
                   <Text style={styles.signupLink}>Crie agora</Text>
@@ -292,19 +378,32 @@ export default function Login() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.primaryBtn} onPress={handleVerifyAndResetPassword} activeOpacity={0.85}>
-                <LinearGradient {...GradientPrimary} style={styles.primaryBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                  <Text style={styles.primaryBtnText}>Salvar nova senha</Text>
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                onPress={handleVerifyAndResetPassword}
+                activeOpacity={0.85}
+              >
+                <LinearGradient
+                  {...GradientPrimary}
+                  style={styles.primaryBtnGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                >
+                  <Text style={styles.primaryBtnText}>
+                    Salvar nova senha
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => setIsResetting(false)} style={styles.backBtn}>
+              <TouchableOpacity
+                onPress={() => setIsResetting(false)}
+                style={styles.backBtn}
+              >
                 <Text style={styles.backBtnText}>← Voltar para o Login</Text>
               </TouchableOpacity>
             </>
           )}
         </View>
-
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -313,7 +412,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: T.bg },
 
-  // Glow radial simulado — oval azul desfocado no centro-topo
+  // ─── Glow ───────────────────────────────────────────────────────
   glowCenter: {
     position: "absolute",
     top: -120,
@@ -323,15 +422,39 @@ const styles = StyleSheet.create({
     borderRadius: 200,
     backgroundColor: T.blueGlow,
   },
+  // Desktop: glow maior para cobrir telas wide
+  glowCenterDesktop: {
+    width: 700,
+    height: 700,
+    borderRadius: 350,
+    top: -200,
+  },
 
-  scrollContent: { flexGrow: 1, padding: 24, paddingTop: 80, paddingBottom: 60 },
+  // ─── ScrollView ─────────────────────────────────────────────────
+  // Mobile: padding padrão (comportamento atual preservado)
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingTop: 80,
+    paddingBottom: 60,
+  },
+  // Desktop: centraliza o conteúdo verticalmente e horizontalmente
+  scrollContentDesktop: {
+    alignItems: "center",
+    paddingTop: 60,
+    paddingBottom: 80,
+    paddingHorizontal: 24,
+  },
 
-  // Toast
+  // ─── Toast ──────────────────────────────────────────────────────
+  // left/right são sobrescritos inline com toastSide (calculado por width)
   toast: {
     position: "absolute",
-    top: 50, left: 24, right: 24,
-    padding: 16, borderRadius: 12,
-    zIndex: 10, elevation: 6,
+    top: 50,
+    padding: 16,
+    borderRadius: 12,
+    zIndex: 10,
+    elevation: 6,
     backgroundColor: T.surfaceAlt,
     borderLeftWidth: 4,
   },
@@ -341,12 +464,14 @@ const styles = StyleSheet.create({
   toastTextError:   { color: T.red },
   toastTextSuccess: { color: T.green },
 
-  // Branding
+  // ─── Branding ───────────────────────────────────────────────────
   brandingContainer: { alignItems: "center", marginBottom: 36 },
   logoBox: {
-    width: 72, height: 72,
+    width: 72,
+    height: 72,
     borderRadius: 20,
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
     elevation: 8,
     shadowColor: T.blue,
@@ -354,12 +479,32 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 12,
   },
+  logoBoxDesktop: {
+    width: 88,
+    height: 88,
+    borderRadius: 24,
+  },
   logoLetter: { fontSize: 36, fontWeight: "900", color: T.white },
-  appName:     { fontSize: 32, fontWeight: "900", color: T.white, letterSpacing: -0.5 },
+  logoLetterDesktop: { fontSize: 44 },
+  appName: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: T.white,
+    letterSpacing: -0.5,
+  },
+  appNameDesktop: { fontSize: 40 },
   appNameBlue: { color: T.blue },
-  appSubtitle: { fontSize: 11, color: T.t3, fontWeight: "700", letterSpacing: 2.5, textTransform: "uppercase", marginTop: 4 },
+  appSubtitle: {
+    fontSize: 11,
+    color: T.t3,
+    fontWeight: "700",
+    letterSpacing: 2.5,
+    textTransform: "uppercase",
+    marginTop: 4,
+  },
 
-  // Card
+  // ─── Card ───────────────────────────────────────────────────────
+  // Mobile: ocupa 100% da largura (comportamento atual preservado)
   card: {
     backgroundColor: T.card,
     borderRadius: 24,
@@ -372,54 +517,87 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
   },
+  // Desktop: largura fixa 480px, centralizado pelo alignItems do scroll
+  cardDesktop: {
+    width: 480,
+    padding: 32,
+  },
 
-  // Google
+  // ─── Google ─────────────────────────────────────────────────────
   googleButton: {
     flexDirection: "row",
-    height: 54, borderRadius: 12,
-    borderWidth: 1, borderColor: T.border,
+    height: 54,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: T.border,
     backgroundColor: T.surface,
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 16,
   },
   googleIcon:       { width: 20, height: 20, marginRight: 12 },
   googleButtonText: { color: T.t1, fontWeight: "600", fontSize: 15 },
 
-  // Divider
-  divider:     { flexDirection: "row", alignItems: "center", marginVertical: 16 },
+  // ─── Divider ────────────────────────────────────────────────────
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 16,
+  },
   dividerLine: { flex: 1, height: 1, backgroundColor: T.border },
-  dividerText: { marginHorizontal: 12, color: T.t3, fontSize: 12, fontWeight: "700", textTransform: "uppercase" },
+  dividerText: {
+    marginHorizontal: 12,
+    color: T.t3,
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
 
-  // Inputs
+  // ─── Inputs ─────────────────────────────────────────────────────
   inputGroup: { marginBottom: 16 },
   row:        { flexDirection: "row", justifyContent: "space-between" },
   label:      { fontSize: 13, color: T.t2, marginBottom: 8, ...Typography.subtitle },
   forgot:     { fontSize: 13, color: T.blue, fontWeight: "600" },
   input: {
     backgroundColor: T.surface,
-    borderWidth: 1, borderColor: T.border,
+    borderWidth: 1,
+    borderColor: T.border,
     borderRadius: 12,
-    paddingHorizontal: 16, height: 50,
-    fontSize: 16, color: T.white,
+    paddingHorizontal: 16,
+    height: 50,
+    fontSize: 16,
+    color: T.white,
   },
 
-  // Botão primário
+  // ─── Botão primário ─────────────────────────────────────────────
   primaryBtn: { borderRadius: 14, overflow: "hidden", marginTop: 8 },
   primaryBtnGradient: {
     height: 54,
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 14,
   },
   primaryBtnText: { color: T.white, fontWeight: "700", fontSize: 16 },
 
-  // Cadastro
+  // ─── Cadastro ───────────────────────────────────────────────────
   signupBtn:  { marginTop: 24, alignItems: "center" },
   signupText: { color: T.t2, fontSize: 14 },
   signupLink: { color: T.blue, fontWeight: "700" },
 
-  // Reset
-  resetTitle:    { fontSize: 20, color: T.white, marginBottom: 8, textAlign: "center", ...Typography.title },
-  resetSubtitle: { fontSize: 14, color: T.t2, textAlign: "center", marginBottom: 24 },
-  backBtn:       { marginTop: 24, alignItems: "center" },
-  backBtnText:   { color: T.t2, fontSize: 14, fontWeight: "600" },
+  // ─── Reset ──────────────────────────────────────────────────────
+  resetTitle: {
+    fontSize: 20,
+    color: T.white,
+    marginBottom: 8,
+    textAlign: "center",
+    ...Typography.title,
+  },
+  resetSubtitle: {
+    fontSize: 14,
+    color: T.t2,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  backBtn:     { marginTop: 24, alignItems: "center" },
+  backBtnText: { color: T.t2, fontSize: 14, fontWeight: "600" },
 });

@@ -4,11 +4,13 @@
 // ============================================================
 import { Redirect, Slot } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import TabBar from '../../components/TabBar';
 import { T } from '../../utils/theme';
 
 export default function ProtectedLayout() {
+  const insets = useSafeAreaInsets();
   const { session, loading, role } = useAuth();
 
   if (loading) {
@@ -34,7 +36,7 @@ export default function ProtectedLayout() {
   // Mobile: TabBar inferior absoluta
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
-      <View style={{ flex: 1, paddingBottom: 64 }}>
+      <View style={{ flex: 1, paddingBottom: 64 + insets.bottom }}>
         <Slot />
       </View>
       <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
