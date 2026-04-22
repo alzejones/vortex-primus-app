@@ -4,8 +4,8 @@
 // Desktop (>=768px): container centralizado maxWidth 960,
 //                    modal como overlay centralizado.
 // ============================================================
-import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Dimensions,
@@ -13,8 +13,8 @@ import {
   ScrollView, StyleSheet, Text, TextInput,
   TouchableOpacity, View,
 } from 'react-native';
-import { T } from '../../utils/theme';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
+import { T } from '../../utils/theme';
 
 export interface Client {
   id: string;
@@ -229,19 +229,15 @@ export default function DashboardLayout({
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>📅</Text><Text style={styles.actionLabel}>Agendar</Text>
-                  </TouchableOpacity>
-                  <View style={styles.verticalDivider} />
-                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-diet?client_id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>🥗</Text><Text style={styles.actionLabel}>Dieta</Text>
+                    <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>Agendar</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>📉</Text><Text style={styles.actionLabel}>Corporal</Text>
+                    <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>Corporal</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
-                    <Text style={styles.actionEmoji}>➕</Text><Text style={styles.actionLabel}>Avaliar</Text>
+                    <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>Avaliar</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}>
@@ -249,7 +245,7 @@ export default function DashboardLayout({
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>💪</Text><Text style={styles.actionLabel}>Testar</Text>
+                    <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>Testar</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </View>

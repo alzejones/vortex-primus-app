@@ -4,21 +4,20 @@
 // Mobile continua usando DashboardLayout.tsx sem alterações.
 // Layout: Sidebar fixa esquerda + área principal scrollável.
 // ============================================================
-import { router, usePathname } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router, usePathname } from 'expo-router';
 import {
+  FlatList,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  FlatList,
+  View
 } from 'react-native';
-import { T } from '../../utils/theme';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
+import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
 
 // ─── Itens de navegação da sidebar ───────────────────────────
@@ -142,17 +141,23 @@ export default function DashboardLayout({
         <Text style={styles.clientEmail}>{item.email || '—'}</Text>
       </View>
       <View style={styles.clientActions}>
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/client-diet?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>🥗</Text>
+        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
+          <Text style={styles.clientActionIcon}>📋 Perfil</Text>
+        </TouchableOpacity>  
+        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
+          <Text style={styles.clientActionIcon}>🗓️ Agendar</Text>
+        </TouchableOpacity>         
+        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
+          <Text style={styles.clientActionIcon}>🩻 Avaliar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>📉</Text>
+          <Text style={styles.clientActionIcon}>📊 Corporal</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>💪</Text>
+          <Text style={styles.clientActionIcon}>🏋️‍♀️ Testar</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>📅</Text>
+          <Text style={styles.clientActionIcon}>📈 Condic.</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.clientActionBtn, styles.clientDetailBtn]}
