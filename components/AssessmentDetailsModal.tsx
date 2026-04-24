@@ -158,9 +158,17 @@ export default function AssessmentDetailsModal({
               <View style={{ alignItems: 'center', marginBottom: 24 }}>
                 <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 16, borderRadius: 16, elevation: 4 }}>
                   <LineChart
-                    data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))}
-                    data2={muscleData.map((val) => ({ value: Number(val) || 0 }))}
+                    data={fatData.map((val, index) => ({
+                      value: Number(val) || 0,
+                      label: chartLabels[index],
+                      dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
+                    }))}
+                    data2={muscleData.map((val) => ({
+                      value: Number(val) || 0,
+                      dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
+                    }))}
                     height={220} width={screenWidth - 100} isAnimated animationDuration={1200} curved
+                    textShiftY={-14} textShiftX={-8} textFontSize={10} textColor1="#fca5a5" textColor2="#86efac"
                     spacing={Math.max(35, (screenWidth - 160) / (fatData.length > 1 ? fatData.length - 1 : 1))}
                     initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
                     thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
@@ -201,7 +209,7 @@ export default function AssessmentDetailsModal({
                       : null;
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Gordura Corporal</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>% Gordura Corporal</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{bfStatus && (<View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text>{gorduraKg && (
                             <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
                               ({gorduraKg} kg)
@@ -235,7 +243,7 @@ export default function AssessmentDetailsModal({
                       : null;
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Massa Muscular</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>% Massa Muscular</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{mmStatus && (<View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text>{musculoKg && (
                             <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
                               ({musculoKg} kg)
@@ -261,7 +269,7 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Idade Metabólica</Text>
+                      <Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>Idade Metabólica</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date)) && (
                           <View style={{ backgroundColor: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.color, fontSize: 10, fontWeight: '800' }}>{getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.label}</Text></View>
@@ -278,7 +286,7 @@ export default function AssessmentDetailsModal({
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-";
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Gordura Visceral</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>Gordura Visceral</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>{vsStatus && (<View style={{ backgroundColor: vsStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: vsStatus.color, fontSize: 10, fontWeight: '900' }}>{vsStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val}</Text></View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
@@ -303,7 +311,7 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ paddingVertical: 12 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>Metabolismo Basal</Text>
+                      <Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>Metabolismo Basal</Text>
                       <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.basal_metabolic_rate ?? "-"} kcal</Text>
                     </View>
                     <ReferenceLink />
