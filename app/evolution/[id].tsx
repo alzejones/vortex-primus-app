@@ -229,10 +229,19 @@ export default function PublicAssessmentView() {
 
             {(() => {
               const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age);
+              const peso = Number(anthro?.weight) || 0;
+              const val = anthro?.body_fat ?? "-";
+              const gorduraKg = peso > 0 && val !== "-"
+                ? (Number(val) / 100 * peso).toFixed(1)
+                : null;
               return (
                 <View style={styles.barContainer}>
                   <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Gordura Corporal</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{anthro?.body_fat ?? "-"} %</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{gorduraKg && (
+                      <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                        ({gorduraKg} kg)
+                      </Text>
+                    )}</View>
                   </View>
                   <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
                   <View style={styles.track}>
@@ -247,10 +256,19 @@ export default function PublicAssessmentView() {
 
             {(() => {
               const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age);
+              const peso = Number(anthro?.weight) || 0;
+              const val = anthro?.muscle_mass_percentage ?? "-";
+              const musculoKg = peso > 0 && val !== "-"
+                ? (Number(val) / 100 * peso).toFixed(1)
+                : null;
               return (
                 <View style={styles.barContainer}>
                   <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Massa Muscular</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{anthro?.muscle_mass_percentage ?? "-"} %</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{musculoKg && (
+                      <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                        ({musculoKg} kg)
+                      </Text>
+                    )}</View>
                   </View>
                   <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
                   <View style={styles.track}>

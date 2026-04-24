@@ -195,10 +195,18 @@ export default function AssessmentDetailsModal({
                   {(() => {
                     const bfStatus = getLocalBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date));
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat ?? "-";
+                    const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight) || 0;
+                    const gorduraKg = peso > 0 && val !== "-"
+                      ? (Number(val) / 100 * peso).toFixed(1)
+                      : null;
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Gordura Corporal</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{bfStatus && (<View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text></View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{bfStatus && (<View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text>{gorduraKg && (
+                            <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                              ({gorduraKg} kg)
+                            </Text>
+                          )}</View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
@@ -221,10 +229,18 @@ export default function AssessmentDetailsModal({
                   {(() => {
                     const mmStatus = getLocalMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date));
                     const val = selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage ?? "-";
+                    const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight) || 0;
+                    const musculoKg = peso > 0 && val !== "-"
+                      ? (Number(val) / 100 * peso).toFixed(1)
+                      : null;
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: '#475569', fontSize: 13, fontWeight: '500' }}>% Massa Muscular</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{mmStatus && (<View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text></View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{mmStatus && (<View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text>{musculoKg && (
+                            <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                              ({musculoKg} kg)
+                            </Text>
+                          )}</View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
