@@ -6,6 +6,7 @@
 // ============================================================
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   FlatList,
   Modal,
@@ -19,6 +20,7 @@ import {
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
+import MobileLayout from './DashboardLayoutMobile';
 
 // ─── Itens de navegação da sidebar ───────────────────────────
 const NAV_ITEMS = [
@@ -38,17 +40,31 @@ function isNavActive(key: string, pathname: string): boolean {
   }
 }
 
-export default function DashboardLayout({
-  planName, maxClients, currentClients, planStatus,
-  clients, filteredClients, upcomingAppointments,
-  searchQuery, onSearchChange,
-  isScheduleModalVisible, onOpenScheduleModal, onCloseScheduleModal,
-  scheduleSearchQuery, onScheduleSearchChange, scheduleFilteredClients,
-  refreshing, onRefresh,
-  getInitials, formatDateBR,
-}: DashboardLayoutProps) {
+export default function DashboardLayout(props: DashboardLayoutProps) {
+  const {
+    planName, maxClients, currentClients, planStatus,
+    clients, filteredClients, upcomingAppointments,
+    searchQuery, onSearchChange,
+    isScheduleModalVisible, onOpenScheduleModal, onCloseScheduleModal,
+    scheduleSearchQuery, onScheduleSearchChange, scheduleFilteredClients,
+    refreshing, onRefresh,
+    getInitials, formatDateBR,
+  } = props;
 
   const pathname = usePathname();
+
+  // ─── Detecção de viewport: mobile browser usa layout mobile ──
+  const [screenWidth, setScreenWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  if (screenWidth < 768) return <MobileLayout {...props} />;
+  // ─────────────────────────────────────────────────────────────
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
 
   // ─── Sidebar ─────────────────────────────────────────────────
