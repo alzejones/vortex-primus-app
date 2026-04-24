@@ -129,7 +129,10 @@ export default function PublicAssessmentView() {
       if (historyError || !historyData || historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
 
       setAssessments(historyData);
-      setCurrentAssessment(historyData[0]);
+      const assessmentWithData = historyData.find(
+        (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
+      ) || historyData[0];
+      setCurrentAssessment(assessmentWithData);
     } catch (error: any) {
       setErrorMsg(error.message);
     } finally {
