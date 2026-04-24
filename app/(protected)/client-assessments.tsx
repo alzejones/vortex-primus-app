@@ -34,6 +34,13 @@ export default function ClientAssessments() {
     }
   }, [openForm]);
 
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
+
   const { session } = useAuth();
   const clientId = id as string;
 
@@ -169,7 +176,7 @@ export default function ClientAssessments() {
     ? chartAssessments.map(a => Number(a.anthropometry[0].muscle_mass_percentage) || 0)
     : [0];
 
-  const screenWidth = Dimensions.get("window").width - 60;
+  const chartWidth = Dimensions.get("window").width - 60;
 
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
@@ -533,8 +540,10 @@ export default function ClientAssessments() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg, paddingTop: Platform.OS === "android" ? 48 : 0 }}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+    <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+        <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === "android" ? 48 : 0 }}>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
 
         {/* MODAL DE FORMULÁRIO */}
         <Modal visible={formModalVisible} animationType="slide" onRequestClose={() => setFormModalVisible(false)}>
@@ -598,8 +607,12 @@ export default function ClientAssessments() {
           </View>
         </Modal>
 
-        {/* TELA PRINCIPAL */}
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 120 }}>
+            {/* TELA PRINCIPAL */}
+            <ScrollView 
+              keyboardShouldPersistTaps="handled" 
+              contentContainerStyle={{ paddingBottom: isDesktop ? 80 : 120 }}
+              showsVerticalScrollIndicator={true}
+            >
           <View style={styles.stickyHeader}>
             <View style={styles.headerRow}>
               <Text style={styles.headerItem}><Text style={styles.bold}>Nome: </Text>{client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}</Text>
@@ -614,7 +627,7 @@ export default function ClientAssessments() {
 
             <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: T.card, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: T.border }}>
               <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 }}>
-                <LineChart data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))} data2={muscleData.map((val) => ({ value: Number(val) || 0 }))} height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))} initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e" thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)" yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }} yAxisLabelSuffix="%" stepValue={5} maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5} noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)} rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)" />
+                <LineChart data={fatData.map((val, index) => ({ value: Number(val) || 0, label: chartLabels[index] }))} data2={muscleData.map((val) => ({ value: Number(val) || 0 }))} height={220} width={chartWidth - 80} isAnimated animationDuration={1200} curved spacing={Math.max(35, (chartWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))} initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e" thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)" yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }} yAxisLabelSuffix="%" stepValue={5} maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5} noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)} rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)" />
                 <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
@@ -647,11 +660,13 @@ export default function ClientAssessments() {
               );
             })}
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
 
-      <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} />
-    </SafeAreaView>
+        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} />
+      </View>
+    </View>
   );
 }
 

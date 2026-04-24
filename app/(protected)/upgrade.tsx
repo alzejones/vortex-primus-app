@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Platform,
   ScrollView,
   StyleSheet,
@@ -26,6 +27,14 @@ interface Plan {
 
 export default function UpgradeScreen() {
   const router = useRouter();
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
+
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,7 +141,13 @@ export default function UpgradeScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ paddingBottom: isDesktop ? 40 : 60 }} 
+          showsVerticalScrollIndicator={true}
+        >
 
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -207,7 +222,9 @@ export default function UpgradeScreen() {
         })}
       </View>
 
-    </ScrollView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 

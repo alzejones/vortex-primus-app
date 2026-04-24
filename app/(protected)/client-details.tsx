@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -50,6 +51,13 @@ const sqlToDate = (sqlStr: string) => {
 export default function ClientDetails() {
   const { id } = useLocalSearchParams();
   const clientId = id as string;
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -278,11 +286,16 @@ export default function ClientDetails() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={[styles.wrapper, { maxWidth: isDesktop ? 900 : undefined }]}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView 
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: isDesktop ? 60 : 40 }]} 
+            showsVerticalScrollIndicator={true}
+          >
 
         <View style={styles.header}>
           <Text style={styles.title}>Perfil do Aluno</Text>
@@ -489,7 +502,9 @@ export default function ClientDetails() {
           )}
         </TouchableOpacity>
 
-      </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
 
       {/* MODAL: seleção de canal do convite */}
       <Modal
@@ -541,15 +556,15 @@ export default function ClientDetails() {
           </Pressable>
         </Pressable>
       </Modal>
-
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: T.bg },
+  wrapper: { flex: 1, width: '100%' },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
-  scrollContent: { padding: 20, paddingBottom: 40 },
+  scrollContent: { padding: 20 },
 
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   title: { fontSize: 28, fontWeight: "800", color: T.t1 },

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
   Linking,
   Modal,
@@ -35,6 +36,14 @@ interface Appointment {
 
 export default function ScheduleIndex() {
   const router = useRouter();
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -213,7 +222,8 @@ export default function ScheduleIndex() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Text style={styles.backBtnText}>← Voltar</Text>
@@ -348,8 +358,8 @@ export default function ScheduleIndex() {
         <FlatList
           data={groupedData}
           keyExtractor={(item) => item.title}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.listContent, { paddingBottom: isDesktop ? 60 : 100 }]}
+          showsVerticalScrollIndicator={true}
           renderItem={({ item }) => (
             <View style={{ marginBottom: 24 }}>
               <View style={styles.dateHeaderContainer}>
@@ -397,6 +407,7 @@ export default function ScheduleIndex() {
           )}
         />
       )}
+      </View>
     </View>
   );
 }
@@ -412,7 +423,7 @@ const styles = StyleSheet.create({
 
   emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
 
-  listContent: { padding: 20, paddingBottom: 100 },
+  listContent: { padding: 20 },
   dateHeaderContainer: { flexDirection: "row", alignItems: "center", marginBottom: 16, marginTop: 8 },
   dateHeader: { fontSize: 16, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5 },
 

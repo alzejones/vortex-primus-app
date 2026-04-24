@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   Modal,
   ScrollView,
   StyleSheet,
@@ -28,6 +29,13 @@ interface Plan {
 export default function PlansScreen() {
   const { trainerId, plan: currentPlan, subscription, loadingTrainer } = useTrainer();
   const { initPaymentSheet, presentPaymentSheet } = useStripeProxy();
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -142,7 +150,13 @@ export default function PlansScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ padding: 20, paddingBottom: isDesktop ? 40 : 60 }}
+          showsVerticalScrollIndicator={true}
+        >
       <Text style={styles.title}>Planos Disponíveis</Text>
 
       {plans.map((plan) => {
@@ -196,7 +210,9 @@ export default function PlansScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 

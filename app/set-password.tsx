@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +17,23 @@ import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
 
 export default function SetPassword() {
+  // ─── Responsividade ───────────────────────────────
+  const [screenWidth, setScreenWidth] = useState(
+    () => Dimensions.get('window').width || 375
+  );
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+    });
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
+  const CARD_MAX_WIDTH = 480;
+  const toastSide = isDesktop
+    ? Math.max(24, (screenWidth - CARD_MAX_WIDTH) / 2)
+    : 24;
+  // ────────────────────────────────────────────
+
   const [email, setEmail]             = useState("");
   const [password, setPassword]       = useState("");
   const [confirm, setConfirm]         = useState("");
@@ -106,116 +124,146 @@ export default function SetPassword() {
 
   if (invalidLink) {
     return (
-      <KeyboardAvoidingView style={styles.root}>
-        <View style={styles.scrollContent}>
-          <Branding />
-          <View style={styles.card}>
-            <Text style={styles.title}>Link inválido</Text>
-            <Text style={styles.subtitle}>
-              Este link de convite é inválido ou expirou.{"\n"}
-              Solicite um novo convite ao seu treinador.
+      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+        {message ? (
+          <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError, { left: toastSide, right: toastSide }]}>
+            <Text style={[styles.toastText, isSuccess ? styles.toastTextSuccess : styles.toastTextError]}>
+              {message}
             </Text>
-            <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/login")}>
-              <LinearGradient {...GradientPrimary} style={styles.primaryButtonGradient}>
-                <Text style={styles.primaryButtonText}>Ir para o Login</Text>
-              </LinearGradient>
-            </TouchableOpacity>
           </View>
+        ) : null}
+        
+        <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? CARD_MAX_WIDTH : undefined }}>
+          <KeyboardAvoidingView style={styles.root}>
+            <ScrollView 
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <Branding />
+              <View style={styles.card}>
+                <Text style={styles.title}>Link inválido</Text>
+                <Text style={styles.subtitle}>
+                  Este link de convite é inválido ou expirou.{"\n"}
+                  Solicite um novo convite ao seu treinador.
+                </Text>
+                <TouchableOpacity style={styles.primaryButton} onPress={() => router.replace("/login")}>
+                  <LinearGradient {...GradientPrimary} style={styles.primaryButtonGradient}>
+                    <Text style={styles.primaryButtonText}>Ir para o Login</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 
   if (!ready) {
     return (
-      <KeyboardAvoidingView style={styles.root}>
-        <View style={[styles.scrollContent, { justifyContent: "center" }]}>
-          <Branding />
-          <Text style={{ textAlign: "center", color: T.t3, fontSize: 14 }}>
-            Validando convite...
-          </Text>
+      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? CARD_MAX_WIDTH : undefined }}>
+          <KeyboardAvoidingView style={styles.root}>
+            <ScrollView 
+              contentContainerStyle={[styles.scrollContent, { justifyContent: "center" }]}
+              showsVerticalScrollIndicator={true}
+            >
+              <Branding />
+              <Text style={{ textAlign: "center", color: T.t3, fontSize: 14 }}>
+                Validando convite...
+              </Text>
+            </ScrollView>
+          </KeyboardAvoidingView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
       {message ? (
-        <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError]}>
+        <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError, { left: toastSide, right: toastSide }]}>
           <Text style={[styles.toastText, isSuccess ? styles.toastTextSuccess : styles.toastTextError]}>
             {message}
           </Text>
         </View>
       ) : null}
-
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Branding />
-
-        <View style={styles.card}>
-          <Text style={styles.title}>Bem-vindo!</Text>
-          <Text style={styles.subtitle}>
-            Defina sua senha para acessar o seu plano alimentar.
-          </Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-mail</Text>
-            <TextInput
-              style={[styles.input, styles.inputReadOnly]}
-              value={email}
-              editable={false}
-              selectTextOnFocus={false}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nova Senha</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Mínimo 6 caracteres"
-              placeholderTextColor={T.t3}
-              value={password}
-              onChangeText={(t) => { setPassword(t); setMessage(""); }}
-              secureTextEntry
-              autoCapitalize="none"
-              returnKeyType="next"
-              onSubmitEditing={() => confirmRef.current?.focus()}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirmar Senha</Text>
-            <TextInput
-              ref={confirmRef}
-              style={styles.input}
-              placeholder="Repita a senha"
-              placeholderTextColor={T.t3}
-              value={confirm}
-              onChangeText={(t) => { setConfirm(t); setMessage(""); }}
-              secureTextEntry
-              autoCapitalize="none"
-              returnKeyType="done"
-              onSubmitEditing={handleSetPassword}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={[styles.primaryButton, loading && { opacity: 0.6 }]}
-            onPress={handleSetPassword}
-            disabled={loading}
+      
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? CARD_MAX_WIDTH : undefined }}>
+        <KeyboardAvoidingView
+          style={styles.root}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent} 
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
           >
-            <LinearGradient {...GradientPrimary} style={styles.primaryButtonGradient}>
-              <Text style={styles.primaryButtonText}>
-                {loading ? "Salvando..." : "Definir Senha e Entrar"}
+            <Branding />
+
+            <View style={styles.card}>
+              <Text style={styles.title}>Bem-vindo!</Text>
+              <Text style={styles.subtitle}>
+                Defina sua senha para acessar o seu plano alimentar.
               </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>E-mail</Text>
+                <TextInput
+                  style={[styles.input, styles.inputReadOnly]}
+                  value={email}
+                  editable={false}
+                  selectTextOnFocus={false}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Nova Senha</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mínimo 6 caracteres"
+                  placeholderTextColor={T.t3}
+                  value={password}
+                  onChangeText={(t) => { setPassword(t); setMessage(""); }}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  returnKeyType="next"
+                  onSubmitEditing={() => confirmRef.current?.focus()}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirmar Senha</Text>
+                <TextInput
+                  ref={confirmRef}
+                  style={styles.input}
+                  placeholder="Repita a senha"
+                  placeholderTextColor={T.t3}
+                  value={confirm}
+                  onChangeText={(t) => { setConfirm(t); setMessage(""); }}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSetPassword}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.primaryButton, loading && { opacity: 0.6 }]}
+                onPress={handleSetPassword}
+                disabled={loading}
+              >
+                <LinearGradient {...GradientPrimary} style={styles.primaryButtonGradient}>
+                  <Text style={styles.primaryButtonText}>
+                    {loading ? "Salvando..." : "Definir Senha e Entrar"}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 }
 
@@ -239,8 +287,6 @@ const styles = StyleSheet.create({
   toast: {
     position: "absolute",
     top: 50,
-    left: 24,
-    right: 24,
     padding: 16,
     borderRadius: 12,
     zIndex: 10,

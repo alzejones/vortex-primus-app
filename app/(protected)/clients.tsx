@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Dimensions,
   FlatList,
   StyleSheet,
   Text,
@@ -15,6 +16,19 @@ import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
 
 export default function Clients() {
+  // ─── Responsividade ───────────────────────────────
+  const [screenWidth, setScreenWidth] = useState(
+    () => Dimensions.get('window').width || 375
+  );
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => {
+      setScreenWidth(window.width);
+    });
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
+  // ────────────────────────────────────────────
+
   const { session } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -82,61 +96,67 @@ export default function Clients() {
   }, [trainerId]);
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={styles.newButton}
-        onPress={() => router.push("/(protected)/client-create")}
-        activeOpacity={0.85}
-      >
-        <LinearGradient {...GradientPrimary} style={styles.newButtonGradient}>
-          <Text style={styles.newButtonText}>+ Novo Cliente</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+    <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+        <View style={[styles.container, isDesktop && { paddingHorizontal: 32, paddingVertical: 32 }]}>
+          <TouchableOpacity
+            style={styles.newButton}
+            onPress={() => router.push("/(protected)/client-create")}
+            activeOpacity={0.85}
+          >
+            <LinearGradient {...GradientPrimary} style={styles.newButtonGradient}>
+              <Text style={styles.newButtonText}>+ Novo Cliente</Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-      <FlatList
-        data={clients}
-        keyExtractor={(item: any) => item.id}
-        renderItem={({ item }: any) => (
-          <View style={styles.card}>
-            <TouchableOpacity
-              onPress={() =>
-                router.push(`/(protected)/client-details?id=${item.id}`)
-              }
-            >
-              <Text style={styles.name}>{item.name}</Text>
-              {item.email ? (
-                <Text style={styles.email}>{item.email}</Text>
-              ) : null}
-            </TouchableOpacity>
+          <FlatList
+            data={clients}
+            keyExtractor={(item: any) => item.id}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={{ paddingBottom: 40 }}
+            renderItem={({ item }: any) => (
+              <View style={styles.card}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push(`/(protected)/client-details?id=${item.id}`)
+                  }
+                >
+                  <Text style={styles.name}>{item.name}</Text>
+                  {item.email ? (
+                    <Text style={styles.email}>{item.email}</Text>
+                  ) : null}
+                </TouchableOpacity>
 
-            <View style={styles.actions}>
-              <TouchableOpacity
-                onPress={() =>
-                  router.push(`/(protected)/client-details?id=${item.id}`)
-                }
-              >
-                <Text style={styles.linkEdit}>Editar</Text>
-              </TouchableOpacity>
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push(`/(protected)/client-details?id=${item.id}`)
+                    }
+                  >
+                    <Text style={styles.linkEdit}>Editar</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                <Text style={styles.linkDelete}>Excluir</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Nenhum aluno cadastrado.</Text>
-            <Text style={styles.emptySubText}>Toque em "+ Novo Cliente" para começar.</Text>
-          </View>
-        }
-      />
+                  <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                    <Text style={styles.linkDelete}>Excluir</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Nenhum aluno cadastrado.</Text>
+                <Text style={styles.emptySubText}>Toque em "+ Novo Cliente" para começar.</Text>
+              </View>
+            }
+          />
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 20 },
+  container: { flex: 1, padding: 20 },
 
   newButton: { borderRadius: 14, overflow: "hidden", marginBottom: 20 },
   newButtonGradient: {

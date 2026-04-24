@@ -3,6 +3,7 @@ import { router, useFocusEffect } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -68,6 +69,13 @@ function sumMacros(foods: { calories: number | null; protein: number | null; car
 
 export default function ClientDietView() {
   const { session, signOut } = useAuth();
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
 
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
@@ -304,8 +312,13 @@ export default function ClientDietView() {
   const planTotals = sumMacros(allFoods);
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 160 }}>
+    <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={{ paddingBottom: isDesktop ? 100 : 160 }}
+          showsVerticalScrollIndicator={true}
+        >
 
       {/* Cabeçalho */}
       <View style={styles.header}>
@@ -592,20 +605,21 @@ export default function ClientDietView() {
         </TouchableOpacity>
       </View>
 
-    </ScrollView>
+        </ScrollView>
 
-    {/* FAB de câmera — só aparece se lastBio existir */}
-    {lastBio !== null && (
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push("/(client)/meal-capture" as any)}
-        activeOpacity={0.85}
-      >
-        <LinearGradient {...GradientSuccess} style={styles.fabGradient}>
-          <Text style={styles.fabIcon}>📷</Text>
-        </LinearGradient>
-      </TouchableOpacity>
-    )}
+        {/* FAB de câmera — só aparece se lastBio existir */}
+        {lastBio !== null && (
+          <TouchableOpacity
+            style={[styles.fab, isDesktop && styles.fabDesktop]}
+            onPress={() => router.push("/(client)/meal-capture" as any)}
+            activeOpacity={0.85}
+          >
+            <LinearGradient {...GradientSuccess} style={styles.fabGradient}>
+              <Text style={styles.fabIcon}>📷</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -688,6 +702,7 @@ const styles = StyleSheet.create({
 
   // FAB câmera
   fab: { position: "absolute", bottom: 84, right: 20, width: 60, height: 60, borderRadius: 30, overflow: "hidden", shadowColor: T.green, shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  fabDesktop: { bottom: 24, right: 24 },
   fabGradient: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
   fabIcon: { fontSize: 28 },
 

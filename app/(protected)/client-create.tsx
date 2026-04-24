@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -25,6 +26,13 @@ import { T } from "../../utils/theme";
 export default function ClientCreate() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  React.useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
 
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
@@ -169,16 +177,18 @@ export default function ClientCreate() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: T.bg }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+    <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView
+            style={styles.container}
+            contentContainerStyle={{ flexGrow: 1, paddingBottom: isDesktop ? 80 : 120 }}
+            showsVerticalScrollIndicator={true}
+            keyboardShouldPersistTaps="handled"
+          >
         <Text style={styles.pageTitle}>Novo Cliente</Text>
 
         {statusMsg.text !== "" && (
@@ -352,8 +362,10 @@ export default function ClientCreate() {
             }
           </LinearGradient>
         </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </View>
+    </View>
   );
 }
 

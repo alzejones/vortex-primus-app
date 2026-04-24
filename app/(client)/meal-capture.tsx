@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
   Image,
   Modal,
@@ -66,6 +67,13 @@ function scaleMacros(food: AnalysisFood, newGrams: number): AnalysisFood {
 // ─── Tela principal ────────────────────────────────────────────
 export default function MealCapture() {
   const { session } = useAuth();
+
+  const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
+  useEffect(() => {
+    const sub = Dimensions.addEventListener('change', ({ window }) => setScreenWidth(window.width));
+    return () => sub.remove();
+  }, []);
+  const isDesktop = screenWidth >= 768;
 
   const [step, setStep] = useState<Step>("capture");
   const [mealType, setMealType] = useState<MealType | null>(null);
@@ -448,7 +456,11 @@ export default function MealCapture() {
   function renderReview() {
     if (!analysisResult) return null;
     return (
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 160 }}>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ paddingBottom: isDesktop ? 120 : 160 }}
+        showsVerticalScrollIndicator={true}
+      >
         {/* Header: thumbnail + totais */}
         <View style={styles.reviewHeader}>
           {photoUri && (
@@ -573,7 +585,8 @@ export default function MealCapture() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
       {step === "capture"   && renderCapture()}
       {step === "analyzing" && renderAnalyzing()}
       {step === "review"    && renderReview()}
@@ -608,6 +621,7 @@ export default function MealCapture() {
           </View>
         </View>
       </Modal>
+      </View>
     </View>
   );
 }
