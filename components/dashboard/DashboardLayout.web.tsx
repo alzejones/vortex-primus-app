@@ -140,32 +140,62 @@ export default function DashboardLayout({
         <Text style={styles.clientName}>{item.name}</Text>
         <Text style={styles.clientEmail}>{item.email || '—'}</Text>
       </View>
-      <View style={styles.clientActions}>
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>📋 Perfil</Text>
-        </TouchableOpacity>  
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>🗓️ Agendar</Text>
-        </TouchableOpacity>         
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>🩻 Avaliar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>📊 Corporal</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>🏋️‍♀️ Testar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.clientActionBtn} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-          <Text style={styles.clientActionIcon}>📈 Condic.</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.clientActionBtn, styles.clientDetailBtn]}
-          onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}
-        >
-          <Text style={styles.clientDetailBtnText}>Ver perfil →</Text>
-        </TouchableOpacity>
-      </View>
+              <View style={styles.clientActions}>
+                <TouchableOpacity
+                  style={styles.clientActionBtn}
+                  // @ts-ignore
+                  title="Detalhes do Perfil do Aluno"
+                  onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}
+                >
+                  <Text style={styles.clientActionIcon}>📋</Text>
+                  <Text style={styles.clientActionLabel}>Perfil</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clientActionBtn}
+                  // @ts-ignore
+                  title="Agendar Avaliação"
+                  onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}
+                >
+                  <Text style={styles.clientActionIcon}>🗓️</Text>
+                  <Text style={styles.clientActionLabel}>Agendar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clientActionBtn}
+                  // @ts-ignore
+                  title="Cadastrar Avaliação da Composição Corporal"
+                  onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}
+                >
+                  <Text style={styles.clientActionIcon}>🩻</Text>
+                  <Text style={styles.clientActionLabel}>Avaliar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clientActionBtn}
+                  // @ts-ignore
+                  title="Consultar Avaliação da Composição Corporal"
+                  onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}
+                >
+                  <Text style={styles.clientActionIcon}>📊</Text>
+                  <Text style={styles.clientActionLabel}>Corporal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clientActionBtn}
+                  // @ts-ignore
+                  title="Cadastrar Teste da Avaliação Física"
+                  onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}
+                >
+                  <Text style={styles.clientActionIcon}>🏋️‍♀️</Text>
+                  <Text style={styles.clientActionLabel}>Testar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.clientActionBtn}
+                  // @ts-ignore
+                  title="Consultar Avaliações de Condicionamento Físico"
+                  onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}
+                >
+                  <Text style={styles.clientActionIcon}>📈</Text>
+                  <Text style={styles.clientActionLabel}>Condic.</Text>
+                </TouchableOpacity>
+              </View>
     </TouchableOpacity>
   );
 
@@ -278,7 +308,7 @@ export default function DashboardLayout({
               </Text>
               <TextInput
                 style={styles.columnSearch}
-                placeholder="Filtrar alunos..."
+                placeholder="Buscar Aluno..."
                 placeholderTextColor={T.t3}
                 value={searchQuery}
                 onChangeText={onSearchChange}
@@ -554,16 +584,19 @@ const styles = StyleSheet.create({
   clientEmail: { fontSize: 12, color: T.t3 },
   clientActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   clientActionBtn: {
-    width: 34,
-    height: 34,
+    minWidth: 52,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: T.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: T.border,
+    gap: 2,
   },
   clientActionIcon: { fontSize: 14 },
+  clientActionLabel: { fontSize: 11, color: T.t2, fontWeight: '600', marginTop: 3 },
   clientDetailBtn: {
     width: 'auto' as any,
     paddingHorizontal: 12,
