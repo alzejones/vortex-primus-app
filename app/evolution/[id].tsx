@@ -186,7 +186,7 @@ export default function PublicAssessmentView() {
                 dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
               }))}
               height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved
-              textShiftY={-14} textShiftX={-8} textFontSize={10} textColor1="#fca5a5" textColor2="#86efac"
+              textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
               spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
               initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
               thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
