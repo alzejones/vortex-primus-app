@@ -59,18 +59,13 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
       Number(a.anthropometry[0][key]) || 0
     );
     return {
-      data: values.map((val, i) => ({
+      data: values.map((val) => ({
         value: val,
-        dataPointText: val > 0 ? `${val.toFixed(1)}` : "",
       })),
       color: TRUNK_COLORS[key],
       dataPointsColor: TRUNK_COLORS[key],
-      thickness: 3,
-      dataPointsRadius: 4,
-      textColor: TRUNK_COLORS[key],
-      textShiftY: -14,
-      textShiftX: -8,
-      textFontSize: 8,
+      thickness: 2,
+      dataPointsRadius: 3,
     };
   });
 
@@ -80,7 +75,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
 
   const minVal = Math.max(0, Math.floor((Math.min(...allValues) - 10) / 5) * 5);
   const maxVal = Math.ceil((Math.max(...allValues) + 10) / 5) * 5;
-  const step = 5;
+  const step = 10;
   const sections = Math.round((maxVal - minVal) / step);
 
   const spacing = Math.max(38, (chartWidth - 140) / (chartAssessments.length > 1 ? chartAssessments.length - 1 : 1));
@@ -143,7 +138,8 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
           maxValue={maxVal}
           mostNegativeValue={minVal}
           noOfSections={sections}
-          rulesColor="rgba(255,255,255,0.25)"
+          rulesColor="rgba(255,255,255,0.12)"
+          rulesThickness={0.5}
           hideRules={false}
           showVerticalLines
           verticalLinesColor="rgba(255,255,255,0.15)"
