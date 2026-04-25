@@ -44,7 +44,7 @@ app/
 ## Estado Atual
 
 **v1.0 em Produção**
-- Módulo de Dieta em branch `develop` (aguardando merge)
+- Módulo de Dieta em produção (mergeado em main)
 - Análise de refeição por foto (Claude Vision)
 - Responsividade completa implementada
 - Bugs abertos: nenhum
