@@ -164,7 +164,10 @@ export default function PublicAssessmentView() {
   const reversedAssessments = [...assessments].reverse();
   const fatData = reversedAssessments.map(a => a.anthropometry?.[0]?.body_fat).filter(Boolean);
   const muscleData = reversedAssessments.map(a => a.anthropometry?.[0]?.muscle_mass_percentage).filter(Boolean);
-  const chartLabels = reversedAssessments.filter(a => a.anthropometry?.[0]?.body_fat).map(a => formatDateBR(a.date).substring(0, 5));
+  const chartLabels = reversedAssessments.filter(a => a.anthropometry?.[0]?.body_fat).map((a: any) => {
+    const d = new Date(a.date);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   const age = calculateAge(client?.birth_date);
   const anthro = currentAssessment.anthropometry?.[0];

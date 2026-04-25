@@ -165,7 +165,10 @@ export default function ClientAssessments() {
   const chartAssessments = chronologicalAssessments.filter(a => a.anthropometry && a.anthropometry.length > 0);
 
   const chartLabels = chartAssessments.length > 0
-    ? chartAssessments.map((_, index) => `Av ${index + 1}`)
+    ? [...chartAssessments].reverse().map((a: any) => {
+        const d = new Date(a.date);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+      })
     : ["-"];
 
   const fatData = chartAssessments.length > 0
