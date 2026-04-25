@@ -185,6 +185,18 @@ Todo plugin nativo **deve ser declarado** no array `plugins`:
 
 ## Histórico de Manutenção
 
+### 2026-04-25 — Sessão 7: Responsividade completa + correções evolução pública
+- fix: mobile browser renderizando layout desktop — criados `DashboardLayoutMobile.tsx`, re-export em `DashboardLayout.tsx`, viewport detection (screenWidth < 768) em `DashboardLayout.web.tsx`
+- fix: valores invisíveis no diagnóstico da avaliação — color `#0f172a` → `T.t1` em `AssessmentDetailsModal.tsx`
+- feat: responsividade completa — 10 telas com viewport detection e ScrollView (commit 21e787d)
+- feat: peso em kg calculado para % Gordura e % Massa Muscular no diagnóstico
+- feat: valores percentuais nos pontos do gráfico LineChart nos 3 arquivos (`AssessmentDetailsModal`, `evolution/[id]`, `client-assessments`)
+- feat: nitidez dos títulos das métricas no diagnóstico (T.t1 + fontWeight 700)
+- fix: policy RLS leitura pública tabela `clients` para rota `/evolution/[id]`
+- fix: `evolution/[id]` usava `historyData[0]` fixo — agora busca avaliação mais recente com dados válidos de composição corporal
+- fix: `prevAssessment` e `firstAssessment` dinâmicos em `evolution/[id]` — ignoram avaliações sem dados
+- **Bugs abertos:** nenhum identificado no momento
+
 ### 2026-04-21 — Responsividade Web — fase 1
 - `app/login.tsx`: responsivo com Dimensions (mobile idêntico, desktop card centralizado maxWidth 480)
 - `app/index.tsx`: removido addDebug() durante render (fix setState-in-render no Concurrent Mode)
