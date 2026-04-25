@@ -245,11 +245,6 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         ))
       )}
 
-      {/* Botão agendar */}
-      <TouchableOpacity style={styles.scheduleBtn} onPress={onOpenScheduleModal}>
-        <Text style={styles.scheduleBtnText}>+ Agendar Nova Sessão</Text>
-      </TouchableOpacity>
-
       {/* Botão adicionar aluno */}
       <TouchableOpacity
         style={styles.addClientBtn}
@@ -684,15 +679,6 @@ const styles = StyleSheet.create({
   emptyPanelIcon: { fontSize: 28 },
   emptyPanelText: { fontSize: 13, color: T.t2, textAlign: 'center' },
 
-  scheduleBtn: {
-    backgroundColor: T.card,
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: T.blue,
-  },
-  scheduleBtnText: { fontSize: 14, fontWeight: '700', color: T.blue },
 
   addClientBtn: { borderRadius: 12, overflow: 'hidden' },
   addClientBtnGradient: { padding: 16, alignItems: 'center' },
