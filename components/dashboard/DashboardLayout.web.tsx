@@ -219,7 +219,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   const SessionsPanel = () => (
     <View style={styles.rightPanel}>
       <View style={styles.panelHeader}>
-        <Text style={styles.panelTitle}>Próximas Sessões</Text>
+        <Text style={styles.panelTitle}>Agendamentos</Text>
         <TouchableOpacity onPress={() => router.push('/(protected)/schedule/' as any)}>
           <Text style={styles.panelLink}>Ver todas →</Text>
         </TouchableOpacity>
@@ -228,7 +228,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       {upcomingAppointments.length === 0 ? (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyPanelIcon}>📭</Text>
-          <Text style={styles.emptyPanelText}>Nenhuma sessão agendada</Text>
+          <Text style={styles.emptyPanelText}>Nenhum agendamento.\nToque para agendar avaliações →</Text>
         </View>
       ) : (
         upcomingAppointments.map((apt) => (

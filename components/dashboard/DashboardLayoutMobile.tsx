@@ -75,15 +75,22 @@ export default function DashboardLayoutMobile({
 
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>
-          <Text style={styles.widgetTitle}>📅 Próximas Sessões</Text>
+          <Text style={styles.widgetTitle}>📅 Agendamentos</Text>
           <TouchableOpacity onPress={() => router.push('/(protected)/schedule/' as any)}>
             <Text style={styles.widgetLink}>Ver todas →</Text>
           </TouchableOpacity>
         </View>
         {upcomingAppointments.length === 0 ? (
-          <View style={styles.widgetEmpty}>
-            <Text style={{ color: T.t2, fontSize: 14 }}>Nenhuma sessão agendada</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.widgetEmpty}
+            onPress={() => router.push('/(protected)/schedule/' as any)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: T.t2, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+              Nenhum agendamento.{'\n'}
+              <Text style={{ color: T.blue, fontWeight: '700' }}>Toque para agendar avaliações →</Text>
+            </Text>
+          </TouchableOpacity>
         ) : (
           upcomingAppointments.map((apt) => (
             <View key={apt.id} style={styles.agendaItem}>
@@ -99,14 +106,6 @@ export default function DashboardLayoutMobile({
           ))
         )}
       </View>
-
-      <TouchableOpacity style={styles.mainScheduleBtn} onPress={onOpenScheduleModal}>
-        <Text style={styles.mainScheduleBtnIcon}>📆</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.mainScheduleBtnTitle}>Novo Agendamento</Text>
-          <Text style={styles.mainScheduleBtnSub}>Agende uma sessão com seu aluno</Text>
-        </View>
-      </TouchableOpacity>
 
       <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
         <LinearGradient {...GradientPrimary} style={{ padding: 18, alignItems: 'center' }}>
