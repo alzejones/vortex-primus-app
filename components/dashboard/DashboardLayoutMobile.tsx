@@ -73,36 +73,6 @@ export default function DashboardLayoutMobile({
         </TouchableOpacity>
       </View>
 
-      <LinearGradient {...GradientPrimary} style={styles.planGradientCard}>
-        <View style={styles.planHeader}>
-          <View>
-            <Text style={styles.planLabel}>Plano Atual</Text>
-            <Text style={styles.planTitle}>{planName}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: planStatus === 'Ativo' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)' }]}>
-            <View style={[styles.statusDot, { backgroundColor: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]} />
-            <Text style={[styles.statusText, { color: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]}>{planStatus}</Text>
-          </View>
-        </View>
-        <View style={styles.metricsRow}>
-          <Text style={styles.planText}>
-            <Text style={styles.highlightNumber}>{currentClients}</Text>
-            {' de '}
-            <Text style={styles.highlightNumber}>{maxClients}</Text>
-            {' alunos ativos'}
-          </Text>
-        </View>
-        <View style={styles.progressBarBackground}>
-          <LinearGradient {...GradientSuccess} style={[styles.progressBarFill, { width: `${Math.min(usagePercentage, 100)}%` as any }]} />
-        </View>
-        {usagePercentage >= 80 && (
-          <Text style={styles.warning}>⚠️ Você está próximo do limite do plano</Text>
-        )}
-        <TouchableOpacity style={styles.upgradeDashboardBtn} onPress={() => router.push('/(protected)/trainer-profile' as any)}>
-          <Text style={styles.upgradeDashboardBtnText}>Gerenciar Plano</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>
           <Text style={styles.widgetTitle}>📅 Próximas Sessões</Text>
@@ -145,6 +115,38 @@ export default function DashboardLayoutMobile({
           </TouchableOpacity>
         </LinearGradient>
       </View>
+
+      <LinearGradient {...GradientPrimary} style={styles.planGradientCard}>
+        <View style={styles.planHeader}>
+          <View>
+            <Text style={styles.planLabel}>Plano Atual</Text>
+            <Text style={styles.planTitle}>{planName}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: planStatus === 'Ativo' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)' }]}>
+            <View style={[styles.statusDot, { backgroundColor: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]} />
+            <Text style={[styles.statusText, { color: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]}>{planStatus}</Text>
+          </View>
+        </View>
+        <View style={styles.metricsRow}>
+          <Text style={styles.planText}>
+            <Text style={styles.highlightNumber}>{currentClients}</Text>
+            {' de '}
+            <Text style={styles.highlightNumber}>{maxClients}</Text>
+            {' alunos ativos'}
+          </Text>
+        </View>
+        <View style={styles.progressBarBackground}>
+          <LinearGradient {...GradientSuccess} style={[styles.progressBarFill, { width: `${Math.min(usagePercentage, 100)}%` as any }]} />
+        </View>
+        {usagePercentage >= 80 && (
+          <Text style={styles.warning}>⚠️ Você está próximo do limite do plano</Text>
+        )}
+        <TouchableOpacity onPress={() => router.push('/(protected)/trainer-profile' as any)}>
+          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 12, textAlign: 'right' }}>
+            Gerenciar plano →
+          </Text>
+        </TouchableOpacity>
+      </LinearGradient>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -308,7 +310,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: '900', color: T.t1, letterSpacing: -0.5 },
 
   // ─── Plano ──────────────────────────────────────────────────────
-  planGradientCard: { padding: 24, borderRadius: 20, marginBottom: 24 },
+  planGradientCard: { padding: 16, borderRadius: 20, marginBottom: 24 },
   planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
   planLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   planTitle: { fontSize: 22, fontWeight: '800', color: T.white },
