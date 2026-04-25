@@ -116,37 +116,20 @@ export default function DashboardLayoutMobile({
         </LinearGradient>
       </View>
 
-      <LinearGradient {...GradientPrimary} style={styles.planGradientCard}>
-        <View style={styles.planHeader}>
-          <View>
-            <Text style={styles.planLabel}>Plano Atual</Text>
-            <Text style={styles.planTitle}>{planName}</Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: planStatus === 'Ativo' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)' }]}>
-            <View style={[styles.statusDot, { backgroundColor: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]} />
-            <Text style={[styles.statusText, { color: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]}>{planStatus}</Text>
-          </View>
+      <View style={{ marginBottom: 24 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>Alunos ativos</Text>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>{currentClients}/{maxClients}</Text>
         </View>
-        <View style={styles.metricsRow}>
-          <Text style={styles.planText}>
-            <Text style={styles.highlightNumber}>{currentClients}</Text>
-            {' de '}
-            <Text style={styles.highlightNumber}>{maxClients}</Text>
-            {' alunos ativos'}
-          </Text>
+        <View style={{ height: 4, backgroundColor: T.border, borderRadius: 99, overflow: 'hidden' }}>
+          <View style={{
+            height: '100%',
+            borderRadius: 99,
+            backgroundColor: maxClients > 0 && (currentClients / maxClients) >= 0.8 ? T.orange : T.blue,
+            width: `${Math.min(maxClients > 0 ? (currentClients / maxClients) * 100 : 0, 100)}%` as any
+          }} />
         </View>
-        <View style={styles.progressBarBackground}>
-          <LinearGradient {...GradientSuccess} style={[styles.progressBarFill, { width: `${Math.min(usagePercentage, 100)}%` as any }]} />
-        </View>
-        {usagePercentage >= 80 && (
-          <Text style={styles.warning}>⚠️ Você está próximo do limite do plano</Text>
-        )}
-        <TouchableOpacity onPress={() => router.push('/(protected)/trainer-profile' as any)}>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 12, textAlign: 'right' }}>
-            Gerenciar plano →
-          </Text>
-        </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -309,22 +292,6 @@ const styles = StyleSheet.create({
   greetingText: { fontSize: 14, fontWeight: '600', color: T.t3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
   title: { fontSize: 32, fontWeight: '900', color: T.t1, letterSpacing: -0.5 },
 
-  // ─── Plano ──────────────────────────────────────────────────────
-  planGradientCard: { padding: 16, borderRadius: 20, marginBottom: 24 },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  planLabel: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  planTitle: { fontSize: 22, fontWeight: '800', color: T.white },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 99 },
-  statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-  statusText: { fontSize: 12, fontWeight: '700' },
-  metricsRow: { marginBottom: 12 },
-  planText: { fontSize: 15, color: 'rgba(255,255,255,0.8)', fontWeight: '500' },
-  highlightNumber: { fontSize: 18, fontWeight: '800', color: T.white },
-  progressBarBackground: { height: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 99, overflow: 'hidden' },
-  progressBarFill: { height: '100%', borderRadius: 99 },
-  warning: { marginTop: 12, color: T.orange, fontWeight: '600', fontSize: 13 },
-  upgradeDashboardBtn: { backgroundColor: 'rgba(255,255,255,0.15)', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  upgradeDashboardBtnText: { color: T.white, fontWeight: '800', fontSize: 14, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   // ─── Widget de sessões ──────────────────────────────────────────
   planWidget: { backgroundColor: T.card, padding: 24, borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: T.border },

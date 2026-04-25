@@ -27,6 +27,9 @@ export default function TrainerProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [planName, setPlanName] = useState("Carregando...");
+  const [maxClients, setMaxClients] = useState(0);
+  const [currentClients, setCurrentClients] = useState(0);
+  const [planStatus, setPlanStatus] = useState('');
 
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
 
@@ -54,13 +57,22 @@ export default function TrainerProfile() {
 
       const { data: sub } = await supabase
         .from("trainer_subscriptions")
-        .select("is_active, plans ( name )")
+        .select("is_active, plans ( name, max_clients )")
         .eq("trainer_id", trainer.id)
         .eq("is_active", true)
         .single();
 
       const planData = sub?.plans as any;
-      setPlanName(planData?.name ? `${planData.name} (Ativo)` : "Sem Plano Ativo");
+      setPlanName(planData?.name ? `${planData.name}` : "Sem Plano Ativo");
+      setMaxClients((planData as any)?.max_clients || 0);
+      setPlanStatus(sub?.is_active ? 'Ativo' : 'Inativo');
+
+      const { count } = await supabase
+        .from('clients')
+        .select('*', { count: 'exact', head: true })
+        .eq('trainer_id', trainer.id)
+        .eq('is_active', true);
+      setCurrentClients(count || 0);
 
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
@@ -157,16 +169,46 @@ export default function TrainerProfile() {
             <Text style={styles.helperText}>O e-mail é a sua chave de acesso e não pode ser alterado por aqui.</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Plano Atual</Text>
-            <View style={styles.planBox}>
-              <Text style={styles.planBoxText}>👑 {planName}</Text>
-              <TouchableOpacity onPress={() => router.push("/(protected)/upgrade" as any)}>
-                <Text style={styles.planBoxLink}>Mudar</Text>
-              </TouchableOpacity>
+        </View>
+
+        {/* Card Plano — compacto */}
+        <LinearGradient
+          {...GradientPrimary}
+          style={{ padding: 16, borderRadius: 20, marginBottom: 24 }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <View>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plano Atual</Text>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#fff', marginTop: 2 }}>{planName}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: planStatus === 'Ativo' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 99 }}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: planStatus === 'Ativo' ? '#22C55E' : '#EF4444', marginRight: 5 }} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }}>{planStatus}</Text>
             </View>
           </View>
-        </View>
+          <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '500', marginBottom: 8 }}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{currentClients}</Text>
+            {' de '}
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{maxClients}</Text>
+            {' alunos ativos'}
+          </Text>
+          <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
+            <LinearGradient
+              colors={['#10B981', '#34D399']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ height: '100%', borderRadius: 99, width: `${Math.min(maxClients > 0 ? (currentClients / maxClients) * 100 : 0, 100)}%` as any }}
+            />
+          </View>
+          {maxClients > 0 && (currentClients / maxClients) >= 0.8 && (
+            <Text style={{ color: '#FFA500', fontWeight: '600', fontSize: 12, marginTop: 8 }}>⚠️ Você está próximo do limite do plano</Text>
+          )}
+          <TouchableOpacity onPress={() => router.push('/(protected)/upgrade' as any)}>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 10, textAlign: 'right' }}>
+              Mudar plano →
+            </Text>
+          </TouchableOpacity>
+        </LinearGradient>
 
         <TouchableOpacity
           style={styles.saveButton}
@@ -223,9 +265,6 @@ const styles = StyleSheet.create({
   inputDisabled: { backgroundColor: T.bg, color: T.t3 },
   helperText: { fontSize: 12, color: T.t3, marginTop: 6 },
 
-  planBox: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 1, borderColor: "rgba(245,158,11,0.25)", padding: 16, borderRadius: 12 },
-  planBoxText: { fontSize: 15, fontWeight: "700", color: T.orange },
-  planBoxLink: { fontSize: 14, fontWeight: "800", color: T.orange },
 
   saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 24 },
   saveButtonGradient: { height: 56, alignItems: "center", justifyContent: "center", borderRadius: 16 },
