@@ -23,6 +23,7 @@ import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import EvolutionPanel from '../../components/EvolutionPanel';
 import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPanel';
+import TrunkMeasurementsChart from '../../components/TrunkMeasurementsChart';
 import { T } from "../../utils/theme";
 
 export default function ClientAssessments() {
@@ -645,6 +646,12 @@ export default function ClientAssessments() {
                 {fatData.length > 7 && <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>↔️ Deslize o gráfico para o lado para ver o histórico completo</Text>}
               </View>
             </View>
+
+            <TrunkMeasurementsChart
+              chartAssessments={chartAssessments}
+              chartLabels={chartLabels}
+              chartWidth={chartWidth}
+            />
 
             <TouchableOpacity style={{ backgroundColor: T.bgAlt, padding: 16, borderRadius: 12, marginBottom: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: T.border }} onPress={() => router.push({ pathname: "/(protected)/assessments/conditioning-evolution" as any, params: { client_id: clientId } } as any)}>
               <Text style={{ color: T.t1, fontSize: 16, fontWeight: 'bold' }}>📈 Ver Evolução de Performance</Text>
