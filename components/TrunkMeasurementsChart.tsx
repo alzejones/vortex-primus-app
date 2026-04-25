@@ -24,38 +24,30 @@ const TRUNK_LABELS = {
 };
 
 export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, chartWidth }: Props) {
-  if (!chartAssessments || chartAssessments.length < 2) return null;
+  const trunkAssessments = (chartAssessments || []).filter((a: any) => {
+    const t = a.anthropometry?.[0];
+    if (!t) return false;
+    return (
+      (Number(t.chest) > 0) ||
+      (Number(t.abdomen) > 0) ||
+      (Number(t.waist) > 0) ||
+      (Number(t.hip) > 0)
+    );
+  });
+  if (trunkAssessments.length < 2) return null;
 
   const keys = ["chest", "abdomen", "waist", "hip"] as const;
 
-  const dataSet = keys.map((key, idx) => ({
-    data: chartAssessments.map((a, i) => ({
-      value: Number(a.anthropometry[0][key]) || 0,
-      label: i === 0 ? chartLabels[chartLabels.length - 1 - 0] : undefined,
-      dataPointText:
-        a.anthropometry[0][key] != null && a.anthropometry[0][key] !== ""
-          ? `${Number(a.anthropometry[0][key]).toFixed(1)}`
-          : "",
-    })),
-    color: TRUNK_COLORS[key],
-    dataPointsColor: TRUNK_COLORS[key],
-    thickness: 3,
-    dataPointsRadius: 4,
-    textColor: TRUNK_COLORS[key],
-    textShiftY: -14,
-    textShiftX: -8,
-    textFontSize: 8,
-  }));
 
   // labels do eixo X: mesmas do gráfico existente (mais recente → mais antigo)
-  const xLabels = [...chartAssessments].reverse().map((a: any) => {
+  const xLabels = [...trunkAssessments].reverse().map((a: any) => {
     const d = new Date(a.date);
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
 
   // Adiciona label apenas no primeiro ponto de cada série para não poluir
   const dataSetWithLabels = keys.map((key, idx) => {
-    const values = [...chartAssessments].map((a) =>
+    const values = [...trunkAssessments].map((a) =>
       Number(a.anthropometry[0][key]) || 0
     );
     return {
@@ -70,7 +62,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
   });
 
   const allValues = keys.flatMap((key) =>
-    chartAssessments.map((a) => Number(a.anthropometry[0][key]) || 0)
+    trunkAssessments.map((a) => Number(a.anthropometry[0][key]) || 0)
   ).filter((v) => v > 0);
 
   const minVal = Math.max(0, Math.floor((Math.min(...allValues) - 10) / 5) * 5);
@@ -78,7 +70,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
   const step = 10;
   const sections = Math.round((maxVal - minVal) / step);
 
-  const spacing = Math.max(38, (chartWidth - 140) / (chartAssessments.length > 1 ? chartAssessments.length - 1 : 1));
+  const spacing = Math.max(38, (chartWidth - 140) / (trunkAssessments.length > 1 ? trunkAssessments.length - 1 : 1));
 
   return (
     <View
@@ -174,7 +166,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
             </View>
           ))}
         </View>
-        {chartAssessments.length > 7 && (
+        {trunkAssessments.length > 7 && (
           <Text
             style={{
               color: "#94a3b8",
