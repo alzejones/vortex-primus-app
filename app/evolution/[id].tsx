@@ -112,6 +112,8 @@ export default function PublicAssessmentView() {
   const [client, setClient] = useState<any>(null);
   const [assessments, setAssessments] = useState<any[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<any>(null);
+  const [prevAssessment, setPrevAssessment] = useState<any>(null);
+  const [firstAssessment, setFirstAssessment] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [referencesVisible, setReferencesVisible] = useState(false);
 
@@ -133,6 +135,17 @@ export default function PublicAssessmentView() {
         (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
       ) || historyData[0];
       setCurrentAssessment(assessmentWithData);
+
+      const currentIdx = historyData.findIndex((a: any) => a.id === assessmentWithData.id);
+      const prevWithData = historyData.slice(currentIdx + 1).find(
+        (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
+      ) || historyData[currentIdx + 1] || null;
+      const firstWithData = [...historyData].reverse().find(
+        (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
+      ) || historyData[historyData.length - 1];
+
+      setPrevAssessment(prevWithData);
+      setFirstAssessment(firstWithData);
     } catch (error: any) {
       setErrorMsg(error.message);
     } finally {
@@ -210,15 +223,15 @@ export default function PublicAssessmentView() {
           <EvolutionPanel
             evolutionData={relativeEvolution}
             currentAssessment={currentAssessment}
-            prevAssessment={assessments[1]}
-            firstAssessment={assessments[assessments.length - 1]}
+            prevAssessment={prevAssessment}
+            firstAssessment={firstAssessment}
             formatValue={formatValue}
           />
         )}
         <MeasurementsEvolutionPanel
           currentAssessment={currentAssessment}
-          prevAssessment={assessments[1]}
-          firstAssessment={assessments[assessments.length - 1]}
+          prevAssessment={prevAssessment}
+          firstAssessment={firstAssessment}
         />
 
         {/* DIAGNÓSTICO */}
