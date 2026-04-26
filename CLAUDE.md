@@ -67,6 +67,12 @@ vortex-primus-app/
 
 **v1.0 em Produção**
 - Módulo de Dieta em produção (mergeado em main)
+- Sistema de Balanças Bluetooth — Fase 1 (a51365a) e Fase 2 (b709d39) concluídas
+  - Tabelas: supported_scales, trainer_scales
+  - Campos novos em anthropometry: bmi, water_percent, bone_mass, source
+  - Componente: BluetoothScaleConnector.tsx (Web Bluetooth API nativa)
+  - Protocolo implementado: Xiaomi Mi Body Composition Scale 2
+  - Fase 3 pendente: convite de auto-pesagem para o aluno
 - Responsividade completa implementada
 - Bugs abertos: nenhum
 
@@ -94,6 +100,7 @@ vortex-primus-app/
 - `physical_assessments`, `anthropometry`
 - `meal_plans`, `meal_log` (módulo dieta)
 - `conditioning_assessments`, `conditioning_tests` (avaliações de performance — tabela separada)
+- `supported_scales`, `trainer_scales` (sistema de balanças)
 
 **Edge Functions:**
 - `stripe-checkout`, `invite-client`, `delete-client`
@@ -111,6 +118,13 @@ vortex-primus-app/
 8. **Uma frente por vez — aguardar confirmação antes de continuar**
 9. **Commit + push ao final de cada bloco de trabalho**
 10. **Nunca adivinhar — decisões baseadas sempre em dados reais**
+
+## Pendências e Roadmap
+
+**Sistema de Balanças:**
+- Fase 3 — Auto-pesagem do aluno (convite via link, igual ao módulo Dieta)
+- Teste real BLE com balança física (aguarda aluno com Xiaomi disponível)
+- Protocolos pendentes: Original Line (Chipsea/OKOK) e Techline TEC-BF01 (Fitdays)
 
 ---
 
