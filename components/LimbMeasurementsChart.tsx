@@ -18,22 +18,20 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
   const upperLimbAssessments = (chartAssessments || []).filter((a: any) => {
     const t = a.anthropometry?.[0];
     if (!t) return false;
-    return (
-      (Number(t.arm_left) > 0) ||
-      (Number(t.arm_right) > 0)
-    );
+    const leftVal = t.arm_left != null ? Number(t.arm_left) : 0;
+    const rightVal = t.arm_right != null ? Number(t.arm_right) : 0;
+    return (leftVal > 0) || (rightVal > 0);
   });
 
   // Filtro para membros inferiores
   const lowerLimbAssessments = (chartAssessments || []).filter((a: any) => {
     const t = a.anthropometry?.[0];
     if (!t) return false;
-    return (
-      (Number(t.thigh_left) > 0) ||
-      (Number(t.thigh_right) > 0) ||
-      (Number(t.calf_left) > 0) ||
-      (Number(t.calf_right) > 0)
-    );
+    const thighLeft = t.thigh_left != null ? Number(t.thigh_left) : 0;
+    const thighRight = t.thigh_right != null ? Number(t.thigh_right) : 0;
+    const calfLeft = t.calf_left != null ? Number(t.calf_left) : 0;
+    const calfRight = t.calf_right != null ? Number(t.calf_right) : 0;
+    return (thighLeft > 0) || (thighRight > 0) || (calfLeft > 0) || (calfRight > 0);
   });
 
   // Componente para renderizar um gráfico de barras
@@ -47,8 +45,8 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
 
     const barData = assessments.map((a: any, index: number) => {
       const anthro = a.anthropometry[0];
-      const leftValue = Number(anthro[fields[0]]) || 0;
-      const rightValue = Number(anthro[fields[1]]) || 0;
+      const leftValue = anthro[fields[0]] != null ? Number(anthro[fields[0]]) : 0;
+      const rightValue = anthro[fields[1]] != null ? Number(anthro[fields[1]]) : 0;
 
       return {
         stacks: [
@@ -62,10 +60,9 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
 
     const allValues = assessments.flatMap((a: any) => {
       const anthro = a.anthropometry[0];
-      return [
-        Number(anthro[fields[0]]) || 0,
-        Number(anthro[fields[1]]) || 0,
-      ];
+      const leftVal = anthro[fields[0]] != null ? Number(anthro[fields[0]]) : 0;
+      const rightVal = anthro[fields[1]] != null ? Number(anthro[fields[1]]) : 0;
+      return [leftVal, rightVal];
     }).filter((v) => v > 0);
 
     const maxVal = Math.ceil((Math.max(...allValues) + 5) / 5) * 5;
@@ -240,8 +237,8 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
 
               const barData = lowerLimbAssessments.map((a: any, index: number) => {
                 const anthro = a.anthropometry[0];
-                const leftValue = Number(anthro.calf_left) || 0;
-                const rightValue = Number(anthro.calf_right) || 0;
+                const leftValue = anthro.calf_left != null ? Number(anthro.calf_left) : 0;
+                const rightValue = anthro.calf_right != null ? Number(anthro.calf_right) : 0;
 
                 return {
                   stacks: [
@@ -255,10 +252,9 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
 
               const allValues = lowerLimbAssessments.flatMap((a: any) => {
                 const anthro = a.anthropometry[0];
-                return [
-                  Number(anthro.calf_left) || 0,
-                  Number(anthro.calf_right) || 0,
-                ];
+                const leftVal = anthro.calf_left != null ? Number(anthro.calf_left) : 0;
+                const rightVal = anthro.calf_right != null ? Number(anthro.calf_right) : 0;
+                return [leftVal, rightVal];
               }).filter((v) => v > 0);
 
               const maxVal = Math.ceil((Math.max(...allValues) + 5) / 5) * 5;
