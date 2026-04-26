@@ -7,6 +7,7 @@ import {
 import { T } from '../utils/theme';
 import EvolutionPanel from './EvolutionPanel';
 import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
+import TrunkMeasurementsChart from './TrunkMeasurementsChart';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -324,6 +325,15 @@ export default function AssessmentDetailsModal({
                   <View style={{ flex: 1, backgroundColor: T.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Braço</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.arm_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.arm_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Coxa</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.thigh_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.thigh_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Pantur.</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.calf_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.calf_right ?? "-"}</Text></View></View>
                 </View>
               </View>
+
+              <TrunkMeasurementsChart
+                chartAssessments={(() => {
+                  const sorted = [...(assessments || [])].reverse();
+                  return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
+                })()}
+                chartLabels={chartLabels}
+                chartWidth={screenWidth - 60}
+              />
               
               <View style={{ marginTop: 24, paddingVertical: 14, backgroundColor: '#0f172a', borderRadius: 12 }}><Text style={{ color: '#fbbf24', textAlign: 'center', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>FOCO NO PROCESSO. OS RESULTADOS VIRÃO! 🔥</Text></View>
             </View>

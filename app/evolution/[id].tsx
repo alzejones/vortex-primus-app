@@ -5,6 +5,7 @@ import { LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
 import EvolutionPanel from "../../components/EvolutionPanel";
 import MeasurementsEvolutionPanel from "../../components/MeasurementsEvolutionPanel";
+import TrunkMeasurementsChart from "../../components/TrunkMeasurementsChart";
 import { supabase } from "../../lib/supabase";
 import { getMetabolicStatus } from "../../utils/assessmentCalculations";
 import { T } from "../../utils/theme";
@@ -381,6 +382,18 @@ export default function PublicAssessmentView() {
             </View>
           </View>
         </View>
+
+        <TrunkMeasurementsChart
+          chartAssessments={(() => {
+            const sorted = [...(assessments || [])].reverse();
+            return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
+          })()}
+          chartLabels={assessments.filter((a: any) => a.anthropometry && a.anthropometry.length > 0).map((a: any) => {
+            const d = new Date(a.date);
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+          })}
+          chartWidth={screenWidth - 60}
+        />
 
         <View style={{ marginTop: 24, paddingVertical: 14, backgroundColor: T.bgAlt, borderRadius: 12, borderWidth: 1, borderColor: T.border }}>
           <Text style={{ color: '#fbbf24', textAlign: 'center', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>FOCO NO PROCESSO. OS RESULTADOS VIRÃO! 🔥</Text>
