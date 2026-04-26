@@ -118,7 +118,8 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
             barBorderRadius={4}
             spacing={spacing}
             initialSpacing={20}
-            endSpacing={20}
+            endSpacing={0}
+            paddingRight={0}
             yAxisColor="rgba(255,255,255,0.3)"
             xAxisColor="rgba(255,255,255,0.3)"
             yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }}
@@ -274,7 +275,8 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                     barBorderRadius={4}
                     spacing={spacing}
                     initialSpacing={20}
-                    endSpacing={20}
+                    endSpacing={0}
+                    paddingRight={0}
                     yAxisColor="rgba(255,255,255,0.3)"
                     xAxisColor="rgba(255,255,255,0.3)"
                     yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }}
