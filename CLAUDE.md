@@ -10,19 +10,41 @@ Guia para Claude Code ao trabalhar no **Vortex Primus** - plataforma SaaS fitnes
 - **Deploy:** Vercel (export estático)
 - **Comandos:** `npx expo start` | `npm run build` | `npm run lint`
 
-## Estrutura de Rotas
+## Estrutura do Projeto
 
 ```
-app/
-  index.tsx                      # Redirect por role
-  login.tsx                      # Auth
-  evolution/[id].tsx             # Público, sem auth
-  (protected)/                   # Treinadores
-    _layout.tsx                  # TabBar: Home/Alunos/Agenda/Config
-    index.tsx, clients.tsx, client-details.tsx, client-assessments.tsx
-    client-diet.tsx, assessment-create.tsx, plans.tsx
-  (client)/                      # Alunos
-    diet.tsx, meal-capture.tsx
+vortex-primus-app/
+├── app/                         # Expo Router - estrutura de rotas
+│   ├── index.tsx                # Redirect por role
+│   ├── login.tsx                # Autenticação
+│   ├── evolution/[id].tsx       # Evolução pública (sem auth)
+│   ├── (protected)/             # Rotas de treinadores
+│   │   ├── _layout.tsx          # TabBar: Home/Alunos/Agenda/Config
+│   │   ├── index.tsx, clients.tsx, client-details.tsx
+│   │   ├── client-assessments.tsx, assessment-create.tsx
+│   │   └── client-diet.tsx, plans.tsx
+│   └── (client)/                # Rotas de alunos
+│       ├── diet.tsx, meal-capture.tsx
+├── components/                  # Componentes reutilizáveis
+│   ├── TrunkMeasurementsChart.tsx    # Gráfico evolução tronco
+│   ├── LimbMeasurementsChart.tsx     # Gráfico evolução membros
+│   ├── EvolutionPanel.tsx, MeasurementsEvolutionPanel.tsx
+│   ├── AssessmentDetailsModal.tsx, AssessmentHistoryCard.tsx
+│   └── DashboardLayout[.web].tsx
+├── utils/                       # Utilitários e helpers
+│   ├── theme.ts                 # Sistema de cores/temas
+│   └── assessmentCalculations.ts
+├── contexts/                    # React Contexts
+│   └── AuthContext.tsx
+├── lib/                         # Configurações de bibliotecas
+│   └── supabase.ts
+├── supabase/                    # Backend Supabase
+│   ├── migrations/              # Migrações SQL
+│   └── functions/               # Edge Functions (Deno)
+│       ├── stripe-checkout/, invite-client/, delete-client/
+│       └── generate-diet/, analyze-meal-photo/
+└── assets/                      # Recursos estáticos
+    └── images/, fonts/
 ```
 
 ## Padrões Estabelecidos
@@ -54,6 +76,13 @@ app/
   - Componente: components/TrunkMeasurementsChart.tsx
   - Presente em: client-assessments, AssessmentDetailsModal, evolution/[id]
   - Filtro: exibe apenas avaliações com medidas de tronco preenchidas (> 0)
+- Evolução de Membros — barras agrupadas para comparação de simetria E/D
+  - Componente: components/LimbMeasurementsChart.tsx
+  - 💪 MEMBROS SUPERIORES (arm_left azul #4A90D9 | arm_right verde #7ED321) 
+  - 🦵 MEMBROS INFERIORES com COXA (thigh_left #1E5799 | thigh_right #4A90D9) e PANTURRILHA (calf_left #B85C00 | calf_right #F5A623)
+  - Valores numéricos dentro das barras se >= 5cm
+  - Presente em: client-assessments, AssessmentDetailsModal, evolution/[id]
+  - Usa react-native-gifted-charts BarChart com data array agrupado (spacing diferenciado)
 
 **Banco de dados:**
 - 152 avaliações válidas (limpeza realizada em 25/04/2026)
