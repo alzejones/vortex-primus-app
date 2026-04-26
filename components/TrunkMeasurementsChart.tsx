@@ -40,7 +40,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
 
 
   // labels do eixo X: mesmas do gráfico existente (mais recente → mais antigo)
-  const xLabels = [...trunkAssessments].reverse().map((a: any) => {
+  const xLabels = trunkAssessments.map((a: any) => {
     const d = new Date(a.date);
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
