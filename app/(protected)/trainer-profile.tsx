@@ -16,6 +16,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import TrainerScalesManager from "../../components/TrainerScalesManager";
 
 export default function TrainerProfile() {
   const router = useRouter();
@@ -209,6 +210,9 @@ export default function TrainerProfile() {
             </Text>
           </TouchableOpacity>
         </LinearGradient>
+
+        {/* Gerenciamento de Balanças */}
+        <TrainerScalesManager />
 
         <TouchableOpacity
           style={styles.saveButton}
