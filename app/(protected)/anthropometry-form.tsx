@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { GradientAI, GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import BluetoothScaleConnector from "../../components/BluetoothScaleConnector";
 
 export default function AnthropometryForm() {
   const { assessment_id, client_id } = useLocalSearchParams();
@@ -45,6 +46,10 @@ export default function AnthropometryForm() {
     basal_metabolic_rate: "",
     body_fat_index: "",
     metabolic_age: "",
+    bmi: "",
+    water_percent: "",
+    bone_mass: "",
+    source: "manual",
   });
 
   useEffect(() => {
@@ -84,6 +89,10 @@ export default function AnthropometryForm() {
           basal_metabolic_rate: data.basal_metabolic_rate?.toString() || "",
           body_fat_index: data.body_fat_index?.toString() || "",
           metabolic_age: data.metabolic_age?.toString() || "",
+          bmi: data.bmi?.toString() || "",
+          water_percent: data.water_percent?.toString() || "",
+          bone_mass: data.bone_mass?.toString() || "",
+          source: data.source || "manual",
         });
       }
     }
@@ -99,6 +108,22 @@ export default function AnthropometryForm() {
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     return age;
+  };
+
+  const handleScaleData = (scaleData: any) => {
+    setForm(prev => ({
+      ...prev,
+      weight: scaleData.weight.toFixed(1),
+      bmi: scaleData.bmi.toFixed(1),
+      body_fat: scaleData.body_fat.toFixed(1),
+      muscle_mass_percentage: scaleData.muscle_mass_percentage.toFixed(1),
+      water_percent: scaleData.water_percent.toFixed(1),
+      bone_mass: scaleData.bone_mass.toFixed(1),
+      basal_metabolic_rate: scaleData.basal_metabolic_rate.toString(),
+      metabolic_age: scaleData.metabolic_age.toString(),
+      body_fat_index: scaleData.body_fat_index.toFixed(1),
+      source: "ble_trainer",
+    }));
   };
 
   function calculateRemoteAssessment() {
@@ -178,6 +203,10 @@ export default function AnthropometryForm() {
       basal_metabolic_rate: form.basal_metabolic_rate ? Number(form.basal_metabolic_rate.replace(',','.')) : null,
       body_fat_index: form.body_fat_index ? Number(form.body_fat_index.replace(',','.')) : null,
       metabolic_age: form.metabolic_age ? Number(form.metabolic_age.replace(',','.')) : null,
+      bmi: form.bmi ? Number(form.bmi.replace(',','.')) : null,
+      water_percent: form.water_percent ? Number(form.water_percent.replace(',','.')) : null,
+      bone_mass: form.bone_mass ? Number(form.bone_mass.replace(',','.')) : null,
+      source: form.source,
     };
 
     const { data: existing } = await supabase
@@ -230,6 +259,11 @@ export default function AnthropometryForm() {
             <Text style={{ fontSize: 14, color: T.t3, marginTop: 4 }}>Preencha os dados da bioimpedância ou fita métrica.</Text>
           </View>
 
+          <BluetoothScaleConnector 
+            onDataReceived={handleScaleData}
+            disabled={loading}
+          />
+
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Medidas Básicas</Text>
             {renderInput("Peso (kg)", "weight")}
@@ -249,11 +283,15 @@ export default function AnthropometryForm() {
 
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Bioimpedância / Resultados IA</Text>
+            {renderInput("Peso (kg)", "weight")}
+            {renderInput("IMC", "bmi")}
             {renderInput("% Gordura Corporal", "body_fat")}
             {renderInput("% Massa Muscular", "muscle_mass_percentage")}
+            {renderInput("% Água Corporal", "water_percent")}
+            {renderInput("Massa Óssea (kg)", "bone_mass")}
             {renderInput("Índice de Gordura Visceral", "body_fat_index")}
-            {renderInput("Idade Metabólica", "metabolic_age")}
             {renderInput("Taxa Metabólica Basal (kcal)", "basal_metabolic_rate")}
+            {renderInput("Idade Metabólica", "metabolic_age")}
           </View>
 
           <View style={styles.card}>
