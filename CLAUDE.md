@@ -45,14 +45,26 @@ app/
 
 **v1.0 em Produção**
 - Módulo de Dieta em produção (mergeado em main)
-- Análise de refeição por foto (Claude Vision)
 - Responsividade completa implementada
 - Bugs abertos: nenhum
 
+**Gráficos de Evolução implementados:**
+- Gordura x Músculo (client-assessments)
+- Evolução do Tronco — 4 linhas (Peitoral, Abdômen, Cintura, Quadril)
+  - Componente: components/TrunkMeasurementsChart.tsx
+  - Presente em: client-assessments, AssessmentDetailsModal, evolution/[id]
+  - Filtro: exibe apenas avaliações com medidas de tronco preenchidas (> 0)
+
+**Banco de dados:**
+- 152 avaliações válidas (limpeza realizada em 25/04/2026)
+- 135 clientes vinculados a treinadores
+- Integridade referencial 100%
+
 **Tabelas Core:**
 - `trainers`, `clients`, `plans`, `trainer_subscriptions`
-- `physical_assessments`, `anthropometry` 
+- `physical_assessments`, `anthropometry`
 - `meal_plans`, `meal_log` (módulo dieta)
+- `conditioning_assessments`, `conditioning_tests` (avaliações de performance — tabela separada)
 
 **Edge Functions:**
 - `stripe-checkout`, `invite-client`, `delete-client`
