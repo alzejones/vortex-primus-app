@@ -8,6 +8,7 @@ import { T } from '../utils/theme';
 import EvolutionPanel from './EvolutionPanel';
 import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
 import TrunkMeasurementsChart from './TrunkMeasurementsChart';
+import LimbMeasurementsChart from './LimbMeasurementsChart';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -332,6 +333,14 @@ export default function AssessmentDetailsModal({
                   return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
                 })()}
                 chartLabels={chartLabels}
+                chartWidth={screenWidth - 60}
+              />
+
+              <LimbMeasurementsChart
+                chartAssessments={(() => {
+                  const sorted = [...(assessments || [])].reverse();
+                  return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
+                })()}
                 chartWidth={screenWidth - 60}
               />
               

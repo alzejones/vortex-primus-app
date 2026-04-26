@@ -24,6 +24,7 @@ import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import EvolutionPanel from '../../components/EvolutionPanel';
 import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPanel';
 import TrunkMeasurementsChart from '../../components/TrunkMeasurementsChart';
+import LimbMeasurementsChart from '../../components/LimbMeasurementsChart';
 import { T } from "../../utils/theme";
 
 export default function ClientAssessments() {
@@ -650,6 +651,11 @@ export default function ClientAssessments() {
             <TrunkMeasurementsChart
               chartAssessments={chartAssessments}
               chartLabels={chartLabels}
+              chartWidth={chartWidth}
+            />
+
+            <LimbMeasurementsChart
+              chartAssessments={chartAssessments}
               chartWidth={chartWidth}
             />
 

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import EvolutionPanel from "../../components/EvolutionPanel";
 import MeasurementsEvolutionPanel from "../../components/MeasurementsEvolutionPanel";
 import TrunkMeasurementsChart from "../../components/TrunkMeasurementsChart";
+import LimbMeasurementsChart from "../../components/LimbMeasurementsChart";
 import { supabase } from "../../lib/supabase";
 import { getMetabolicStatus } from "../../utils/assessmentCalculations";
 import { T } from "../../utils/theme";
@@ -392,6 +393,14 @@ export default function PublicAssessmentView() {
             const d = new Date(a.date);
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
           })}
+          chartWidth={screenWidth - 60}
+        />
+
+        <LimbMeasurementsChart
+          chartAssessments={(() => {
+            const sorted = [...(assessments || [])].reverse();
+            return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
+          })()}
           chartWidth={screenWidth - 60}
         />
 
