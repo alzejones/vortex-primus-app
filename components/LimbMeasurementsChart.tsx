@@ -41,45 +41,59 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
     return (thighLeft > 0) || (thighRight > 0) || (calfLeft > 0) || (calfRight > 0);
   });
 
+  // Função para criar dados agrupados
+  const createGroupedData = (assessments: any[], fields: [string, string], colors: [string, string]) => {
+    const data: any[] = [];
+    
+    assessments.forEach((a: any, index: number) => {
+      const anthro = a.anthropometry[0];
+      const leftValue = anthro[fields[0]] != null ? Number(anthro[fields[0]]) : 0;
+      const rightValue = anthro[fields[1]] != null ? Number(anthro[fields[1]]) : 0;
+      
+      const d = new Date(a.date);
+      const label = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+      // Barra esquerda (com label da data)
+      data.push({
+        value: leftValue,
+        label: label,
+        frontColor: colors[0],
+        labelTextStyle: { color: "#94a3b8", fontSize: 10 },
+        barBorderRadius: 4,
+        topLabelComponent: leftValue >= 5 ? () => (
+          <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
+            {leftValue.toFixed(0)}
+          </Text>
+        ) : undefined,
+      });
+
+      // Barra direita (sem label, com spacing para próxima data)
+      data.push({
+        value: rightValue,
+        label: "",
+        frontColor: colors[1],
+        spacing: index < assessments.length - 1 ? 20 : 0, // Spacing maior após o par
+        barBorderRadius: 4,
+        topLabelComponent: rightValue >= 5 ? () => (
+          <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
+            {rightValue.toFixed(0)}
+          </Text>
+        ) : undefined,
+      });
+    });
+
+    return data;
+  };
+
   // Gráfico de membros superiores
   const renderUpperLimbChart = () => {
     if (upperLimbAssessments.length < 2) return null;
 
-    const labels = upperLimbAssessments.map((a: any) => {
-      const d = new Date(a.date);
-      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-    });
-
-    const barData = upperLimbAssessments.map((a: any, index: number) => {
-      const anthro = a.anthropometry[0];
-      const leftValue = anthro.arm_left != null ? Number(anthro.arm_left) : 0;
-      const rightValue = anthro.arm_right != null ? Number(anthro.arm_right) : 0;
-
-      return {
-        stacks: [
-          { 
-            value: leftValue, 
-            color: UPPER_LIMB_COLORS.left,
-            labelComponent: leftValue >= 5 ? () => (
-              <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
-                {leftValue.toFixed(0)}
-              </Text>
-            ) : undefined
-          },
-          { 
-            value: rightValue, 
-            color: UPPER_LIMB_COLORS.right,
-            labelComponent: rightValue >= 5 ? () => (
-              <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
-                {rightValue.toFixed(0)}
-              </Text>
-            ) : undefined
-          },
-        ],
-        label: labels[index],
-        labelTextStyle: { color: "#94a3b8", fontSize: 10 },
-      };
-    });
+    const barData = createGroupedData(
+      upperLimbAssessments,
+      ["arm_left", "arm_right"],
+      [UPPER_LIMB_COLORS.left, UPPER_LIMB_COLORS.right]
+    );
 
     const allValues = upperLimbAssessments.flatMap((a: any) => {
       const anthro = a.anthropometry[0];
@@ -89,7 +103,6 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
     }).filter((v) => v > 0);
 
     const maxVal = Math.ceil((Math.max(...allValues) + 5) / 5) * 5;
-    const spacing = Math.max(40, (chartWidth - 140) / (upperLimbAssessments.length > 1 ? upperLimbAssessments.length - 1 : 1));
 
     return (
       <View
@@ -130,13 +143,12 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
           }}
         >
           <BarChart
-            stackData={barData}
+            data={barData}
             width={chartWidth - 80}
             height={220}
             isAnimated
             animationDuration={1400}
-            barBorderRadius={4}
-            spacing={spacing}
+            spacing={4}
             initialSpacing={20}
             endSpacing={0}
             paddingRight={0}
@@ -210,78 +222,23 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
     );
   };
 
-  // Gráfico de membros inferiores unificado
+  // Gráfico de membros inferiores
   const renderLowerLimbChart = () => {
     if (lowerLimbAssessments.length < 2) return null;
 
-    const labels = lowerLimbAssessments.map((a: any) => {
-      const d = new Date(a.date);
-      return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-    });
+    // Dados para coxa
+    const thighData = createGroupedData(
+      lowerLimbAssessments,
+      ["thigh_left", "thigh_right"],
+      [LOWER_LIMB_COLORS.thigh_left, LOWER_LIMB_COLORS.thigh_right]
+    );
 
-    // Dados para barras de coxa
-    const thighBarData = lowerLimbAssessments.map((a: any, index: number) => {
-      const anthro = a.anthropometry[0];
-      const leftValue = anthro.thigh_left != null ? Number(anthro.thigh_left) : 0;
-      const rightValue = anthro.thigh_right != null ? Number(anthro.thigh_right) : 0;
-
-      return {
-        stacks: [
-          { 
-            value: leftValue, 
-            color: LOWER_LIMB_COLORS.thigh_left,
-            labelComponent: leftValue >= 5 ? () => (
-              <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
-                {leftValue.toFixed(0)}
-              </Text>
-            ) : undefined
-          },
-          { 
-            value: rightValue, 
-            color: LOWER_LIMB_COLORS.thigh_right,
-            labelComponent: rightValue >= 5 ? () => (
-              <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
-                {rightValue.toFixed(0)}
-              </Text>
-            ) : undefined
-          },
-        ],
-        label: labels[index],
-        labelTextStyle: { color: "#94a3b8", fontSize: 10 },
-      };
-    });
-
-    // Dados para barras de panturrilha
-    const calfBarData = lowerLimbAssessments.map((a: any, index: number) => {
-      const anthro = a.anthropometry[0];
-      const leftValue = anthro.calf_left != null ? Number(anthro.calf_left) : 0;
-      const rightValue = anthro.calf_right != null ? Number(anthro.calf_right) : 0;
-
-      return {
-        stacks: [
-          { 
-            value: leftValue, 
-            color: LOWER_LIMB_COLORS.calf_left,
-            labelComponent: leftValue >= 5 ? () => (
-              <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
-                {leftValue.toFixed(0)}
-              </Text>
-            ) : undefined
-          },
-          { 
-            value: rightValue, 
-            color: LOWER_LIMB_COLORS.calf_right,
-            labelComponent: rightValue >= 5 ? () => (
-              <Text style={{ color: "white", fontSize: 10, textAlign: "center" }}>
-                {rightValue.toFixed(0)}
-              </Text>
-            ) : undefined
-          },
-        ],
-        label: '', // Sem label para não duplicar
-        labelTextStyle: { color: "#94a3b8", fontSize: 10 },
-      };
-    });
+    // Dados para panturrilha
+    const calfData = createGroupedData(
+      lowerLimbAssessments,
+      ["calf_left", "calf_right"],
+      [LOWER_LIMB_COLORS.calf_left, LOWER_LIMB_COLORS.calf_right]
+    );
 
     const allValues = lowerLimbAssessments.flatMap((a: any) => {
       const anthro = a.anthropometry[0];
@@ -293,8 +250,6 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
     }).filter((v) => v > 0);
 
     const maxVal = Math.ceil((Math.max(...allValues) + 5) / 5) * 5;
-    const barWidth = 30;
-    const spacing = Math.max(15, (chartWidth - 140) / (lowerLimbAssessments.length > 1 ? lowerLimbAssessments.length - 1 : 1));
 
     return (
       <View
@@ -334,19 +289,17 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
             shadowRadius: 5,
           }}
         >
-          {/* Gráfico de Coxa */}
-          <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "bold", marginBottom: 10, textAlign: "center" }}>
+          {/* Seção COXA */}
+          <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
             COXA
           </Text>
           <BarChart
-            stackData={thighBarData}
+            data={thighData}
             width={chartWidth - 80}
             height={180}
             isAnimated
             animationDuration={1400}
-            barBorderRadius={4}
-            barWidth={barWidth}
-            spacing={spacing}
+            spacing={4}
             initialSpacing={20}
             endSpacing={0}
             paddingRight={0}
@@ -365,22 +318,20 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
             verticalLinesColor="rgba(255,255,255,0.15)"
           />
           
-          {/* Espaçamento entre gráficos */}
-          <View style={{ height: 20 }} />
+          {/* Espaçamento */}
+          <View style={{ height: 24 }} />
           
-          {/* Gráfico de Panturrilha */}
-          <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "bold", marginBottom: 10, textAlign: "center" }}>
+          {/* Seção PANTURRILHA */}
+          <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
             PANTURRILHA
           </Text>
           <BarChart
-            stackData={calfBarData}
+            data={calfData}
             width={chartWidth - 80}
             height={180}
             isAnimated
             animationDuration={1400}
-            barBorderRadius={4}
-            barWidth={barWidth}
-            spacing={spacing}
+            spacing={4}
             initialSpacing={20}
             endSpacing={0}
             paddingRight={0}
