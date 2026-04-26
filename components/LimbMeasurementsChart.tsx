@@ -51,23 +51,12 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
       const rightValue = Number(anthro[fields[1]]) || 0;
 
       return {
-        value: leftValue,
-        topLabelComponent: () => (
-          <Text style={{ color: "#94a3b8", fontSize: 10, textAlign: "center" }}>
-            {(leftValue + rightValue).toFixed(1)}
-          </Text>
-        ),
-        label: labels[index],
-        spacing: 2,
-        labelWidth: 50,
-        labelTextStyle: { color: "#94a3b8", fontSize: 10 },
-        frontColor: LIMB_COLORS.left,
-        stackData: [
-          {
-            value: rightValue,
-            color: LIMB_COLORS.right,
-          },
+        stacks: [
+          { value: leftValue, color: LIMB_COLORS.left, label: '' },
+          { value: rightValue, color: LIMB_COLORS.right },
         ],
+        label: labels[index],
+        labelTextStyle: { color: "#94a3b8", fontSize: 10 },
       };
     });
 
@@ -121,7 +110,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
           }}
         >
           <BarChart
-            data={barData}
+            stackData={barData}
             width={chartWidth - 80}
             height={220}
             isAnimated
@@ -143,7 +132,6 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
             hideRules={false}
             showVerticalLines
             verticalLinesColor="rgba(255,255,255,0.15)"
-            stackData
           />
           {/* Legenda */}
           <View
@@ -255,23 +243,12 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                 const rightValue = Number(anthro.calf_right) || 0;
 
                 return {
-                  value: leftValue,
-                  topLabelComponent: () => (
-                    <Text style={{ color: "#94a3b8", fontSize: 10, textAlign: "center" }}>
-                      {(leftValue + rightValue).toFixed(1)}
-                    </Text>
-                  ),
-                  label: labels[index],
-                  spacing: 2,
-                  labelWidth: 50,
-                  labelTextStyle: { color: "#94a3b8", fontSize: 10 },
-                  frontColor: LIMB_COLORS.left,
-                  stackData: [
-                    {
-                      value: rightValue,
-                      color: LIMB_COLORS.right,
-                    },
+                  stacks: [
+                    { value: leftValue, color: LIMB_COLORS.left, label: '' },
+                    { value: rightValue, color: LIMB_COLORS.right },
                   ],
+                  label: labels[index],
+                  labelTextStyle: { color: "#94a3b8", fontSize: 10 },
                 };
               });
 
@@ -289,7 +266,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
               return (
                 <>
                   <BarChart
-                    data={barData}
+                    stackData={barData}
                     width={chartWidth - 80}
                     height={220}
                     isAnimated
@@ -311,7 +288,6 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                     hideRules={false}
                     showVerticalLines
                     verticalLinesColor="rgba(255,255,255,0.15)"
-                    stackData
                   />
                   {/* Legenda */}
                   <View
