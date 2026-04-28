@@ -83,22 +83,22 @@ vortex-primus-app/
 - Responsividade completa implementada
 - Bugs abertos: nenhum no código
 
-**⚠️ SITUAÇÃO DO BANCO DE DADOS:**
-- Incidente Supabase em 27/04/2026 zerou o banco do projeto original (qgeezszpcuypqujplkde)
-- Plano Free — sem backup disponível
-- Projeto original preservado (aguardando possível restauração pelo Supabase)
-- **AÇÃO EM ANDAMENTO:** Recriando schema em novo projeto Supabase
-- 17 migrations em supabase/migrations/ cobrem todo o schema completo
-- Nenhum código foi perdido — tudo no Git
+**✅ SITUAÇÃO DO BANCO DE DADOS - RECUPERAÇÃO CONCLUÍDA:**
+- **28/04/2026:** Banco de dados totalmente recuperado e funcional
+- **Novo projeto:** rwyyvilshrjhfwlzudqg.supabase.co (substituindo qgeezszpcuypqujplkde)
+- **Schema completo:** 22 tabelas criadas + RLS + triggers funcionando
+- **16 migrations:** Aplicadas com sucesso no novo projeto
+- **5 Edge Functions:** Deployadas e operacionais
+- **App testado:** Login e conexão validados - sistema 100% funcional
 
 **Gráficos de Evolução implementados:**
 - Gordura x Músculo (client-assessments)
 - Evolução do Tronco — TrunkMeasurementsChart.tsx
 - Evolução de Membros — LimbMeasurementsChart.tsx
 
-**Banco de dados (schema completo nas migrations):**
-- 22 tabelas, 4 Edge Functions
-- Última contagem real: 135 clientes, 152 avaliações (pré-incidente)
+**Banco de dados (schema completo operacional):**
+- 22 tabelas, 5 Edge Functions
+- Dados zerados — aguardando repopulação conforme uso
 
 **Tabelas Core:**
 - trainers, clients, plans, trainer_subscriptions
@@ -108,7 +108,7 @@ vortex-primus-app/
 - conditioning_assessments, conditioning_tests
 - supported_scales, trainer_scales
 
-**Edge Functions:**
+**Edge Functions (deployadas e funcionais):**
 - stripe-checkout, invite-client, delete-client
 - generate-diet, analyze-meal-photo
 
@@ -127,12 +127,23 @@ vortex-primus-app/
 
 ## Pendências e Roadmap
 
-**🔴 PRIORIDADE MÁXIMA — Recuperação do banco:**
-- Conectar novo projeto Supabase ao app (atualizar lib/supabase.ts)
-- Rodar as 17 migrations no novo projeto
-- Recriar Edge Functions no novo projeto
-- Atualizar variáveis de ambiente no Vercel
-- Testar login e funcionamento completo
+**✅ RECUPERAÇÃO CONCLUÍDA — Sistema operacional:**
+- ✅ Conectado ao novo projeto Supabase rwyyvilshrjhfwlzudqg
+- ✅ Schema base recriado: 13 tabelas principais + RLS + triggers
+- ✅ 16 migrations aplicadas com sucesso no novo banco
+- ✅ 5 Edge Functions deployadas e funcionais
+- ✅ Variáveis de ambiente locais configuradas (migradas para .env)
+- ✅ Atualizar variáveis de ambiente no Vercel e ambiente local (concluído)
+- ✅ Login e funcionamento testados e validados
+
+**Detalhes técnicos da recuperação:**
+- Baseline migration recriada com schema completo
+- Conflitos de CREATE TABLE resolvidos com IF NOT EXISTS
+- RLS policies funcionando em todas as tabelas
+- Auth trigger (handle_new_user) operacional
+- TypeScript compilation sem erros relacionados ao Supabase
+- Variáveis de ambiente migradas do hardcode para .env (EXPO_PUBLIC_SUPABASE_URL/ANON_KEY)
+- Cache Expo limpo e servidor testado com novas configurações
 
 **Sistema de Balanças:**
 - Fase 3 — Auto-pesagem do aluno (convite via link, igual ao módulo Dieta)
