@@ -58,21 +58,21 @@ export default function TrainerProfile() {
 
       const { data: sub } = await supabase
         .from("trainer_subscriptions")
-        .select("is_active, plans ( name, max_clients )")
+        .select("status, plans ( name, max_clients )")
         .eq("trainer_id", trainer.id)
-        .eq("is_active", true)
+        .eq("status", "active")
         .single();
 
       const planData = sub?.plans as any;
       setPlanName(planData?.name ? `${planData.name}` : "Sem Plano Ativo");
       setMaxClients((planData as any)?.max_clients || 0);
-      setPlanStatus(sub?.is_active ? 'Ativo' : 'Inativo');
+      setPlanStatus(sub?.status === 'active' ? 'Ativo' : 'Inativo');
 
       const { count } = await supabase
         .from('clients')
         .select('*', { count: 'exact', head: true })
         .eq('trainer_id', trainer.id)
-        .eq('is_active', true);
+;
       setCurrentClients(count || 0);
 
     } catch (error) {
