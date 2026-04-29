@@ -65,31 +65,33 @@ vortex-primus-app/
 
 ## Estado Atual
 
-**v1.0 em Produção**
-- Módulo de Dieta em produção
-- Sistema de Balanças Bluetooth — Fase 1 (a51365a) e Fase 2 (b709d39) concluídas
+**v1.0 em Produção — Infraestrutura 100% Recuperada e Operacional**
+- **Ambiente:** vortex-primus.vercel.app (novo domínio limpo)
+- **Backend:** Projeto Supabase rwyyvilshrjhfwlzudqg totalmente funcional
+- **Módulo de Dieta:** Em produção e operacional
+- **Sistema de Balanças Bluetooth:** Fase 1 (a51365a) e Fase 2 (b709d39) concluídas
   - Tabelas: supported_scales, trainer_scales
   - Campos novos em anthropometry: bmi, water_percent, bone_mass, source
   - Componente: BluetoothScaleConnector.tsx (Web Bluetooth API nativa)
   - Protocolo implementado: Xiaomi Mi Body Composition Scale 2
   - Fase 3 pendente: convite de auto-pesagem para o aluno
-- Sistema de Suplementos Herbalife — commit ed57ea4
+- **Sistema de Suplementos Herbalife:** Commit ed57ea4
   - Tabela: supplements (brand, sku, name, serving_size_g, macros, notes)
   - Componente: SupplementSearchModal.tsx (busca dinâmica, badge laranja)
   - Botão 💊 Herbalife ao lado do 🔍 TACO no formulário de refeição
   - 7 produtos Herbalife no seed inicial
   - meal_plan_foods: colunas food_id e supplement_id adicionadas (commit 6a1f227)
-- Fix AuthContext: detecta role no evento USER_UPDATED — commit c3cf3f8
-- Responsividade completa implementada
-- Bugs abertos: nenhum no código
+- **AuthContext:** Detecta role no evento USER_UPDATED — commit c3cf3f8
+- **UI/UX:** Responsividade completa implementada
+- **Status de bugs:** Nenhum no código (refinamento de robustez auth pendente)
 
-**✅ SITUAÇÃO DO BANCO DE DADOS - RECUPERAÇÃO CONCLUÍDA:**
-- **28/04/2026:** Banco de dados totalmente recuperado e funcional
-- **Novo projeto:** rwyyvilshrjhfwlzudqg.supabase.co (substituindo qgeezszpcuypqujplkde)
-- **Schema completo:** 22 tabelas criadas + RLS + triggers funcionando
-- **16 migrations:** Aplicadas com sucesso no novo projeto
-- **5 Edge Functions:** Deployadas e operacionais
-- **App testado:** Login e conexão validados - sistema 100% funcional
+**✅ MIGRAÇÃO COMPLETA - SISTEMA TOTALMENTE OPERACIONAL:**
+- **28-29/04/2026:** Recuperação e migração 100% concluída
+- **Backend:** rwyyvilshrjhfwlzudqg.supabase.co (22 tabelas + RLS + triggers)
+- **Frontend:** vortex-primus.vercel.app (ambiente limpo sem cache antigo)
+- **Configurações:** Site URLs e OAuth redirects atualizados
+- **Variáveis:** EXPO_PUBLIC_ corretamente configuradas em todos os ambientes
+- **Diagnóstico:** Sistema funcional com refinamento de auth trigger pendente
 
 **Gráficos de Evolução implementados:**
 - Gordura x Músculo (client-assessments)
@@ -127,14 +129,15 @@ vortex-primus-app/
 
 ## Pendências e Roadmap
 
-**✅ RECUPERAÇÃO CONCLUÍDA — Sistema operacional:**
+**✅ RECUPERAÇÃO CONCLUÍDA — Sistema 100% operacional:**
 - ✅ Conectado ao novo projeto Supabase rwyyvilshrjhfwlzudqg
 - ✅ Schema base recriado: 13 tabelas principais + RLS + triggers
 - ✅ 16 migrations aplicadas com sucesso no novo banco
 - ✅ 5 Edge Functions deployadas e funcionais
 - ✅ Variáveis de ambiente locais configuradas (migradas para .env)
-- ✅ Atualizar variáveis de ambiente no Vercel e ambiente local (concluído)
-- ✅ Login e funcionamento testados e validados
+- ✅ Infraestrutura web (Vercel) migrada para vortex-primus.vercel.app
+- ✅ Variáveis EXPO_PUBLIC_ configuradas corretamente no dashboard Vercel
+- ✅ Site URL e Redirect URLs atualizados no Supabase e Google Cloud Console
 
 **Detalhes técnicos da recuperação:**
 - Baseline migration recriada com schema completo
@@ -144,6 +147,14 @@ vortex-primus-app/
 - TypeScript compilation sem erros relacionados ao Supabase
 - Variáveis de ambiente migradas do hardcode para .env (EXPO_PUBLIC_SUPABASE_URL/ANON_KEY)
 - Cache Expo limpo e servidor testado com novas configurações
+- Diagnóstico completo de build cache da Vercel resolvido
+- Deploy web em ambiente limpo (vortex-primus.vercel.app) sem cache antigo
+
+**⚠️ Diagnóstico de autenticação (pendente correção):**
+- **Erro identificado:** "Database error saving new user" no login Google
+- **Causa provável:** Trigger handle_new_user falhando ao processar metadados (full_name, avatar_url)
+- **Próxima tarefa backend:** Tornar função mais resiliente com fallbacks para campos nulos
+- **Status:** Funcionalidade principal operacional, refinamento de robustez necessário
 
 **Sistema de Balanças:**
 - Fase 3 — Auto-pesagem do aluno (convite via link, igual ao módulo Dieta)

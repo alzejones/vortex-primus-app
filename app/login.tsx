@@ -208,6 +208,7 @@ export default function Login() {
         pointerEvents="none"
       />
 
+
       {/* Toast — alinhado com o card em qualquer resolução */}
       {message ? (
         <View
