@@ -1,7 +1,7 @@
 -- Migration: meal_log + meal_log_foods
 -- Registro diário de refeições consumidas pelo aluno (análise por foto via IA)
 
-CREATE TABLE public.meal_log (
+CREATE TABLE IF NOT EXISTS public.meal_log (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id       uuid NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
   consumed_at     timestamp with time zone NOT NULL DEFAULT now(),
@@ -16,7 +16,7 @@ CREATE TABLE public.meal_log (
   created_at      timestamp with time zone DEFAULT now()
 );
 
-CREATE TABLE public.meal_log_foods (
+CREATE TABLE IF NOT EXISTS public.meal_log_foods (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_log_id     uuid NOT NULL REFERENCES public.meal_log(id) ON DELETE CASCADE,
   food_id         uuid REFERENCES public.foods(id) ON DELETE SET NULL,
