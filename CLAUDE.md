@@ -85,13 +85,13 @@ vortex-primus-app/
 - **UI/UX:** Responsividade completa implementada
 - **Status de bugs:** Nenhum no código (refinamento de robustez auth pendente)
 
-**✅ MIGRAÇÃO COMPLETA - SISTEMA TOTALMENTE OPERACIONAL:**
-- **28-29/04/2026:** Recuperação e migração 100% concluída
+**✅ SISTEMA TOTALMENTE OPERACIONAL - ATUALIZAÇÃO 29/04/2026:**
 - **Backend:** rwyyvilshrjhfwlzudqg.supabase.co (22 tabelas + RLS + triggers)
-- **Frontend:** vortex-primus.vercel.app (ambiente limpo sem cache antigo)
-- **Configurações:** Site URLs e OAuth redirects atualizados
-- **Variáveis:** EXPO_PUBLIC_ corretamente configuradas em todos os ambientes
-- **Diagnóstico:** Sistema funcional com refinamento de auth trigger pendente
+- **Frontend:** vortex-primus.vercel.app (ambiente limpo e funcional)
+- **Autenticação:** Google OAuth e email/senha funcionando 100%
+- **Planos:** Sistema automatizado - novos treinadores recebem plano "Teste"
+- **Interface:** "Meu Perfil" corrigida - exibe plano ativo corretamente
+- **Triggers:** handle_new_user e assign_default_plan aplicados
 
 **Gráficos de Evolução implementados:**
 - Gordura x Músculo (client-assessments)
@@ -164,6 +164,52 @@ vortex-primus-app/
 **Suplementos Herbalife:**
 - Completar tabela nutricional dos produtos restantes (dados parciais do catálogo)
 - Futura tela de gerenciamento de suplementos em Config
+
+---
+
+## Credenciais e Acessos
+
+**Supabase Database Password:**
+```
+stcvip01vortex
+```
+**Uso:** `export SUPABASE_DB_PASSWORD="stcvip01vortex"` para comandos `supabase db push`
+
+**Projeto Supabase:**
+- **Project Ref:** `rwyyvilshrjhfwlzudqg`
+- **URL:** https://rwyyvilshrjhfwlzudqg.supabase.co
+- **Dashboard:** https://supabase.com/dashboard/project/rwyyvilshrjhfwlzudqg
+- **SQL Editor:** https://supabase.com/dashboard/project/rwyyvilshrjhfwlzudqg/sql/new
+
+**URLs de Deploy:**
+- **Produção:** https://vortex-primus.vercel.app
+- **Login:** https://vortex-primus.vercel.app/login
+- **Dashboard Vercel:** vortex-primus.vercel.app project
+
+**Comandos Essenciais:**
+```bash
+# Aplicar migrations
+export SUPABASE_DB_PASSWORD="stcvip01vortex" && npx supabase db push
+
+# Desenvolvimento local
+npx expo start
+
+# Build e lint
+npm run build
+npm run lint
+```
+
+**Commits Importantes Recentes:**
+- `67d98a0` - feat: automate default plan assignment and fix profile query
+- `4cdbfb7` - feat: add robust email fallback to handle_new_user trigger  
+- `e70eeb7` - fix: add robust name extraction to handle_new_user trigger
+- `f83fc69` - docs: update CLAUDE.md with LimbMeasurementsChart final implementation
+- `9ffe5dd` - refactor: switch LimbMeasurementsChart to grouped bars
+
+**Variáveis de Ambiente (.env):**
+- `EXPO_PUBLIC_SUPABASE_URL=https://rwyyvilshrjhfwlzudqg.supabase.co`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3eXl2aWxzaHJqaGZ3bHp1ZHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyODAxMDQsImV4cCI6MjA4Njg1NjEwNH0.-f59-ol2LOwEEVWvjq-rwqFEt6sXK8i2zNHWBwSU8-Q`
+- `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51TIWv32HlySFSGvPwazv22TtWHYO0W058yodScKMwjp4JXNzsv0hsbum1EGR2kiM5T2OmrUnWkCmppPiIZqzgAdl00dVzh5FKYs`
 
 ---
 
