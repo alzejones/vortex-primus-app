@@ -85,7 +85,7 @@ vortex-primus-app/
 - **UI/UX:** Responsividade completa implementada
 - **Status de bugs:** Nenhum no código (refinamento de robustez auth pendente)
 
-**✅ SISTEMA TOTALMENTE OPERACIONAL - ATUALIZAÇÃO 29/04/2026:**
+**✅ SISTEMA TOTALMENTE OPERACIONAL - ATUALIZAÇÃO 30/04/2026:**
 - **Backend:** rwyyvilshrjhfwlzudqg.supabase.co (22 tabelas + RLS + triggers)
 - **Frontend:** vortex-primus.vercel.app (ambiente limpo e funcional)
 - **Autenticação:** Google OAuth e email/senha funcionando 100%
@@ -93,22 +93,43 @@ vortex-primus-app/
 - **Interface:** "Meu Perfil" corrigida - exibe plano ativo corretamente
 - **Triggers:** handle_new_user e assign_default_plan aplicados
 
+**✅ AUDITORIA COMPLETA CÓDIGO × BANCO - 30/04/2026:**
+- **Status:** 🎯 **100% CONCLUÍDA** - Infraestrutura totalmente sincronizada
+- **Método:** Engenharia reversa completa do frontend + correção automática do banco
+- **Migration:** `20260430135623_db_audit_fixes_v2.sql` aplicada com sucesso
+- **Resultado:** Zero divergências entre código e schema do banco
+
+**🔥 BUGS CRÍTICOS ELIMINADOS:**
+- **Cadastro de Alunos:** ✅ Resolvido - campos `observation` e `is_active` em `clients`
+- **Dashboard "Lista Vazia":** ✅ Resolvido - campo `view_count` em `anthropometry` 
+- **Avaliações Quebradas:** ✅ Resolvido - campos `basal_metabolic_rate`, `body_fat_index`, `metabolic_age`
+- **Client-details não salva:** ✅ Resolvido - campos faltantes + trigger `updated_at`
+- **Sistema de Planos:** ✅ Resolvido - campo `is_active` boolean sincronizado com `status`
+- **Auto-refresh Dashboard:** ✅ Implementado com `useFocusEffect` na tela principal
+
 **Gráficos de Evolução implementados:**
 - Gordura x Músculo (client-assessments)
 - Evolução do Tronco — TrunkMeasurementsChart.tsx
 - Evolução de Membros — LimbMeasurementsChart.tsx
 
 **Banco de dados (schema completo operacional):**
-- 22 tabelas, 5 Edge Functions
-- Dados zerados — aguardando repopulação conforme uso
+- 23 tabelas, 5 Edge Functions
+- Todas as funcionalidades principais testadas e funcionando
 
 **Tabelas Core:**
 - trainers, clients, plans, trainer_subscriptions
-- physical_assessments, anthropometry
+- physical_assessments, anthropometry, appointments
 - meal_plans, meal_plan_meals, meal_plan_foods, meal_log
 - foods (TACO — 597 alimentos), supplements (Herbalife — 7 produtos seed)
 - conditioning_assessments, conditioning_tests
 - supported_scales, trainer_scales
+
+**📊 Schema Sincronizado - Campos Críticos Adicionados (30/04/2026):**
+- **`clients`:** `observation`, `is_active`, `updated_at` + trigger
+- **`anthropometry`:** `basal_metabolic_rate`, `body_fat_index`, `metabolic_age`, `view_count`
+- **`physical_assessments`:** `date` (sincronizado com `assessment_date`) + trigger
+- **`trainer_subscriptions`:** `is_active` boolean (sincronizado com `status` text) + trigger
+- **Performance:** Índices otimizados para campos `is_active` e `view_count`
 
 **Edge Functions (deployadas e funcionais):**
 - stripe-checkout, invite-client, delete-client
@@ -150,11 +171,11 @@ vortex-primus-app/
 - Diagnóstico completo de build cache da Vercel resolvido
 - Deploy web em ambiente limpo (vortex-primus.vercel.app) sem cache antigo
 
-**⚠️ Diagnóstico de autenticação (pendente correção):**
-- **Erro identificado:** "Database error saving new user" no login Google
-- **Causa provável:** Trigger handle_new_user falhando ao processar metadados (full_name, avatar_url)
-- **Próxima tarefa backend:** Tornar função mais resiliente com fallbacks para campos nulos
-- **Status:** Funcionalidade principal operacional, refinamento de robustez necessário
+**✅ Sistema de Autenticação Estabilizado:**
+- **Status:** Funcionalidade principal 100% operacional
+- **Trigger handle_new_user:** Resiliente com fallbacks para metadados Google
+- **Trigger assign_default_plan:** Criação automática de planos para novos treinadores
+- **RLS:** Todas as políticas de segurança funcionando corretamente
 
 **Sistema de Balanças:**
 - Fase 3 — Auto-pesagem do aluno (convite via link, igual ao módulo Dieta)
@@ -200,11 +221,20 @@ npm run lint
 ```
 
 **Commits Importantes Recentes:**
+- `20260430135623` - **AUDITORIA COMPLETA:** migration com correções críticas código×banco
+- `1687afb` - fix: improve client creation UX and dashboard refresh (30/04/2026)
 - `67d98a0` - feat: automate default plan assignment and fix profile query
 - `4cdbfb7` - feat: add robust email fallback to handle_new_user trigger  
 - `e70eeb7` - fix: add robust name extraction to handle_new_user trigger
 - `f83fc69` - docs: update CLAUDE.md with LimbMeasurementsChart final implementation
-- `9ffe5dd` - refactor: switch LimbMeasurementsChart to grouped bars
+
+**🔍 Metodologia da Auditoria Aplicada (30/04/2026):**
+- **Fase 1:** Mapeamento completo das tabelas/colunas usadas no código
+- **Fase 2:** Inspeção do schema atual do banco via migrations
+- **Fase 3:** Diagnóstico de divergências críticas (código vs banco)
+- **Fase 4:** Geração automática de SQLs de correção
+- **Fase 5:** Aplicação com checklist de segurança SaaS
+- **Princípio:** Regra de Ouro — banco ajustado para servir o código (nunca o contrário)
 
 **Variáveis de Ambiente (.env):**
 - `EXPO_PUBLIC_SUPABASE_URL=https://rwyyvilshrjhfwlzudqg.supabase.co`
