@@ -3,8 +3,9 @@
 // Toda lógica de dados aqui. Layout delegado ao DashboardLayout.
 // Expo usa DashboardLayout.web.tsx na web automaticamente.
 // ============================================================
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
@@ -22,7 +23,11 @@ export default function Index() {
   const [isScheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState('');
 
-  useEffect(() => { loadDashboardData(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [])
+  );
 
   async function loadDashboardData() {
     try {

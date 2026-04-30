@@ -147,7 +147,7 @@ export default function ClientCreate() {
 
       if (error) throw error;
 
-      setStatusMsg({ text: "Cliente guardado com sucesso!", type: "success" });
+      setStatusMsg({ text: "Cliente adicionado com sucesso!", type: "success" });
 
       if (from === "schedule" && newClient?.id) {
         setTimeout(() => {
