@@ -46,7 +46,7 @@ export default function AssessmentCreate() {
 
     router.push({
       pathname: "/(protected)/anthropometry-form",
-      params: { assessmentId: data.id },
+      params: { assessment_id: data.id },
     });
   }
 
