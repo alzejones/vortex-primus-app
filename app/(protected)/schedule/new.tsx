@@ -118,21 +118,21 @@ export default function NewAppointment() {
           <Text style={styles.sectionTitle}>O que será avaliado?</Text>
           <View style={styles.cardsRow}>
             <TouchableOpacity
-              style={[styles.typeCard, selectedTypes.includes("composition") && styles.typeCardActive]}
-              onPress={() => toggleType("composition")}
+              style={[styles.typeCard, selectedTypes.includes("Comp.Corporal") && styles.typeCardActive]}
+              onPress={() => toggleType("Comp.Corporal")}
               activeOpacity={0.7}
             >
               <Text style={styles.cardEmoji}>⚖️</Text>
-              <Text style={[styles.cardTitle, selectedTypes.includes("composition") && styles.cardTitleActive]}>Corporal</Text>
+              <Text style={[styles.cardTitle, selectedTypes.includes("Comp.Corporal") && styles.cardTitleActive]}>Corporal</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.typeCard, selectedTypes.includes("conditioning") && styles.typeCardActive]}
-              onPress={() => toggleType("conditioning")}
+              style={[styles.typeCard, selectedTypes.includes("Condicionamento") && styles.typeCardActive]}
+              onPress={() => toggleType("Condicionamento")}
               activeOpacity={0.7}
             >
               <Text style={styles.cardEmoji}>🏃</Text>
-              <Text style={[styles.cardTitle, selectedTypes.includes("conditioning") && styles.cardTitleActive]}>Física (Cross)</Text>
+              <Text style={[styles.cardTitle, selectedTypes.includes("Condicionamento") && styles.cardTitleActive]}>Física (Cross)</Text>
             </TouchableOpacity>
           </View>
         </View>
