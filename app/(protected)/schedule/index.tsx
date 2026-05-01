@@ -373,7 +373,7 @@ export default function ScheduleIndex() {
                     <Text style={styles.clientName}>{appt.clients?.name}</Text>
                     {appt.types.map(t => (
                       <View key={t} style={styles.badge}>
-                        <Text style={styles.badgeText}>{t === 'composition' ? '⚖️ Corporal' : '🏃 Físico'}</Text>
+                        <Text style={styles.badgeText}>{t === 'Comp.Corporal' ? '⚖️ Corporal' : '🏃 Físico'}</Text>
                       </View>
                     ))}
                   </View>
