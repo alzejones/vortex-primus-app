@@ -600,6 +600,7 @@ export default function ClientAssessments() {
                 <BluetoothScaleConnector
                   onDataReceived={handleScaleData}
                   disabled={saving}
+                  trainerId={trainerId}
                 />
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>

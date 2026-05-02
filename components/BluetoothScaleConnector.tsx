@@ -2,11 +2,12 @@
 // BluetoothScaleConnector.tsx — Integração Web Bluetooth API
 // Conecta e lê dados da Xiaomi Mi Body Composition Scale 2
 // ============================================================
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { T } from '../utils/theme';
 import { GradientPrimary } from '../utils/gradients';
+import { supabase } from '../lib/supabase';
 
 interface ScaleData {
   weight: number;
@@ -23,6 +24,7 @@ interface ScaleData {
 interface Props {
   onDataReceived: (data: ScaleData) => void;
   disabled?: boolean;
+  trainerId?: string | null;
 }
 
 // Xiaomi Mi Body Composition Scale 2 BLE Configuration
@@ -30,10 +32,31 @@ const XIAOMI_SERVICE_UUID = '0000181b-0000-1000-8000-00805f9b34fb';
 const XIAOMI_CHAR_UUID = '00002a9c-0000-1000-8000-00805f9b34fb';
 const XIAOMI_BLE_NAME = 'MIBCS';
 
-export default function BluetoothScaleConnector({ onDataReceived, disabled = false }: Props) {
+export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId }: Props) {
+  const [trainerScales, setTrainerScales] = useState<any[]>([]);
+  const [selectedScale, setSelectedScale] = useState<any | null>(null);
+  const [loadingScales, setLoadingScales] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [device, setDevice] = useState<BluetoothDevice | null>(null);
+
+  useEffect(() => {
+    if (!trainerId) return;
+    async function fetchScales() {
+      setLoadingScales(true);
+      const { data } = await supabase
+        .from('trainer_scales')
+        .select('*, supported_scale:supported_scales(*)')
+        .eq('trainer_id', trainerId)
+        .eq('is_active', true);
+      if (data && data.length > 0) {
+        setTrainerScales(data);
+        setSelectedScale(data[0]);
+      }
+      setLoadingScales(false);
+    }
+    fetchScales();
+  }, [trainerId]);
 
   // Check if Web Bluetooth is supported
   const isBluetoothSupported = () => {
@@ -90,13 +113,14 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     try {
       setConnecting(true);
 
-      // Request device with Xiaomi scale filters
+      // Request device with selected scale filters
+      const bleName = selectedScale?.supported_scale?.ble_name || 'MIBCS';
+      const filters: BluetoothRequestDeviceFilter[] = bleName
+        ? [{ name: bleName }, { namePrefix: bleName }]
+        : [{ services: [XIAOMI_SERVICE_UUID] }];
+
       const device = await navigator.bluetooth.requestDevice({
-        filters: [
-          { name: XIAOMI_BLE_NAME },
-          { namePrefix: 'MI_SCALE' },
-          { services: [XIAOMI_SERVICE_UUID] }
-        ],
+        filters,
         optionalServices: [XIAOMI_SERVICE_UUID]
       });
 
@@ -203,9 +227,52 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       <View style={styles.header}>
         <Text style={styles.title}>⚖️ Balança Bluetooth</Text>
         <Text style={styles.subtitle}>
-          Conecte sua Xiaomi Mi Body Composition Scale 2 para preenchimento automático
+          {selectedScale?.supported_scale?.model || "Nenhuma balança selecionada"}
         </Text>
       </View>
+
+      {/* Seleção de Balanças */}
+      {loadingScales ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={T.blue} />
+          <Text style={styles.loadingText}>Carregando balanças...</Text>
+        </View>
+      ) : trainerScales.length === 0 && trainerId ? (
+        <View style={styles.noScalesContainer}>
+          <Text style={styles.noScalesText}>
+            Nenhuma balança cadastrada. Adicione uma em Config → Minhas Balanças.
+          </Text>
+        </View>
+      ) : trainerScales.length > 0 ? (
+        <View style={styles.scalesSection}>
+          <Text style={styles.scalesSectionTitle}>Suas balanças:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scalesScroll}>
+            {trainerScales.map((scale) => (
+              <TouchableOpacity
+                key={scale.id}
+                style={[
+                  styles.scaleItem,
+                  selectedScale?.id === scale.id && styles.scaleItemSelected
+                ]}
+                onPress={() => setSelectedScale(scale)}
+              >
+                <Text style={[
+                  styles.scaleItemName,
+                  selectedScale?.id === scale.id && styles.scaleItemNameSelected
+                ]}>
+                  {scale.nickname || scale.supported_scale?.model}
+                </Text>
+                <Text style={[
+                  styles.scaleItemBrand,
+                  selectedScale?.id === scale.id && styles.scaleItemBrandSelected
+                ]}>
+                  {scale.supported_scale?.brand}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       {connected ? (
         <View style={styles.connectedCard}>
@@ -379,5 +446,76 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: T.t3,
     lineHeight: 18,
+  },
+
+  // Loading section
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: T.t3,
+    marginLeft: 8,
+  },
+
+  // No scales section
+  noScalesContainer: {
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  noScalesText: {
+    fontSize: 13,
+    color: T.t3,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+
+  // Scales selection
+  scalesSection: {
+    marginBottom: 16,
+  },
+  scalesSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: T.t2,
+    marginBottom: 8,
+  },
+  scalesScroll: {
+    marginHorizontal: -4,
+  },
+  scaleItem: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 4,
+    minWidth: 120,
+  },
+  scaleItemSelected: {
+    borderColor: T.blue,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  scaleItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: T.t1,
+    marginBottom: 2,
+  },
+  scaleItemNameSelected: {
+    color: T.blue,
+  },
+  scaleItemBrand: {
+    fontSize: 12,
+    color: T.t3,
+  },
+  scaleItemBrandSelected: {
+    color: T.blue,
   },
 });
