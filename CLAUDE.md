@@ -26,8 +26,7 @@ vortex-primus-app/
 │   └── (client)/                # Rotas de alunos
 │       ├── diet.tsx, meal-capture.tsx
 ├── components/                  # Componentes reutilizáveis
-│   ├── TrunkMeasurementsChart.tsx    # Gráfico evolução tronco
-│   ├── LimbMeasurementsChart.tsx     # Gráfico evolução membros
+│   ├── TrunkMeasurementsChart.tsx, LimbMeasurementsChart.tsx
 │   ├── EvolutionPanel.tsx, MeasurementsEvolutionPanel.tsx
 │   ├── AssessmentDetailsModal.tsx, AssessmentHistoryCard.tsx
 │   └── DashboardLayout[.web].tsx
@@ -63,127 +62,45 @@ vortex-primus-app/
 - Viewport detection: screenWidth >= 768 para modo desktop
 - Padrão DashboardLayout: DashboardLayoutMobile.tsx + DashboardLayout.tsx (re-export) + DashboardLayout.web.tsx (sidebar desktop)
 
-## Estado Atual
+## Sistema Atual (v1.0 Produção)
 
-**v1.0 em Produção — Infraestrutura 100% Recuperada e Operacional**
-- **Ambiente:** vortex-primus.vercel.app (novo domínio limpo)
-- **Backend:** Projeto Supabase rwyyvilshrjhfwlzudqg totalmente funcional
-- **Módulo de Dieta:** Em produção e operacional
-- **Sistema de Balanças Bluetooth:** Fase 1 (a51365a) e Fase 2 (b709d39) concluídas
-  - Tabelas: supported_scales, trainer_scales
-  - Campos novos em anthropometry: bmi, water_percent, bone_mass, source
-  - Componente: BluetoothScaleConnector.tsx (Web Bluetooth API nativa)
-  - Protocolo implementado: Xiaomi Mi Body Composition Scale 2
-  - Fase 3 pendente: convite de auto-pesagem para o aluno
-- **Sistema de Suplementos Herbalife:** Commit ed57ea4
-  - Tabela: supplements (brand, sku, name, serving_size_g, macros, notes)
-  - Componente: SupplementSearchModal.tsx (busca dinâmica, badge laranja)
-  - Botão 💊 Herbalife ao lado do 🔍 TACO no formulário de refeição
-  - 7 produtos Herbalife no seed inicial
-  - meal_plan_foods: colunas food_id e supplement_id adicionadas (commit 6a1f227)
-- **AuthContext:** Detecta role no evento USER_UPDATED — commit c3cf3f8
-- **UI/UX:** Responsividade completa implementada
-- **Status de bugs:** Nenhum no código (refinamento de robustez auth pendente)
-
-**✅ SISTEMA TOTALMENTE OPERACIONAL - ATUALIZAÇÃO 30/04/2026:**
-- **Backend:** rwyyvilshrjhfwlzudqg.supabase.co (22 tabelas + RLS + triggers)
-- **Frontend:** vortex-primus.vercel.app (ambiente limpo e funcional)
-- **Autenticação:** Google OAuth e email/senha funcionando 100%
-- **Planos:** Sistema automatizado - novos treinadores recebem plano "Teste"
-- **Interface:** "Meu Perfil" corrigida - exibe plano ativo corretamente
-- **Triggers:** handle_new_user e assign_default_plan aplicados
-
-**✅ AUDITORIA COMPLETA CÓDIGO × BANCO - 30/04/2026:**
-- **Status:** 🎯 **100% CONCLUÍDA** - Infraestrutura totalmente sincronizada
-- **Método:** Engenharia reversa completa do frontend + correção automática do banco
-- **Migration:** `20260430135623_db_audit_fixes_v2.sql` aplicada com sucesso
-- **Resultado:** Zero divergências entre código e schema do banco
-
-**🔥 BUGS CRÍTICOS ELIMINADOS:**
-- **Cadastro de Alunos:** ✅ Resolvido - campos `observation` e `is_active` em `clients`
-- **Dashboard "Lista Vazia":** ✅ Resolvido - campo `view_count` em `anthropometry` 
-- **Avaliações Quebradas:** ✅ Resolvido - campos `basal_metabolic_rate`, `body_fat_index`, `metabolic_age`
-- **Client-details não salva:** ✅ Resolvido - campos faltantes + trigger `updated_at`
-- **Sistema de Planos:** ✅ Resolvido - campo `is_active` boolean sincronizado com `status`
-- **Auto-refresh Dashboard:** ✅ Implementado com `useFocusEffect` na tela principal
-
-**Gráficos de Evolução implementados:**
-- Gordura x Músculo (client-assessments)
-- Evolução do Tronco — TrunkMeasurementsChart.tsx
-- Evolução de Membros — LimbMeasurementsChart.tsx
-
-**Banco de dados (schema completo operacional):**
-- 23 tabelas, 5 Edge Functions
-- Todas as funcionalidades principais testadas e funcionando
+**Funcionalidades Principais:**
+- Sistema de autenticação (Google OAuth + email/senha)
+- Gestão de clientes e avaliações físicas
+- Gráficos de evolução (tronco, membros, gordura x músculo)
+- Módulo de dieta com busca TACO e suplementos Herbalife
+- Sistema de balanças Bluetooth (Xiaomi Mi Body Composition Scale 2)
+- Planos automatizados para treinadores
 
 **Tabelas Core:**
 - trainers, clients, plans, trainer_subscriptions
 - physical_assessments, anthropometry, appointments
 - meal_plans, meal_plan_meals, meal_plan_foods, meal_log
-- foods (TACO — 597 alimentos), supplements (Herbalife — 7 produtos seed)
+- foods (TACO — 597 alimentos), supplements (Herbalife)
 - conditioning_assessments, conditioning_tests
 - supported_scales, trainer_scales
 
-**📊 Schema Sincronizado - Campos Críticos Adicionados (30/04/2026):**
-- **`clients`:** `observation`, `is_active`, `updated_at` + trigger
-- **`anthropometry`:** `basal_metabolic_rate`, `body_fat_index`, `metabolic_age`, `view_count`
-- **`physical_assessments`:** `date` (sincronizado com `assessment_date`) + trigger
-- **`trainer_subscriptions`:** `is_active` boolean (sincronizado com `status` text) + trigger
-- **Performance:** Índices otimizados para campos `is_active` e `view_count`
-
-**Edge Functions (deployadas e funcionais):**
-- stripe-checkout, invite-client, delete-client
-- generate-diet, analyze-meal-photo
-
 ## Regras de Trabalho
 
-1. **Não merge `develop` → `main` sem autorização**
-2. **TodoWrite obrigatório para tasks complexas**
-3. **Plan Mode antes de implementações grandes**
-4. **Nunca criar arquivos .md sem solicitação explícita**
-5. **Sempre considerar RLS ao criar queries**
-6. **Plugins nativos devem estar em `app.json`**
-7. **Diagnóstico antes de qualquer correção**
-8. **Uma frente por vez — aguardar confirmação antes de continuar**
-9. **Commit + push ao final de cada bloco de trabalho**
-10. **Nunca adivinhar — decisões baseadas sempre em dados reais**
+1. **TodoWrite obrigatório para tasks complexas**
+2. **Plan Mode antes de implementações grandes**
+3. **Nunca criar arquivos .md sem solicitação explícita**
+4. **Sempre considerar RLS ao criar queries**
+5. **Plugins nativos devem estar em `app.json`**
+6. **Diagnóstico antes de qualquer correção**
+7. **Uma frente por vez — aguardar confirmação antes de continuar**
+8. **Commit + push ao final de cada bloco de trabalho**
+9. **Nunca adivinhar — decisões baseadas sempre em dados reais**
 
-## Pendências e Roadmap
-
-**✅ RECUPERAÇÃO CONCLUÍDA — Sistema 100% operacional:**
-- ✅ Conectado ao novo projeto Supabase rwyyvilshrjhfwlzudqg
-- ✅ Schema base recriado: 13 tabelas principais + RLS + triggers
-- ✅ 16 migrations aplicadas com sucesso no novo banco
-- ✅ 5 Edge Functions deployadas e funcionais
-- ✅ Variáveis de ambiente locais configuradas (migradas para .env)
-- ✅ Infraestrutura web (Vercel) migrada para vortex-primus.vercel.app
-- ✅ Variáveis EXPO_PUBLIC_ configuradas corretamente no dashboard Vercel
-- ✅ Site URL e Redirect URLs atualizados no Supabase e Google Cloud Console
-
-**Detalhes técnicos da recuperação:**
-- Baseline migration recriada com schema completo
-- Conflitos de CREATE TABLE resolvidos com IF NOT EXISTS
-- RLS policies funcionando em todas as tabelas
-- Auth trigger (handle_new_user) operacional
-- TypeScript compilation sem erros relacionados ao Supabase
-- Variáveis de ambiente migradas do hardcode para .env (EXPO_PUBLIC_SUPABASE_URL/ANON_KEY)
-- Cache Expo limpo e servidor testado com novas configurações
-- Diagnóstico completo de build cache da Vercel resolvido
-- Deploy web em ambiente limpo (vortex-primus.vercel.app) sem cache antigo
-
-**✅ Sistema de Autenticação Estabilizado:**
-- **Status:** Funcionalidade principal 100% operacional
-- **Trigger handle_new_user:** Resiliente com fallbacks para metadados Google
-- **Trigger assign_default_plan:** Criação automática de planos para novos treinadores
-- **RLS:** Todas as políticas de segurança funcionando corretamente
+## Pendências
 
 **Sistema de Balanças:**
-- Fase 3 — Auto-pesagem do aluno (convite via link, igual ao módulo Dieta)
-- Teste real BLE com balança física (aguarda aluno com Xiaomi disponível)
+- Fase 3 — Auto-pesagem do aluno (convite via link)
+- Teste real BLE com balança física
 - Protocolos pendentes: Original Line (Chipsea/OKOK) e Techline TEC-BF01 (Fitdays)
 
 **Suplementos Herbalife:**
-- Completar tabela nutricional dos produtos restantes (dados parciais do catálogo)
+- Completar tabela nutricional dos produtos restantes
 - Futura tela de gerenciamento de suplementos em Config
 
 ---
@@ -194,18 +111,15 @@ vortex-primus-app/
 ```
 stcvip01vortex
 ```
-**Uso:** `export SUPABASE_DB_PASSWORD="stcvip01vortex"` para comandos `supabase db push`
 
 **Projeto Supabase:**
 - **Project Ref:** `rwyyvilshrjhfwlzudqg`
 - **URL:** https://rwyyvilshrjhfwlzudqg.supabase.co
 - **Dashboard:** https://supabase.com/dashboard/project/rwyyvilshrjhfwlzudqg
-- **SQL Editor:** https://supabase.com/dashboard/project/rwyyvilshrjhfwlzudqg/sql/new
 
 **URLs de Deploy:**
 - **Produção:** https://vortex-primus.vercel.app
 - **Login:** https://vortex-primus.vercel.app/login
-- **Dashboard Vercel:** vortex-primus.vercel.app project
 
 **Comandos Essenciais:**
 ```bash
@@ -219,22 +133,6 @@ npx expo start
 npm run build
 npm run lint
 ```
-
-**Commits Importantes Recentes:**
-- `20260430135623` - **AUDITORIA COMPLETA:** migration com correções críticas código×banco
-- `1687afb` - fix: improve client creation UX and dashboard refresh (30/04/2026)
-- `67d98a0` - feat: automate default plan assignment and fix profile query
-- `4cdbfb7` - feat: add robust email fallback to handle_new_user trigger  
-- `e70eeb7` - fix: add robust name extraction to handle_new_user trigger
-- `f83fc69` - docs: update CLAUDE.md with LimbMeasurementsChart final implementation
-
-**🔍 Metodologia da Auditoria Aplicada (30/04/2026):**
-- **Fase 1:** Mapeamento completo das tabelas/colunas usadas no código
-- **Fase 2:** Inspeção do schema atual do banco via migrations
-- **Fase 3:** Diagnóstico de divergências críticas (código vs banco)
-- **Fase 4:** Geração automática de SQLs de correção
-- **Fase 5:** Aplicação com checklist de segurança SaaS
-- **Princípio:** Regra de Ouro — banco ajustado para servir o código (nunca o contrário)
 
 **Variáveis de Ambiente (.env):**
 - `EXPO_PUBLIC_SUPABASE_URL=https://rwyyvilshrjhfwlzudqg.supabase.co`
