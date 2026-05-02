@@ -10,7 +10,6 @@ const TABS = [
   { key: "home",        label: "Home",    icon: "🏠", href: "/(protected)"               },
   { key: "clients",     label: "Alunos",  icon: "👥", href: "/(protected)/clients"        },
   { key: "schedule",    label: "Agenda",  icon: "📅", href: "/(protected)/schedule/"      },
-  { key: "supplements", label: "Suplem.", icon: "💊", href: "/(protected)/supplements"    },
   { key: "config",      label: "Config",  icon: "⚙️", href: "/(protected)/trainer-profile"},
 ] as const;
 
@@ -19,7 +18,6 @@ function isActive(key: string, pathname: string): boolean {
     case "home":        return pathname === "/";
     case "clients":     return pathname.startsWith("/clients") || pathname.startsWith("/client");
     case "schedule":    return pathname.startsWith("/schedule");
-    case "supplements": return pathname.startsWith("/supplements");
     case "config":      return pathname.startsWith("/trainer-profile");
     default:            return false;
   }

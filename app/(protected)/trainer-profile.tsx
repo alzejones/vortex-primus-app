@@ -214,6 +214,28 @@ export default function TrainerProfile() {
         {/* Gerenciamento de Balanças */}
         <TrainerScalesManager />
 
+        {/* Configurações Adicionais */}
+        <View style={styles.configSection}>
+          <Text style={styles.configSectionTitle}>Configurações</Text>
+          
+          <TouchableOpacity 
+            style={styles.configButton}
+            onPress={() => router.push('/(protected)/supplements' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.configButtonLeft}>
+              <View style={styles.configButtonIcon}>
+                <Text style={{ fontSize: 24 }}>💊</Text>
+              </View>
+              <View>
+                <Text style={styles.configButtonTitle}>Suplementos</Text>
+                <Text style={styles.configButtonSubtitle}>Gerenciar base de suplementos</Text>
+              </View>
+            </View>
+            <Text style={styles.configButtonArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
           style={styles.saveButton}
           onPress={handleUpdateProfile}
@@ -281,4 +303,31 @@ const styles = StyleSheet.create({
   debugTitle: { color: T.orange, fontSize: 12, fontWeight: "800", marginBottom: 8 },
   debugScroll: { maxHeight: 160 },
   debugText: { color: T.orange, fontSize: 10, fontWeight: "500", marginBottom: 2, fontFamily: 'monospace' },
+
+  configSection: { marginBottom: 24 },
+  configSectionTitle: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 16, letterSpacing: -0.5 },
+  configButton: { 
+    backgroundColor: T.card, 
+    padding: 20, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    borderColor: T.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  configButtonLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  configButtonIcon: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 12, 
+    backgroundColor: T.surfaceAlt, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    marginRight: 16
+  },
+  configButtonTitle: { fontSize: 16, fontWeight: "700", color: T.t1, marginBottom: 2 },
+  configButtonSubtitle: { fontSize: 13, color: T.t3 },
+  configButtonArrow: { fontSize: 24, color: T.t3 },
 });
