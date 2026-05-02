@@ -39,6 +39,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
   const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
   const [device, setDevice] = useState<BluetoothDevice | null>(null);
+  const [howToUseExpanded, setHowToUseExpanded] = useState(false);
 
   useEffect(() => {
     if (!trainerId) return;
@@ -224,14 +225,18 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
   return (
     <View style={styles.container}>
+      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.title}>⚖️ Balança Bluetooth</Text>
+        <View style={styles.bleBadge}>
+          <Text style={styles.bleBadgeText}>BLE</Text>
+        </View>
         <Text style={styles.subtitle}>
           {selectedScale?.supported_scale?.model || "Nenhuma balança selecionada"}
         </Text>
       </View>
 
-      {/* Seleção de Balanças */}
+      {/* SELEÇÃO DE BALANÇAS */}
       {loadingScales ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={T.blue} />
@@ -245,35 +250,46 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         </View>
       ) : trainerScales.length > 0 ? (
         <View style={styles.scalesSection}>
-          <Text style={styles.scalesSectionTitle}>Suas balanças:</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scalesScroll}>
-            {trainerScales.map((scale) => (
+          {trainerScales.map((scale) => {
+            const isSelected = selectedScale?.id === scale.id;
+            return (
               <TouchableOpacity
                 key={scale.id}
                 style={[
-                  styles.scaleItem,
-                  selectedScale?.id === scale.id && styles.scaleItemSelected
+                  styles.scaleCard,
+                  isSelected && styles.scaleCardSelected
                 ]}
                 onPress={() => setSelectedScale(scale)}
+                activeOpacity={0.7}
               >
-                <Text style={[
-                  styles.scaleItemName,
-                  selectedScale?.id === scale.id && styles.scaleItemNameSelected
-                ]}>
-                  {scale.nickname || scale.supported_scale?.model}
-                </Text>
-                <Text style={[
-                  styles.scaleItemBrand,
-                  selectedScale?.id === scale.id && styles.scaleItemBrandSelected
-                ]}>
-                  {scale.supported_scale?.brand}
-                </Text>
+                <View style={styles.scaleIconContainer}>
+                  <Text style={styles.scaleIcon}>⚖️</Text>
+                </View>
+                <View style={styles.scaleInfo}>
+                  <Text style={styles.scaleName}>
+                    {scale.nickname || scale.supported_scale?.model}
+                  </Text>
+                  <Text style={styles.scaleBrand}>
+                    {scale.supported_scale?.brand}
+                  </Text>
+                  <View style={styles.protocolBadge}>
+                    <Text style={styles.protocolBadgeText}>
+                      {scale.supported_scale?.protocol || "Protocolo"}
+                    </Text>
+                  </View>
+                </View>
+                {isSelected && (
+                  <View style={styles.selectedIndicator}>
+                    <Text style={styles.selectedIcon}>✓</Text>
+                  </View>
+                )}
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+            );
+          })}
         </View>
       ) : null}
 
+      {/* CONEXÃO */}
       {connected ? (
         <View style={styles.connectedCard}>
           <Text style={styles.connectedIcon}>✅</Text>
@@ -291,7 +307,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         <TouchableOpacity 
           style={styles.connectButton}
           onPress={connectToScale}
-          disabled={connecting || disabled}
+          disabled={connecting || disabled || !selectedScale}
           activeOpacity={0.8}
         >
           <LinearGradient {...GradientPrimary} style={styles.connectButtonGradient}>
@@ -310,16 +326,27 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         </TouchableOpacity>
       )}
 
-      <View style={styles.infoCard}>
-        <Text style={styles.infoTitle}>💡 Como usar:</Text>
-        <Text style={styles.infoText}>
-          1. Ligue sua balança Xiaomi{'\n'}
-          2. Clique em "Conectar Balança"{'\n'}
-          3. Selecione "MIBCS" na lista{'\n'}
-          4. Suba na balança para medir{'\n'}
-          5. Os dados preencherão automaticamente
+      {/* COMO USAR - COLAPSÁVEL */}
+      <TouchableOpacity 
+        style={styles.howToUseHeader}
+        onPress={() => setHowToUseExpanded(!howToUseExpanded)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.howToUseTitle}>ℹ️ Como usar</Text>
+        <Text style={styles.howToUseChevron}>
+          {howToUseExpanded ? '▲' : '▼'}
         </Text>
-      </View>
+      </TouchableOpacity>
+
+      {howToUseExpanded && (
+        <View style={styles.howToUseContent}>
+          <Text style={styles.howToUseStep}>• Ligue sua balança</Text>
+          <Text style={styles.howToUseStep}>• Clique em "Conectar Balança"</Text>
+          <Text style={styles.howToUseStep}>• Selecione sua balança na lista</Text>
+          <Text style={styles.howToUseStep}>• Suba na balança para medir</Text>
+          <Text style={styles.howToUseStep}>• Os dados preencherão automaticamente</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -329,14 +356,28 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   
+  // HEADER
   header: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   title: {
     fontSize: 18,
     fontWeight: '800',
     color: T.t1,
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  bleBadge: {
+    backgroundColor: T.blueGlow,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  bleBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: T.blue,
   },
   subtitle: {
     fontSize: 14,
@@ -344,10 +385,108 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
+  // LOADING
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: T.t3,
+    marginLeft: 8,
+  },
+
+  // NO SCALES
+  noScalesContainer: {
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  noScalesText: {
+    fontSize: 13,
+    color: T.t3,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+
+  // SCALES SELECTION
+  scalesSection: {
+    marginBottom: 16,
+    gap: 10,
+  },
+  scaleCard: {
+    backgroundColor: T.card,
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: T.border,
+  },
+  scaleCardSelected: {
+    borderColor: T.blue,
+    backgroundColor: `${T.blue}14`, // rgba with 0.08 opacity
+  },
+  scaleIconContainer: {
+    width: 44,
+    height: 44,
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scaleIcon: {
+    fontSize: 22,
+  },
+  scaleInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  scaleName: {
+    fontWeight: '700',
+    fontSize: 15,
+    color: T.t1,
+  },
+  scaleBrand: {
+    fontSize: 12,
+    color: T.t3,
+    marginTop: 2,
+  },
+  protocolBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: T.bgAlt,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    marginTop: 6,
+  },
+  protocolBadgeText: {
+    fontSize: 10,
+    color: T.t2,
+  },
+  selectedIndicator: {
+    width: 22,
+    height: 22,
+    backgroundColor: T.blue,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedIcon: {
+    fontSize: 12,
+    color: T.white,
+  },
+
+  // CONNECT BUTTON
   connectButton: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 16,
+    marginTop: 4,
   },
   connectButtonGradient: {
     paddingVertical: 16,
@@ -362,10 +501,11 @@ const styles = StyleSheet.create({
   },
   connectButtonText: {
     color: T.white,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
 
+  // CONNECTED STATE
   connectedCard: {
     backgroundColor: 'rgba(16,185,129,0.1)',
     borderWidth: 1,
@@ -391,7 +531,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
   },
-
   disconnectButton: {
     backgroundColor: T.surface,
     borderWidth: 1,
@@ -406,6 +545,38 @@ const styles = StyleSheet.create({
     color: T.t2,
   },
 
+  // HOW TO USE - COLLAPSIBLE
+  howToUseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 10,
+    padding: 12,
+  },
+  howToUseTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: T.t2,
+  },
+  howToUseChevron: {
+    fontSize: 12,
+    color: T.t3,
+  },
+  howToUseContent: {
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 2,
+  },
+  howToUseStep: {
+    fontSize: 13,
+    color: T.t3,
+    lineHeight: 22,
+    marginBottom: 2,
+  },
+
+  // WARNING CARD
   warningCard: {
     backgroundColor: 'rgba(245,158,11,0.1)',
     borderWidth: 1,
@@ -429,93 +600,5 @@ const styles = StyleSheet.create({
     color: T.t2,
     textAlign: 'center',
     lineHeight: 20,
-  },
-
-  infoCard: {
-    backgroundColor: T.surfaceAlt,
-    borderRadius: 12,
-    padding: 16,
-  },
-  infoTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: T.t2,
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    color: T.t3,
-    lineHeight: 18,
-  },
-
-  // Loading section
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginBottom: 16,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: T.t3,
-    marginLeft: 8,
-  },
-
-  // No scales section
-  noScalesContainer: {
-    backgroundColor: T.surfaceAlt,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  noScalesText: {
-    fontSize: 13,
-    color: T.t3,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-
-  // Scales selection
-  scalesSection: {
-    marginBottom: 16,
-  },
-  scalesSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: T.t2,
-    marginBottom: 8,
-  },
-  scalesScroll: {
-    marginHorizontal: -4,
-  },
-  scaleItem: {
-    backgroundColor: T.surface,
-    borderWidth: 1,
-    borderColor: T.border,
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 4,
-    minWidth: 120,
-  },
-  scaleItemSelected: {
-    borderColor: T.blue,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  scaleItemName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: T.t1,
-    marginBottom: 2,
-  },
-  scaleItemNameSelected: {
-    color: T.blue,
-  },
-  scaleItemBrand: {
-    fontSize: 12,
-    color: T.t3,
-  },
-  scaleItemBrandSelected: {
-    color: T.blue,
   },
 });
