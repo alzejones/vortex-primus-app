@@ -26,6 +26,7 @@ import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPa
 import TrunkMeasurementsChart from '../../components/TrunkMeasurementsChart';
 import LimbMeasurementsChart from '../../components/LimbMeasurementsChart';
 import { T } from "../../utils/theme";
+import BluetoothScaleConnector from "../../components/BluetoothScaleConnector";
 
 export default function ClientAssessments() {
 
@@ -189,6 +190,10 @@ export default function ClientAssessments() {
   const [form, setForm] = useState({
     assessment_date: formatDateBR(new Date()),
     weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "",
+    bmi: "",
+    water_percent: "",
+    bone_mass: "",
+    source: "manual",
   });
 
   useEffect(() => {
@@ -438,6 +443,22 @@ export default function ClientAssessments() {
     }
   };
 
+  const handleScaleData = (scaleData: any) => {
+    setForm(prev => ({
+      ...prev,
+      weight: scaleData.weight.toFixed(1),
+      bmi: scaleData.bmi.toFixed(1),
+      body_fat: scaleData.body_fat.toFixed(1),
+      muscle_mass_percentage: scaleData.muscle_mass_percentage.toFixed(1),
+      water_percent: scaleData.water_percent.toFixed(1),
+      bone_mass: scaleData.bone_mass.toFixed(1),
+      basal_metabolic_rate: scaleData.basal_metabolic_rate.toString(),
+      metabolic_age: scaleData.metabolic_age.toString(),
+      body_fat_index: scaleData.body_fat_index.toFixed(1),
+      source: "ble_trainer",
+    }));
+  };
+
   async function handleSaveAssessment() {
     setSaving(true);
     const isoDate = parseDateBRToISO(form.assessment_date);
@@ -460,6 +481,10 @@ export default function ClientAssessments() {
       basal_metabolic_rate: form.basal_metabolic_rate ? Number(form.basal_metabolic_rate) : null,
       body_fat_index: form.body_fat_index ? Number(form.body_fat_index) : null,
       metabolic_age: form.metabolic_age ? Number(form.metabolic_age) : null,
+      bmi: (form as any).bmi ? Number((form as any).bmi) : null,
+      water_percent: (form as any).water_percent ? Number((form as any).water_percent) : null,
+      bone_mass: (form as any).bone_mass ? Number((form as any).bone_mass) : null,
+      source: (form as any).source || "manual",
     };
 
     if (editingAnthropometryId) {
@@ -572,6 +597,10 @@ export default function ClientAssessments() {
                     <TextInput style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]} value={form.assessment_date} onChangeText={handleDateChange} placeholder="DD/MM/AAAA HH:mm" placeholderTextColor={T.t3} keyboardType="numeric" maxLength={16} />
                   </View>
                 </View>
+                <BluetoothScaleConnector
+                  onDataReceived={handleScaleData}
+                  disabled={saving}
+                />
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
