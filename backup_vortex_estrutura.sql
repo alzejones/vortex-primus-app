@@ -302,8 +302,7 @@ ALTER TABLE "public"."conditioning_assessments" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."conditioning_tests" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "conditioning_assessment_id" "uuid",
-    "test_name" "text" NOT NULL,
+    "assessment_id" "uuid",
     "result_value" numeric,
     "result_unit" "text",
     "notes" "text",
@@ -326,14 +325,27 @@ CREATE TABLE IF NOT EXISTS "public"."diet_preferences" (
 ALTER TABLE "public"."diet_preferences" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."endurance_tests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "conditioning_test_id" "uuid",
+    "test_type" "text",
+    "distance_m" numeric,
+    "time_seconds" integer,
+    "repetitions" "text"
+);
+
+
+ALTER TABLE "public"."endurance_tests" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."foods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL,
     "category" "text",
     "energy_kcal" numeric(8,2),
-    "protein_g" numeric(8,2),
-    "carb_g" numeric(8,2),
-    "fat_g" numeric(8,2),
+    "protein" numeric(8,2),
+    "carbs" numeric(8,2),
+    "fat" numeric(8,2),
     "fiber_g" numeric(8,2),
     "sodium_mg" numeric(8,2),
     "created_at" timestamp with time zone DEFAULT "now"()
@@ -379,9 +391,17 @@ CREATE TABLE IF NOT EXISTS "public"."meal_plan_foods" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "meal_id" "uuid",
     "food_id" "uuid",
-    "quantity_g" numeric(8,2) NOT NULL,
+    "quantity_g" numeric(8,2),
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "supplement_id" "uuid"
+    "supplement_id" "uuid",
+    "name" "text",
+    "quantity" "text",
+    "calories" numeric,
+    "protein" numeric,
+    "carbs" numeric,
+    "fat" numeric,
+    "order_index" integer,
+    "updated_at" timestamp with time zone DEFAULT "now"()
 );
 
 
@@ -391,11 +411,14 @@ ALTER TABLE "public"."meal_plan_foods" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."meal_plan_meals" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "meal_plan_id" "uuid",
-    "meal_type" "text" NOT NULL,
-    "name" "text" NOT NULL,
+    "meal_type" "text",
+    "name" "text",
     "description" "text",
     "target_calories" integer,
     "created_at" timestamp with time zone DEFAULT "now"(),
+    "order_index" integer,
+    "time_suggestion" "text",
+    "updated_at" timestamp with time zone DEFAULT "now"(),
     CONSTRAINT "meal_plan_meals_meal_type_check" CHECK (("meal_type" = ANY (ARRAY['breakfast'::"text", 'morning_snack'::"text", 'lunch'::"text", 'afternoon_snack'::"text", 'dinner'::"text", 'evening_snack'::"text"])))
 );
 
@@ -407,17 +430,34 @@ CREATE TABLE IF NOT EXISTS "public"."meal_plans" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "client_id" "uuid",
     "trainer_id" "uuid",
-    "name" "text" NOT NULL,
+    "name" "text",
     "description" "text",
     "start_date" "date",
     "end_date" "date",
     "status" "text" DEFAULT 'active'::"text",
     "created_at" timestamp with time zone DEFAULT "now"(),
+    "is_active" boolean DEFAULT true,
+    "notes" "text",
+    "title" "text",
+    "objective" "text",
+    "meals_per_day" integer,
+    "updated_at" timestamp with time zone DEFAULT "now"(),
     CONSTRAINT "meal_plans_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'active'::"text", 'completed'::"text"])))
 );
 
 
 ALTER TABLE "public"."meal_plans" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."mobility_tests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "conditioning_test_id" "uuid",
+    "test_name" "text",
+    "notes" "text"
+);
+
+
+ALTER TABLE "public"."mobility_tests" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."physical_assessments" (
@@ -447,6 +487,18 @@ CREATE TABLE IF NOT EXISTS "public"."plans" (
 
 
 ALTER TABLE "public"."plans" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."strength_tests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "conditioning_test_id" "uuid",
+    "exercise_name" "text",
+    "load_kg" numeric,
+    "repetitions" "text"
+);
+
+
+ALTER TABLE "public"."strength_tests" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."supplements" (
@@ -565,6 +617,11 @@ ALTER TABLE ONLY "public"."diet_preferences"
 
 
 
+ALTER TABLE ONLY "public"."endurance_tests"
+    ADD CONSTRAINT "endurance_tests_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."foods"
     ADD CONSTRAINT "foods_pkey" PRIMARY KEY ("id");
 
@@ -595,6 +652,11 @@ ALTER TABLE ONLY "public"."meal_plans"
 
 
 
+ALTER TABLE ONLY "public"."mobility_tests"
+    ADD CONSTRAINT "mobility_tests_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."physical_assessments"
     ADD CONSTRAINT "physical_assessments_pkey" PRIMARY KEY ("id");
 
@@ -602,6 +664,11 @@ ALTER TABLE ONLY "public"."physical_assessments"
 
 ALTER TABLE ONLY "public"."plans"
     ADD CONSTRAINT "plans_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."strength_tests"
+    ADD CONSTRAINT "strength_tests_pkey" PRIMARY KEY ("id");
 
 
 
@@ -739,12 +806,17 @@ ALTER TABLE ONLY "public"."conditioning_assessments"
 
 
 ALTER TABLE ONLY "public"."conditioning_tests"
-    ADD CONSTRAINT "conditioning_tests_conditioning_assessment_id_fkey" FOREIGN KEY ("conditioning_assessment_id") REFERENCES "public"."conditioning_assessments"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "conditioning_tests_assessment_id_fkey" FOREIGN KEY ("assessment_id") REFERENCES "public"."physical_assessments"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."diet_preferences"
     ADD CONSTRAINT "diet_preferences_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."endurance_tests"
+    ADD CONSTRAINT "endurance_tests_conditioning_test_id_fkey" FOREIGN KEY ("conditioning_test_id") REFERENCES "public"."conditioning_tests"("id") ON DELETE CASCADE;
 
 
 
@@ -793,6 +865,11 @@ ALTER TABLE ONLY "public"."meal_plans"
 
 
 
+ALTER TABLE ONLY "public"."mobility_tests"
+    ADD CONSTRAINT "mobility_tests_conditioning_test_id_fkey" FOREIGN KEY ("conditioning_test_id") REFERENCES "public"."conditioning_tests"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."physical_assessments"
     ADD CONSTRAINT "physical_assessments_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE CASCADE;
 
@@ -805,6 +882,11 @@ ALTER TABLE ONLY "public"."physical_assessments"
 
 ALTER TABLE ONLY "public"."plans"
     ADD CONSTRAINT "plans_trainer_id_fkey" FOREIGN KEY ("trainer_id") REFERENCES "public"."trainers"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."strength_tests"
+    ADD CONSTRAINT "strength_tests_conditioning_test_id_fkey" FOREIGN KEY ("conditioning_test_id") REFERENCES "public"."conditioning_tests"("id") ON DELETE CASCADE;
 
 
 
@@ -972,15 +1054,22 @@ CREATE POLICY "conditioning_assessments_trainer_access" ON "public"."conditionin
 ALTER TABLE "public"."conditioning_tests" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "conditioning_tests_trainer_access" ON "public"."conditioning_tests" USING (("conditioning_assessment_id" IN ( SELECT "ca"."id"
-   FROM (("public"."conditioning_assessments" "ca"
-     JOIN "public"."physical_assessments" "pa" ON (("pa"."id" = "ca"."assessment_id")))
-     JOIN "public"."trainers" "t" ON (("t"."id" = "pa"."trainer_id")))
-  WHERE ("t"."user_id" = "auth"."uid"()))));
+CREATE POLICY "conditioning_tests_trainer_access" ON "public"."conditioning_tests" USING (("assessment_id" IN ( SELECT "physical_assessments"."id"
+   FROM "public"."physical_assessments"
+  WHERE ("physical_assessments"."trainer_id" IN ( SELECT "trainers"."id"
+           FROM "public"."trainers"
+          WHERE ("trainers"."user_id" = "auth"."uid"())))))) WITH CHECK (("assessment_id" IN ( SELECT "physical_assessments"."id"
+   FROM "public"."physical_assessments"
+  WHERE ("physical_assessments"."trainer_id" IN ( SELECT "trainers"."id"
+           FROM "public"."trainers"
+          WHERE ("trainers"."user_id" = "auth"."uid"()))))));
 
 
 
 ALTER TABLE "public"."diet_preferences" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."endurance_tests" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."foods" ENABLE ROW LEVEL SECURITY;
@@ -1033,6 +1122,9 @@ CREATE POLICY "meal_plans_trainer_access" ON "public"."meal_plans" USING (("trai
 
 
 
+ALTER TABLE "public"."mobility_tests" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."physical_assessments" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1046,6 +1138,18 @@ ALTER TABLE "public"."plans" ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "plans_trainer_access" ON "public"."plans" USING (("trainer_id" IN ( SELECT "trainers"."id"
    FROM "public"."trainers"
   WHERE ("trainers"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "public_access_endurance" ON "public"."endurance_tests" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "public_access_mobility" ON "public"."mobility_tests" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "public_access_strength" ON "public"."strength_tests" USING (true) WITH CHECK (true);
 
 
 
@@ -1067,6 +1171,9 @@ CREATE POLICY "public_read_physical_assessments" ON "public"."physical_assessmen
 
 CREATE POLICY "public_select_foods" ON "public"."foods" FOR SELECT USING (true);
 
+
+
+ALTER TABLE "public"."strength_tests" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."supplements" ENABLE ROW LEVEL SECURITY;
@@ -1429,6 +1536,12 @@ GRANT ALL ON TABLE "public"."diet_preferences" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."endurance_tests" TO "anon";
+GRANT ALL ON TABLE "public"."endurance_tests" TO "authenticated";
+GRANT ALL ON TABLE "public"."endurance_tests" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."foods" TO "anon";
 GRANT ALL ON TABLE "public"."foods" TO "authenticated";
 GRANT ALL ON TABLE "public"."foods" TO "service_role";
@@ -1465,6 +1578,12 @@ GRANT ALL ON TABLE "public"."meal_plans" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."mobility_tests" TO "anon";
+GRANT ALL ON TABLE "public"."mobility_tests" TO "authenticated";
+GRANT ALL ON TABLE "public"."mobility_tests" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."physical_assessments" TO "anon";
 GRANT ALL ON TABLE "public"."physical_assessments" TO "authenticated";
 GRANT ALL ON TABLE "public"."physical_assessments" TO "service_role";
@@ -1474,6 +1593,12 @@ GRANT ALL ON TABLE "public"."physical_assessments" TO "service_role";
 GRANT ALL ON TABLE "public"."plans" TO "anon";
 GRANT ALL ON TABLE "public"."plans" TO "authenticated";
 GRANT ALL ON TABLE "public"."plans" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."strength_tests" TO "anon";
+GRANT ALL ON TABLE "public"."strength_tests" TO "authenticated";
+GRANT ALL ON TABLE "public"."strength_tests" TO "service_role";
 
 
 
