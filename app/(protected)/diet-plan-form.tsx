@@ -418,7 +418,7 @@ export default function DietPlanForm() {
       }
 
       setStatusMsg({ text: "Plano salvo com sucesso!", type: "success" });
-      setTimeout(() => router.back(), 1200);
+      setTimeout(() => router.replace(`/(protected)/client-diet?id=${clientId}` as any), 1200);
     } catch (err: any) {
       setStatusMsg({ text: err?.message || "Erro ao salvar o plano.", type: "error" });
     } finally {
