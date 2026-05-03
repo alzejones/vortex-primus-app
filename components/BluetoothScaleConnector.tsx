@@ -340,11 +340,13 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
       {howToUseExpanded && (
         <View style={styles.howToUseContent}>
-          <Text style={styles.howToUseStep}>• Ligue sua balança</Text>
-          <Text style={styles.howToUseStep}>• Clique em "Conectar Balança"</Text>
-          <Text style={styles.howToUseStep}>• Selecione sua balança na lista</Text>
-          <Text style={styles.howToUseStep}>• Suba na balança para medir</Text>
-          <Text style={styles.howToUseStep}>• Os dados preencherão automaticamente</Text>
+          <Text style={styles.howToUseText}>
+            {'1. Ligue sua balança\n' +
+            '2. Clique em "Conectar Balança"\n' +
+            '3. Selecione sua balança na lista\n' +
+            '4. Suba na balança para medir\n' +
+            '5. Os dados preencherão automaticamente'}
+          </Text>
         </View>
       )}
     </View>
@@ -569,11 +571,10 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 2,
   },
-  howToUseStep: {
+  howToUseText: {
     fontSize: 13,
     color: T.t3,
     lineHeight: 22,
-    marginBottom: 2,
   },
 
   // WARNING CARD
