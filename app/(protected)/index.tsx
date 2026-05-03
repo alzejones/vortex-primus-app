@@ -39,16 +39,20 @@ export default function Index() {
 
       const { data: subscription } = await supabase
         .from('trainer_subscriptions')
-        .select('is_active, plans ( name, max_clients )')
+        .select('is_active, plans ( name, max_clients, price_monthly )')
         .eq('trainer_id', trainer.id)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (subscription) {
         const planData = subscription.plans as any;
         setPlanName(planData?.name || 'Sem Plano');
         setMaxClients(planData?.max_clients || 0);
         setPlanStatus(subscription.is_active ? 'Ativo' : 'Inativo');
+      } else {
+        setPlanName('Sem Plano');
+        setMaxClients(0);
+        setPlanStatus('Inativo');
       }
 
       const { data: clientList } = await supabase

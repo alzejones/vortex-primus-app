@@ -58,10 +58,10 @@ export default function TrainerProfile() {
 
       const { data: sub } = await supabase
         .from("trainer_subscriptions")
-        .select("status, plans ( name, max_clients )")
+        .select("status, plans ( name, max_clients, price_monthly )")
         .eq("trainer_id", trainer.id)
         .eq("status", "active")
-        .single();
+        .maybeSingle();
 
       const planData = sub?.plans as any;
       setPlanName(planData?.name ? `${planData.name}` : "Sem Plano Ativo");
