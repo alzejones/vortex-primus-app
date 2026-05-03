@@ -47,7 +47,7 @@ export function useTrainer() {
 
       setTrainerId(trainerData.id);
 
-      // 2️⃣ Buscar subscription ativa + plano
+      // 2️⃣ Buscar subscription ativa + plano (não-bloqueante)
       const { data: subData, error: subError } = await supabase
         .from("trainer_subscriptions")
         .select(`
@@ -64,22 +64,26 @@ export function useTrainer() {
         `)
         .eq("trainer_id", trainerData.id)
         .eq("is_active", true)
-        .single();
+        .maybeSingle();
 
-      if (subError || !subData) {
-        console.error("Erro ao buscar subscription:", subError);
-        setLoadingTrainer(false);
-        return;
+      // Subscription é opcional - não bloqueia o trainerId
+      if (subData && !subError) {
+        setSubscription({
+          id: subData.id,
+          plan_id: subData.plan_id,
+          is_active: subData.is_active,
+          start_date: subData.start_date,
+        });
+
+        setPlan(subData.plans);
+      } else {
+        // Log apenas se não for PGRST116 (zero rows)
+        if (subError && subError.code !== "PGRST116") {
+          console.error("Erro ao buscar subscription:", subError);
+        }
+        setSubscription(null);
+        setPlan(null);
       }
-
-      setSubscription({
-        id: subData.id,
-        plan_id: subData.plan_id,
-        is_active: subData.is_active,
-        start_date: subData.start_date,
-      });
-
-      setPlan(subData.plans);
 
       setLoadingTrainer(false);
     }
