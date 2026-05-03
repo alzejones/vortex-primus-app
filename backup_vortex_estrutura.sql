@@ -1179,7 +1179,27 @@ ALTER TABLE "public"."strength_tests" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."supplements" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "supplements_delete" ON "public"."supplements" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."trainers"
+  WHERE ("trainers"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "supplements_insert" ON "public"."supplements" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."trainers"
+  WHERE ("trainers"."user_id" = "auth"."uid"()))));
+
+
+
 CREATE POLICY "supplements_select" ON "public"."supplements" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "supplements_update" ON "public"."supplements" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."trainers"
+  WHERE ("trainers"."user_id" = "auth"."uid"())))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."trainers"
+  WHERE ("trainers"."user_id" = "auth"."uid"()))));
 
 
 
