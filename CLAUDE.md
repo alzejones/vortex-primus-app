@@ -21,14 +21,14 @@ vortex-primus-app/
 │   ├── (protected)/             # Rotas de treinadores
 │   │   ├── _layout.tsx          # TabBar: Home/Alunos/Agenda/Config
 │   │   ├── index.tsx, clients.tsx, client-details.tsx
-│   │   ├── client-assessments.tsx, assessment-create.tsx
+│   │   ├── client-assessments.tsx, supplements.tsx
 │   │   └── client-diet.tsx, plans.tsx
 │   └── (client)/                # Rotas de alunos
-│       ├── diet.tsx, meal-capture.tsx
+│       └── diet.tsx, meal-capture.tsx
 ├── components/                  # Componentes reutilizáveis
+│   ├── BluetoothScaleConnector.tsx, TrainerScalesManager.tsx
 │   ├── TrunkMeasurementsChart.tsx, LimbMeasurementsChart.tsx
 │   ├── EvolutionPanel.tsx, MeasurementsEvolutionPanel.tsx
-│   ├── AssessmentDetailsModal.tsx, AssessmentHistoryCard.tsx
 │   └── DashboardLayout[.web].tsx
 ├── utils/                       # Utilitários e helpers
 │   ├── theme.ts                 # Sistema de cores/temas
@@ -68,17 +68,22 @@ vortex-primus-app/
 - Sistema de autenticação (Google OAuth + email/senha)
 - Gestão de clientes e avaliações físicas
 - Gráficos de evolução (tronco, membros, gordura x músculo)
-- Módulo de dieta com busca TACO e suplementos Herbalife
-- Sistema de balanças Bluetooth (Xiaomi Mi Body Composition Scale 2)
+- Módulo de dieta com busca TACO e suplementos
+- Sistema de balanças Bluetooth com múltiplos protocolos
 - Planos automatizados para treinadores
 
 **Tabelas Core:**
 - trainers, clients, plans, trainer_subscriptions
 - physical_assessments, anthropometry, appointments
 - meal_plans, meal_plan_meals, meal_plan_foods, meal_log
-- foods (TACO — 597 alimentos), supplements (Herbalife)
+- foods (TACO — 597 alimentos), supplements
 - conditioning_assessments, conditioning_tests
 - supported_scales, trainer_scales
+
+**Navegação:**
+- TabBar: Home/Alunos/Agenda/Config
+- Suplementos movido para Config → Suplementos
+- BluetoothScaleConnector integrado em client-assessments
 
 ## Regras de Trabalho
 
@@ -91,17 +96,6 @@ vortex-primus-app/
 7. **Uma frente por vez — aguardar confirmação antes de continuar**
 8. **Commit + push ao final de cada bloco de trabalho**
 9. **Nunca adivinhar — decisões baseadas sempre em dados reais**
-
-## Pendências
-
-**Sistema de Balanças:**
-- Fase 3 — Auto-pesagem do aluno (convite via link)
-- Teste real BLE com balança física
-- Protocolos pendentes: Original Line (Chipsea/OKOK) e Techline TEC-BF01 (Fitdays)
-
-**Suplementos Herbalife:**
-- Completar tabela nutricional dos produtos restantes
-- Futura tela de gerenciamento de suplementos em Config
 
 ---
 
