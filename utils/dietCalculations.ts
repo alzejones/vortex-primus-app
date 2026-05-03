@@ -70,13 +70,19 @@ const CALORIE_ADJUSTMENT: Record<Objective, number> = {
   performance:   +200,
 };
 
-// Proteína por kg de massa magra (g/kg) por objetivo
+// ── HIGH PROTEIN — Baseado em evidências científicas ────────
+// Proteína calculada sobre Lean Body Mass (LBM) por objetivo:
+//  emagrecimento : 2.7 g/kg LBM — Helms et al. 2014; Barakat et al. 2020
+//  hipertrofia   : 2.8 g/kg LBM — Morton et al. 2018; ISSN Position Stand 2017
+//  manutencao    : 2.2 g/kg LBM — Phillips & Van Loon 2011; ISSN 2017
+//  saude         : 2.0 g/kg LBM — ISSN Position Stand 2017
+//  performance   : 2.6 g/kg LBM — Burke et al. 2019; ISSN 2017
 const PROTEIN_PER_KG_LEAN: Record<Objective, number> = {
-  emagrecimento: 2.2,
-  hipertrofia:   2.4,
-  manutencao:    1.8,
+  emagrecimento: 2.7,
+  hipertrofia:   2.8,
+  manutencao:    2.2,
   saude:         2.0,
-  performance:   2.2,
+  performance:   2.6,
 };
 
 // Gordura como % das calorias alvo
