@@ -13,6 +13,7 @@ import {
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
+import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import { supabase } from "../../lib/supabase";
 import {
   ACTIVITY_LABELS,
@@ -279,26 +280,29 @@ export default function ClientDiet() {
 
       {/* ── Metas Calculadas ── */}
       {dietResult ? (
-        <View style={styles.macroCard}>
-          <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
-          <View style={styles.macroRow}>
-            {[
-              { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: T.green },
-              { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: T.blue },
-              { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: T.orange },
-              { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: T.red },
-            ].map((m) => (
-              <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
-                <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
-                <Text style={styles.macroUnit}>{m.unit}</Text>
-                <Text style={styles.macroLabel}>{m.label}</Text>
-              </View>
-            ))}
+        <>
+          <View style={styles.macroCard}>
+            <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
+            <View style={styles.macroRow}>
+              {[
+                { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: T.green },
+                { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: T.blue },
+                { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: T.orange },
+                { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: T.red },
+              ].map((m) => (
+                <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
+                  <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
+                  <Text style={styles.macroUnit}>{m.unit}</Text>
+                  <Text style={styles.macroLabel}>{m.label}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.macroSub}>
+              BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Massa magra {Number(dietResult.lean_mass).toFixed(1)} kg
+            </Text>
           </View>
-          <Text style={styles.macroSub}>
-            BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Massa magra {Number(dietResult.lean_mass).toFixed(1)} kg
-          </Text>
-        </View>
+          <ScienceReferencesModal />
+        </>
       ) : (
         <View style={styles.warnCard}>
           <Text style={styles.warnText}>
