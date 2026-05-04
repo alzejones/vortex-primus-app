@@ -637,7 +637,7 @@ export default function DietPlanForm() {
                     boxSizing: 'border-box',
                     fontFamily: 'inherit'
                   }}
-                  defaultValue={meal.name || ""}
+                  value={meal.name || ""}
                   placeholder="Ex: Café da manhã"
                   onChange={(e) => {
                     const value = e.target.value;
