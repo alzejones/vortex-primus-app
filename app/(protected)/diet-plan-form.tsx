@@ -344,13 +344,16 @@ export default function DietPlanForm() {
     console.log("🚀 [handleSave] INICIANDO - planTitle:", planTitle?.trim());
     console.log("🚀 [handleSave] trainerId:", trainerId);
     console.log("🚀 [handleSave] meals count:", meals.length);
-    console.log("🚀 [handleSave] meals detalhado:", meals.map((m, i) => ({
-      index: i,
-      key: m._key,
-      name: m.name,
-      foods_count: m.foods.length,
-      first_food: m.foods[0]?.name || 'sem alimentos'
-    })));
+    console.log("🚀 [handleSave] meals detalhado:");
+    meals.forEach((m, i) => {
+      console.log(`  Refeição ${i}:`, {
+        key: m._key,
+        name: `"${m.name}"`,
+        name_length: m.name?.length || 0,
+        foods_count: m.foods.length,
+        first_food: m.foods[0]?.name || 'sem alimentos'
+      });
+    });
     
     if (!planTitle.trim()) {
       console.log("❌ [handleSave] ERRO: planTitle vazio");
@@ -608,7 +611,10 @@ export default function DietPlanForm() {
                 <TextInput
                   style={styles.input}
                   value={meal.name}
-                  onChangeText={(v) => updateMeal(meal._key, "name", v)}
+                  onChangeText={(v) => {
+                    console.log("🎯 [INPUT] Nome da refeição mudou - key:", meal._key, "value:", v);
+                    updateMeal(meal._key, "name", v);
+                  }}
                   placeholder="Ex: Café da manhã"
                   placeholderTextColor={T.t3}
                 />
