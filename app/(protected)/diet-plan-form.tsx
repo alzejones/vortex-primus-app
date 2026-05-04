@@ -622,7 +622,12 @@ export default function DietPlanForm() {
             <View style={styles.mealRow}>
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
-                {Platform.OS === 'web' ? (
+                {(() => {
+                  console.log("🔍 [PLATFORM] Platform.OS:", Platform.OS);
+                  console.log("🔍 [PLATFORM] typeof window:", typeof window);
+                  console.log("🔍 [PLATFORM] Forçando input HTML...");
+                  return true; // Força input HTML para teste
+                })() ? (
                   <input
                     type="text"
                     style={{
