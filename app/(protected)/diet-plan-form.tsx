@@ -338,27 +338,37 @@ export default function DietPlanForm() {
   // Salvar
   // ------------------------------------------------------------
   async function handleSave() {
+    console.log("🚀 [handleSave] INICIANDO - planTitle:", planTitle?.trim());
+    console.log("🚀 [handleSave] trainerId:", trainerId);
+    console.log("🚀 [handleSave] meals count:", meals.length);
+    
     if (!planTitle.trim()) {
+      console.log("❌ [handleSave] ERRO: planTitle vazio");
       setStatusMsg({ text: "Informe um título para o plano.", type: "error" });
       return;
     }
     if (!trainerId) {
+      console.log("❌ [handleSave] ERRO: trainerId null");
       setStatusMsg({ text: "Perfil de treinador não carregado.", type: "error" });
       return;
     }
 
     try {
+      console.log("✅ [handleSave] Iniciando salvamento...");
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
       let currentPlanId = planId;
       if (isEditing && currentPlanId) {
+        console.log("📝 [handleSave] EDITANDO plano existente:", currentPlanId);
         const { error } = await supabase
           .from("meal_plans")
           .update({ title: planTitle.trim(), notes: planNotes.trim() || null })
           .eq("id", currentPlanId);
         if (error) throw error;
+        console.log("✅ [handleSave] Plano atualizado com sucesso");
       } else {
+        console.log("➕ [handleSave] CRIANDO novo plano - clientId:", clientId, "trainerId:", trainerId);
         const { data, error } = await supabase
           .from("meal_plans")
           .insert({
@@ -370,18 +380,27 @@ export default function DietPlanForm() {
           })
           .select("id")
           .single();
-        if (error || !data) throw error;
+        if (error || !data) {
+          console.log("❌ [handleSave] ERRO ao criar plano:", error);
+          throw error;
+        }
         currentPlanId = data.id;
+        console.log("✅ [handleSave] Plano criado com ID:", currentPlanId);
       }
 
       if (isEditing) {
         await supabase.from("meal_plan_meals").delete().eq("meal_plan_id", currentPlanId);
       }
 
+      console.log("🍽️ [handleSave] Processando", meals.length, "refeições...");
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        if (!meal.name.trim()) continue;
+        if (!meal.name.trim()) {
+          console.log("⏭️ [handleSave] Pulando refeição", mi, "- nome vazio");
+          continue;
+        }
 
+        console.log(`🍽️ [handleSave] Processando refeição ${mi + 1}:`, meal.name.trim());
         const { data: mealData, error: mealErr } = await supabase
           .from("meal_plan_meals")
           .insert({
@@ -393,11 +412,19 @@ export default function DietPlanForm() {
           .select("id")
           .single();
 
-        if (mealErr || !mealData) throw mealErr;
+        if (mealErr || !mealData) {
+          console.log("❌ [handleSave] ERRO ao criar refeição:", mealErr);
+          throw mealErr;
+        }
+        console.log("✅ [handleSave] Refeição criada com ID:", mealData.id);
 
         const validFoods = meal.foods.filter((f) => f.name.trim());
-        if (validFoods.length === 0) continue;
+        if (validFoods.length === 0) {
+          console.log("⏭️ [handleSave] Refeição sem alimentos válidos");
+          continue;
+        }
 
+        console.log(`🥗 [handleSave] Adicionando ${validFoods.length} alimentos...`);
         const foodRows = validFoods.map((f, fi) => ({
           meal_id:       mealData.id,
           food_id:       f.food_id || null,
@@ -414,14 +441,24 @@ export default function DietPlanForm() {
         const { error: foodErr } = await supabase
           .from("meal_plan_foods")
           .insert(foodRows);
-        if (foodErr) throw foodErr;
+        if (foodErr) {
+          console.log("❌ [handleSave] ERRO ao inserir alimentos:", foodErr);
+          throw foodErr;
+        }
+        console.log("✅ [handleSave] Alimentos inseridos com sucesso");
       }
 
+      console.log("🎉 [handleSave] TUDO SALVO! Redirecionando em 1.2s...");
       setStatusMsg({ text: "Plano salvo com sucesso!", type: "success" });
-      setTimeout(() => router.replace(`/(protected)/client-diet?id=${clientId}` as any), 1200);
+      setTimeout(() => {
+        console.log("🔄 [handleSave] REDIRECIONANDO para client-diet...");
+        router.replace(`/(protected)/client-diet?id=${clientId}` as any);
+      }, 1200);
     } catch (err: any) {
+      console.log("💥 [handleSave] ERRO CAPTURADO:", err);
       setStatusMsg({ text: err?.message || "Erro ao salvar o plano.", type: "error" });
     } finally {
+      console.log("🏁 [handleSave] FINALIZANDO - setSaving(false)");
       setSaving(false);
     }
   }
