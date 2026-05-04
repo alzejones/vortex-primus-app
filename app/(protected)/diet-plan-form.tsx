@@ -612,24 +612,20 @@ export default function DietPlanForm() {
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
                 <TextInput
-                  key={`meal-name-${mi}`}
+                  key={`meal-name-${mi}-${meal._key}`}
                   style={styles.input}
                   value={meal.name || ""}
                   onChangeText={(v) => {
                     console.log("🎯 [INPUT] Nome da refeição mudou - mealIndex:", mi, "value:", v);
                     console.log("🎯 [INPUT] Estado atual before:", meals[mi]?.name);
-                    // FORÇA UMA ATUALIZAÇÃO DIRETA NO ÍNDICE ESPECÍFICO
-                    setMeals(prev => {
-                      console.log("🔄 [STATE] Updating meals array...");
-                      const newMeals = [...prev];
-                      if (newMeals[mi]) {
-                        const oldName = newMeals[mi].name;
-                        newMeals[mi] = { ...newMeals[mi], name: v };
-                        console.log("📝 [STATE] Updated meal name at index", mi, "from:", oldName, "to:", v);
-                        console.log("📋 [STATE] Full meals array:", newMeals.map(m => ({ key: m._key, name: m.name })));
-                      }
-                      return newMeals;
-                    });
+                    console.log("🎯 [INPUT] Using updateMeal function...");
+                    updateMeal(meal._key, "name", v);
+                  }}
+                  onTextInput={(e) => {
+                    console.log("🎯 [onTextInput] Evento nativo detectado:", e.nativeEvent.text);
+                  }}
+                  onChange={(e) => {
+                    console.log("🎯 [onChange] Evento de mudança detectado:", e.nativeEvent.text);
                   }}
                   onFocus={() => console.log("👁️ [INPUT] Campo nome focado - index:", mi)}
                   onBlur={() => console.log("👋 [INPUT] Campo nome desfocado - index:", mi)}
