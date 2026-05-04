@@ -108,7 +108,6 @@ export default function DietPlanForm() {
 
   // Refs para monitorar TextInputs quando onChange não funciona
   const mealNameRefs = useRef<{ [key: string]: TextInput | null }>({});
-  const inputMonitorTimer = useRef<NodeJS.Timeout | null>(null);
 
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
@@ -243,25 +242,13 @@ export default function DietPlanForm() {
     });
   }, []);
 
-  // Monitor de input - backup para quando onChange não funciona
-  useEffect(() => {
-    const timer = setInterval(() => {
-      Object.entries(mealNameRefs.current).forEach(([mealKey, ref]) => {
-        if (ref && typeof ref._lastNativeText === 'string') {
-          const currentValue = ref._lastNativeText;
-          const mealIndex = meals.findIndex(m => m._key === mealKey);
-          const expectedValue = meals[mealIndex]?.name || "";
-          
-          if (currentValue !== expectedValue && currentValue.trim() !== "") {
-            console.log("🔍 [MONITOR] Detectou valor diferente via timer - mealKey:", mealKey, "current:", currentValue, "expected:", expectedValue);
-            updateMeal(mealKey, "name", currentValue);
-          }
-        }
-      });
-    }, 500);
-
-    return () => clearInterval(timer);
-  }, [meals, updateMeal]);
+  // Callback estável para configurar refs
+  const setMealNameRef = useCallback((mealKey: string) => {
+    return (ref: TextInput | null) => {
+      mealNameRefs.current[mealKey] = ref;
+      console.log("📌 [REF] Ref configurada para meal:", mealKey, ref ? "OK" : "NULL");
+    };
+  }, []);
 
   function addMeal() {
     setMeals((prev) => [...prev, emptyMeal()]);
@@ -636,41 +623,22 @@ export default function DietPlanForm() {
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
                 <TextInput
-                  ref={(ref) => {
-                    mealNameRefs.current[meal._key] = ref;
-                    console.log("📌 [REF] Ref configurada para meal:", meal._key, ref ? "OK" : "NULL");
-                  }}
-                  key={`meal-name-${mi}-${meal._key}`}
+                  ref={setMealNameRef(meal._key)}
                   style={styles.input}
-                  value={meal.name || ""}
+                  defaultValue={meal.name || ""}
                   onChangeText={(v) => {
-                    console.log("🎯 [INPUT] Nome da refeição mudou - mealIndex:", mi, "value:", v);
-                    console.log("🎯 [INPUT] Estado atual before:", meals[mi]?.name);
-                    console.log("🎯 [INPUT] Using updateMeal function...");
+                    console.log("🎯 [onChangeText] DETECTADO! valor:", v);
                     updateMeal(meal._key, "name", v);
                   }}
-                  onTextInput={(e) => {
-                    console.log("🎯 [onTextInput] Evento nativo detectado:", e.nativeEvent.text);
+                  onEndEditing={(e) => {
+                    const finalValue = e.nativeEvent.text;
+                    console.log("🎯 [onEndEditing] DETECTADO! valor final:", finalValue);
+                    updateMeal(meal._key, "name", finalValue);
                   }}
-                  onChange={(e) => {
-                    console.log("🎯 [onChange] Evento de mudança detectado:", e.nativeEvent.text);
-                  }}
-                  onFocus={() => {
-                    console.log("👁️ [INPUT] Campo nome focado - index:", mi);
-                    console.log("👁️ [INPUT] Ref current value:", mealNameRefs.current[meal._key]?._lastNativeText);
-                  }}
-                  onBlur={() => {
-                    console.log("👋 [INPUT] Campo nome desfocado - index:", mi);
-                    // Força verificação manual do valor no blur
-                    const ref = mealNameRefs.current[meal._key];
-                    if (ref && ref._lastNativeText) {
-                      const currentValue = ref._lastNativeText;
-                      console.log("👋 [BLUR] Valor atual via ref:", currentValue);
-                      if (currentValue !== meal.name) {
-                        console.log("👋 [BLUR] Forçando update via blur...");
-                        updateMeal(meal._key, "name", currentValue);
-                      }
-                    }
+                  onBlur={(e) => {
+                    const blurValue = e.nativeEvent.text;
+                    console.log("🎯 [onBlur] DETECTADO! valor:", blurValue);
+                    updateMeal(meal._key, "name", blurValue);
                   }}
                   placeholder="Ex: Café da manhã"
                   placeholderTextColor={T.t3}
