@@ -108,6 +108,7 @@ export default function DietPlanForm() {
 
   // Refs para monitorar TextInputs quando onChange não funciona
   const mealNameRefs = useRef<{ [key: string]: TextInput | null }>({});
+  const mealNameHtmlRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
@@ -419,7 +420,8 @@ export default function DietPlanForm() {
       console.log("🍽️ [handleSave] Processando", meals.length, "refeições...");
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        if (!meal.name.trim()) {
+        const mealNameValue = mealNameHtmlRefs.current[meal._key]?.value ?? meal.name;
+        if (!mealNameValue.trim()) {
           console.log("⏭️ [handleSave] Pulando refeição", mi, "- nome vazio");
           continue;
         }
@@ -429,7 +431,7 @@ export default function DietPlanForm() {
           .from("meal_plan_meals")
           .insert({
             meal_plan_id:    currentPlanId,
-            name:            meal.name.trim(),
+            name:            mealNameValue.trim(),
             time_suggestion: meal.time_suggestion.trim() || null,
             order_index:     mi,
           })
@@ -623,6 +625,7 @@ export default function DietPlanForm() {
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
                 <input
+                  ref={(el) => { mealNameHtmlRefs.current[meal._key] = el as HTMLInputElement | null; }}
                   key={`html-meal-input-${meal._key}`}
                   type="text"
                   style={{
@@ -637,23 +640,8 @@ export default function DietPlanForm() {
                     boxSizing: 'border-box',
                     fontFamily: 'inherit'
                   }}
-                  value={meal.name || ""}
+                  defaultValue={meal.name || ""}
                   placeholder="Ex: Café da manhã"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    console.log("🌐 [HTML INPUT] onChange DETECTADO! meal:", meal._key, "valor:", value);
-                    updateMeal(meal._key, "name", value);
-                  }}
-                  onBlur={(e) => {
-                    const value = e.target.value;
-                    console.log("🌐 [HTML INPUT] onBlur DETECTADO! meal:", meal._key, "valor:", value);
-                    updateMeal(meal._key, "name", value);
-                  }}
-                  onInput={(e) => {
-                    const value = e.target.value;
-                    console.log("🌐 [HTML INPUT] onInput DETECTADO! meal:", meal._key, "valor:", value);
-                    updateMeal(meal._key, "name", value);
-                  }}
                 />
               </View>
               <View style={{ flex: 1 }}>
