@@ -622,29 +622,65 @@ export default function DietPlanForm() {
             <View style={styles.mealRow}>
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
-                <TextInput
-                  ref={setMealNameRef(meal._key)}
-                  style={styles.input}
-                  defaultValue={meal.name || ""}
-                  onChangeText={(v) => {
-                    console.log("🎯 [onChangeText] DETECTADO! valor:", v);
-                    updateMeal(meal._key, "name", v);
-                  }}
-                  onEndEditing={(e) => {
-                    const finalValue = e.nativeEvent.text;
-                    console.log("🎯 [onEndEditing] DETECTADO! valor final:", finalValue);
-                    updateMeal(meal._key, "name", finalValue);
-                  }}
-                  onBlur={(e) => {
-                    const blurValue = e.nativeEvent.text;
-                    console.log("🎯 [onBlur] DETECTADO! valor:", blurValue);
-                    updateMeal(meal._key, "name", blurValue);
-                  }}
-                  placeholder="Ex: Café da manhã"
-                  placeholderTextColor={T.t3}
-                  autoCapitalize="words"
-                  returnKeyType="next"
-                />
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="text"
+                    style={{
+                      backgroundColor: '#f9f9f9',
+                      borderWidth: 1,
+                      borderColor: '#ddd',
+                      borderRadius: 12,
+                      paddingHorizontal: 16,
+                      height: 50,
+                      fontSize: 16,
+                      color: '#333',
+                      width: '100%',
+                      border: '1px solid #ddd',
+                      outline: 'none'
+                    }}
+                    defaultValue={meal.name || ""}
+                    placeholder="Ex: Café da manhã"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      console.log("🌐 [HTML INPUT] onChange DETECTADO! valor:", value);
+                      updateMeal(meal._key, "name", value);
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value;
+                      console.log("🌐 [HTML INPUT] onBlur DETECTADO! valor:", value);
+                      updateMeal(meal._key, "name", value);
+                    }}
+                    onInput={(e) => {
+                      const value = e.target.value;
+                      console.log("🌐 [HTML INPUT] onInput DETECTADO! valor:", value);
+                      updateMeal(meal._key, "name", value);
+                    }}
+                  />
+                ) : (
+                  <TextInput
+                    ref={setMealNameRef(meal._key)}
+                    style={styles.input}
+                    defaultValue={meal.name || ""}
+                    onChangeText={(v) => {
+                      console.log("📱 [TextInput] onChangeText DETECTADO! valor:", v);
+                      updateMeal(meal._key, "name", v);
+                    }}
+                    onEndEditing={(e) => {
+                      const finalValue = e.nativeEvent.text;
+                      console.log("📱 [TextInput] onEndEditing DETECTADO! valor final:", finalValue);
+                      updateMeal(meal._key, "name", finalValue);
+                    }}
+                    onBlur={(e) => {
+                      const blurValue = e.nativeEvent.text;
+                      console.log("📱 [TextInput] onBlur DETECTADO! valor:", blurValue);
+                      updateMeal(meal._key, "name", blurValue);
+                    }}
+                    placeholder="Ex: Café da manhã"
+                    placeholderTextColor={T.t3}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Horário</Text>
