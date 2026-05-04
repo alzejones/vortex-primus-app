@@ -231,9 +231,12 @@ export default function DietPlanForm() {
   // Helpers de mutação de estado
   // ------------------------------------------------------------
   function updateMeal(mealKey: string, field: keyof MealEntry, value: string) {
-    setMeals((prev) =>
-      prev.map((m) => (m._key === mealKey ? { ...m, [field]: value } : m))
-    );
+    console.log("🔄 [updateMeal] key:", mealKey, "field:", field, "value:", value);
+    setMeals((prev) => {
+      const updated = prev.map((m) => (m._key === mealKey ? { ...m, [field]: value } : m));
+      console.log("📝 [updateMeal] Estado atualizado:", updated.map(m => ({ key: m._key, name: m.name })));
+      return updated;
+    });
   }
 
   function addMeal() {
@@ -341,6 +344,13 @@ export default function DietPlanForm() {
     console.log("🚀 [handleSave] INICIANDO - planTitle:", planTitle?.trim());
     console.log("🚀 [handleSave] trainerId:", trainerId);
     console.log("🚀 [handleSave] meals count:", meals.length);
+    console.log("🚀 [handleSave] meals detalhado:", meals.map((m, i) => ({
+      index: i,
+      key: m._key,
+      name: m.name,
+      foods_count: m.foods.length,
+      first_food: m.foods[0]?.name || 'sem alimentos'
+    })));
     
     if (!planTitle.trim()) {
       console.log("❌ [handleSave] ERRO: planTitle vazio");
