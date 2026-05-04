@@ -609,19 +609,28 @@ export default function DietPlanForm() {
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
                 <TextInput
+                  key={`meal-name-${mi}`}
                   style={styles.input}
-                  value={meal.name}
+                  value={meal.name || ""}
                   onChangeText={(v) => {
-                    console.log("🎯 [INPUT] Nome da refeição mudou - mealIndex:", mi, "key:", meal._key, "value:", v);
+                    console.log("🎯 [INPUT] Nome da refeição mudou - mealIndex:", mi, "value:", v);
+                    console.log("🎯 [INPUT] Estado atual before:", meals[mi]?.name);
                     setMeals(prev => {
+                      console.log("🔄 [STATE] Updating meals array...");
                       const newMeals = [...prev];
-                      newMeals[mi] = { ...newMeals[mi], name: v };
-                      console.log("📝 [INPUT] Estado direto atualizado - index:", mi, "nome:", v);
+                      if (newMeals[mi]) {
+                        newMeals[mi] = { ...newMeals[mi], name: v };
+                        console.log("📝 [STATE] Updated meal name at index", mi, "to:", v);
+                      }
                       return newMeals;
                     });
                   }}
+                  onFocus={() => console.log("👁️ [INPUT] Campo nome focado - index:", mi)}
+                  onBlur={() => console.log("👋 [INPUT] Campo nome desfocado - index:", mi)}
                   placeholder="Ex: Café da manhã"
                   placeholderTextColor={T.t3}
+                  autoCapitalize="words"
+                  returnKeyType="next"
                 />
               </View>
               <View style={{ flex: 1 }}>
