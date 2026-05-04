@@ -598,6 +598,9 @@ export default function DietPlanForm() {
           <View key={meal._key} style={styles.mealCard}>
             <View style={styles.mealCardHeader}>
               <Text style={styles.mealIndex}>Refeição {mi + 1}</Text>
+              <Text style={{fontSize: 10, color: '#999', flex: 1, textAlign: 'center'}}>
+                Debug: "{meal.name || '[VAZIO]'}"
+              </Text>
               {meals.length > 1 && (
                 <TouchableOpacity onPress={() => removeMeal(meal._key)}>
                   <Text style={styles.removeText}>✕ Remover</Text>
@@ -615,12 +618,15 @@ export default function DietPlanForm() {
                   onChangeText={(v) => {
                     console.log("🎯 [INPUT] Nome da refeição mudou - mealIndex:", mi, "value:", v);
                     console.log("🎯 [INPUT] Estado atual before:", meals[mi]?.name);
+                    // FORÇA UMA ATUALIZAÇÃO DIRETA NO ÍNDICE ESPECÍFICO
                     setMeals(prev => {
                       console.log("🔄 [STATE] Updating meals array...");
                       const newMeals = [...prev];
                       if (newMeals[mi]) {
+                        const oldName = newMeals[mi].name;
                         newMeals[mi] = { ...newMeals[mi], name: v };
-                        console.log("📝 [STATE] Updated meal name at index", mi, "to:", v);
+                        console.log("📝 [STATE] Updated meal name at index", mi, "from:", oldName, "to:", v);
+                        console.log("📋 [STATE] Full meals array:", newMeals.map(m => ({ key: m._key, name: m.name })));
                       }
                       return newMeals;
                     });
