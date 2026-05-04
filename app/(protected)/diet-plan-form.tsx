@@ -106,9 +106,6 @@ export default function DietPlanForm() {
   const [planNotes, setPlanNotes]   = useState("");
   const [meals, setMeals]           = useState<MealEntry[]>([emptyMeal()]);
 
-  // Refs para monitorar TextInputs quando onChange não funciona
-  const mealNameRefs = useRef<{ [key: string]: TextInput | null }>({});
-  const mealNameHtmlRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
@@ -420,18 +417,21 @@ export default function DietPlanForm() {
       console.log("🍽️ [handleSave] Processando", meals.length, "refeições...");
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        const mealNameValue = mealNameHtmlRefs.current[meal._key]?.value ?? meal.name;
-        if (!mealNameValue.trim()) {
+        const inputEl = (typeof document !== 'undefined')
+          ? document.getElementById(`meal-name-${meal._key}`) as HTMLInputElement | null
+          : null;
+        const mealNameValue = (inputEl?.value ?? meal.name ?? "").trim();
+        if (!mealNameValue) {
           console.log("⏭️ [handleSave] Pulando refeição", mi, "- nome vazio");
           continue;
         }
 
-        console.log(`🍽️ [handleSave] Processando refeição ${mi + 1}:`, meal.name.trim());
+        console.log(`🍽️ [handleSave] Processando refeição ${mi + 1}:`, mealNameValue);
         const { data: mealData, error: mealErr } = await supabase
           .from("meal_plan_meals")
           .insert({
             meal_plan_id:    currentPlanId,
-            name:            mealNameValue.trim(),
+            name:            mealNameValue,
             time_suggestion: meal.time_suggestion.trim() || null,
             order_index:     mi,
           })
@@ -625,17 +625,16 @@ export default function DietPlanForm() {
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
                 <input
-                  ref={(el) => { mealNameHtmlRefs.current[meal._key] = el as HTMLInputElement | null; }}
-                  key={`html-meal-input-${meal._key}`}
+                  id={`meal-name-${meal._key}`}
                   type="text"
                   style={{
-                    backgroundColor: '#f9f9f9',
+                    backgroundColor: '#1e1e2e',
                     padding: '12px 16px',
                     borderRadius: '12px',
                     fontSize: '16px',
-                    color: '#333',
+                    color: '#f1f5f9',
                     width: '100%',
-                    border: '1px solid #ddd',
+                    border: '1px solid #334155',
                     outline: 'none',
                     boxSizing: 'border-box',
                     fontFamily: 'inherit'
