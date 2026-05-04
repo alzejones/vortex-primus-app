@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -230,14 +230,14 @@ export default function DietPlanForm() {
   // ------------------------------------------------------------
   // Helpers de mutação de estado
   // ------------------------------------------------------------
-  function updateMeal(mealKey: string, field: keyof MealEntry, value: string) {
+  const updateMeal = useCallback((mealKey: string, field: keyof MealEntry, value: string) => {
     console.log("🔄 [updateMeal] key:", mealKey, "field:", field, "value:", value);
     setMeals((prev) => {
       const updated = prev.map((m) => (m._key === mealKey ? { ...m, [field]: value } : m));
       console.log("📝 [updateMeal] Estado atualizado:", updated.map(m => ({ key: m._key, name: m.name })));
       return updated;
     });
-  }
+  }, []);
 
   function addMeal() {
     setMeals((prev) => [...prev, emptyMeal()]);
@@ -612,8 +612,13 @@ export default function DietPlanForm() {
                   style={styles.input}
                   value={meal.name}
                   onChangeText={(v) => {
-                    console.log("🎯 [INPUT] Nome da refeição mudou - key:", meal._key, "value:", v);
-                    updateMeal(meal._key, "name", v);
+                    console.log("🎯 [INPUT] Nome da refeição mudou - mealIndex:", mi, "key:", meal._key, "value:", v);
+                    setMeals(prev => {
+                      const newMeals = [...prev];
+                      newMeals[mi] = { ...newMeals[mi], name: v };
+                      console.log("📝 [INPUT] Estado direto atualizado - index:", mi, "nome:", v);
+                      return newMeals;
+                    });
                   }}
                   placeholder="Ex: Café da manhã"
                   placeholderTextColor={T.t3}
