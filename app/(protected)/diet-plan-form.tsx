@@ -284,24 +284,22 @@ export default function DietPlanForm() {
   function handleFoodSelected(mealKey: string, food: SelectedFood) {
     setMeals((prev) =>
       prev.map((m) =>
-        m._key === mealKey
-          ? {
-              ...m,
-              foods: [
-                ...m.foods,
-                {
-                  _key:     nextKey(),
-                  food_id:  food.food_id,
-                  name:     food.name,
-                  quantity: food.quantity,
-                  calories: String(food.calories),
-                  protein:  String(food.protein),
-                  carbs:    String(food.carbs),
-                  fat:      String(food.fat),
-                },
-              ],
-            }
-          : m
+        m._key !== mealKey ? m : {
+          ...m,
+          foods: [
+            ...m.foods,
+            {
+              _key:     nextKey(),
+              food_id:  food.food_id,
+              name:     food.name,
+              quantity: food.quantity,
+              calories: String(food.calories),
+              protein:  String(food.protein),
+              carbs:    String(food.carbs),
+              fat:      String(food.fat),
+            },
+          ],
+        }
       )
     );
     setFoodModalMealKey(null);
@@ -310,24 +308,22 @@ export default function DietPlanForm() {
   function handleSupplementSelected(mealKey: string, supplement: SelectedSupplement) {
     setMeals((prev) =>
       prev.map((m) =>
-        m._key === mealKey
-          ? {
-              ...m,
-              foods: [
-                ...m.foods,
-                {
-                  _key:         nextKey(),
-                  supplement_id: supplement.supplement_id,
-                  name:         supplement.name,
-                  quantity:     supplement.quantity,
-                  calories:     String(supplement.calories),
-                  protein:      String(supplement.protein),
-                  carbs:        String(supplement.carbs),
-                  fat:          String(supplement.fat),
-                },
-              ],
-            }
-          : m
+        m._key !== mealKey ? m : {
+          ...m,
+          foods: [
+            ...m.foods,
+            {
+              _key:          nextKey(),
+              supplement_id: supplement.supplement_id,
+              name:          supplement.name,
+              quantity:      supplement.quantity,
+              calories:      String(supplement.calories),
+              protein:       String(supplement.protein),
+              carbs:         String(supplement.carbs),
+              fat:           String(supplement.fat),
+            },
+          ],
+        }
       )
     );
     setSupplementModalMealKey(null);
@@ -755,7 +751,11 @@ export default function DietPlanForm() {
         visible={foodModalMealKey !== null}
         onClose={() => setFoodModalMealKey(null)}
         onSelect={(food) => {
-          if (foodModalMealKey) handleFoodSelected(foodModalMealKey, food);
+          if (foodModalMealKey) {
+            const key = foodModalMealKey;
+            setFoodModalMealKey(null);
+            handleFoodSelected(key, food);
+          }
         }}
       />
 
@@ -764,7 +764,11 @@ export default function DietPlanForm() {
         visible={supplementModalMealKey !== null}
         onClose={() => setSupplementModalMealKey(null)}
         onSelect={(supplement) => {
-          if (supplementModalMealKey) handleSupplementSelected(supplementModalMealKey, supplement);
+          if (supplementModalMealKey) {
+            const key = supplementModalMealKey;
+            setSupplementModalMealKey(null);
+            handleSupplementSelected(key, supplement);
+          }
         }}
       />
     </KeyboardAvoidingView>
