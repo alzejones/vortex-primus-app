@@ -105,6 +105,7 @@ export default function DietPlanForm() {
   const [planTitle, setPlanTitle]   = useState("Plano Alimentar");
   const [planNotes, setPlanNotes]   = useState("");
   const [meals, setMeals]           = useState<MealEntry[]>([emptyMeal()]);
+  const mealNamesRef = useRef<Record<string, string>>({});
 
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
@@ -231,6 +232,9 @@ export default function DietPlanForm() {
   // Helpers de mutação de estado
   // ------------------------------------------------------------
   function updateMeal(mealKey: string, field: keyof MealEntry, value: string) {
+    if (field === "name") {
+      mealNamesRef.current[mealKey] = value;
+    }
     setMeals((prev) =>
       prev.map((m) => (m._key === mealKey ? { ...m, [field]: value } : m))
     );
@@ -351,6 +355,9 @@ export default function DietPlanForm() {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
+      // Capturar nomes do ref antes de qualquer operação async
+      const capturedNames = { ...mealNamesRef.current };
+
       let currentPlanId = planId;
       if (isEditing && currentPlanId) {
         const { error } = await supabase
@@ -380,13 +387,14 @@ export default function DietPlanForm() {
 
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        if (!meal.name.trim()) continue;
+        const mealName = (capturedNames[meal._key] ?? meal.name ?? "").trim();
+        if (!mealName) continue;
 
         const { data: mealData, error: mealErr } = await supabase
           .from("meal_plan_meals")
           .insert({
             meal_plan_id:    currentPlanId,
-            name:            meal.name.trim(),
+            name:            mealName,
             time_suggestion: meal.time_suggestion.trim() || null,
             order_index:     mi,
           })
