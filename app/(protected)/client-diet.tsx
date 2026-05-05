@@ -13,7 +13,6 @@ import {
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
-import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import { supabase } from "../../lib/supabase";
 import {
   ACTIVITY_LABELS,
@@ -307,9 +306,6 @@ export default function ClientDiet() {
           </Text>
         </View>
       )}
-
-      {/* Modal de Embasamento Científico */}
-      {dietResult && <ScienceReferencesModal />}
 
       {/* Botão Gerar com IA */}
       <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI} activeOpacity={0.85}>

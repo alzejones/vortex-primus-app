@@ -33,6 +33,7 @@ export function useTrainer() {
       }
 
       // 1️⃣ Buscar trainer - OBRIGATÓRIO
+      console.log("🔍 [useTrainer] Buscando trainer para user_id:", session.user.id);
       const { data: trainerData, error: trainerError } = await supabase
         .from("trainers")
         .select("id")
@@ -40,14 +41,17 @@ export function useTrainer() {
         .single();
 
       if (trainerError || !trainerData) {
+        console.error("❌ [useTrainer] Erro ao buscar trainer:", trainerError);
         setTrainerId(null);
         setLoadingTrainer(false);
         return;
       }
 
+      console.log("✅ [useTrainer] TrainerId encontrado:", trainerData.id);
       setTrainerId(trainerData.id);
 
       // 2️⃣ Buscar subscription ativa + plano (OPCIONAL - não bloqueia trainerId)
+      console.log("🔍 [useTrainer] Buscando subscription para trainer_id:", trainerData.id);
       try {
         const { data: subData, error: subError } = await supabase
           .from("trainer_subscriptions")
@@ -68,6 +72,7 @@ export function useTrainer() {
           .maybeSingle();
 
         if (subData && !subError) {
+          console.log("✅ [useTrainer] Subscription encontrada:", subData.id);
           setSubscription({
             id: subData.id,
             plan_id: subData.plan_id,
@@ -76,10 +81,15 @@ export function useTrainer() {
           });
           setPlan(subData.plans);
         } else {
+          console.log("ℹ️ [useTrainer] Nenhuma subscription ativa encontrada");
+          if (subError && subError.code !== "PGRST116") {
+            console.error("⚠️ [useTrainer] Erro ao buscar subscription:", subError);
+          }
           setSubscription(null);
           setPlan(null);
         }
       } catch (err) {
+        console.error("⚠️ [useTrainer] Erro na busca de subscription:", err);
         setSubscription(null);
         setPlan(null);
       }
