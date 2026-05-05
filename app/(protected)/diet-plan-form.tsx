@@ -383,8 +383,7 @@ export default function DietPlanForm() {
 
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        const mealName = (capturedNames[meal._key] ?? meal.name ?? "").trim();
-        if (!mealName) continue;
+        const mealName = (capturedNames[meal._key] ?? meal.name ?? "").trim() || `Refeição ${mi + 1}`;
 
         const { data: mealData, error: mealErr } = await supabase
           .from("meal_plan_meals")
@@ -457,7 +456,7 @@ export default function DietPlanForm() {
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 80 }}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator={true}
       >
         <Text style={styles.pageTitle}>
           {isEditing ? "Editar Plano" : "Novo Plano"}{clientName ? ` — ${clientName}` : ""}
