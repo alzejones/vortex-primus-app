@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -105,7 +105,6 @@ export default function DietPlanForm() {
   const [planTitle, setPlanTitle]   = useState("Plano Alimentar");
   const [planNotes, setPlanNotes]   = useState("");
   const [meals, setMeals]           = useState<MealEntry[]>([emptyMeal()]);
-
 
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
@@ -231,22 +230,11 @@ export default function DietPlanForm() {
   // ------------------------------------------------------------
   // Helpers de mutação de estado
   // ------------------------------------------------------------
-  const updateMeal = useCallback((mealKey: string, field: keyof MealEntry, value: string) => {
-    console.log("🔄 [updateMeal] key:", mealKey, "field:", field, "value:", value);
-    setMeals((prev) => {
-      const updated = prev.map((m) => (m._key === mealKey ? { ...m, [field]: value } : m));
-      console.log("📝 [updateMeal] Estado atualizado:", updated.map(m => ({ key: m._key, name: m.name })));
-      return updated;
-    });
-  }, []);
-
-  // Callback estável para configurar refs
-  const setMealNameRef = useCallback((mealKey: string) => {
-    return (ref: TextInput | null) => {
-      mealNameRefs.current[mealKey] = ref;
-      console.log("📌 [REF] Ref configurada para meal:", mealKey, ref ? "OK" : "NULL");
-    };
-  }, []);
+  function updateMeal(mealKey: string, field: keyof MealEntry, value: string) {
+    setMeals((prev) =>
+      prev.map((m) => (m._key === mealKey ? { ...m, [field]: value } : m))
+    );
+  }
 
   function addMeal() {
     setMeals((prev) => [...prev, emptyMeal()]);
@@ -350,47 +338,27 @@ export default function DietPlanForm() {
   // Salvar
   // ------------------------------------------------------------
   async function handleSave() {
-    console.log("🚀 [handleSave] INICIANDO - planTitle:", planTitle?.trim());
-    console.log("🚀 [handleSave] trainerId:", trainerId);
-    console.log("🚀 [handleSave] meals count:", meals.length);
-    console.log("🚀 [handleSave] meals detalhado:");
-    meals.forEach((m, i) => {
-      console.log(`  Refeição ${i}:`, {
-        key: m._key,
-        name: `"${m.name}"`,
-        name_length: m.name?.length || 0,
-        foods_count: m.foods.length,
-        first_food: m.foods[0]?.name || 'sem alimentos'
-      });
-    });
-    
     if (!planTitle.trim()) {
-      console.log("❌ [handleSave] ERRO: planTitle vazio");
       setStatusMsg({ text: "Informe um título para o plano.", type: "error" });
       return;
     }
     if (!trainerId) {
-      console.log("❌ [handleSave] ERRO: trainerId null");
       setStatusMsg({ text: "Perfil de treinador não carregado.", type: "error" });
       return;
     }
 
     try {
-      console.log("✅ [handleSave] Iniciando salvamento...");
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
       let currentPlanId = planId;
       if (isEditing && currentPlanId) {
-        console.log("📝 [handleSave] EDITANDO plano existente:", currentPlanId);
         const { error } = await supabase
           .from("meal_plans")
           .update({ title: planTitle.trim(), notes: planNotes.trim() || null })
           .eq("id", currentPlanId);
         if (error) throw error;
-        console.log("✅ [handleSave] Plano atualizado com sucesso");
       } else {
-        console.log("➕ [handleSave] CRIANDO novo plano - clientId:", clientId, "trainerId:", trainerId);
         const { data, error } = await supabase
           .from("meal_plans")
           .insert({
@@ -402,55 +370,34 @@ export default function DietPlanForm() {
           })
           .select("id")
           .single();
-        if (error || !data) {
-          console.log("❌ [handleSave] ERRO ao criar plano:", error);
-          throw error;
-        }
+        if (error || !data) throw error;
         currentPlanId = data.id;
-        console.log("✅ [handleSave] Plano criado com ID:", currentPlanId);
       }
 
       if (isEditing) {
         await supabase.from("meal_plan_meals").delete().eq("meal_plan_id", currentPlanId);
       }
 
-      console.log("🍽️ [handleSave] Processando", meals.length, "refeições...");
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        const inputEl = (typeof document !== 'undefined')
-          ? document.getElementById(`meal-name-${meal._key}`) as HTMLInputElement | null
-          : null;
-        const mealNameValue = (inputEl?.value ?? meal.name ?? "").trim();
-        if (!mealNameValue) {
-          console.log("⏭️ [handleSave] Pulando refeição", mi, "- nome vazio");
-          continue;
-        }
+        if (!meal.name.trim()) continue;
 
-        console.log(`🍽️ [handleSave] Processando refeição ${mi + 1}:`, mealNameValue);
         const { data: mealData, error: mealErr } = await supabase
           .from("meal_plan_meals")
           .insert({
             meal_plan_id:    currentPlanId,
-            name:            mealNameValue,
+            name:            meal.name.trim(),
             time_suggestion: meal.time_suggestion.trim() || null,
             order_index:     mi,
           })
           .select("id")
           .single();
 
-        if (mealErr || !mealData) {
-          console.log("❌ [handleSave] ERRO ao criar refeição:", mealErr);
-          throw mealErr;
-        }
-        console.log("✅ [handleSave] Refeição criada com ID:", mealData.id);
+        if (mealErr || !mealData) throw mealErr;
 
         const validFoods = meal.foods.filter((f) => f.name.trim());
-        if (validFoods.length === 0) {
-          console.log("⏭️ [handleSave] Refeição sem alimentos válidos");
-          continue;
-        }
+        if (validFoods.length === 0) continue;
 
-        console.log(`🥗 [handleSave] Adicionando ${validFoods.length} alimentos...`);
         const foodRows = validFoods.map((f, fi) => ({
           meal_id:       mealData.id,
           food_id:       f.food_id || null,
@@ -467,24 +414,14 @@ export default function DietPlanForm() {
         const { error: foodErr } = await supabase
           .from("meal_plan_foods")
           .insert(foodRows);
-        if (foodErr) {
-          console.log("❌ [handleSave] ERRO ao inserir alimentos:", foodErr);
-          throw foodErr;
-        }
-        console.log("✅ [handleSave] Alimentos inseridos com sucesso");
+        if (foodErr) throw foodErr;
       }
 
-      console.log("🎉 [handleSave] TUDO SALVO! Redirecionando em 1.2s...");
       setStatusMsg({ text: "Plano salvo com sucesso!", type: "success" });
-      setTimeout(() => {
-        console.log("🔄 [handleSave] REDIRECIONANDO para client-diet...");
-        router.replace(`/(protected)/client-diet?id=${clientId}` as any);
-      }, 1200);
+      setTimeout(() => router.back(), 1200);
     } catch (err: any) {
-      console.log("💥 [handleSave] ERRO CAPTURADO:", err);
       setStatusMsg({ text: err?.message || "Erro ao salvar o plano.", type: "error" });
     } finally {
-      console.log("🏁 [handleSave] FINALIZANDO - setSaving(false)");
       setSaving(false);
     }
   }
@@ -611,9 +548,6 @@ export default function DietPlanForm() {
           <View key={meal._key} style={styles.mealCard}>
             <View style={styles.mealCardHeader}>
               <Text style={styles.mealIndex}>Refeição {mi + 1}</Text>
-              <Text style={{fontSize: 10, color: '#999', flex: 1, textAlign: 'center'}}>
-                Debug: "{meal.name || '[VAZIO]'}"
-              </Text>
               {meals.length > 1 && (
                 <TouchableOpacity onPress={() => removeMeal(meal._key)}>
                   <Text style={styles.removeText}>✕ Remover</Text>
@@ -624,23 +558,12 @@ export default function DietPlanForm() {
             <View style={styles.mealRow}>
               <View style={{ flex: 2, marginRight: 8 }}>
                 <Text style={styles.label}>Nome</Text>
-                <input
-                  id={`meal-name-${meal._key}`}
-                  type="text"
-                  style={{
-                    backgroundColor: '#1e1e2e',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    fontSize: '16px',
-                    color: '#f1f5f9',
-                    width: '100%',
-                    border: '1px solid #334155',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    fontFamily: 'inherit'
-                  }}
-                  defaultValue={meal.name || ""}
+                <TextInput
+                  style={styles.input}
+                  value={meal.name}
+                  onChangeText={(v) => updateMeal(meal._key, "name", v)}
                   placeholder="Ex: Café da manhã"
+                  placeholderTextColor={T.t3}
                 />
               </View>
               <View style={{ flex: 1 }}>
