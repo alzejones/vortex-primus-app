@@ -32,8 +32,7 @@ export function useTrainer() {
         return;
       }
 
-      // 1️⃣ Buscar trainer - OBRIGATÓRIO
-      console.log("🔍 [useTrainer] Buscando trainer para user_id:", session.user.id);
+      // 1️⃣ Buscar trainer
       const { data: trainerData, error: trainerError } = await supabase
         .from("trainers")
         .select("id")
@@ -41,58 +40,46 @@ export function useTrainer() {
         .single();
 
       if (trainerError || !trainerData) {
-        console.error("❌ [useTrainer] Erro ao buscar trainer:", trainerError);
-        setTrainerId(null);
+        console.error("Erro ao buscar trainer:", trainerError);
         setLoadingTrainer(false);
         return;
       }
 
-      console.log("✅ [useTrainer] TrainerId encontrado:", trainerData.id);
       setTrainerId(trainerData.id);
 
-      // 2️⃣ Buscar subscription ativa + plano (OPCIONAL - não bloqueia trainerId)
-      console.log("🔍 [useTrainer] Buscando subscription para trainer_id:", trainerData.id);
-      try {
-        const { data: subData, error: subError } = await supabase
-          .from("trainer_subscriptions")
-          .select(`
+      // 2️⃣ Buscar subscription ativa + plano
+      const { data: subData, error: subError } = await supabase
+        .from("trainer_subscriptions")
+        .select(`
+          id,
+          plan_id,
+          is_active,
+          start_date,
+          plans (
             id,
-            plan_id,
-            is_active,
-            start_date,
-            plans (
-              id,
-              name,
-              price_monthly,
-              max_clients
-            )
-          `)
-          .eq("trainer_id", trainerData.id)
-          .eq("is_active", true)
-          .maybeSingle();
+            name,
+            price_monthly,
+            max_clients
+          )
+        `)
+        .eq("trainer_id", trainerData.id)
+        .eq("is_active", true)
+        .single();
 
-        if (subData && !subError) {
-          console.log("✅ [useTrainer] Subscription encontrada:", subData.id);
-          setSubscription({
-            id: subData.id,
-            plan_id: subData.plan_id,
-            is_active: subData.is_active,
-            start_date: subData.start_date,
-          });
-          setPlan(subData.plans);
-        } else {
-          console.log("ℹ️ [useTrainer] Nenhuma subscription ativa encontrada");
-          if (subError && subError.code !== "PGRST116") {
-            console.error("⚠️ [useTrainer] Erro ao buscar subscription:", subError);
-          }
-          setSubscription(null);
-          setPlan(null);
-        }
-      } catch (err) {
-        console.error("⚠️ [useTrainer] Erro na busca de subscription:", err);
-        setSubscription(null);
-        setPlan(null);
+      if (subError || !subData) {
+        console.error("Erro ao buscar subscription:", subError);
+        setLoadingTrainer(false);
+        return;
       }
+
+      setSubscription({
+        id: subData.id,
+        plan_id: subData.plan_id,
+        is_active: subData.is_active,
+        start_date: subData.start_date,
+      });
+
+      setPlan(subData.plans);
 
       setLoadingTrainer(false);
     }
