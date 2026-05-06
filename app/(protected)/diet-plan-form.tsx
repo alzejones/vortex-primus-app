@@ -13,17 +13,15 @@ import {
   View,
 } from "react-native";
 import FoodSearchModal, { SelectedFood } from "../../components/FoodSearchModal";
-import SupplementSearchModal, { SelectedSupplement } from "../../components/SupplementSearchModal";
 import MacroBar from "../../components/MacroBar";
+import SupplementSearchModal, { SelectedSupplement } from "../../components/SupplementSearchModal";
 import { useTrainer } from "../../hooks/useTrainer";
 import { supabase } from "../../lib/supabase";
 import {
   ActivityLevel,
   DietCalculationResult,
-  ACTIVITY_LABELS,
-  OBJECTIVE_LABELS,
   Objective,
-  calculateDietPlan,
+  calculateDietPlan
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
@@ -616,7 +614,7 @@ export default function DietPlanForm() {
                       style={styles.supplementBtn}
                       onPress={() => setSupplementModalMealKey(meal._key)}
                     >
-                      <Text style={styles.supplementBtnText}>💊 Herbalife</Text>
+                      <Text style={styles.supplementBtnText}>🏃‍♂️ Herbalife</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

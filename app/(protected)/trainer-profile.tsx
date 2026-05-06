@@ -12,11 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import TrainerScalesManager from "../../components/TrainerScalesManager";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
-import TrainerScalesManager from "../../components/TrainerScalesManager";
 
 export default function TrainerProfile() {
   const router = useRouter();
@@ -225,7 +225,7 @@ export default function TrainerProfile() {
           >
             <View style={styles.configButtonLeft}>
               <View style={styles.configButtonIcon}>
-                <Text style={{ fontSize: 24 }}>💊</Text>
+                <Text style={{ fontSize: 24 }}>🏃‍♂️</Text>
               </View>
               <View>
                 <Text style={styles.configButtonTitle}>Suplementos</Text>
