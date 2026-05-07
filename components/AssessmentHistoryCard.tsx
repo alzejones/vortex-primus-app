@@ -135,6 +135,13 @@ export default function AssessmentHistoryCard({
           <TouchableOpacity onPress={() => onDelete(assessment.id)}>
             <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
           </TouchableOpacity>
+          
+          {/* Badge de fotos */}
+          {assessment.assessment_photos?.length > 0 && (
+            <Text style={{ color: "#64748b", fontSize: 11, fontWeight: "600" }}>
+              📷 {assessment.assessment_photos.length}
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity onPress={() => onWhatsApp(assessment)}>

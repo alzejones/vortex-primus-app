@@ -9,6 +9,7 @@ import EvolutionPanel from './EvolutionPanel';
 import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
 import TrunkMeasurementsChart from './TrunkMeasurementsChart';
 import LimbMeasurementsChart from './LimbMeasurementsChart';
+import AssessmentPhotoGallery from './AssessmentPhotoGallery';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -27,7 +28,8 @@ interface AssessmentDetailsModalProps {
   calculateAge: (date: any) => any;
   getColor: (val: any, type: any) => any;
   formatValue: (val: any) => any;
-  styles: any; 
+  styles: any;
+  getSignedUrl: (path: string) => Promise<string | null>;
 }
 
 // 🔴 NOVA LÓGICA DE GORDURA CORPORAL (Planilha Omron)
@@ -125,7 +127,8 @@ export default function AssessmentDetailsModal({
   calculateAge,
   getColor,
   formatValue,
-  styles
+  styles,
+  getSignedUrl
 }: AssessmentDetailsModalProps) {
 
   const [referencesVisible, setReferencesVisible] = useState(false);
@@ -343,6 +346,14 @@ export default function AssessmentDetailsModal({
                 })()}
                 chartWidth={screenWidth - 60}
               />
+              
+              {/* Seção de fotos — só renderiza se houver fotos */}
+              {selectedAssessment?.assessment_photos?.length > 0 && (
+                <AssessmentPhotoGallery
+                  photos={selectedAssessment.assessment_photos}
+                  getSignedUrl={getSignedUrl}
+                />
+              )}
               
               <View style={{ marginTop: 24, paddingVertical: 14, backgroundColor: '#0f172a', borderRadius: 12 }}><Text style={{ color: '#fbbf24', textAlign: 'center', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>FOCO NO PROCESSO. OS RESULTADOS VIRÃO! 🔥</Text></View>
             </View>

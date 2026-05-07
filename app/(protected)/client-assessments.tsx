@@ -16,8 +16,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Image
 } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { LineChart } from "react-native-gifted-charts";
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
@@ -59,6 +62,9 @@ export default function ClientAssessments() {
 
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [pendingPhotos, setPendingPhotos] = useState<{ uri: string; label: string }[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const formatDateBR = (date: Date) => {
     const d = date.getDate().toString().padStart(2, '0');
@@ -107,7 +113,8 @@ export default function ClientAssessments() {
         .from("physical_assessments")
         .select(`
           *,
-          anthropometry:anthropometry!anthropometry_assessment_id_fkey (*)
+          anthropometry:anthropometry!anthropometry_assessment_id_fkey (*),
+          assessment_photos (id, storage_path, label, created_at)
         `)
         .eq("client_id", clientId)
         .order("date", { ascending: false });
@@ -336,6 +343,19 @@ export default function ClientAssessments() {
     if (!assessmentToDelete) return;
     try {
       setIsDeleting(true);
+      
+      // Buscar paths das fotos desta avaliação
+      const { data: photos } = await supabase
+        .from('assessment_photos')
+        .select('storage_path')
+        .eq('assessment_id', assessmentToDelete);
+
+      // Deletar arquivos do Storage (o cascade cuida da tabela)
+      if (photos && photos.length > 0) {
+        const paths = photos.map(p => p.storage_path);
+        await supabase.storage.from('assessment-photos').remove(paths);
+      }
+
       await supabase.from("anthropometry").delete().eq("assessment_id", assessmentToDelete);
       await supabase.from("physical_assessments").delete().eq("id", assessmentToDelete);
 
@@ -459,6 +479,89 @@ export default function ClientAssessments() {
     }));
   };
 
+  async function handlePickPhoto() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Habilite o acesso à galeria nas configurações do dispositivo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: false,
+      quality: 1,
+    });
+
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+
+    // Comprime para máx 900px largura e JPEG 78% — resultado ~150-250KB
+    const compressed = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 900 } }],
+      { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    // Máximo 4 fotos por avaliação
+    if (pendingPhotos.length >= 4) {
+      Alert.alert('Limite atingido', 'Máximo de 4 fotos por avaliação.');
+      return;
+    }
+
+    setPendingPhotos(prev => [...prev, { uri: compressed.uri, label: 'outro' }]);
+  }
+
+  async function uploadPhotosForAssessment(assessmentId: string) {
+    if (!pendingPhotos.length || !trainerId) return;
+
+    setUploadingPhoto(true);
+    try {
+      for (const photo of pendingPhotos) {
+        const filename = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
+        const storagePath = `${trainerId}/${clientId}/${assessmentId}/${filename}`;
+
+        // Lê o arquivo como ArrayBuffer para upload
+        const response = await fetch(photo.uri);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+
+        const { error: storageError } = await supabase.storage
+          .from('assessment-photos')
+          .upload(storagePath, arrayBuffer, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+
+        if (storageError) {
+          console.error('Erro no upload da foto:', storageError.message);
+          continue;
+        }
+
+        await supabase.from('assessment_photos').insert({
+          assessment_id: assessmentId,
+          trainer_id: trainerId,
+          client_id: clientId,
+          storage_path: storagePath,
+          label: photo.label,
+        });
+      }
+    } catch (err: any) {
+      console.error('Erro ao salvar fotos:', err.message);
+    } finally {
+      setUploadingPhoto(false);
+      setPendingPhotos([]);
+    }
+  }
+
+  async function getSignedUrl(storagePath: string): Promise<string | null> {
+    const { data, error } = await supabase.storage
+      .from('assessment-photos')
+      .createSignedUrl(storagePath, 3600); // válida por 1 hora
+    if (error) return null;
+    return data.signedUrl;
+  }
+
   async function handleSaveAssessment() {
     setSaving(true);
     const isoDate = parseDateBRToISO(form.assessment_date);
@@ -490,11 +593,15 @@ export default function ClientAssessments() {
     if (editingAnthropometryId) {
       if (editingAssessmentId) {
         await supabase.from("physical_assessments").update({ date: isoDate }).eq("id", editingAssessmentId);
+        if (pendingPhotos.length > 0 && editingAssessmentId) {
+          await uploadPhotosForAssessment(editingAssessmentId);
+        }
       }
       await supabase.from("anthropometry").update(payload).eq("id", editingAnthropometryId);
       setEditingAnthropometryId(null);
       setEditingAssessmentId(null);
       setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "" });
+      setPendingPhotos([]);
       await fetchHistory();
       setSaving(false);
       Alert.alert("Sucesso", "Avaliação atualizada");
@@ -508,7 +615,12 @@ export default function ClientAssessments() {
 
     await supabase.from("anthropometry").insert({ assessment_id: assessment.id, ...payload });
 
+    if (pendingPhotos.length > 0) {
+      await uploadPhotosForAssessment(assessment.id);
+    }
+
     setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "" });
+    setPendingPhotos([]);
     setSaving(false);
     await fetchHistory();
   }
@@ -591,12 +703,64 @@ export default function ClientAssessments() {
                 </View>
               </View>
               <View style={{ padding: 16 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 10, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, marginBottom: 16 }}>
+                  {/* Botão Salvar Foto — canto superior esquerdo do formulário */}
+                  <TouchableOpacity
+                    onPress={handlePickPhoto}
+                    disabled={uploadingPhoto}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 6,
+                      backgroundColor: T.card, borderWidth: 1, borderColor: T.border,
+                      borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
+                    }}
+                  >
+                    <Text style={{ fontSize: 20 }}>📷</Text>
+                    <View>
+                      <Text style={{ color: T.t1, fontWeight: 'bold', fontSize: 13 }}>Salvar Foto</Text>
+                      {pendingPhotos.length > 0 && (
+                        <Text style={{ color: T.blue, fontSize: 11 }}>{pendingPhotos.length} foto(s)</Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+
+                  {/* Campo Data/Hora — canto direito (sem alteração) */}
                   <View style={{ width: 140 }}>
                     <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                    <TextInput style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]} value={form.assessment_date} onChangeText={handleDateChange} placeholder="DD/MM/AAAA HH:mm" placeholderTextColor={T.t3} keyboardType="numeric" maxLength={16} />
+                    <TextInput
+                      style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
+                      value={form.assessment_date}
+                      onChangeText={handleDateChange}
+                      placeholder="DD/MM/AAAA HH:mm"
+                      placeholderTextColor={T.t3}
+                      keyboardType="numeric"
+                      maxLength={16}
+                    />
                   </View>
                 </View>
+
+                {/* Thumbnails das fotos selecionadas */}
+                {pendingPhotos.length > 0 && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                    {pendingPhotos.map((photo, index) => (
+                      <View key={index} style={{ position: 'relative' }}>
+                        <Image
+                          source={{ uri: photo.uri }}
+                          style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
+                        />
+                        <TouchableOpacity
+                          onPress={() => setPendingPhotos(prev => prev.filter((_, i) => i !== index))}
+                          style={{
+                            position: 'absolute', top: -6, right: -6,
+                            backgroundColor: T.red, borderRadius: 10,
+                            width: 20, height: 20, alignItems: 'center', justifyContent: 'center'
+                          }}
+                        >
+                          <Text style={{ color: T.white, fontSize: 11, fontWeight: 'bold' }}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 <BluetoothScaleConnector
                   onDataReceived={handleScaleData}
                   disabled={saving}
@@ -717,7 +881,7 @@ export default function ClientAssessments() {
           </KeyboardAvoidingView>
         </SafeAreaView>
 
-        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} />
+        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} />
       </View>
     </View>
   );

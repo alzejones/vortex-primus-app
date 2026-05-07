@@ -49,8 +49,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "O Vortex precisa acessar suas fotos para analisar suas refeições",
-          "cameraPermission": "O Vortex precisa acessar sua câmera para analisar suas refeições"
+          "photosPermission": "Permita acesso à galeria para salvar fotos de avaliação.",
+          "cameraPermission": "Permita acesso à câmera para fotografar o aluno."
         }
       ],
       [
