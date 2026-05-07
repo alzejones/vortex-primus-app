@@ -59,6 +59,12 @@
           "merchantIdentifier": "merchant.com.vortexprimus",
           "enableGooglePay": true
         }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Permite salvar fotos de avaliação na galeria."
+        }
       ]
     ],
     "experiments": {

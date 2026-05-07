@@ -873,6 +873,7 @@ export default function ClientAssessments() {
                   onDelete={deleteAssessment}
                   onWhatsApp={handleSendWhatsApp}
                   onPhysicalTests={() => handlePhysicalTests(assessment)}
+                  getSignedUrl={getSignedUrl}
                 />
               );
             })}

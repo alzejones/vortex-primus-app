@@ -1,5 +1,5 @@
-import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Text, TouchableOpacity, View, Image } from 'react-native';
 import { getHistoryColor, getSmartWeightColor } from '../utils/assessmentCalculations';
 
 interface AssessmentHistoryCardProps {
@@ -11,7 +11,8 @@ interface AssessmentHistoryCardProps {
   onEdit: (assessment: any) => void;
   onDelete: (id: string) => void;
   onWhatsApp: (assessment: any) => void;
-  onPhysicalTests: (assessment: any) => void; 
+  onPhysicalTests: (assessment: any) => void;
+  getSignedUrl?: (path: string) => Promise<string | null>;
 }
 
 export default function AssessmentHistoryCard({
@@ -23,7 +24,8 @@ export default function AssessmentHistoryCard({
   onEdit,
   onDelete,
   onWhatsApp,
-  onPhysicalTests
+  onPhysicalTests,
+  getSignedUrl
 }: AssessmentHistoryCardProps) {
   
   function renderTrendIndicator(currentValue: any, previousValue: any, type: "weight" | "fat" | "muscle") {
@@ -49,6 +51,25 @@ export default function AssessmentHistoryCard({
 
   // Função auxiliar segura para 1 casa decimal
   const formatNum = (val: any) => val != null && val !== "" ? Number(val).toFixed(1) : '--';
+
+  const [thumbUrls, setThumbUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadThumbs() {
+      if (!getSignedUrl || !assessment.assessment_photos?.length) return;
+      // Carrega no máximo 3 thumbnails para não sobrecarregar a lista
+      const photos = assessment.assessment_photos.slice(0, 3);
+      const urls: string[] = [];
+      for (const photo of photos) {
+        const url = await getSignedUrl(photo.storage_path);
+        if (url) urls.push(url);
+      }
+      if (!cancelled) setThumbUrls(urls);
+    }
+    loadThumbs();
+    return () => { cancelled = true; };
+  }, [assessment.id, assessment.assessment_photos?.length]);
 
   return (
     <View style={{
@@ -136,8 +157,27 @@ export default function AssessmentHistoryCard({
             <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
           </TouchableOpacity>
           
-          {/* Badge de fotos */}
-          {assessment.assessment_photos?.length > 0 && (
+          {/* Miniaturas de fotos */}
+          {thumbUrls.length > 0 && (
+            <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+              {thumbUrls.map((uri, i) => (
+                <Image
+                  key={i}
+                  source={{ uri }}
+                  style={{ width: 36, height: 36, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0' }}
+                />
+              ))}
+              {assessment.assessment_photos.length > 3 && (
+                <View style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
+                  <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '700' }}>
+                    +{assessment.assessment_photos.length - 3}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+          {/* Fallback: badge enquanto as URLs carregam */}
+          {thumbUrls.length === 0 && assessment.assessment_photos?.length > 0 && (
             <Text style={{ color: "#64748b", fontSize: 11, fontWeight: "600" }}>
               📷 {assessment.assessment_photos.length}
             </Text>
