@@ -143,50 +143,56 @@ export default function AssessmentHistoryCard({
       )}
 
       {/* RODAPÉ DE AÇÕES */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 15, flex: 1 }}>
-          <TouchableOpacity onPress={() => onEdit(assessment)}>
-            <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={() => onPhysicalTests(assessment)}>
-            <Text style={{ color: "#2563eb", fontSize: 13, fontWeight: "700" }}>💪 Testes</Text>
-          </TouchableOpacity>
+      <View style={{ borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
 
-          <TouchableOpacity onPress={() => onDelete(assessment.id)}>
-            <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
+        {/* Linha 1 — ações sempre visíveis */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', gap: 15 }}>
+            <TouchableOpacity onPress={() => onEdit(assessment)}>
+              <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => onPhysicalTests(assessment)}>
+              <Text style={{ color: "#2563eb", fontSize: 13, fontWeight: "700" }}>💪 Testes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => onDelete(assessment.id)}>
+              <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "700" }}>🗑️ Excluir</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity onPress={() => onWhatsApp(assessment)}>
+            <Text style={{ color: "#22c55e", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
           </TouchableOpacity>
-          
-          {/* Miniaturas de fotos */}
-          {thumbUrls.length > 0 && (
-            <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
-              {thumbUrls.map((uri, i) => (
-                <Image
-                  key={i}
-                  source={{ uri }}
-                  style={{ width: 36, height: 36, borderRadius: 6, borderWidth: 1, borderColor: '#e2e8f0' }}
-                />
-              ))}
-              {assessment.assessment_photos.length > 3 && (
-                <View style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
-                  <Text style={{ fontSize: 10, color: '#64748b', fontWeight: '700' }}>
-                    +{assessment.assessment_photos.length - 3}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-          {/* Fallback: badge enquanto as URLs carregam */}
-          {thumbUrls.length === 0 && assessment.assessment_photos?.length > 0 && (
-            <Text style={{ color: "#64748b", fontSize: 11, fontWeight: "600" }}>
-              📷 {assessment.assessment_photos.length}
-            </Text>
-          )}
         </View>
 
-        <TouchableOpacity onPress={() => onWhatsApp(assessment)}>
-          <Text style={{ color: "#22c55e", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
-        </TouchableOpacity>
+        {/* Linha 2 — miniaturas (só aparece quando há fotos) */}
+        {thumbUrls.length > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>
+            <Text style={{ color: '#94a3b8', fontSize: 10, fontWeight: '700', marginRight: 2 }}>📷</Text>
+            {thumbUrls.map((uri, i) => (
+              <Image
+                key={i}
+                source={{ uri }}
+                style={{ width: 44, height: 44, borderRadius: 7, borderWidth: 1, borderColor: '#e2e8f0' }}
+              />
+            ))}
+            {assessment.assessment_photos.length > 3 && (
+              <View style={{ width: 44, height: 44, borderRadius: 7, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
+                <Text style={{ fontSize: 11, color: '#475569', fontWeight: '800' }}>
+                  +{assessment.assessment_photos.length - 3}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+        {/* Fallback enquanto as URLs carregam */}
+        {thumbUrls.length === 0 && assessment.assessment_photos?.length > 0 && (
+          <Text style={{ color: "#94a3b8", fontSize: 11, fontWeight: "600", marginTop: 8 }}>
+            📷 {assessment.assessment_photos.length} foto(s)
+          </Text>
+        )}
+
       </View>
     </View>
   );
