@@ -140,12 +140,14 @@ export default function Login() {
 
     if (error) {
       console.log("Signup error:", error.message, error.status);
-      console.log("Setting error message");
-      setMessage(
-        error.message.toLowerCase().includes("already registered")
-          ? "E-mail já cadastrado."
-          : error.message
-      );
+      const msg = error.message.toLowerCase();
+      const friendlyMessage =
+        msg.includes("already registered") || msg.includes("already been registered")
+          ? "E-mail já cadastrado. Tente fazer login."
+          : msg.includes("rate limit") || error.status === 429
+          ? "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+          : error.message;
+      setMessage(friendlyMessage);
       return;
     }
 
