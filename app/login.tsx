@@ -122,9 +122,11 @@ export default function Login() {
   }
 
   async function handleSignup() {
+    console.log("handleSignup started - email:", email, "password length:", password.length);
     setMessage("");
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || password.length < 6) {
+      console.log("Setting validation error message");
       setMessage("E-mail válido e senha com mínimo 6 caracteres são necessários.");
       return;
     }
@@ -134,7 +136,11 @@ export default function Login() {
       password,
     });
 
+    console.log("Supabase signUp result - data:", data, "error:", error);
+
     if (error) {
+      console.log("Signup error:", error.message, error.status);
+      console.log("Setting error message");
       setMessage(
         error.message.toLowerCase().includes("already registered")
           ? "E-mail já cadastrado."
@@ -145,12 +151,14 @@ export default function Login() {
 
     // Confirmação de e-mail ATIVA → session é null, usuário precisa confirmar
     if (!data.session) {
+      console.log("Setting email confirmation message");
       setMessage("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
       return;
     }
 
     // Confirmação de e-mail DESATIVA → session já existe, onAuthStateChange
     // vai disparar automaticamente e redirecionar via detectRole()
+    console.log("handleSignup finished");
   }
 
   async function handleRequestPasswordReset() {
