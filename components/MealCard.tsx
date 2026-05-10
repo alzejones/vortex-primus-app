@@ -28,8 +28,14 @@ interface MealCardProps {
 }
 
 // ------------------------------------------------------------
-// Helper
+// Helpers
 // ------------------------------------------------------------
+function fmt(n: number | null | undefined): string | null {
+  if (n == null || n === 0) return null;
+  const s = parseFloat(n.toFixed(1)).toString(); // remove ".0" desnecessário
+  return s;
+}
+
 function sumMacros(foods: FoodItem[]) {
   return foods.reduce(
     (acc, f) => ({
@@ -69,6 +75,19 @@ export default function MealCard({ meal }: MealCardProps) {
               {food.quantity ? (
                 <Text style={styles.foodQty}>{food.quantity}</Text>
               ) : null}
+              {/* Linha de macros */}
+              {(() => {
+                const p = fmt(food.protein);
+                const c = fmt(food.carbs);
+                const g = fmt(food.fat);
+                const parts = [];
+                if (p) parts.push(`P: ${p}g`);
+                if (c) parts.push(`C: ${c}g`);
+                if (g) parts.push(`G: ${g}g`);
+                return parts.length > 0 ? (
+                  <Text style={styles.foodMacros}>{parts.join(' · ')}</Text>
+                ) : null;
+              })()}
             </View>
             {food.calories != null && (
               <Text style={styles.foodCal}>{parseFloat(food.calories.toFixed(1))} kcal</Text>
@@ -120,6 +139,7 @@ const styles = StyleSheet.create({
   },
   foodName: { fontSize: 14, color: T.t1, fontWeight: "600" },
   foodQty: { fontSize: 12, color: T.t3 },
+  foodMacros: { fontSize: 12, color: T.t3 },
   foodCal: { fontSize: 13, color: T.t2, fontWeight: "700" },
   totalsRow: {
     flexDirection: "row",
