@@ -119,10 +119,10 @@ export function generateDietHTML(data: DietPDFData): string {
               <tr class="totals-row">
                 <td><strong>Total da refeição</strong></td>
                 <td></td>
-                <td class="center"><strong>${totals.calories}</strong></td>
-                <td class="center"><strong>${totals.protein}</strong></td>
-                <td class="center"><strong>${totals.carbs}</strong></td>
-                <td class="center"><strong>${totals.fat}</strong></td>
+                <td class="center"><strong>${Number(totals.calories).toFixed(1)}</strong></td>
+                <td class="center"><strong>${Number(totals.protein).toFixed(1)}</strong></td>
+                <td class="center"><strong>${Number(totals.carbs).toFixed(1)}</strong></td>
+                <td class="center"><strong>${Number(totals.fat).toFixed(1)}</strong></td>
               </tr>
             </tfoot>` : ""}
           </table>
