@@ -125,13 +125,15 @@ export default function Login() {
     setMessage("");
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || password.length < 6) {
-      setMessage("E-mail válido e senha de 6 dígitos são necessários.");
+      setMessage("E-mail válido e senha com mínimo 6 caracteres são necessários.");
       return;
     }
+
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
     });
+
     if (error) {
       setMessage(
         error.message.toLowerCase().includes("already registered")
@@ -140,6 +142,15 @@ export default function Login() {
       );
       return;
     }
+
+    // Confirmação de e-mail ATIVA → session é null, usuário precisa confirmar
+    if (!data.session) {
+      setMessage("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+      return;
+    }
+
+    // Confirmação de e-mail DESATIVA → session já existe, onAuthStateChange
+    // vai disparar automaticamente e redirecionar via detectRole()
   }
 
   async function handleRequestPasswordReset() {
