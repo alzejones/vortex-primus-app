@@ -44,9 +44,14 @@ interface SupplementSearchModalProps {
   onSelect: (item: SelectedSupplement) => void;
 }
 
-function scale(base: number | null, grams: number): number {
-  if (base == null) return 0;
-  return parseFloat(((base * grams) / 100).toFixed(1));
+// Converte valor por porção para qualquer quantidade em gramas
+function scaleFromServing(
+  valuePerServing: number | null,
+  servingSize: number,
+  targetGrams: number
+): number {
+  if (valuePerServing == null || servingSize <= 0) return 0;
+  return parseFloat(((valuePerServing / servingSize) * targetGrams).toFixed(1));
 }
 
 export default function SupplementSearchModal({ visible, onClose, onSelect }: SupplementSearchModalProps) {
@@ -106,10 +111,10 @@ export default function SupplementSearchModal({ visible, onClose, onSelect }: Su
       supplement_id: selected.id,
       name:          selected.name,
       quantity:      `${g}g`,
-      calories:      scale(selected.calories, g),
-      protein:       scale(selected.protein_g, g),
-      carbs:         scale(selected.carbs_g, g),
-      fat:           scale(selected.fat_g, g),
+      calories:      scaleFromServing(selected.calories, selected.serving_size_g, g),
+      protein:       scaleFromServing(selected.protein_g, selected.serving_size_g, g),
+      carbs:         scaleFromServing(selected.carbs_g, selected.serving_size_g, g),
+      fat:           scaleFromServing(selected.fat_g, selected.serving_size_g, g),
     });
     onClose();
   }
@@ -117,10 +122,10 @@ export default function SupplementSearchModal({ visible, onClose, onSelect }: Su
   const g = parseFloat(grams.replace(",", ".")) || 0;
   const preview = selected
     ? {
-        calories: scale(selected.calories, g),
-        protein:  scale(selected.protein_g, g),
-        carbs:    scale(selected.carbs_g, g),
-        fat:      scale(selected.fat_g, g),
+        calories: scaleFromServing(selected.calories, selected.serving_size_g, g),
+        protein:  scaleFromServing(selected.protein_g, selected.serving_size_g, g),
+        carbs:    scaleFromServing(selected.carbs_g, selected.serving_size_g, g),
+        fat:      scaleFromServing(selected.fat_g, selected.serving_size_g, g),
       }
     : null;
 
@@ -187,9 +192,27 @@ export default function SupplementSearchModal({ visible, onClose, onSelect }: Su
             Porção padrão: {selected.serving_size_g}g
           </Text>
         </View>
-        <Text style={styles.selectedMeta}>
-          Por 100g: {selected.calories ?? "—"} kcal · P {selected.protein_g ?? "—"}g · C {selected.carbs_g ?? "—"}g · G {selected.fat_g ?? "—"}g
-        </Text>
+        {/* Card MACROS POR PORÇÃO */}
+        <View style={styles.macroCard}>
+          <Text style={styles.macroCardTitle}>MACROS POR PORÇÃO ({selected.serving_size_g}G)</Text>
+          <View style={styles.macroRow}>
+            <MacroChip label="kcal"  value={(selected.calories ?? 0).toFixed(1)}  color={T.green} />
+            <MacroChip label="Prot." value={(selected.protein_g ?? 0).toFixed(1)} color={"#3B82F6"} />
+            <MacroChip label="Carbs" value={(selected.carbs_g ?? 0).toFixed(1)}   color={T.orange} />
+            <MacroChip label="Gord." value={(selected.fat_g ?? 0).toFixed(1)}     color={T.red} />
+          </View>
+        </View>
+
+        {/* Card POR 100G */}
+        <View style={styles.macroCard}>
+          <Text style={styles.macroCardTitle}>POR 100G</Text>
+          <View style={styles.macroRow}>
+            <MacroChip label="kcal"  value={scaleFromServing(selected.calories, selected.serving_size_g, 100).toFixed(1)}  color={T.green} />
+            <MacroChip label="Prot." value={scaleFromServing(selected.protein_g, selected.serving_size_g, 100).toFixed(1)} color={"#3B82F6"} />
+            <MacroChip label="Carbs" value={scaleFromServing(selected.carbs_g, selected.serving_size_g, 100).toFixed(1)}   color={T.orange} />
+            <MacroChip label="Gord." value={scaleFromServing(selected.fat_g, selected.serving_size_g, 100).toFixed(1)}     color={T.red} />
+          </View>
+        </View>
 
         <Text style={styles.qtyLabel}>Quantidade (g)</Text>
         <TextInput
@@ -258,6 +281,15 @@ function PreviewChip({ label, value, color }: { label: string; value: number; co
     <View style={[styles.previewChip, { borderColor: color }]}>
       <Text style={[styles.previewChipValue, { color }]}>{value}</Text>
       <Text style={styles.previewChipLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function MacroChip({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <View style={[styles.macroChip, { borderColor: color }]}>
+      <Text style={[styles.macroChipValue, { color }]}>{value}</Text>
+      <Text style={styles.macroChipLabel}>{label}</Text>
     </View>
   );
 }
@@ -340,6 +372,28 @@ const styles = StyleSheet.create({
   },
   previewChipValue: { fontSize: 16, fontWeight: "800" },
   previewChipLabel: { fontSize: 10, color: T.t3 },
+
+  macroCard: {
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(245,158,11,0.2)",
+  },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.orange, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroRow: { flexDirection: "row", justifyContent: "space-between" },
+  macroChip: {
+    flex: 1,
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 8,
+    marginHorizontal: 2,
+    backgroundColor: T.surface,
+  },
+  macroChipValue: { fontSize: 14, fontWeight: "800" },
+  macroChipLabel: { fontSize: 9, color: T.t3 },
 
   confirmBtn: {
     backgroundColor: T.orange,
