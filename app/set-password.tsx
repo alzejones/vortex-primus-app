@@ -75,6 +75,12 @@ export default function SetPassword() {
         return;
       }
 
+      // Persiste a sessão explicitamente (necessário no Vercel/web)
+      await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+
       const user = data.session.user;
       const clientId = user.user_metadata?.client_id as string | undefined;
       if (clientId && user.user_metadata?.role === 'client') {
