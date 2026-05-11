@@ -82,6 +82,24 @@ Arquivo de contexto para Claude Code. Leia este arquivo antes de qualquer ação
 - As 16 migrations Git contêm apenas `ALTER TABLE` — o schema base (`CREATE TABLE`) foi reconstruído manualmente em `00_base_schema.sql`
 - Auth em três níveis: `admin` / `trainer` / `client`
 
+### Recuperação pós-outage — correções aplicadas em 10/05/2026
+
+**Divergências encontradas e corrigidas no banco reconstruído (rwyyvilshrjhfwlzudqg):**
+
+- `trainers`: coluna `plan_id uuid REFERENCES plans(id)` estava ausente → adicionada + todos os trainers existentes atualizados para o plano Teste (id: 9d8a50e0-007a-4e5f-ab1c-3641629204a7)
+- `plans`: coluna `stripe_price_id text` estava ausente → adicionada
+- `plans`: RLS `plans_trainer_access` bloqueava SELECT para outros trainers → removida e substituída por `plans_select_authenticated` (authenticated, USING true)
+- `plans`: nomes, preços e stripe_price_ids atualizados:
+  - Plano Iniciante → R$14,90/mês → price_1TIXIy2HlySFSGvPVYuorHXs
+  - Avançado → R$24,90/mês → price_1TIXL72HlySFSGvPThHoZmT1
+  - Escalando 🚀🚀🚀 → R$39,90/mês → price_1TIXOj2HlySFSGvPdGX9EBKF
+  - Teste → R$0 → sem stripe_price_id
+- Edge Function `stripe-checkout`: secret STRIPE_SECRET_KEY estava ausente no novo projeto → reconfigurada via CLI
+
+**Arquivos gerados:**
+- supabase/migrations/*_fix_post_recovery.sql
+- supabase/backups/backup_20260510_232646.sql
+
 ### Tabelas principais
 | Tabela | Descrição |
 |---|---|
