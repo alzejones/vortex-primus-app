@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import FoodSearchModal, { SelectedFood } from "../../components/FoodSearchModal";
 import MacroBar from "../../components/MacroBar";
+import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import SupplementSearchModal, { SelectedSupplement } from "../../components/SupplementSearchModal";
 import { useTrainer } from "../../hooks/useTrainer";
 import { supabase } from "../../lib/supabase";
@@ -744,6 +745,8 @@ export default function DietPlanForm() {
         <TouchableOpacity style={styles.addMealBtn} onPress={addMeal}>
           <Text style={styles.addMealBtnText}>+ Adicionar Refeição</Text>
         </TouchableOpacity>
+
+        <ScienceReferencesModal />
 
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
           <LinearGradient {...GradientPrimary} style={styles.saveBtnGradient}>
