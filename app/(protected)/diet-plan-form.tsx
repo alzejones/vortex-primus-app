@@ -89,6 +89,7 @@ export default function DietPlanForm() {
   const isEditing = !!planId;
 
   const { trainerId, loadingTrainer } = useTrainer();
+  const [userRole, setUserRole] = useState<'trainer' | 'client' | null>(null);
 
   const [loading, setLoading]     = useState(isEditing);
   const [saving, setSaving]       = useState(false);
@@ -128,6 +129,13 @@ export default function DietPlanForm() {
         }
       });
   }, [clientId]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const role = data.user?.user_metadata?.role;
+      setUserRole(role === 'client' ? 'client' : 'trainer');
+    });
+  }, []);
 
   async function loadAssessment(clientData: any) {
     const { data: assessments } = await supabase
@@ -340,8 +348,12 @@ export default function DietPlanForm() {
       setStatusMsg({ text: "Informe um título para o plano.", type: "error" });
       return;
     }
-    if (!trainerId) {
+    if (!trainerId && userRole === 'trainer') {
       setStatusMsg({ text: "Perfil de treinador não carregado.", type: "error" });
+      return;
+    }
+    if (!isEditing && userRole === 'client') {
+      setStatusMsg({ text: "Clientes não podem criar novos planos.", type: "error" });
       return;
     }
 
@@ -430,7 +442,7 @@ export default function DietPlanForm() {
   // ------------------------------------------------------------
   // Render
   // ------------------------------------------------------------
-  if (loading || loadingTrainer) {
+  if (loading || (userRole === 'trainer' && loadingTrainer)) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={T.green} />
