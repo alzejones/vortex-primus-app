@@ -381,13 +381,13 @@ export default function ClientDietPlanForm() {
 
       for (let mi = 0; mi < meals.length; mi++) {
         const meal = meals[mi];
-        if (!meal.name.trim()) continue;
+        const mealName = meal.name.trim() || `Refeição ${mi + 1}`;
 
         const { data: mealData, error: mealErr } = await supabase
           .from("meal_plan_meals")
           .insert({
             meal_plan_id:    currentPlanId,
-            name:            meal.name.trim(),
+            name:            mealName,
             time_suggestion: meal.time_suggestion.trim() || null,
             order_index:     mi,
           })
