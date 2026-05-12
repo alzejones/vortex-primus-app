@@ -60,18 +60,24 @@ Arquivo de contexto para Claude Code. Leia este arquivo antes de qualquer ação
 - **Dependências adicionadas:** `expo-image-picker`, `expo-image-manipulator`, `expo-file-system`, `expo-media-library`, `expo-sharing`
 
 ### Dieta
-- Banco TACO com 597 alimentos brasileiros
-- Cálculo de macros via `dietCalculations.ts`
-- Componentes: `MacroBar`, `MealCard`, `FoodSearchModal`
-- Export PDF com padrão `.web.tsx`
-- Sistema de convite de clientes via WhatsApp/email
-- Geração de dieta por IA (exibe "em breve" — aguardando créditos de API)
+- **Protocolo High Protein** — `utils/dietCalculations.ts` com valores baseados em evidências científicas:
+  - Emagrecimento: 2.7 g/kg LBM | Hipertrofia: 2.8 g/kg LBM
+  - Manutenção: 2.2 g/kg LBM | Saúde: 2.0 g/kg LBM | Performance: 2.6 g/kg LBM
+- **Banco TACO** com 597 alimentos brasileiros
+- **Componentes:** `MacroBar`, `MealCard`, `FoodSearchModal`, `SupplementSearchModal`
+- **Suporte a suplementos Herbalife** em todos os formulários (trainer + client)
+- **ScienceReferencesModal** — embasamento científico disponível em todas as telas de dieta
+- **Export PDF** com padrão `.web.tsx`
+- **Sistema de convite** de clientes via WhatsApp/email
+- **Geração de dieta por IA** (exibe "em breve" — aguardando créditos de API)
+- **Proteções de segurança:** fallback contra NaN em cálculos, validação de roles
 
 ### Suplementos
-- Catálogo Herbalife Brasil com 34 produtos
-- Tabela `supplements` no Supabase com RLS
-- Tela CRUD em `app/(protected)/supplements.tsx`
-- Aba 💊 "Suplem." no TabBar
+- **Catálogo Herbalife Brasil** com 34 produtos
+- **Tabela `supplements`** no Supabase com RLS
+- **Integração completa** nos formulários de dieta (trainer + client)
+- **Tela CRUD** em `app/(protected)/supplements.tsx`
+- **Aba 💊 "Suplem."** no TabBar
 
 ---
 
@@ -169,5 +175,9 @@ Arquivo de contexto para Claude Code. Leia este arquivo antes de qualquer ação
 |---|---|---|
 | `delete-client` retornando 401 | Frontend chamava `.delete()` direto na tabela em vez de `supabase.functions.invoke('delete-client')` | ✅ Corrigido em `clients.tsx` |
 | Tela `set-password` mostrando "link inválido" | Token de convite chegava no hash da URL (`window.location.hash`), não nos query params | ✅ Corrigido com fallback `URLSearchParams` |
+| "Erro ao salvar a senha" em set-password | `verifyOtp()` não persistia sessão automaticamente no ambiente Vercel/web | ✅ Corrigido com `setSession()` explícito |
+| Clientes não viam formulário diet-plan-form | `useTrainer()` com `loadingTrainer=true` bloqueava render para usuários com role='client' | ✅ Corrigido com detecção de role |
+| Tela branca em diet.tsx após ScienceReferencesModal | Interface `DietCalculationResult` alterada quebrou propriedade `macros` | ✅ Corrigido restaurando interface esperada |
+| NaN em "Metas Calculadas" | Falta de fallback para `ACTIVITY_MULTIPLIERS` e valores inválidos de body_fat | ✅ Corrigido com validações e fallbacks |
 | Trigger `handle_new_user()` | Erro de UUID null em novos usuários | ✅ Corrigido |
 | Query `loadProfile()` | Referenciava coluna inexistente `plan_status` | ✅ Corrigido |
