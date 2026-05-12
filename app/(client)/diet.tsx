@@ -18,6 +18,7 @@ import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import AIDietPDF from "../../components/AIDietPDF";
 import DietPlanPDF from "../../components/DietPlanPDF";
+import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import { supabase } from "../../lib/supabase";
 import { GradientSuccess } from "../../utils/gradients";
 import { T } from "../../utils/theme";
@@ -405,6 +406,8 @@ export default function ClientDietView() {
         </View>
       )}
 
+      {dietResult && <ScienceReferencesModal />}
+
       {/* Botão Gerar com IA */}
       {lastBio !== null && (
         <>
@@ -525,15 +528,11 @@ export default function ClientDietView() {
       ) : null}
 
       {/* Histórico de Refeições Registradas */}
-      <View style={[styles.prefCard, { marginTop: 16 }]}>
-        <Text style={styles.prefTitle}>📖 Histórico de Refeições</Text>
-        <Text style={styles.prefSub}>Últimas 10 refeições analisadas por foto.</Text>
-        {mealLogs.length === 0 ? (
-          <Text style={{ color: T.t3, fontSize: 13, fontStyle: "italic" }}>
-            Nenhuma refeição registrada ainda. Use o botão de câmera para começar.
-          </Text>
-        ) : (
-          mealLogs.map((log) => {
+      {mealLogs.length > 0 && (
+        <View style={[styles.prefCard, { marginTop: 16 }]}>
+          <Text style={styles.prefTitle}>📖 Diário Alimentar</Text>
+          <Text style={styles.prefSub}>Últimas 10 refeições analisadas por foto.</Text>
+          {mealLogs.map((log) => {
             const dt = new Date(log.consumed_at);
             const dateStr = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
             const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -549,9 +548,9 @@ export default function ClientDietView() {
                 {log.notes ? <Text style={styles.mealLogNotes}>{log.notes}</Text> : null}
               </View>
             );
-          })
-        )}
-      </View>
+          })}
+        </View>
+      )}
 
       {/* Seção de Preferências */}
       <View style={styles.prefCard}>

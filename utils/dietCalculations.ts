@@ -109,18 +109,19 @@ export function calculateDietPlan(params: {
   }
 
   // 2. Calcular TDEE (BMR × multiplicador de atividade)
-  const tdee = bmr * ACTIVITY_MULTIPLIERS[activity];
+  const multiplier = ACTIVITY_MULTIPLIERS[activity] ?? 1.375;
+  const tdee = bmr * multiplier;
 
   // 3. Calcular calorias alvo (TDEE + ajuste por objetivo)
   const targetCalories = tdee + CALORIE_ADJUSTMENT[objective];
 
   // 4. Calcular massa magra (LBM)
-  const leanBodyMass = weight_kg * (1 - body_fat_percent / 100);
+  const lbm = weight_kg * (1 - Math.min(Math.max(body_fat_percent, 0), 99) / 100);
 
   // 5. Calcular macronutrientes
 
   // Proteína: baseada na LBM
-  const proteinG = leanBodyMass * PROTEIN_PER_KG_LBM[objective];
+  const proteinG = lbm * PROTEIN_PER_KG_LBM[objective];
   const proteinCal = proteinG * 4;
 
   // Gordura: 25% das calorias totais
@@ -134,7 +135,7 @@ export function calculateDietPlan(params: {
   return {
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),
-    lean_mass: parseFloat(leanBodyMass.toFixed(1)),
+    lean_mass: parseFloat(lbm.toFixed(1)),
     macros: {
       calories: Math.round(targetCalories),
       protein: Math.round(proteinG),
