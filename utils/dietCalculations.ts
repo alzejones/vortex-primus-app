@@ -8,15 +8,30 @@ export type Objective = "emagrecimento" | "hipertrofia" | "manutencao" | "saude"
 export type ActivityLevel = "sedentario" | "leve" | "moderado" | "intenso" | "muito_intenso";
 
 export interface DietCalculationResult {
-  bmr: number;
-  tdee: number;
-  targetCalories: number;
-  proteinG: number;
-  fatG: number;
-  carbsG: number;
-  proteinCal: number;
-  fatCal: number;
-  carbsCal: number;
+  bmr:       number;
+  tdee:      number;
+  lean_mass: number;
+  macros: {
+    calories: number;
+    protein:  number;
+    carbs:    number;
+    fat:      number;
+  };
+}
+
+export interface GeneratedPlan {
+  days: Array<{
+    day: string;
+    meals: Array<{
+      name: string;
+      foods: string[];
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+    }>;
+  }>;
+  observations: string;
 }
 
 // ============================================================
@@ -119,12 +134,12 @@ export function calculateDietPlan(params: {
   return {
     bmr: Math.round(bmr),
     tdee: Math.round(tdee),
-    targetCalories: Math.round(targetCalories),
-    proteinG: Math.round(proteinG),
-    fatG: Math.round(fatG),
-    carbsG: Math.round(carbsG),
-    proteinCal: Math.round(proteinCal),
-    fatCal: Math.round(fatCal),
-    carbsCal: Math.round(carbsCal),
+    lean_mass: parseFloat(leanBodyMass.toFixed(1)),
+    macros: {
+      calories: Math.round(targetCalories),
+      protein: Math.round(proteinG),
+      carbs: Math.round(carbsG),
+      fat: Math.round(fatG),
+    },
   };
 }
