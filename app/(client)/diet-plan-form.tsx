@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import FoodSearchModal, { SelectedFood } from "../../components/FoodSearchModal";
 import MacroBar from "../../components/MacroBar";
+import SupplementSearchModal, { SelectedSupplement } from "../../components/SupplementSearchModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientSuccess } from "../../utils/gradients";
@@ -31,6 +32,7 @@ interface FoodEntry {
   _key: string;
   id?: string;
   food_id?: string;
+  supplement_id?: string;
   name: string;
   quantity: string;
   calories: string;
@@ -100,6 +102,7 @@ export default function ClientDietPlanForm() {
   const [meals, setMeals]         = useState<MealEntry[]>([emptyMeal()]);
 
   const [foodModalMealKey, setFoodModalMealKey] = useState<string | null>(null);
+  const [supplementModalMealKey, setSupplementModalMealKey] = useState<string | null>(null);
 
   const preEditRef = useRef<Map<string, {
     qty: string; calories: string; protein: string; carbs: string; fat: string;
@@ -195,7 +198,7 @@ export default function ClientDietPlanForm() {
         meal_plan_meals (
           id, name, time_suggestion, order_index,
           meal_plan_foods (
-            id, food_id, name, quantity, calories, protein, carbs, fat, order_index
+            id, food_id, supplement_id, name, quantity, calories, protein, carbs, fat, order_index
           )
         )
       `)
@@ -224,6 +227,7 @@ export default function ClientDietPlanForm() {
             _key: nextKey(),
             id: f.id,
             food_id: f.food_id || undefined,
+            supplement_id: f.supplement_id || undefined,
             name: f.name,
             quantity: f.quantity || "",
             calories: f.calories != null ? String(f.calories) : "",
@@ -305,6 +309,30 @@ export default function ClientDietPlanForm() {
     setFoodModalMealKey(null);
   }
 
+  function handleSupplementSelected(mealKey: string, supplement: SelectedSupplement) {
+    setMeals((prev) =>
+      prev.map((m) =>
+        m._key !== mealKey ? m : {
+          ...m,
+          foods: [
+            ...m.foods,
+            {
+              _key:          nextKey(),
+              supplement_id: supplement.supplement_id,
+              name:          supplement.name,
+              quantity:      supplement.quantity,
+              calories:      String(supplement.calories),
+              protein:       String(supplement.protein),
+              carbs:         String(supplement.carbs),
+              fat:           String(supplement.fat),
+            },
+          ],
+        }
+      )
+    );
+    setSupplementModalMealKey(null);
+  }
+
   function toNum(val: string): number | null {
     const n = parseFloat(val.replace(",", "."));
     return isNaN(n) ? null : parseFloat(n.toFixed(1));
@@ -372,9 +400,10 @@ export default function ClientDietPlanForm() {
         if (validFoods.length === 0) continue;
 
         const foodRows = validFoods.map((f, fi) => ({
-          meal_id:     mealData.id,
-          food_id:     f.food_id || null,
-          name:        f.name.trim(),
+          meal_id:       mealData.id,
+          food_id:       f.food_id || null,
+          supplement_id: f.supplement_id || null,
+          name:          f.name.trim(),
           quantity:    f.quantity.trim() || null,
           calories:    toNum(f.calories),
           protein:     toNum(f.protein),
@@ -600,6 +629,12 @@ export default function ClientDietPlanForm() {
                   >
                     <Text style={styles.tacoBtnText}>🔍 TACO</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.supplementBtn}
+                    onPress={() => setSupplementModalMealKey(meal._key)}
+                  >
+                    <Text style={styles.supplementBtnText}>🏃‍♂️ Herbalife</Text>
+                  </TouchableOpacity>
                 </View>
 
                 <View style={styles.foodRow}>
@@ -733,6 +768,17 @@ export default function ClientDietPlanForm() {
           if (foodModalMealKey) handleFoodSelected(foodModalMealKey, food);
         }}
       />
+      <SupplementSearchModal
+        visible={supplementModalMealKey !== null}
+        onClose={() => setSupplementModalMealKey(null)}
+        onSelect={(supplement) => {
+          if (supplementModalMealKey) {
+            const key = supplementModalMealKey;
+            setSupplementModalMealKey(null);
+            handleSupplementSelected(key, supplement);
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -791,6 +837,8 @@ const styles = StyleSheet.create({
 
   tacoBtn: { backgroundColor: T.surfaceAlt, borderWidth: 1, borderColor: T.green, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 12, marginBottom: 12, justifyContent: "center" },
   tacoBtnText: { color: T.green, fontWeight: "800", fontSize: 12 },
+  supplementBtn: { backgroundColor: "rgba(245,158,11,0.1)", borderWidth: 1, borderColor: T.orange, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 12, marginBottom: 12, justifyContent: "center" },
+  supplementBtnText: { color: T.orange, fontWeight: "800", fontSize: 12 },
 
   addFoodBtn: { borderWidth: 1, borderColor: T.green, borderRadius: 10, padding: 10, alignItems: "center", borderStyle: "dashed" },
   addFoodBtnText: { color: T.green, fontWeight: "700", fontSize: 14 },
