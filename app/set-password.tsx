@@ -13,12 +13,10 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
-import { useAuth } from "../contexts/AuthContext";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
 
 export default function SetPassword() {
-  const { role } = useAuth();
   // ─── Responsividade ───────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
     () => Dimensions.get('window').width || 375
@@ -44,7 +42,6 @@ export default function SetPassword() {
   const [loading, setLoading]         = useState(false);
   const [ready, setReady]             = useState(false);
   const [invalidLink, setInvalidLink] = useState(false);
-  const [passwordSet, setPasswordSet] = useState(false);
 
   const confirmRef = useRef<TextInput>(null);
 
@@ -101,12 +98,6 @@ export default function SetPassword() {
     setup();
   }, []);
 
-  useEffect(() => {
-    if (passwordSet && role === "client") {
-      router.replace("/(client)/diet" as any);
-    }
-  }, [passwordSet, role]);
-
   async function handleSetPassword() {
     setMessage("");
     setIsSuccess(false);
@@ -131,7 +122,23 @@ export default function SetPassword() {
 
     setIsSuccess(true);
     setMessage("Senha definida com sucesso! Entrando...");
-    setPasswordSet(true);
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (currentUser?.id) {
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      setTimeout(() => {
+        if (clientData) {
+          router.replace("/(client)/diet" as any);
+        } else {
+          router.replace(`/login?email=${encodeURIComponent(email)}` as any);
+        }
+      }, 1200);
+    }
   }
 
   if (invalidLink) {
