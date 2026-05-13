@@ -62,6 +62,40 @@ export default function SetPassword() {
         if (!tokenType) tokenType = hashParams.get('type');
       }
 
+      // Fallback para fluxo WhatsApp: Supabase redireciona com access_token no hash
+      if ((!tokenHash) && typeof window !== 'undefined' && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const hashType = hashParams.get('type');
+
+        if (accessToken && refreshToken && hashType === 'invite') {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (error || !data.session?.user) {
+            setInvalidLink(true);
+            return;
+          }
+
+          const user = data.session.user;
+          const clientId = user.user_metadata?.client_id as string | undefined;
+          if (clientId && user.user_metadata?.role === 'client') {
+            await supabase
+              .from('clients')
+              .update({ user_id: user.id })
+              .eq('id', clientId)
+              .is('user_id', null);
+          }
+
+          setEmail(user.email ?? '');
+          setReady(true);
+          return;
+        }
+      }
+
       if (!tokenHash || tokenType !== 'invite') {
         setInvalidLink(true);
         return;
