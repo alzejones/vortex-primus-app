@@ -13,6 +13,7 @@ type AuthContextType = {
   debugMessages: string[];
   addDebug: (msg: string) => void;
   signOut: () => Promise<void>;
+  refreshRole: () => Promise<UserRole>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   debugMessages: [],
   addDebug: () => {},
   signOut: async () => {},
+  refreshRole: async () => null,
 });
 
 // 🚀 Hook para usar o contexto
@@ -61,6 +63,18 @@ export const AuthProvider = ({ children }: any) => {
   const addDebug = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString();
     setDebugMessages(prev => [...prev, `${timestamp}: ${msg}`]);
+  };
+
+  const refreshRole = async (): Promise<UserRole> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      const detectedRole = await detectRole(user.id);
+      if (detectedRole !== null) {
+        setRole(detectedRole);
+        return detectedRole;
+      }
+    }
+    return null;
   };
 
   // 🧠 PEGAR SESSÃO INICIAL E OUVIR MUDANÇAS
@@ -164,7 +178,7 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, role, signingOut, debugMessages, addDebug, signOut }}>
+    <AuthContext.Provider value={{ session, loading, role, signingOut, debugMessages, addDebug, signOut, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );

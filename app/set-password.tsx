@@ -15,6 +15,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function SetPassword() {
   // ─── Responsividade ───────────────────────────────
@@ -44,6 +45,7 @@ export default function SetPassword() {
   const [invalidLink, setInvalidLink] = useState(false);
 
   const confirmRef = useRef<TextInput>(null);
+  const { refreshRole } = useAuth();
 
   const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
 
@@ -120,9 +122,6 @@ export default function SetPassword() {
       return;
     }
 
-    setIsSuccess(true);
-    setMessage("Senha definida com sucesso! Entrando...");
-
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser?.id) {
       const { data: clientData } = await supabase
@@ -131,13 +130,14 @@ export default function SetPassword() {
         .eq('user_id', currentUser.id)
         .maybeSingle();
 
-      setTimeout(() => {
-        if (clientData) {
+      if (clientData) {
+        setIsSuccess(true);
+        setMessage("Senha definida com sucesso! Entrando...");
+        await refreshRole();
+        setTimeout(() => {
           router.replace("/(client)/diet" as any);
-        } else {
-          router.replace(`/login?email=${encodeURIComponent(email)}` as any);
-        }
-      }, 1200);
+        }, 1200);
+      }
     }
   }
 
