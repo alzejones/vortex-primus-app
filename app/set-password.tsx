@@ -123,8 +123,17 @@ export default function SetPassword() {
     setIsSuccess(true);
     setMessage("Senha definida com sucesso! Entrando...");
 
+    // Verificar se a sessão está ativa após updateUser()
+    const { data: sessionData } = await supabase.auth.getSession();
+    
     setTimeout(() => {
-      router.replace("/(client)/diet" as any);
+      if (sessionData?.session) {
+        // Sessão ativa: redirecionar para área autenticada
+        router.replace("/(client)/diet" as any);
+      } else {
+        // Caso inesperado: redirecionar para login com e-mail preenchido
+        router.replace(`/login?email=${encodeURIComponent(email)}` as any);
+      }
     }, 1200);
   }
 
