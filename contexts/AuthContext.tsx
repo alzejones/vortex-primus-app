@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: any) => {
           if (event === "USER_UPDATED") {
             setSession(session);
             // Detecta role se ainda não foi detectado (ex: após reset de senha)
-            if (session?.user?.id && role === null) {
+            if (session?.user?.id) {
               const detectedRole = await detectRole(session.user.id);
               if (detectedRole !== null) setRole(detectedRole);
             }
