@@ -154,7 +154,11 @@ export default function AssessmentDetailsModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={{ flexGrow: 1 }}
+            style={{ flex: 1 }}
+          >
             <View ref={viewRef} collapsable={false} style={{ backgroundColor: T.card, padding: 12, borderRadius: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: T.t1, textAlign: 'center', marginBottom: 15, textTransform: 'uppercase' }}>
                 Vortex Primus - Evolução de {client?.name?.split(' ')[0]}
