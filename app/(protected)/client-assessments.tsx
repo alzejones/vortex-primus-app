@@ -144,7 +144,7 @@ export default function ClientAssessments() {
   const viewRef = useRef(null);
 
   async function handleShareLink() {
-    const assessmentLink = `https://vortex-primus-app.vercel.app/evolution/${clientId}`;
+    const assessmentLink = `https://vortex-primus.vercel.app/evolution/${clientId}`;
     const cleanPhone = client?.phone ? client.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     const firstName = client?.name ? client.name.split(' ')[0] : 'Aluno';
