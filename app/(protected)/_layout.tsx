@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import TabBar from '../../components/TabBar';
 import { T } from '../../utils/theme';
+import SupportButton from '../../components/SupportButton';
 
 export default function ProtectedLayout() {
   const insets = useSafeAreaInsets();
@@ -42,6 +43,7 @@ export default function ProtectedLayout() {
       <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
         <TabBar />
       </View>
+      <SupportButton bottom={72 + insets.bottom} />
     </View>
   );
 }

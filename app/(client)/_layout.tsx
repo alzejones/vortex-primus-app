@@ -2,6 +2,7 @@ import { Redirect, Slot } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
 import { T } from "../../utils/theme";
+import SupportButton from "../../components/SupportButton";
 
 export default function ClientLayout() {
   const { session, loading, role } = useAuth();
@@ -18,6 +19,7 @@ export default function ClientLayout() {
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
       <Slot />
+      <SupportButton bottom={24} />
     </View>
   );
 }
