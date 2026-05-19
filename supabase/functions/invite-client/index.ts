@@ -131,10 +131,23 @@ serve(async (req) => {
       throw new Error(friendly ?? "Erro ao gerar link de convite: " + linkError.message)
     }
 
-    const invite_link = linkData?.properties?.action_link
-    if (!invite_link) {
+    const action_link = linkData?.properties?.action_link
+    if (!action_link) {
       console.error('[invite-client] ERRO: action_link ausente na resposta do generateLink')
       throw new Error("Erro ao gerar link de convite. Tente novamente.")
+    }
+
+    // Extrai o token do link do Supabase e monta URL do app
+    // Isso evita que o preview do WhatsApp consuma o token (uso único)
+    let invite_link = action_link
+    try {
+      const actionUrl = new URL(action_link)
+      const tokenFromLink = actionUrl.searchParams.get('token')
+      if (tokenFromLink) {
+        invite_link = `https://vortex-primus.vercel.app/set-password?token_hash=${tokenFromLink}&type=invite`
+      }
+    } catch (_) {
+      // fallback: usa o action_link original
     }
 
     console.log('[invite-client] Link de convite gerado com sucesso para:', client.email)
