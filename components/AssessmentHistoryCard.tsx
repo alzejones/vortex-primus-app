@@ -12,6 +12,8 @@ interface AssessmentHistoryCardProps {
   onDelete: (id: string) => void;
   onWhatsApp: (assessment: any) => void;
   onPhysicalTests: (assessment: any) => void;
+  onExportAI?: (assessment: any) => void;
+  isLatest?: boolean;
   getSignedUrl?: (path: string) => Promise<string | null>;
 }
 
@@ -25,6 +27,8 @@ export default function AssessmentHistoryCard({
   onDelete,
   onWhatsApp,
   onPhysicalTests,
+  onExportAI,
+  isLatest,
   getSignedUrl
 }: AssessmentHistoryCardProps) {
   
@@ -161,9 +165,16 @@ export default function AssessmentHistoryCard({
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity onPress={() => onWhatsApp(assessment)}>
-            <Text style={{ color: "#22c55e", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {isLatest && onExportAI && (
+              <TouchableOpacity onPress={() => onExportAI(assessment)}>
+                <Text style={{ color: "#7c3aed", fontSize: 13, fontWeight: "800" }}>🤖 IA</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => onWhatsApp(assessment)}>
+              <Text style={{ color: "#22c55e", fontSize: 13, fontWeight: "800" }}>📲 WhatsApp</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Linha 2 — miniaturas (só aparece quando há fotos) */}

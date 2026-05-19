@@ -24,6 +24,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { LineChart } from "react-native-gifted-charts";
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
+import AIReportModal from '../../components/AIReportModal';
 import EvolutionPanel from '../../components/EvolutionPanel';
 import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPanel';
 import TrunkMeasurementsChart from '../../components/TrunkMeasurementsChart';
@@ -62,6 +63,8 @@ export default function ClientAssessments() {
 
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [aiReportVisible, setAiReportVisible] = useState(false);
+  const [assessmentForReport, setAssessmentForReport] = useState<any>(null);
 
   const [pendingPhotos, setPendingPhotos] = useState<{ uri: string; label: string }[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -873,6 +876,8 @@ export default function ClientAssessments() {
                   onDelete={deleteAssessment}
                   onWhatsApp={handleSendWhatsApp}
                   onPhysicalTests={() => handlePhysicalTests(assessment)}
+                  isLatest={index === 0}
+                  onExportAI={(a) => { setAssessmentForReport(a); setAiReportVisible(true); }}
                   getSignedUrl={getSignedUrl}
                 />
               );
@@ -882,7 +887,13 @@ export default function ClientAssessments() {
           </KeyboardAvoidingView>
         </SafeAreaView>
 
-        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} />
+        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} onExportAI={() => { setViewModalVisible(false); setAssessmentForReport(selectedAssessment); setAiReportVisible(true); }} />
+        <AIReportModal
+          visible={aiReportVisible}
+          onClose={() => { setAiReportVisible(false); setAssessmentForReport(null); }}
+          client={client}
+          assessment={assessmentForReport ?? assessments[0]}
+        />
       </View>
     </View>
   );

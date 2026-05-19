@@ -25,6 +25,7 @@ interface AssessmentDetailsModalProps {
   chartLabels: string[];
   viewRef: any;
   onShare: () => void;
+  onExportAI?: () => void;
   calculateAge: (date: any) => any;
   getColor: (val: any, type: any) => any;
   formatValue: (val: any) => any;
@@ -124,6 +125,7 @@ export default function AssessmentDetailsModal({
   chartLabels,
   viewRef,
   onShare,
+  onExportAI,
   calculateAge,
   getColor,
   formatValue,
@@ -363,6 +365,14 @@ export default function AssessmentDetailsModal({
             </View>
             <View style={{ marginTop: 16, paddingBottom: 20 }}>
               <TouchableOpacity style={[styles.button, { backgroundColor: '#2563eb', paddingVertical: 14, borderRadius: 12 }]} onPress={onShare}><Text style={{ color: "#fff", textAlign: "center", fontWeight: '900', fontSize: 15, textTransform: 'uppercase' }}>📸 Compartilhar Evolução</Text></TouchableOpacity>
+              {onExportAI && (
+                <TouchableOpacity
+                  style={[styles.button, { marginTop: 12, backgroundColor: '#7c3aed', paddingVertical: 14, borderRadius: 12 }]}
+                  onPress={onExportAI}
+                >
+                  <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '900', fontSize: 15, textTransform: 'uppercase' }}>🤖 Relatório para IA</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={[styles.button, { marginTop: 12, backgroundColor: '#f1f5f9', paddingVertical: 14, borderRadius: 12 }]} onPress={onClose}><Text style={{ color: "#475569", textAlign: "center", fontWeight: '800', fontSize: 15 }}>FECHAR PAINEL</Text></TouchableOpacity>
             </View>
           </ScrollView>
