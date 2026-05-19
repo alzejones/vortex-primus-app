@@ -90,57 +90,72 @@ export const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
 // ============================================================
 
 export function calculateDietPlan(params: {
-  weight_kg: number;
-  height_cm: number;
-  age: number;
-  gender: "M" | "F";
+  weight_kg:        number;
+  height_cm:        number;
+  age:              number;
+  gender:           "M" | "F";
   body_fat_percent: number;
-  activity: ActivityLevel;
-  objective: Objective;
+  activity:         ActivityLevel;
+  objective:        Objective;
+  measured_bmr?:    number; // BMR medido pela bioimpedância (opcional, tem prioridade)
 }): DietCalculationResult {
-  const { weight_kg, height_cm, age, gender, body_fat_percent, activity, objective } = params;
+  const { weight_kg, height_cm, age, gender, body_fat_percent, activity, objective, measured_bmr } = params;
 
-  // 1. Calcular BMR usando Mifflin-St Jeor (1990)
+  // 1. BMR — usa o valor medido pela bioimpedância se disponível, senão Mifflin-St Jeor (1990)
   let bmr: number;
-  if (gender === "M") {
+  if (measured_bmr && measured_bmr > 0) {
+    bmr = measured_bmr;
+  } else if (gender === "M") {
     bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5;
   } else {
     bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161;
   }
 
-  // 2. Calcular TDEE (BMR × multiplicador de atividade)
+  // 2. TDEE (BMR × multiplicador de atividade) — TDEE nunca pode ser menor que o BMR
   const multiplier = ACTIVITY_MULTIPLIERS[activity] ?? 1.375;
-  const tdee = bmr * multiplier;
+  const tdee = Math.max(bmr * multiplier, bmr);
 
-  // 3. Calcular calorias alvo (TDEE + ajuste por objetivo)
-  const targetCalories = tdee + CALORIE_ADJUSTMENT[objective];
+  // 3. Calorias alvo (TDEE + ajuste por objetivo)
+  // REGRA DE SEGURANÇA: nunca abaixo do BMR
+  const rawTargetCalories = tdee + CALORIE_ADJUSTMENT[objective];
+  const targetCalories = Math.max(rawTargetCalories, bmr);
 
-  // 4. Calcular massa magra (LBM)
-  const lbm = weight_kg * (1 - Math.min(Math.max(body_fat_percent, 0), 99) / 100);
+  // 4. Massa magra (LBM)
+  const fatPct = Math.min(Math.max(body_fat_percent, 0), 99);
+  const lbm = weight_kg * (1 - fatPct / 100);
 
-  // 5. Calcular macronutrientes
+  // 5. Proteína baseada na LBM (protocolo High Protein)
+  let proteinG = lbm * PROTEIN_PER_KG_LBM[objective];
 
-  // Proteína: baseada na LBM
-  const proteinG = lbm * PROTEIN_PER_KG_LBM[objective];
-  const proteinCal = proteinG * 4;
+  // 6. Gordura — piso de 0.8g/kg de peso corporal (saúde hormonal e cardiovascular)
+  const fatFloorG = weight_kg * 0.8;
+  const fatFromPercentG = (targetCalories * FAT_PERCENT) / 9;
+  let fatG = Math.max(fatFromPercentG, fatFloorG);
 
-  // Gordura: 25% das calorias totais
-  const fatCal = targetCalories * FAT_PERCENT;
-  const fatG = fatCal / 9;
+  // 7. Carboidratos — calorias restantes após proteína e gordura
+  const carbsCal = targetCalories - proteinG * 4 - fatG * 9;
+  let carbsG = carbsCal / 4;
 
-  // Carboidratos: calorias restantes
-  const carbsCal = targetCalories - proteinCal - fatCal;
-  const carbsG = carbsCal / 4;
+  // 8. TRAVA LÓGICA: carboidratos mínimos de 30g
+  // Se carbsG < 30, reduz proteína progressivamente até carboidratos atingirem 30g
+  if (carbsG < 30) {
+    const caloriasDisponiveisParaProteinaECarbs = targetCalories - fatG * 9;
+    // Reserva 30g de carboidratos (120 kcal)
+    const proteinCalsMax = caloriasDisponiveisParaProteinaECarbs - 30 * 4;
+    proteinG = Math.max(proteinCalsMax / 4, lbm * 1.6); // piso de 1.6g/kg LBM
+    fatG = Math.max((targetCalories * FAT_PERCENT) / 9, fatFloorG);
+    carbsG = Math.max((targetCalories - proteinG * 4 - fatG * 9) / 4, 30);
+  }
 
   return {
-    bmr: Math.round(bmr),
-    tdee: Math.round(tdee),
+    bmr:       Math.round(bmr),
+    tdee:      Math.round(tdee),
     lean_mass: parseFloat(lbm.toFixed(1)),
     macros: {
       calories: Math.round(targetCalories),
-      protein: Math.round(proteinG),
-      carbs: Math.round(carbsG),
-      fat: Math.round(fatG),
+      protein:  Math.round(proteinG),
+      carbs:    Math.round(carbsG),
+      fat:      Math.round(fatG),
     },
   };
 }
