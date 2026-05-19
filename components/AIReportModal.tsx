@@ -124,6 +124,9 @@ export default function AIReportModal({ visible, onClose, client, assessment }: 
           body_fat_percent: fatPct,
           activity: client.activity_level as ActivityLevel,
           objective: client.objective as Objective,
+          measured_bmr: anthro?.basal_metabolic_rate
+            ? Number(anthro.basal_metabolic_rate)
+            : undefined,
         });
         dietBlock = `\n\n📊 METAS NUTRICIONAIS CALCULADAS (protocolo High Protein)
 Calorias alvo: ${fmt(result.macros.calories, 0)} kcal | Proteína: ${fmt(result.macros.protein, 0)}g | Carboidratos: ${fmt(result.macros.carbs, 0)}g | Gorduras: ${fmt(result.macros.fat, 0)}g

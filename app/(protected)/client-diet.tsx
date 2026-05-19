@@ -126,28 +126,30 @@ export default function ClientDiet() {
 
       let weight = 0;
       let bodyFat = 20;
+      let anthro: any = null;
 
       if (assessments && assessments.length > 0) {
-        const { data: anthro } = await supabase
+        const { data: anthroData } = await supabase
           .from("anthropometry")
           .select("weight, body_fat, muscle_mass_percentage, basal_metabolic_rate, metabolic_age")
           .eq("assessment_id", assessments[0].id)
           .maybeSingle();
 
-        if (anthro) {
-          weight   = parseFloat(anthro.weight)   || 0;
-          bodyFat  = parseFloat(anthro.body_fat)  || 20;
+        if (anthroData) {
+          anthro = anthroData;
+          weight   = parseFloat(anthroData.weight)   || 0;
+          bodyFat  = parseFloat(anthroData.body_fat)  || 20;
           setLastBio({
             weight,
-            body_fat: parseFloat(anthro.body_fat) || 0,
-            muscle_mass_percentage: anthro.muscle_mass_percentage != null
-              ? parseFloat(anthro.muscle_mass_percentage)
+            body_fat: parseFloat(anthroData.body_fat) || 0,
+            muscle_mass_percentage: anthroData.muscle_mass_percentage != null
+              ? parseFloat(anthroData.muscle_mass_percentage)
               : null,
-            basal_metabolic_rate: anthro.basal_metabolic_rate != null
-              ? parseFloat(anthro.basal_metabolic_rate)
+            basal_metabolic_rate: anthroData.basal_metabolic_rate != null
+              ? parseFloat(anthroData.basal_metabolic_rate)
               : null,
-            metabolic_age: anthro.metabolic_age != null
-              ? parseFloat(anthro.metabolic_age)
+            metabolic_age: anthroData.metabolic_age != null
+              ? parseFloat(anthroData.metabolic_age)
               : null,
           });
         }
@@ -169,6 +171,9 @@ export default function ClientDiet() {
           body_fat_percent: bodyFat,
           activity:         clientData.activity_level as ActivityLevel,
           objective:        clientData.objective as Objective,
+          measured_bmr:     anthro?.basal_metabolic_rate
+                              ? Number(anthro.basal_metabolic_rate)
+                              : undefined,
         });
         setDietResult(result);
       }
