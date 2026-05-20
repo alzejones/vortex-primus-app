@@ -440,14 +440,29 @@ export default function ClientAssessments() {
         ? (10 * weight) + (6.25 * height) - (5 * age) + 5
         : (10 * weight) + (6.25 * height) - (5 * age) - 161;
 
+      // Idade metabólica base — referência de gordura ajustada para 50+ anos
       let metabolicAge = age;
-      const idealFat = isMale ? 15 : 23;
+      const idealFat = isMale ? 20 : 28;
       if (bodyFat > idealFat) metabolicAge += Math.floor((bodyFat - idealFat) / 2);
       else metabolicAge -= Math.floor((idealFat - bodyFat) / 2);
+
+      // Bônus por gordura visceral IDEAL (≤ 4): -1 ano
+      // visceralFat já foi calculado acima com a nova fórmula
+      if (visceralFat <= 4) metabolicAge -= 1;
+
+      // Bônus por massa muscular NORMAL ou acima
+      // Limiar mínimo NORMAL: 33.1% masculino / 24.3% feminino (tabela Omron)
+      const muscleNormalMin = isMale ? 33.1 : 24.3;
+      if (musclePercentage >= muscleNormalMin) metabolicAge -= 1;
+
       metabolicAge = Math.max(15, Math.min(metabolicAge, 90));
 
+      // Gordura visceral recalibrada (offset 0.40, multiplicador 55)
+      // Alinhada com valores reais de bioimpedância para adultos brasileiros
       const waistToHeightRatio = waist / height;
-      let visceralFat = isMale ? Math.round((waistToHeightRatio - 0.45) * 40) : Math.round((waistToHeightRatio - 0.42) * 40);
+      let visceralFat = isMale
+        ? Math.round((waistToHeightRatio - 0.40) * 55)
+        : Math.round((waistToHeightRatio - 0.38) * 55);
       visceralFat = Math.max(1, Math.min(visceralFat, 30));
 
       setForm(prev => ({
