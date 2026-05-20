@@ -57,7 +57,18 @@ const CALORIE_ADJUSTMENT = {
 };
 
 // Percentual de gordura das calorias totais (AMDR)
-const FAT_PERCENT = 0.25;  // 25% das calorias totais
+// Nota: FAT_PERCENT mantido para compatibilidade mas não usado no cálculo principal
+const FAT_PERCENT = 0.25;
+
+// Teto de carboidratos por objetivo (protocolo High Protein Low Carb)
+// Ordem de cálculo: Proteína → Carbs (teto fixo) → Gordura (sobra)
+const CARB_CEILING_G: Record<Objective, number> = {
+  emagrecimento:  80,  // Low Carb restritivo
+  saude:         120,  // Low Carb moderado
+  manutencao:    180,  // Moderado
+  hipertrofia:   280,  // Alto — reposição de glicogênio muscular
+  performance:   300,  // Alto — demanda energética elevada
+};
 
 // Multiplicadores de atividade física
 const ACTIVITY_MULTIPLIERS = {
@@ -125,26 +136,26 @@ export function calculateDietPlan(params: {
   const lbm = weight_kg * (1 - fatPct / 100);
 
   // 5. Proteína baseada na LBM (protocolo High Protein)
-  let proteinG = lbm * PROTEIN_PER_KG_LBM[objective];
+  // Piso de 1.6g/kg LBM para segurança
+  let proteinG = Math.max(lbm * PROTEIN_PER_KG_LBM[objective], lbm * 1.6);
 
-  // 6. Gordura — piso de 0.8g/kg de peso corporal (saúde hormonal e cardiovascular)
-  const fatFloorG = weight_kg * 0.8;
-  const fatFromPercentG = (targetCalories * FAT_PERCENT) / 9;
-  let fatG = Math.max(fatFromPercentG, fatFloorG);
+  // 6. Carboidratos — teto fixo por objetivo (Low Carb)
+  // Piso de 30g para segurança metabólica mínima
+  const carbsG = Math.max(CARB_CEILING_G[objective], 30);
 
-  // 7. Carboidratos — calorias restantes após proteína e gordura
-  const carbsCal = targetCalories - proteinG * 4 - fatG * 9;
-  let carbsG = carbsCal / 4;
+  // 7. Gordura — preenche o restante das calorias (sobra)
+  // Nova ordem: Proteína → Carbs (teto) → Gordura (resto)
+  const fatFloorG = weight_kg * 0.8; // piso 0.8g/kg para saúde hormonal
+  const fatFromRemainder = (targetCalories - proteinG * 4 - carbsG * 4) / 9;
+  let fatG = Math.max(fatFromRemainder, fatFloorG);
 
-  // 8. TRAVA LÓGICA: carboidratos mínimos de 30g
-  // Se carbsG < 30, reduz proteína progressivamente até carboidratos atingirem 30g
-  if (carbsG < 30) {
-    const caloriasDisponiveisParaProteinaECarbs = targetCalories - fatG * 9;
-    // Reserva 30g de carboidratos (120 kcal)
-    const proteinCalsMax = caloriasDisponiveisParaProteinaECarbs - 30 * 4;
-    proteinG = Math.max(proteinCalsMax / 4, lbm * 1.6); // piso de 1.6g/kg LBM
-    fatG = Math.max((targetCalories * FAT_PERCENT) / 9, fatFloorG);
-    carbsG = Math.max((targetCalories - proteinG * 4 - fatG * 9) / 4, 30);
+  // 8. TRAVA DE SEGURANÇA: se gordura exceder calorias disponíveis,
+  // reduz proteína progressivamente até o piso de 1.6g/kg LBM
+  const totalCal = proteinG * 4 + carbsG * 4 + fatG * 9;
+  if (totalCal > targetCalories * 1.05) {
+    const calForProtein = targetCalories - carbsG * 4 - fatFloorG * 9;
+    proteinG = Math.max(calForProtein / 4, lbm * 1.6);
+    fatG = Math.max((targetCalories - proteinG * 4 - carbsG * 4) / 9, fatFloorG);
   }
 
   return {
