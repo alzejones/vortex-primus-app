@@ -177,7 +177,7 @@ BMR: ${fmt(result.bmr, 0)} kcal | TDEE: ${fmt(result.tdee, 0)} kcal | Massa Magr
 Título: ${mealPlan.title ?? '-'}
 Refeições por dia: ${mealPlan.meals_per_day ?? '-'}${mealPlan.notes ? `\nObservações: ${mealPlan.notes}` : ''}`;
     } else {
-      mealPlanBlock = '\n\n🍽️ PLANO ALIMENTAR: não cadastrado ainda';
+      mealPlanBlock = '';
     }
 
     return `===== RELATÓRIO VORTEX PRIMUS — PARA IA =====
