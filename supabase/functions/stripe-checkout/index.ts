@@ -34,8 +34,8 @@ serve(async (req) => {
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
       // Links para onde o Stripe vai devolver o usuário após pagar ou cancelar
-      success_url: 'https://vortex-primus-app.vercel.app/(protected)', 
-      cancel_url: 'https://vortex-primus-app.vercel.app/upgrade',
+      success_url: 'https://vortex-primus.vercel.app/(protected)', 
+      cancel_url: 'https://vortex-primus.vercel.app/upgrade',
     })
 
     // 3. Devolve apenas a URL (Link) da página de pagamento

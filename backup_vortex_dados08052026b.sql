@@ -40,7 +40,7 @@ SET row_security = off;
 INSERT INTO "auth"."flow_state" ("id", "user_id", "auth_code", "code_challenge_method", "code_challenge", "provider_type", "provider_access_token", "provider_refresh_token", "created_at", "updated_at", "authentication_method", "auth_code_issued_at", "invite_token", "referrer", "oauth_client_state_id", "linking_target_id", "email_optional") VALUES
 	('b32d6ec3-a5fc-43ac-a658-6dfb3e434e61', NULL, NULL, NULL, NULL, 'google', '', '', '2026-04-29 14:15:45.061983+00', '2026-04-29 14:15:45.061983+00', 'oauth', NULL, NULL, 'https://vortex-primus.vercel.app/', NULL, NULL, false),
 	('c337e2f5-9776-4a15-8b0c-d7179a1bfa6d', NULL, NULL, NULL, NULL, 'google', '', '', '2026-04-29 16:46:19.768448+00', '2026-04-29 16:46:19.768448+00', 'oauth', NULL, NULL, 'https://vortex-primus.vercel.app/', NULL, NULL, false),
-	('a21061a8-3f32-4e2a-930a-bfa06141825f', NULL, NULL, NULL, NULL, 'google', '', '', '2026-05-04 02:53:13.152163+00', '2026-05-04 02:53:13.152163+00', 'oauth', NULL, NULL, 'https://vortex-primus-app.vercel.app/login', NULL, NULL, false);
+	('a21061a8-3f32-4e2a-930a-bfa06141825f', NULL, NULL, NULL, NULL, 'google', '', '', '2026-05-04 02:53:13.152163+00', '2026-05-04 02:53:13.152163+00', 'oauth', NULL, NULL, 'https://vortex-primus.vercel.app/login', NULL, NULL, false);
 
 
 --
