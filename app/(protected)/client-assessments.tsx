@@ -355,7 +355,7 @@ export default function ClientAssessments() {
 
       // Deletar arquivos do Storage (o cascade cuida da tabela)
       if (photos && photos.length > 0) {
-        const paths = photos.map(p => p.storage_path);
+        const paths = photos.map(photo => photo.storage_path);
         await supabase.storage.from('assessment-photos').remove(paths);
       }
 
