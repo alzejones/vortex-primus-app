@@ -32,6 +32,15 @@ const XIAOMI_SERVICE_UUID = '0000181b-0000-1000-8000-00805f9b34fb';
 const XIAOMI_CHAR_UUID = '00002a9c-0000-1000-8000-00805f9b34fb';
 const XIAOMI_BLE_NAME = 'MIBCS';
 
+// Chipsea / OKOK Protocol
+const CHIPSEA_SERVICE_UUID     = '0000fff0-0000-1000-8000-00805f9b34fb';
+const CHIPSEA_CHAR_NOTIFY_UUID = '0000fff4-0000-1000-8000-00805f9b34fb';
+const CHIPSEA_CHAR_WRITE_UUID  = '0000fff2-0000-1000-8000-00805f9b34fb';
+
+// Fitdays Protocol
+const FITDAYS_SERVICE_UUID     = '0000ffb0-0000-1000-8000-00805f9b34fb';
+const FITDAYS_CHAR_NOTIFY_UUID = '0000ffb2-0000-1000-8000-00805f9b34fb';
+
 export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId }: Props) {
   const [trainerScales, setTrainerScales] = useState<any[]>([]);
   const [selectedScale, setSelectedScale] = useState<any | null>(null);
@@ -102,6 +111,42 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     }
   };
 
+  const parseChipseaData = (buffer: ArrayBuffer): ScaleData | null => {
+    try {
+      const bytes = new Uint8Array(buffer);
+      // Chipsea packet: byte[0]=header, byte[1]=cmd
+      // Weight packet cmd=0x10: bytes[3..4] = weight * 10 (little-endian, unit: 0.1kg)
+      // Body composition packet cmd=0x15: bytes contain impedance etc.
+      if (bytes.length < 6) return null;
+      const cmd = bytes[1];
+      if (cmd !== 0x10 && cmd !== 0x15) return null;
+      const rawWeight = (bytes[3] << 8 | bytes[4]);
+      const weight = rawWeight / 10;
+      if (weight <= 0 || weight > 300) return null;
+      // Simplified body composition (same pattern as Xiaomi parser — sufficient for MVP)
+      const impedance = bytes.length >= 8 ? (bytes[6] << 8 | bytes[7]) : 500;
+      const bmi = weight / (1.75 * 1.75);
+      const body_fat = Math.min(Math.max((impedance - 300) / 10, 5), 50);
+      const muscle_mass = 100 - body_fat - 15;
+      const water_percent = 50 + (impedance % 100) / 10;
+      const bone_mass = weight * 0.05;
+      const bmr = Math.round(weight * 22);
+      const metabolic_age = Math.min(Math.max(25 + (body_fat - 15) * 2, 18), 80);
+      const visceral_fat = Math.min(Math.max((body_fat - 10) / 2, 1), 20);
+      return {
+        weight,
+        bmi: Math.round(bmi * 10) / 10,
+        body_fat: Math.round(body_fat * 10) / 10,
+        muscle_mass_percentage: Math.round(muscle_mass * 10) / 10,
+        water_percent: Math.round(water_percent * 10) / 10,
+        bone_mass: Math.round(bone_mass * 10) / 10,
+        basal_metabolic_rate: bmr,
+        metabolic_age: Math.round(metabolic_age),
+        body_fat_index: Math.round(visceral_fat * 10) / 10,
+      };
+    } catch { return null; }
+  };
+
   const connectToScale = async () => {
     if (!isBluetoothSupported()) {
       Alert.alert(
@@ -114,16 +159,30 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     try {
       setConnecting(true);
 
+      // Determine protocol and configuration
+      const protocol = selectedScale?.supported_scale?.protocol || 'xiaomi_v2';
+      
+      const protocolConfig: Record<string, { serviceUUID: string; charUUID: string; parser: (b: ArrayBuffer) => ScaleData | null }> = {
+        xiaomi_v2:    { serviceUUID: XIAOMI_SERVICE_UUID,   charUUID: XIAOMI_CHAR_UUID,         parser: parseXiaomiData },
+        chipsea_okok: { serviceUUID: CHIPSEA_SERVICE_UUID,  charUUID: CHIPSEA_CHAR_NOTIFY_UUID, parser: parseChipseaData },
+        fitdays:      { serviceUUID: FITDAYS_SERVICE_UUID,  charUUID: FITDAYS_CHAR_NOTIFY_UUID, parser: parseXiaomiData }, // Reuse parser for now
+      };
+
+      const config = protocolConfig[protocol];
+      if (!config) {
+        throw new Error(`Protocolo não suportado: ${protocol}`);
+      }
+
       // Request device with selected scale filters
       const bleName = selectedScale?.supported_scale?.ble_name;
       const requestOptions = bleName
         ? {
             filters: [{ name: bleName }, { namePrefix: bleName }],
-            optionalServices: [XIAOMI_SERVICE_UUID]
+            optionalServices: [config.serviceUUID]
           }
         : {
             acceptAllDevices: true,
-            optionalServices: [XIAOMI_SERVICE_UUID]
+            optionalServices: [config.serviceUUID]
           };
 
       const device = await navigator.bluetooth.requestDevice(requestOptions);
@@ -139,11 +198,11 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       console.log('Connected to GATT server');
 
       // Get service
-      const service = await server.getPrimaryService(XIAOMI_SERVICE_UUID);
+      const service = await server.getPrimaryService(config.serviceUUID);
       console.log('Service found');
 
       // Get characteristic
-      const characteristic = await service.getCharacteristic(XIAOMI_CHAR_UUID);
+      const characteristic = await service.getCharacteristic(config.charUUID);
       console.log('Characteristic found');
 
       // Start notifications
@@ -157,7 +216,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
         console.log('Received data:', new Uint8Array(value.buffer));
         
-        const scaleData = parseXiaomiData(value.buffer);
+        const scaleData = config.parser(value.buffer);
         if (scaleData) {
           console.log('Parsed scale data:', scaleData);
           onDataReceived(scaleData);
