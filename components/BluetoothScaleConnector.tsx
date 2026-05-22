@@ -115,15 +115,18 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       setConnecting(true);
 
       // Request device with selected scale filters
-      const bleName = selectedScale?.supported_scale?.ble_name || 'MIBCS';
-      const filters: BluetoothRequestDeviceFilter[] = bleName
-        ? [{ name: bleName }, { namePrefix: bleName }]
-        : [{ services: [XIAOMI_SERVICE_UUID] }];
+      const bleName = selectedScale?.supported_scale?.ble_name;
+      const requestOptions = bleName
+        ? {
+            filters: [{ name: bleName }, { namePrefix: bleName }],
+            optionalServices: [XIAOMI_SERVICE_UUID]
+          }
+        : {
+            acceptAllDevices: true,
+            optionalServices: [XIAOMI_SERVICE_UUID]
+          };
 
-      const device = await navigator.bluetooth.requestDevice({
-        filters,
-        optionalServices: [XIAOMI_SERVICE_UUID]
-      });
+      const device = await navigator.bluetooth.requestDevice(requestOptions);
 
       console.log('Device found:', device.name);
       
