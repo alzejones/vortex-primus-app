@@ -175,14 +175,16 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
       // Request device with selected scale filters
       const bleName = selectedScale?.supported_scale?.ble_name;
+      const serviceUUID = config.serviceUUID;
+
       const requestOptions = bleName
         ? {
             filters: [{ name: bleName }, { namePrefix: bleName }],
-            optionalServices: [config.serviceUUID]
+            optionalServices: [serviceUUID]
           }
         : {
-            acceptAllDevices: true,
-            optionalServices: [config.serviceUUID]
+            filters: [{ services: [serviceUUID] }],
+            optionalServices: [serviceUUID]
           };
 
       const device = await navigator.bluetooth.requestDevice(requestOptions);
