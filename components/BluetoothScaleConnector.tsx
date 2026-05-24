@@ -125,7 +125,11 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       // Body composition packet cmd=0x15: bytes contain impedance etc.
       if (bytes.length < 6) return null;
       const cmd = bytes[1];
-      if (cmd !== 0x10 && cmd !== 0x15) return null;
+      if (cmd !== 0x10 && cmd !== 0x15 && cmd !== 0x1F) return null;
+      
+      // Só processar peso quando estabilizado
+      if (cmd === 0x10 && bytes[5] !== 0x01) return null;
+      
       const rawWeight = (bytes[3] << 8 | bytes[4]);
       const weight = rawWeight / 10;
       if (weight <= 0 || weight > 300) return null;
@@ -230,6 +234,20 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
       const characteristic = await service.getCharacteristic(config.charUUID);
       await characteristic.startNotifications();
+
+      // Chipsea/OKOK protocol requires handshake command after notifications
+      if (protocol === 'chipsea_okok') {
+        try {
+          const writeChar = await service.getCharacteristic(CHIPSEA_CHAR_WRITE_UUID);
+          // Comando de inicialização Chipsea: solicita medição completa
+          const initCommand = new Uint8Array([0xFD, 0x27, 0x01]);
+          await writeChar.writeValue(initCommand);
+          console.log('Chipsea init command sent');
+        } catch (e) {
+          console.warn('Chipsea write characteristic failed:', e);
+          // Não abortar — algumas versões de firmware não exigem o comando
+        }
+      }
 
       setConnectionStatus('waiting_data');
 
