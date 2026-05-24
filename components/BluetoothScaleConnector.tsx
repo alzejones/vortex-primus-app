@@ -323,6 +323,14 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
           <Text style={styles.warningText}>
             Para conectar balanças Bluetooth, use o Chrome no Android ou Chrome/Edge no computador. No Safari e Firefox esta função não está disponível.
           </Text>
+          {onManualEntry && (
+            <TouchableOpacity
+              style={styles.manualButton}
+              onPress={onManualEntry}
+            >
+              <Text style={styles.manualButtonText}>Inserir dados manualmente</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
