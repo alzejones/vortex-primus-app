@@ -25,6 +25,7 @@ interface Props {
   onDataReceived: (data: ScaleData) => void;
   disabled?: boolean;
   trainerId?: string | null;
+  onManualEntry?: () => void;
 }
 
 // Xiaomi Mi Body Composition Scale 2 BLE Configuration
@@ -42,7 +43,7 @@ const FITDAYS_SERVICE_UUID     = '0000ffb0-0000-1000-8000-00805f9b34fb';
 const FITDAYS_CHAR_NOTIFY_UUID = '0000ffb2-0000-1000-8000-00805f9b34fb';
 
 
-export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId }: Props) {
+export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry }: Props) {
   const [trainerScales, setTrainerScales] = useState<any[]>([]);
   const [selectedScale, setSelectedScale] = useState<any | null>(null);
   const [loadingScales, setLoadingScales] = useState(false);
@@ -50,6 +51,10 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
   const [connected, setConnected] = useState(false);
   const [device, setDevice] = useState<BluetoothDevice | null>(null);
   const [howToUseExpanded, setHowToUseExpanded] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<
+    'idle' | 'scanning' | 'connecting' | 'waiting_data' | 'error_cancelled' |
+    'error_incompatible' | 'error_no_data' | 'error_generic'
+  >('idle');
 
   useEffect(() => {
     if (!trainerId) return;
@@ -158,6 +163,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     }
 
     try {
+      setConnectionStatus('scanning');
       setConnecting(true);
 
       // Determine protocol and configuration
@@ -206,41 +212,45 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
       const device = await navigator.bluetooth.requestDevice(requestOptions);
 
+      setConnectionStatus('connecting');
       console.log('Device found:', device.name);
-      
-      // Connect to GATT server
+
       const server = await device.gatt?.connect();
-      if (!server) {
-        throw new Error('Failed to connect to GATT server');
+      if (!server) throw new Error('Failed to connect to GATT server');
+
+      let service;
+      try {
+        service = await server.getPrimaryService(config.serviceUUID);
+      } catch {
+        // Serviço não encontrado — balança incompatível com o protocolo
+        setConnectionStatus('error_incompatible');
+        setConnecting(false);
+        return;
       }
 
-      console.log('Connected to GATT server');
-
-      // Get service
-      const service = await server.getPrimaryService(config.serviceUUID);
-      console.log('Service found');
-
-      // Get characteristic
       const characteristic = await service.getCharacteristic(config.charUUID);
-      console.log('Characteristic found');
-
-      // Start notifications
       await characteristic.startNotifications();
-      console.log('Notifications started');
 
-      // Listen for data
+      setConnectionStatus('waiting_data');
+
+      // Timeout de 30s esperando dados
+      const dataTimeout = setTimeout(() => {
+        if (!connected) {
+          setConnectionStatus('error_no_data');
+          setConnecting(false);
+          if (device?.gatt?.connected) device.gatt.disconnect();
+        }
+      }, 30000);
+
       characteristic.addEventListener('characteristicvaluechanged', (event) => {
         const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
         if (!value) return;
-
-        console.log('Received data:', new Uint8Array(value.buffer));
-        
+        clearTimeout(dataTimeout);
         const scaleData = config.parser(value.buffer);
         if (scaleData) {
-          console.log('Parsed scale data:', scaleData);
           onDataReceived(scaleData);
           setConnected(true);
-          
+          setConnectionStatus('idle');
           Alert.alert(
             'Dados recebidos!',
             `Peso: ${scaleData.weight}kg\nIMC: ${scaleData.bmi}\n% Gordura: ${scaleData.body_fat}%`,
@@ -249,34 +259,30 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         }
       });
 
-      // Handle disconnection
       device.addEventListener('gattserverdisconnected', () => {
-        console.log('Device disconnected');
         setConnected(false);
         setDevice(null);
+        setConnectionStatus('idle');
       });
 
       setDevice(device);
       setConnected(true);
-      
-      Alert.alert(
-        'Conectado!', 
-        'Suba na balança para obter as medidas automaticamente.'
-      );
 
     } catch (error: any) {
       console.error('Bluetooth connection error:', error);
-      let errorMessage = 'Erro ao conectar com a balança.';
-      
-      if (error.name === 'NotFoundError') {
-        errorMessage = 'Balança não encontrada. Verifique se está ligada e próxima.';
+      if (
+        error.name === 'NotFoundError' ||
+        error.name === 'AbortError' ||
+        error.message?.includes('cancelled') ||
+        error.message?.includes('chosen')
+      ) {
+        setConnectionStatus('error_cancelled');
       } else if (error.name === 'SecurityError') {
-        errorMessage = 'Acesso Bluetooth negado. Use HTTPS para acessar.';
-      } else if (error.name === 'NotSupportedError') {
-        errorMessage = 'Bluetooth não suportado neste dispositivo.';
+        Alert.alert('Erro', 'Acesso Bluetooth negado. Use HTTPS.');
+        setConnectionStatus('idle');
+      } else {
+        setConnectionStatus('error_generic');
       }
-      
-      Alert.alert('Erro de Conexão', errorMessage);
     } finally {
       setConnecting(false);
     }
@@ -405,6 +411,99 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
             )}
           </LinearGradient>
         </TouchableOpacity>
+      )}
+
+      {/* STATUS DE CONEXÃO */}
+      {connectionStatus === 'scanning' && (
+        <View style={styles.statusCard}>
+          <ActivityIndicator size="small" color={T.blue} />
+          <Text style={styles.statusText}>Procurando sua balança...</Text>
+        </View>
+      )}
+
+      {connectionStatus === 'connecting' && (
+        <View style={styles.statusCard}>
+          <ActivityIndicator size="small" color={T.blue} />
+          <Text style={styles.statusText}>Conectando...</Text>
+        </View>
+      )}
+
+      {connectionStatus === 'waiting_data' && (
+        <View style={styles.statusCard}>
+          <ActivityIndicator size="small" color={T.green} />
+          <Text style={styles.statusText}>Conectado! Suba na balança agora.</Text>
+        </View>
+      )}
+
+      {connectionStatus === 'error_cancelled' && (
+        <View style={styles.statusCardWarning}>
+          <Text style={styles.statusTitle}>Nenhuma balança selecionada</Text>
+          <Text style={styles.statusText}>
+            Sua balança não apareceu na lista? Ela pode não ser compatível com
+            a conexão automática.
+          </Text>
+          {onManualEntry && (
+            <TouchableOpacity
+              style={styles.manualButton}
+              onPress={() => { setConnectionStatus('idle'); onManualEntry(); }}
+            >
+              <Text style={styles.manualButtonText}>Inserir dados manualmente</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {connectionStatus === 'error_incompatible' && (
+        <View style={styles.statusCardError}>
+          <Text style={styles.statusTitle}>⚠️ Balança não compatível</Text>
+          <Text style={styles.statusText}>
+            Infelizmente sua balança não é compatível com a conexão automática
+            do Vortex. Você pode inserir manualmente os dados fornecidos pelo
+            aplicativo de fábrica da sua balança.
+          </Text>
+          {onManualEntry && (
+            <TouchableOpacity
+              style={styles.manualButton}
+              onPress={() => { setConnectionStatus('idle'); onManualEntry(); }}
+            >
+              <Text style={styles.manualButtonText}>Inserir dados manualmente</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {connectionStatus === 'error_no_data' && (
+        <View style={styles.statusCardError}>
+          <Text style={styles.statusTitle}>⚠️ Sem resposta da balança</Text>
+          <Text style={styles.statusText}>
+            A balança conectou mas não enviou dados. Certifique-se de subir
+            na balança logo após conectar. Tente novamente ou insira manualmente.
+          </Text>
+          {onManualEntry && (
+            <TouchableOpacity
+              style={styles.manualButton}
+              onPress={() => { setConnectionStatus('idle'); onManualEntry(); }}
+            >
+              <Text style={styles.manualButtonText}>Inserir dados manualmente</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {connectionStatus === 'error_generic' && (
+        <View style={styles.statusCardError}>
+          <Text style={styles.statusTitle}>Erro de conexão</Text>
+          <Text style={styles.statusText}>
+            Não foi possível conectar. Verifique se a balança está ligada
+            e próxima, e tente novamente.
+          </Text>
+          <TouchableOpacity
+            style={styles.manualButton}
+            onPress={() => setConnectionStatus('idle')}
+          >
+            <Text style={styles.manualButtonText}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* COMO USAR - COLAPSÁVEL */}
@@ -682,5 +781,56 @@ const styles = StyleSheet.create({
     color: T.t2,
     textAlign: 'center',
     lineHeight: 20,
+  },
+
+  // STATUS CARDS
+  statusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: T.surfaceAlt,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  statusCardWarning: {
+    backgroundColor: 'rgba(245,158,11,0.1)',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  statusCardError: {
+    backgroundColor: 'rgba(239,68,68,0.1)',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  statusTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: T.t1,
+    marginBottom: 6,
+  },
+  statusText: {
+    fontSize: 13,
+    color: T.t2,
+    lineHeight: 19,
+  },
+  manualButton: {
+    marginTop: 12,
+    backgroundColor: T.blue,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+  },
+  manualButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.white,
   },
 });
