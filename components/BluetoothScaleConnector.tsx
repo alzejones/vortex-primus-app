@@ -41,8 +41,6 @@ const CHIPSEA_CHAR_WRITE_UUID  = '0000fff2-0000-1000-8000-00805f9b34fb';
 const FITDAYS_SERVICE_UUID     = '0000ffb0-0000-1000-8000-00805f9b34fb';
 const FITDAYS_CHAR_NOTIFY_UUID = '0000ffb2-0000-1000-8000-00805f9b34fb';
 
-// Manufacturer Data
-const CHIPSEA_MANUFACTURER_ID = 0x0FC0;
 
 export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId }: Props) {
   const [trainerScales, setTrainerScales] = useState<any[]>([]);
@@ -178,26 +176,28 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
 
       // Request device with selected scale filters
       const bleName = selectedScale?.supported_scale?.ble_name;
-      const protocol = selectedScale?.supported_scale?.protocol;
+      const manufacturerId: number | null =
+        selectedScale?.supported_scale?.manufacturer_id ?? null;
 
       let requestOptions: RequestDeviceOptions;
 
       if (bleName) {
-        // Filtro por nome — para balanças que anunciam nome (ex: Xiaomi MIBCS)
+        // Balança anuncia nome BLE (ex: Xiaomi MIBCS)
         requestOptions = {
           filters: [{ name: bleName }, { namePrefix: bleName }],
           optionalServices: [XIAOMI_SERVICE_UUID, CHIPSEA_SERVICE_UUID, FITDAYS_SERVICE_UUID]
         };
-      } else if (protocol === 'chipsea_okok') {
-        // Filtro por manufacturer data — Chipsea não anuncia nome nem serviceUUID
+      } else if (manufacturerId !== null) {
+        // Balança não anuncia nome — filtra por manufacturer data
+        // Funciona para qualquer balança com manufacturer_id cadastrado no banco
         requestOptions = {
           filters: [{
-            manufacturerData: [{ companyIdentifier: CHIPSEA_MANUFACTURER_ID }]
+            manufacturerData: [{ companyIdentifier: manufacturerId }]
           }],
           optionalServices: [XIAOMI_SERVICE_UUID, CHIPSEA_SERVICE_UUID, FITDAYS_SERVICE_UUID]
         };
       } else {
-        // Fallback: filtro por service UUID do protocolo
+        // Fallback: filtra por service UUID do protocolo
         requestOptions = {
           filters: [{ services: [config.serviceUUID] }],
           optionalServices: [XIAOMI_SERVICE_UUID, CHIPSEA_SERVICE_UUID, FITDAYS_SERVICE_UUID]
