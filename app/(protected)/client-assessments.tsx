@@ -192,7 +192,7 @@ export default function ClientAssessments() {
     ? chartAssessments.map(a => Number(a.anthropometry[0].muscle_mass_percentage) || 0)
     : [0];
 
-  const chartWidth = Dimensions.get("window").width - 60;
+  const chartWidth = isDesktop ? Math.min(screenWidth - 60, 820) : screenWidth - 60;
 
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
