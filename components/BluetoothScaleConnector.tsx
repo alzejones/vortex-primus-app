@@ -223,6 +223,40 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       const server = await device.gatt?.connect();
       if (!server) throw new Error('Failed to connect to GATT server');
 
+      // DEBUG: listar todos os services disponíveis na balança
+      if (protocol === 'fitdays') {
+        try {
+          const services = await server.getPrimaryServices();
+          const serviceList = services.map(s => s.uuid).join('\n');
+          setRawBytes('SERVICES:\n' + serviceList);
+          console.log('Available services:', serviceList);
+
+          // Para cada service, listar as characteristics
+          for (const svc of services) {
+            try {
+              const chars = await svc.getCharacteristics();
+              const charList = chars.map(c =>
+                c.uuid + ' [' +
+                (c.properties.notify ? 'notify ' : '') +
+                (c.properties.write ? 'write ' : '') +
+                (c.properties.read ? 'read' : '') +
+                ']'
+              ).join('\n');
+              setRawBytes(prev =>
+                prev + '\n\nSERVICE ' + svc.uuid + ':\n' + charList
+              );
+              console.log('Service', svc.uuid, 'chars:', charList);
+            } catch(e) { console.warn('char list error', e); }
+          }
+        } catch(e) {
+          setRawBytes('ERROR listing services: ' + e);
+          console.error('service list error', e);
+        }
+
+        // Após o debug acima, retornar para não tentar conectar com UUIDs errados
+        return;
+      }
+
       let service;
       try {
         service = await server.getPrimaryService(config.serviceUUID);
