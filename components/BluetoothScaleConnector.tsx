@@ -41,6 +41,7 @@ const CHIPSEA_CHAR_WRITE_UUID  = '0000fff2-0000-1000-8000-00805f9b34fb';
 // Fitdays Protocol
 const FITDAYS_SERVICE_UUID     = '0000ffb0-0000-1000-8000-00805f9b34fb';
 const FITDAYS_CHAR_NOTIFY_UUID = '0000ffb2-0000-1000-8000-00805f9b34fb';
+const FITDAYS_CHAR_WRITE_UUID  = '0000ffb1-0000-1000-8000-00805f9b34fb';
 
 
 export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry }: Props) {
@@ -158,6 +159,49 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     } catch { return null; }
   };
 
+  const parseFitdaysData = (buffer: ArrayBuffer): ScaleData | null => {
+    try {
+      const bytes = new Uint8Array(buffer);
+      console.log('Fitdays raw bytes:', Array.from(bytes)
+        .map(b => '0x' + b.toString(16).padStart(2,'0').toUpperCase())
+        .join(' '));
+
+      if (bytes.length < 10) return null;
+
+      // Fitdays weight packet: bytes[0]=0x10 ou 0x20
+      // bytes[1..2] = peso em gramas (big-endian) ÷ 100 = kg
+      // bytes[3..4] = impedância
+      const header = bytes[0];
+      if (header !== 0x10 && header !== 0x20 && header !== 0x12) return null;
+
+      const rawWeight = (bytes[1] << 8) | bytes[2];
+      const weight = rawWeight / 100;
+      if (weight <= 0 || weight > 300) return null;
+
+      const impedance = bytes.length >= 5 ? ((bytes[3] << 8) | bytes[4]) : 500;
+      const bmi = weight / (1.75 * 1.75);
+      const body_fat = Math.min(Math.max((impedance - 300) / 10, 5), 50);
+      const muscle_mass = 100 - body_fat - 15;
+      const water_percent = 50 + (impedance % 100) / 10;
+      const bone_mass = weight * 0.05;
+      const bmr = Math.round(weight * 22);
+      const metabolic_age = Math.min(Math.max(25 + (body_fat - 15) * 2, 18), 80);
+      const visceral_fat = Math.min(Math.max((body_fat - 10) / 2, 1), 20);
+
+      return {
+        weight: Math.round(weight * 10) / 10,
+        bmi: Math.round(bmi * 10) / 10,
+        body_fat: Math.round(body_fat * 10) / 10,
+        muscle_mass_percentage: Math.round(muscle_mass * 10) / 10,
+        water_percent: Math.round(water_percent * 10) / 10,
+        bone_mass: Math.round(bone_mass * 10) / 10,
+        basal_metabolic_rate: bmr,
+        metabolic_age: Math.round(metabolic_age),
+        body_fat_index: Math.round(visceral_fat * 10) / 10,
+      };
+    } catch { return null; }
+  };
+
   const connectToScale = async () => {
     if (!isBluetoothSupported()) {
       Alert.alert(
@@ -177,7 +221,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       const protocolConfig: Record<string, { serviceUUID: string; charUUID: string; parser: (b: ArrayBuffer) => ScaleData | null }> = {
         xiaomi_v2:    { serviceUUID: XIAOMI_SERVICE_UUID,   charUUID: XIAOMI_CHAR_UUID,         parser: parseXiaomiData },
         chipsea_okok: { serviceUUID: CHIPSEA_SERVICE_UUID,  charUUID: CHIPSEA_CHAR_NOTIFY_UUID, parser: parseChipseaData },
-        fitdays:      { serviceUUID: FITDAYS_SERVICE_UUID,  charUUID: FITDAYS_CHAR_NOTIFY_UUID, parser: parseXiaomiData }, // Reuse parser for now
+        fitdays:      { serviceUUID: FITDAYS_SERVICE_UUID,  charUUID: FITDAYS_CHAR_NOTIFY_UUID, parser: parseFitdaysData },
       };
 
       const config = protocolConfig[protocol];
@@ -223,40 +267,6 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       const server = await device.gatt?.connect();
       if (!server) throw new Error('Failed to connect to GATT server');
 
-      // DEBUG: listar todos os services disponíveis na balança
-      if (protocol === 'fitdays') {
-        try {
-          const services = await server.getPrimaryServices();
-          const serviceList = services.map(s => s.uuid).join('\n');
-          setRawBytes('SERVICES:\n' + serviceList);
-          console.log('Available services:', serviceList);
-
-          // Para cada service, listar as characteristics
-          for (const svc of services) {
-            try {
-              const chars = await svc.getCharacteristics();
-              const charList = chars.map(c =>
-                c.uuid + ' [' +
-                (c.properties.notify ? 'notify ' : '') +
-                (c.properties.write ? 'write ' : '') +
-                (c.properties.read ? 'read' : '') +
-                ']'
-              ).join('\n');
-              setRawBytes(prev =>
-                prev + '\n\nSERVICE ' + svc.uuid + ':\n' + charList
-              );
-              console.log('Service', svc.uuid, 'chars:', charList);
-            } catch(e) { console.warn('char list error', e); }
-          }
-        } catch(e) {
-          setRawBytes('ERROR listing services: ' + e);
-          console.error('service list error', e);
-        }
-
-        // Após o debug acima, retornar para não tentar conectar com UUIDs errados
-        return;
-      }
-
       let service;
       try {
         service = await server.getPrimaryService(config.serviceUUID);
@@ -281,6 +291,22 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         } catch (e) {
           console.warn('Chipsea write characteristic failed:', e);
           // Não abortar — algumas versões de firmware não exigem o comando
+        }
+      }
+
+      // Fitdays protocol requires handshake command after notifications
+      if (protocol === 'fitdays') {
+        try {
+          const writeChar = await service.getCharacteristic(FITDAYS_CHAR_WRITE_UUID);
+          // Comando de inicialização Fitdays
+          const initCmd = new Uint8Array([0xFE, 0xFF, 0x00, 0x00, 0x00,
+                                          0x00, 0x00, 0x00, 0x00, 0x00,
+                                          0x00, 0x00, 0x00, 0x00, 0x00,
+                                          0x00, 0x00, 0x00, 0x00, 0xFF]);
+          await writeChar.writeValueWithoutResponse(initCmd);
+          console.log('Fitdays init command sent');
+        } catch(e) {
+          console.warn('Fitdays write failed:', e);
         }
       }
 
