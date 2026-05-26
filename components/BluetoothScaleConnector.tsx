@@ -162,30 +162,31 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
   const parseFitdaysData = (buffer: ArrayBuffer): ScaleData | null => {
     try {
       const bytes = new Uint8Array(buffer);
-      console.log('Fitdays raw bytes:', Array.from(bytes)
+      console.log('Fitdays raw:', Array.from(bytes)
         .map(b => '0x' + b.toString(16).padStart(2,'0').toUpperCase())
         .join(' '));
 
-      if (bytes.length < 10) return null;
+      if (bytes.length < 8) return null;
 
-      // Fitdays weight packet: bytes[0]=0x10 ou 0x20
-      // bytes[1..2] = peso em gramas (big-endian) ÷ 100 = kg
-      // bytes[3..4] = impedância
-      const header = bytes[0];
-      if (header !== 0x10 && header !== 0x20 && header !== 0x12) return null;
+      // Pacote de peso: header=0xAC, tipo=0x03, bytes[2] < 0xF0
+      if (bytes[0] !== 0xAC) return null;
+      if (bytes[1] !== 0x03) return null;
+      if (bytes[2] >= 0xF0) return null; // pacotes 0xFD/0xFE são composição — ignorar por ora
 
-      const rawWeight = (bytes[1] << 8) | bytes[2];
-      const weight = rawWeight / 100;
+      // Fórmula confirmada em produção: big-endian bytes[2..3] / 10
+      const rawWeight = (bytes[2] << 8) | bytes[3];
+      const weight = rawWeight / 10;
+
       if (weight <= 0 || weight > 300) return null;
 
-      const impedance = bytes.length >= 5 ? ((bytes[3] << 8) | bytes[4]) : 500;
+      // Composição corporal estimada (MVP) — será calibrada com pacotes 0xFD/0xFE futuramente
       const bmi = weight / (1.75 * 1.75);
-      const body_fat = Math.min(Math.max((impedance - 300) / 10, 5), 50);
+      const body_fat = Math.min(Math.max(bmi * 1.2 - 5, 5), 50);
       const muscle_mass = 100 - body_fat - 15;
-      const water_percent = 50 + (impedance % 100) / 10;
-      const bone_mass = weight * 0.05;
-      const bmr = Math.round(weight * 22);
-      const metabolic_age = Math.min(Math.max(25 + (body_fat - 15) * 2, 18), 80);
+      const water_percent = Math.max(55 - body_fat * 0.3, 40);
+      const bone_mass = weight * 0.04;
+      const bmr = Math.round(weight * 21.6 + 370);
+      const metabolic_age = Math.min(Math.max(25 + (body_fat - 15) * 1.5, 18), 80);
       const visceral_fat = Math.min(Math.max((body_fat - 10) / 2, 1), 20);
 
       return {
