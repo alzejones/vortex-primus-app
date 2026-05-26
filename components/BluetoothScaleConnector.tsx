@@ -55,6 +55,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     'idle' | 'scanning' | 'connecting' | 'waiting_data' | 'error_cancelled' |
     'error_incompatible' | 'error_no_data' | 'error_generic'
   >('idle');
+  const [rawBytes, setRawBytes] = useState<string>('');
 
   useEffect(() => {
     if (!trainerId) return;
@@ -264,6 +265,12 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         const value = (event.target as BluetoothRemoteGATTCharacteristic).value;
         if (!value) return;
         clearTimeout(dataTimeout);
+        const bytes = new Uint8Array(value.buffer);
+        const hexStr = Array.from(bytes)
+          .map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
+          .join(' ');
+        console.log('RAW BLE bytes:', hexStr);
+        setRawBytes(hexStr);
         const scaleData = config.parser(value.buffer);
         if (scaleData) {
           onDataReceived(scaleData);
@@ -458,6 +465,13 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         <View style={styles.statusCard}>
           <ActivityIndicator size="small" color={T.green} />
           <Text style={styles.statusText}>Conectado! Suba na balança agora.</Text>
+        </View>
+      )}
+
+      {rawBytes !== '' && (
+        <View style={styles.debugCard}>
+          <Text style={styles.debugTitle}>🔬 Bytes recebidos (debug)</Text>
+          <Text style={styles.debugBytes} selectable={true}>{rawBytes}</Text>
         </View>
       )}
 
@@ -858,5 +872,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: T.white,
+  },
+  debugCard: {
+    backgroundColor: 'rgba(99,102,241,0.15)',
+    borderWidth: 1,
+    borderColor: '#6366F1',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+  },
+  debugTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6366F1',
+    marginBottom: 6,
+  },
+  debugBytes: {
+    fontSize: 11,
+    color: '#A5B4FC',
+    fontFamily: 'monospace',
+    lineHeight: 18,
   },
 });
