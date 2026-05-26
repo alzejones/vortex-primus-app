@@ -56,7 +56,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     'idle' | 'scanning' | 'connecting' | 'waiting_data' | 'error_cancelled' |
     'error_incompatible' | 'error_no_data' | 'error_generic'
   >('idle');
-  const [rawBytes, setRawBytes] = useState<string>('');
+  const [impedance, setImpedance] = useState<number>(0);
 
   useEffect(() => {
     if (!trainerId) return;
@@ -159,46 +159,63 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     } catch { return null; }
   };
 
-  const parseFitdaysData = (buffer: ArrayBuffer): ScaleData | null => {
+  const parseFitdaysData = (
+    buffer: ArrayBuffer,
+    imp: number,
+    // Dados do perfil do usuário — usar valores do selectedScale ou defaults
+    age: number = 35,
+    heightCm: number = 170,
+    isMale: boolean = true
+  ): ScaleData | null => {
     try {
       const bytes = new Uint8Array(buffer);
-      console.log('Fitdays raw:', Array.from(bytes)
-        .map(b => '0x' + b.toString(16).padStart(2,'0').toUpperCase())
-        .join(' '));
+      if (bytes[0] !== 0xAC || bytes[1] !== 0x03) return null;
+      if (bytes[2] >= 0xF0) return null;
 
-      if (bytes.length < 8) return null;
-
-      // Pacote de peso: header=0xAC, tipo=0x03, bytes[2] < 0xF0
-      if (bytes[0] !== 0xAC) return null;
-      if (bytes[1] !== 0x03) return null;
-      if (bytes[2] >= 0xF0) return null; // pacotes 0xFD/0xFE são composição — ignorar por ora
-
-      // Fórmula confirmada em produção: big-endian bytes[2..3] / 10
       const rawWeight = (bytes[2] << 8) | bytes[3];
       const weight = rawWeight / 10;
+      if (weight <= 10 || weight > 300) return null;
 
-      if (weight <= 0 || weight > 300) return null;
+      const heightM = heightCm / 100;
+      const bmi = Math.round((weight / (heightM * heightM)) * 10) / 10;
 
-      // Composição corporal estimada (MVP) — será calibrada com pacotes 0xFD/0xFE futuramente
-      const bmi = weight / (1.75 * 1.75);
-      const body_fat = Math.min(Math.max(bmi * 1.2 - 5, 5), 50);
-      const muscle_mass = 100 - body_fat - 15;
-      const water_percent = Math.max(55 - body_fat * 0.3, 40);
-      const bone_mass = weight * 0.04;
-      const bmr = Math.round(weight * 21.6 + 370);
-      const metabolic_age = Math.min(Math.max(25 + (body_fat - 15) * 1.5, 18), 80);
-      const visceral_fat = Math.min(Math.max((body_fat - 10) / 2, 1), 20);
+      // BIA com impedância real (quando disponível)
+      let body_fat: number;
+      let water_percent: number;
+
+      if (imp > 0) {
+        // Fórmula BIA padrão (Tanita/RJL)
+        const lbm = isMale
+          ? (0.407 * weight) + (0.267 * heightCm) - (0.101 * imp) - 3.747
+          : (0.252 * weight) + (0.473 * heightCm) - (0.076 * imp) - 4.097;
+        body_fat = Math.round(((weight - lbm) / weight) * 1000) / 10;
+        body_fat = Math.min(Math.max(body_fat, 3), 60);
+        water_percent = Math.round((lbm * 0.73 / weight) * 1000) / 10;
+        water_percent = Math.min(Math.max(water_percent, 30), 80);
+      } else {
+        // Fallback sem impedância
+        body_fat = Math.round((bmi * 1.2 - 5) * 10) / 10;
+        water_percent = Math.round((60 - body_fat * 0.3) * 10) / 10;
+      }
+
+      const muscle_mass_percentage = Math.round((100 - body_fat - 5) * 10) / 10;
+      const bone_mass = Math.round(weight * 0.044 * 10) / 10;
+      const bmr = isMale
+        ? Math.round(88.362 + (13.397 * weight) + (4.799 * heightCm) - (5.677 * age))
+        : Math.round(447.593 + (9.247 * weight) + (3.098 * heightCm) - (4.330 * age));
+      const metabolic_age = Math.min(Math.max(Math.round(age + (body_fat - 20) * 0.8), 18), 80);
+      const visceral_fat = Math.min(Math.max(Math.round((body_fat * 0.5 - 3) * 10) / 10, 1), 25);
 
       return {
-        weight: Math.round(weight * 10) / 10,
-        bmi: Math.round(bmi * 10) / 10,
-        body_fat: Math.round(body_fat * 10) / 10,
-        muscle_mass_percentage: Math.round(muscle_mass * 10) / 10,
-        water_percent: Math.round(water_percent * 10) / 10,
-        bone_mass: Math.round(bone_mass * 10) / 10,
+        weight,
+        bmi,
+        body_fat,
+        muscle_mass_percentage,
+        water_percent,
+        bone_mass,
         basal_metabolic_rate: bmr,
-        metabolic_age: Math.round(metabolic_age),
-        body_fat_index: Math.round(visceral_fat * 10) / 10,
+        metabolic_age,
+        body_fat_index: visceral_fat,
       };
     } catch { return null; }
   };
@@ -215,7 +232,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     try {
       setConnectionStatus('scanning');
       setConnecting(true);
-      setRawBytes('');
+      setImpedance(0);
 
       // Determine protocol and configuration
       const protocol = selectedScale?.supported_scale?.protocol || 'xiaomi_v2';
@@ -223,7 +240,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       const protocolConfig: Record<string, { serviceUUID: string; charUUID: string; parser: (b: ArrayBuffer) => ScaleData | null }> = {
         xiaomi_v2:    { serviceUUID: XIAOMI_SERVICE_UUID,   charUUID: XIAOMI_CHAR_UUID,         parser: parseXiaomiData },
         chipsea_okok: { serviceUUID: CHIPSEA_SERVICE_UUID,  charUUID: CHIPSEA_CHAR_NOTIFY_UUID, parser: parseChipseaData },
-        fitdays:      { serviceUUID: FITDAYS_SERVICE_UUID,  charUUID: FITDAYS_CHAR_NOTIFY_UUID, parser: parseFitdaysData },
+        fitdays:      { serviceUUID: FITDAYS_SERVICE_UUID,  charUUID: FITDAYS_CHAR_NOTIFY_UUID, parser: parseXiaomiData }, // temp placeholder
       };
 
       const config = protocolConfig[protocol];
@@ -328,14 +345,17 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         if (!value) return;
         clearTimeout(dataTimeout);
         const bytes = new Uint8Array(value.buffer);
-        const hexStr = Array.from(bytes)
-          .map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
-          .join(' ');
-        console.log('RAW BLE bytes:', hexStr);
-        if (bytes[2] >= 0xF0) {
-          setRawBytes(prev => prev + '\n' + hexStr);
+        
+        // Detectar pacote de impedância Fitdays
+        if (bytes[0] === 0xAC && bytes[1] === 0x03 && bytes[2] === 0xFD && bytes[3] === 0x01) {
+          const imp = (bytes[4] << 8) | bytes[5];
+          if (imp > 0) setImpedance(imp);
+          return; // não passar para o parser ainda
         }
-        const scaleData = config.parser(value.buffer);
+        
+        const scaleData = protocol === 'fitdays'
+          ? parseFitdaysData(value.buffer, impedance)
+          : config.parser(value.buffer);
         if (scaleData) {
           onDataReceived(scaleData);
           setConnected(true);
@@ -532,12 +552,6 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         </View>
       )}
 
-      {rawBytes !== '' && (
-        <View style={styles.debugCard}>
-          <Text style={styles.debugTitle}>🔬 Bytes recebidos (debug)</Text>
-          <Text style={styles.debugBytes} selectable={true}>{rawBytes}</Text>
-        </View>
-      )}
 
       {connectionStatus === 'error_cancelled' && (
         <View style={styles.statusCardWarning}>
@@ -936,25 +950,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: T.white,
-  },
-  debugCard: {
-    backgroundColor: 'rgba(99,102,241,0.15)',
-    borderWidth: 1,
-    borderColor: '#6366F1',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 12,
-  },
-  debugTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#6366F1',
-    marginBottom: 6,
-  },
-  debugBytes: {
-    fontSize: 11,
-    color: '#A5B4FC',
-    fontFamily: 'monospace',
-    lineHeight: 18,
   },
 });
