@@ -214,6 +214,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     try {
       setConnectionStatus('scanning');
       setConnecting(true);
+      setRawBytes('');
 
       // Determine protocol and configuration
       const protocol = selectedScale?.supported_scale?.protocol || 'xiaomi_v2';
@@ -330,7 +331,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
           .map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
           .join(' ');
         console.log('RAW BLE bytes:', hexStr);
-        setRawBytes(hexStr);
+        setRawBytes(prev => prev + '\n' + hexStr);
         const scaleData = config.parser(value.buffer);
         if (scaleData) {
           onDataReceived(scaleData);
