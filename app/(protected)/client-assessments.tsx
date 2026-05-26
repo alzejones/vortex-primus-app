@@ -888,7 +888,7 @@ export default function ClientAssessments() {
                   onViewDetails={handleViewAssessment}
                   onEdit={handleEditAssessment}
                   onDelete={deleteAssessment}
-                  onWhatsApp={handleSendWhatsApp}
+                  onWhatsApp={() => handleShareLink()}
                   onPhysicalTests={() => handlePhysicalTests(assessment)}
                   isLatest={index === 0}
                   onExportAI={(a) => { setAssessmentForReport(a); setAiReportVisible(true); }}
