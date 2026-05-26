@@ -332,7 +332,9 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
           .map(b => '0x' + b.toString(16).padStart(2, '0').toUpperCase())
           .join(' ');
         console.log('RAW BLE bytes:', hexStr);
-        setRawBytes(prev => prev + '\n' + hexStr);
+        if (bytes[2] >= 0xF0) {
+          setRawBytes(prev => prev + '\n' + hexStr);
+        }
         const scaleData = config.parser(value.buffer);
         if (scaleData) {
           onDataReceived(scaleData);
