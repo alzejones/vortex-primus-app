@@ -677,7 +677,7 @@ export default function ClientAssessments() {
     return (
       <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
         <Text style={{ fontSize: 12, marginBottom: 4, color: T.t2, minHeight: 30 }} numberOfLines={2}>{label}</Text>
-        <TextInput style={styles.gridInput as any} keyboardType="numeric" value={form[key]} onChangeText={(text) => setForm({ ...form, [key]: text })} />
+        <TextInput style={styles.gridInput as any} keyboardType="decimal-pad" value={form[key]} onChangeText={(text) => setForm({ ...form, [key]: text })} />
       </View>
     );
   }
