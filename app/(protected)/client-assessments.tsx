@@ -174,6 +174,18 @@ export default function ClientAssessments() {
     return age;
   };
 
+  const handleScaleData = (scaleData: any) => {
+    setForm(prev => ({
+      ...prev,
+      weight: scaleData.weight.toString(),
+      body_fat: scaleData.body_fat.toString(),
+      muscle_mass_percentage: scaleData.muscle_mass_percentage.toString(),
+      basal_metabolic_rate: scaleData.basal_metabolic_rate.toString(),
+      body_fat_index: scaleData.body_fat_index.toString(),
+      metabolic_age: scaleData.metabolic_age.toString(),
+    }));
+  };
+
   const chronologicalAssessments = [...(assessments || [])].reverse();
   const chartAssessments = chronologicalAssessments.filter(a => a.anthropometry && a.anthropometry.length > 0);
 
@@ -689,6 +701,13 @@ export default function ClientAssessments() {
   const evolution = getEvolution();
   const relativeEvolution = selectedAssessment ? getRelativeEvolution(selectedAssessment.id) : null;
 
+  // Calcular valores do perfil para BluetoothScaleConnector
+  const clientAge = client ? calculateAge(client.birth_date) : 35;
+  const clientHeightCm = client?.height_cm ? Number(client.height_cm) : 170;
+  const clientIsMale = client?.gender
+    ? client.gender.toUpperCase().startsWith('M')
+    : true;
+
   if (loading || !client) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg }}>
@@ -782,6 +801,9 @@ export default function ClientAssessments() {
                   onDataReceived={handleScaleData}
                   disabled={saving}
                   trainerId={trainerId}
+                  clientAge={clientAge}
+                  clientHeightCm={clientHeightCm}
+                  clientIsMale={clientIsMale}
                 />
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>

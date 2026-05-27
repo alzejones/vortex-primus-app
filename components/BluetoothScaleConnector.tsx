@@ -26,6 +26,9 @@ interface Props {
   disabled?: boolean;
   trainerId?: string | null;
   onManualEntry?: () => void;
+  clientAge?: number;
+  clientHeightCm?: number;
+  clientIsMale?: boolean;
 }
 
 // Xiaomi Mi Body Composition Scale 2 BLE Configuration
@@ -44,7 +47,7 @@ const FITDAYS_CHAR_NOTIFY_UUID = '0000ffb2-0000-1000-8000-00805f9b34fb';
 const FITDAYS_CHAR_WRITE_UUID  = '0000ffb1-0000-1000-8000-00805f9b34fb';
 
 
-export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry }: Props) {
+export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry, clientAge = 35, clientHeightCm = 170, clientIsMale = true }: Props) {
   const [trainerScales, setTrainerScales] = useState<any[]>([]);
   const [selectedScale, setSelectedScale] = useState<any | null>(null);
   const [loadingScales, setLoadingScales] = useState(false);
@@ -354,7 +357,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         }
         
         const scaleData = protocol === 'fitdays'
-          ? parseFitdaysData(value.buffer, impedance)
+          ? parseFitdaysData(value.buffer, impedance, clientAge, clientHeightCm, clientIsMale)
           : config.parser(value.buffer);
         if (scaleData) {
           onDataReceived(scaleData);
