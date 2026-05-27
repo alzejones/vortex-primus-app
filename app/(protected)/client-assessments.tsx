@@ -174,18 +174,6 @@ export default function ClientAssessments() {
     return age;
   };
 
-  const handleScaleData = (scaleData: any) => {
-    setForm(prev => ({
-      ...prev,
-      weight: scaleData.weight.toString(),
-      body_fat: scaleData.body_fat.toString(),
-      muscle_mass_percentage: scaleData.muscle_mass_percentage.toString(),
-      basal_metabolic_rate: scaleData.basal_metabolic_rate.toString(),
-      body_fat_index: scaleData.body_fat_index.toString(),
-      metabolic_age: scaleData.metabolic_age.toString(),
-    }));
-  };
-
   const chronologicalAssessments = [...(assessments || [])].reverse();
   const chartAssessments = chronologicalAssessments.filter(a => a.anthropometry && a.anthropometry.length > 0);
 
