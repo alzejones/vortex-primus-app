@@ -149,7 +149,7 @@ export default function ScaleCalibrationCapture() {
       packets.join('\n') +
       `\n\n_Anexe também o print com os resultados da medição no app oficial da balança._`;
 
-    const phone = '5521XXXXXXXXX'; // ← substitua pelo número do suporte Vortex
+    const phone = '5516981020191'; // Suporte Vortex
     Linking.openURL(
       `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`
     );
