@@ -59,7 +59,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     'idle' | 'scanning' | 'connecting' | 'waiting_data' | 'error_cancelled' |
     'error_incompatible' | 'error_no_data' | 'error_generic'
   >('idle');
-  const [impedance, setImpedance] = useState<number>(0);
+  const impedanceRef = React.useRef<number>(0);
 
   useEffect(() => {
     if (!trainerId) return;
@@ -235,7 +235,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     try {
       setConnectionStatus('scanning');
       setConnecting(true);
-      setImpedance(0);
+      impedanceRef.current = 0;
 
       // Determine protocol and configuration
       const protocol = selectedScale?.supported_scale?.protocol || 'xiaomi_v2';
@@ -352,12 +352,12 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         // Detectar pacote de impedância Fitdays
         if (bytes[0] === 0xAC && bytes[1] === 0x03 && bytes[2] === 0xFD && bytes[3] === 0x01) {
           const imp = (bytes[4] << 8) | bytes[5];
-          if (imp > 0) setImpedance(imp);
+          if (imp > 0) impedanceRef.current = imp;
           return; // não passar para o parser ainda
         }
         
         const scaleData = protocol === 'fitdays'
-          ? parseFitdaysData(value.buffer, impedance, clientAge, clientHeightCm, clientIsMale)
+          ? parseFitdaysData(value.buffer, impedanceRef.current, clientAge, clientHeightCm, clientIsMale)
           : config.parser(value.buffer);
         if (scaleData) {
           onDataReceived(scaleData);
