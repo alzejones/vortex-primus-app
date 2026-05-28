@@ -220,6 +220,23 @@ export default function TrainerProfile() {
           
           <TouchableOpacity 
             style={styles.configButton}
+            onPress={() => router.push('/(protected)/scale-calibration' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.configButtonLeft}>
+              <View style={styles.configButtonIcon}>
+                <Text style={{ fontSize: 24 }}>🔧</Text>
+              </View>
+              <View>
+                <Text style={styles.configButtonTitle}>Configurar Nova Balança</Text>
+                <Text style={styles.configButtonSubtitle}>Capturar dados para homologação</Text>
+              </View>
+            </View>
+            <Text style={styles.configButtonArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.configButton}
             onPress={() => router.push('/(protected)/supplements' as any)}
             activeOpacity={0.7}
           >
