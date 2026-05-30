@@ -10,6 +10,7 @@ import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
 import TrunkMeasurementsChart from './TrunkMeasurementsChart';
 import LimbMeasurementsChart from './LimbMeasurementsChart';
 import AssessmentPhotoGallery from './AssessmentPhotoGallery';
+import BodyAvatarRow from './BodyAvatarRow';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -165,6 +166,18 @@ export default function AssessmentDetailsModal({
               <Text style={{ fontSize: 18, fontWeight: '800', color: T.t1, textAlign: 'center', marginBottom: 15, textTransform: 'uppercase' }}>
                 Vortex Primus - Evolução de {client?.name?.split(' ')[0]}
               </Text> 
+
+              {/* Avatar de Composição Corporal */}
+              {selectedAssessment?.anthropometry?.[0]?.body_fat != null && (
+                <BodyAvatarRow
+                  bodyFatPercentage={Number(selectedAssessment.anthropometry[0].body_fat)}
+                  gender={
+                    client?.gender === 'M' || client?.gender === 'Masculino'
+                      ? 'male'
+                      : 'female'
+                  }
+                />
+              )}
 
               <View style={{ alignItems: 'center', marginBottom: 24 }}>
                 <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 16, borderRadius: 16, elevation: 4 }}>
