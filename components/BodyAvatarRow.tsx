@@ -1,15 +1,8 @@
 import React from 'react';
-import {
-  View, Image, Text, ScrollView,
-  StyleSheet, useWindowDimensions,
-} from 'react-native';
+import { View, Image, Text, StyleSheet, Dimensions } from 'react-native';
 
 type Gender = 'male' | 'female' | 'm' | 'f' | 'M' | 'F' | 'Masculino' | 'Feminino';
-
-interface Props {
-  bodyFatPercentage: number;
-  gender: Gender;
-}
+interface Props { bodyFatPercentage: number; gender: Gender; }
 
 const ASSETS = {
   female: [
@@ -41,7 +34,6 @@ const TIERS_FEMALE = [
   { label: 'Obesidade I',  range: '35–39%', min: 35, max: 39.9 },
   { label: 'Obesidade II', range: '≥ 40%',  min: 40, max: 999  },
 ];
-
 const TIERS_MALE = [
   { label: 'Atlético',     range: '< 8%',   min: 0,  max: 7.9  },
   { label: 'Excelente',    range: '8–12%',  min: 8,  max: 12.9 },
@@ -51,18 +43,22 @@ const TIERS_MALE = [
   { label: 'Obesidade I',  range: '28–32%', min: 28, max: 32.9 },
   { label: 'Obesidade II', range: '≥ 33%',  min: 33, max: 999  },
 ];
-
 const TIER_COLORS = ['#22C55E','#84CC16','#EAB308','#F97316','#EF4444','#DC2626','#991B1B'];
 
 function normalizeGender(g: Gender): 'male' | 'female' {
   return g === 'M' || g === 'm' || g === 'male' || g === 'Masculino' ? 'male' : 'female';
 }
-
 function getActiveTier(pct: number, gender: 'male' | 'female'): number {
   const tiers = gender === 'female' ? TIERS_FEMALE : TIERS_MALE;
   const idx = tiers.findIndex(t => pct >= t.min && pct <= t.max);
   return idx === -1 ? 6 : idx;
 }
+
+// Calcula largura do card baseado na tela real, descontando paddings do modal
+// Modal padding: ~32px cada lado = 64px total. Gap entre 7 cards: 2px × 6 = 12px
+const SCREEN_W = Dimensions.get('window').width;
+const CARD_W = Math.floor((SCREEN_W - 64 - 12) / 7);
+const IMG_H  = Math.floor(CARD_W * 2.2);
 
 export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
   const g      = normalizeGender(gender);
@@ -71,44 +67,30 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
   const active = getActiveTier(bodyFatPercentage, g);
   const color  = TIER_COLORS[active];
 
-  const { width: screenWidth } = useWindowDimensions();
-  // Modal tem ~32px de padding externo + 24px interno = 56px total
-  // 7 cards + 6 gaps de 3px
-  const GAP = 3;
-  const DYNAMIC_CARD_W = Math.floor((screenWidth - 56 - GAP * 6) / 7);
-  const DYNAMIC_IMG_H  = Math.floor(DYNAMIC_CARD_W * 2.2);
-
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
         <Text style={styles.title}>Seu Avatar</Text>
         <View style={[styles.badge, { backgroundColor: color + '22', borderColor: color }]}>
           <Text style={[styles.badgeText, { color }]}>
-            {tiers[active].label}  {bodyFatPercentage.toFixed(1)}% GC
+            {tiers[active].label}{'  '}{bodyFatPercentage.toFixed(1)}% GC
           </Text>
         </View>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}
-      >
+      <View style={styles.row}>
         {tiers.map((tier, i) => {
           const isActive = i === active;
           return (
-            <View key={i} style={styles.cardWrapper}>
+            <View key={i} style={{ width: CARD_W }}>
               <View style={[
                 styles.card,
-                { width: DYNAMIC_CARD_W },
-                isActive
-                  ? { borderColor: color, borderWidth: 2.5 }
-                  : styles.cardInactive,
+                isActive ? { borderColor: color, borderWidth: 2.5 } : styles.cardInactive,
               ]}>
-                <View style={[styles.imgBox, { width: DYNAMIC_CARD_W, height: DYNAMIC_IMG_H }]}>
+                <View style={{ width: CARD_W, height: IMG_H, alignItems: 'center', justifyContent: 'flex-end' }}>
                   <Image
                     source={assets[i]}
-                    style={[styles.img, { width: DYNAMIC_CARD_W - 4, height: DYNAMIC_IMG_H - 4 }, !isActive && styles.imgDim]}
+                    style={[{ width: CARD_W, height: IMG_H }, !isActive && styles.imgDim]}
                     resizeMode="contain"
                   />
                 </View>
@@ -129,7 +111,7 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
             </View>
           );
         })}
-      </ScrollView>
+      </View>
 
       <Text style={styles.footer}>
         {g === 'female' ? '♀ Feminino' : '♂ Masculino'} · Baseado no % de gordura corporal
@@ -138,27 +120,20 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
   );
 }
 
-const CARD_W = 46;
-const IMG_H  = 100;
-// (estas constantes serão sobrescritas pelo hook abaixo)
-
 const styles = StyleSheet.create({
-  wrapper:     { marginVertical: 16 },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingHorizontal: 2 },
+  wrapper:     { marginVertical: 12 },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingHorizontal: 2 },
   title:       { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   badgeText:   { fontSize: 12, fontWeight: '700' },
-  row:         { paddingHorizontal: 2, gap: 3, alignItems: 'flex-end' },
-  cardWrapper: { alignItems: 'center' },
-  card:        { width: CARD_W, borderRadius: 10, overflow: 'hidden', backgroundColor: '#141e2e', borderWidth: 1.5, borderColor: '#1e2d45' },
+  row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
+  card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#141e2e', borderWidth: 1.5, borderColor: '#1e2d45' },
   cardInactive:{ borderColor: '#1e2d45' },
-  imgBox:      { width: CARD_W, height: IMG_H, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 4 },
-  img:         { width: CARD_W - 8, height: IMG_H - 8 },
   imgDim:      { opacity: 0.35 },
   youBadge:    { alignItems: 'center', paddingVertical: 2 },
-  youText:     { color: '#fff', fontSize: 9, fontWeight: '800' },
-  labelBox:    { alignItems: 'center', paddingVertical: 5, paddingHorizontal: 2, borderTopWidth: 1, borderTopColor: '#1e2d45', minHeight: 36, justifyContent: 'center' },
-  labelTier:   { fontSize: 8, fontWeight: '600', textAlign: 'center' },
-  labelPct:    { fontSize: 9, fontWeight: '700', textAlign: 'center', marginTop: 1 },
-  footer:      { fontSize: 10, color: '#445', textAlign: 'center', marginTop: 8 },
+  youText:     { color: '#fff', fontSize: 8, fontWeight: '800' },
+  labelBox:    { alignItems: 'center', paddingVertical: 3, paddingHorizontal: 1, borderTopWidth: 1, borderTopColor: '#1e2d45', minHeight: 30, justifyContent: 'center' },
+  labelTier:   { fontSize: 7, fontWeight: '600', textAlign: 'center' },
+  labelPct:    { fontSize: 8, fontWeight: '700', textAlign: 'center', marginTop: 1 },
+  footer:      { fontSize: 10, color: '#445', textAlign: 'center', marginTop: 6 },
 });
