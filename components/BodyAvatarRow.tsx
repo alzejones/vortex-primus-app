@@ -57,9 +57,8 @@ function getActiveTier(pct: number, gender: 'male' | 'female'): number {
 // Calcula largura do card baseado na tela real, descontando paddings do modal
 // Modal padding: ~32px cada lado = 64px total. Gap entre 7 cards: 2px × 6 = 12px
 const SCREEN_W = Dimensions.get('window').width;
-// Modal tem padding externo + interno + borda ≈ 80px total
-// 7 cards com gap 1px entre eles = 6px de gap total
-const CARD_W = Math.floor((SCREEN_W - 80 - 6) / 7);
+// Modal padding: ~28px cada lado = 56px. Gap 2px × 6 = 12px
+const CARD_W = Math.floor((SCREEN_W - 56 - 12) / 7);
 const IMG_H  = Math.floor(CARD_W * 2.2);
 
 export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
@@ -123,12 +122,12 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrapper:     { marginVertical: 12 },
+  wrapper:     { marginVertical: 12, marginHorizontal: -4 },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingHorizontal: 2 },
   title:       { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   badgeText:   { fontSize: 12, fontWeight: '700' },
-  row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
+  row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2, paddingHorizontal: 0 },
   card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#141e2e', borderWidth: 1.5, borderColor: '#1e2d45' },
   cardInactive:{ borderColor: '#1e2d45' },
   imgDim:      { opacity: 0.35 },
