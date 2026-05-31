@@ -74,7 +74,6 @@ export default function DashboardLayoutMobile({
         </TouchableOpacity>
       </View>
 
-      {!isSearching && (
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>
           <Text style={styles.widgetTitle}>📅 Agendamentos</Text>
@@ -108,9 +107,7 @@ export default function DashboardLayoutMobile({
           ))
         )}
       </View>
-      )}
 
-      {!isSearching && (
       <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
         <LinearGradient {...GradientPrimary} style={{ padding: 18, alignItems: 'center' }}>
           <TouchableOpacity onPress={() => router.push('/(protected)/client-create' as any)}>
@@ -118,9 +115,7 @@ export default function DashboardLayoutMobile({
           </TouchableOpacity>
         </LinearGradient>
       </View>
-      )}
 
-      {!isSearching && (
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>Alunos ativos</Text>
@@ -135,7 +130,6 @@ export default function DashboardLayoutMobile({
           }} />
         </View>
       </View>
-      )}
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -158,71 +152,168 @@ export default function DashboardLayoutMobile({
   return (
     <View style={styles.outerWrapper}>
       <View style={styles.container}>
-        <FlatList
-          data={filteredClients}
-          keyExtractor={(item) => item.id}
-          ListHeaderComponent={renderHeader}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.blue} />}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="none"
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>👥</Text>
-              <Text style={styles.emptyTitle}>Nenhum aluno encontrado</Text>
-              <Text style={styles.emptyText}>Adicione seu primeiro aluno para começar</Text>
+
+        {/* MODO BUSCA: campo fixo no topo + lista de resultados */}
+        {isSearching ? (
+          <View style={{ flex: 1 }}>
+            {/* Campo de busca fixo no topo */}
+            <View style={[styles.searchContainer, { marginBottom: 12, marginTop: 10 }]}>
+              <View style={styles.searchBar}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar aluno..."
+                  placeholderTextColor={T.t3}
+                  value={searchQuery}
+                  onChangeText={onSearchChange}
+                  autoFocus
+                  autoCorrect={false}
+                />
+                <TouchableOpacity onPress={() => onSearchChange('')}>
+                  <Text style={{ fontSize: 18, color: T.t3, paddingHorizontal: 8 }}>✕</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.clientCard}>
-              <TouchableOpacity style={styles.clientInfoArea} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)} activeOpacity={0.7}>
-                <View style={styles.clientProfileGroup}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.clientName}>{item.name}</Text>
-                    <Text style={styles.clientSubText}>{item.email || 'Sem email'}</Text>
-                  </View>
+
+            {/* Contador de resultados */}
+            <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
+              {filteredClients.length} aluno{filteredClients.length !== 1 ? 's' : ''} encontrado{filteredClients.length !== 1 ? 's' : ''}
+            </Text>
+
+            {/* Lista de resultados separada do campo de busca */}
+            <FlatList
+              data={filteredClients}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="none"
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyEmoji}>🔍</Text>
+                  <Text style={styles.emptyTitle}>Nenhum aluno encontrado</Text>
+                  <Text style={styles.emptyText}>Tente outro nome</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={styles.viewsBadge}>
-                    <Text style={styles.viewsEmoji}>👁️</Text>
-                    <Text style={styles.viewsText}>{item.totalViews ?? 0}</Text>
-                  </View>
-                  <Text style={styles.arrowIcon}>›</Text>
+              }
+              renderItem={({ item }) => (
+                <View style={styles.clientCard}>
+                  <TouchableOpacity style={styles.clientInfoArea} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)} activeOpacity={0.7}>
+                    <View style={styles.clientProfileGroup}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+                      </View>
+                      <View>
+                        <Text style={styles.clientName}>{item.name}</Text>
+                        <Text style={styles.clientSubText}>{item.email || 'Sem email'}</Text>
+                      </View>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.viewsBadge}>
+                        <Text style={styles.viewsEmoji}>👁️</Text>
+                        <Text style={styles.viewsText}>{item.totalViews ?? 0}</Text>
+                      </View>
+                      <Text style={styles.arrowIcon}>›</Text>
+                    </View>
+                  </TouchableOpacity>
+                <View style={styles.clientActionsArea}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}>
+                      <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>Perfil</Text>
+                    </TouchableOpacity>
+                    <View style={styles.verticalDivider} />
+                    <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
+                      <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>Agendar</Text>
+                    </TouchableOpacity>
+                    <View style={styles.verticalDivider} />
+                    <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
+                      <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>Avaliar</Text>
+                    </TouchableOpacity>
+                    <View style={styles.verticalDivider} />
+                    <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
+                      <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>Corporal</Text>
+                    </TouchableOpacity>
+                    <View style={styles.verticalDivider} />
+                    <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
+                      <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>Testar</Text>
+                    </TouchableOpacity>
+                    <View style={styles.verticalDivider} />
+                    <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}>
+                      <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>Condic.</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
                 </View>
-              </TouchableOpacity>
-            <View style={styles.clientActionsArea}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}>
-                  <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>Perfil</Text>
+                </View>
+              )}
+            />
+          </View>
+
+        ) : (
+          /* MODO NORMAL: FlatList original com header completo */
+          <FlatList
+            data={filteredClients}
+            keyExtractor={(item) => item.id}
+            ListHeaderComponent={renderHeader}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.blue} />}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="none"
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyEmoji}>👥</Text>
+                <Text style={styles.emptyTitle}>Nenhum aluno encontrado</Text>
+                <Text style={styles.emptyText}>Adicione seu primeiro aluno para começar</Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.clientCard}>
+                <TouchableOpacity style={styles.clientInfoArea} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)} activeOpacity={0.7}>
+                  <View style={styles.clientProfileGroup}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{getInitials(item.name)}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.clientName}>{item.name}</Text>
+                      <Text style={styles.clientSubText}>{item.email || 'Sem email'}</Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={styles.viewsBadge}>
+                      <Text style={styles.viewsEmoji}>👁️</Text>
+                      <Text style={styles.viewsText}>{item.totalViews ?? 0}</Text>
+                    </View>
+                    <Text style={styles.arrowIcon}>›</Text>
+                  </View>
                 </TouchableOpacity>
-                <View style={styles.verticalDivider} />
-                <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-                  <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>Agendar</Text>
-                </TouchableOpacity>
-                <View style={styles.verticalDivider} />
-                <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
-                  <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>Avaliar</Text>
-                </TouchableOpacity>
-                <View style={styles.verticalDivider} />
-                <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-                  <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>Corporal</Text>
-                </TouchableOpacity>
-                <View style={styles.verticalDivider} />
-                <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
-                  <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>Testar</Text>
-                </TouchableOpacity>
-                <View style={styles.verticalDivider} />
-                <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}>
-                  <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>Condic.</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-            </View>
-          )}
-        />
+              <View style={styles.clientActionsArea}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}>
+                    <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>Perfil</Text>
+                  </TouchableOpacity>
+                  <View style={styles.verticalDivider} />
+                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
+                    <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>Agendar</Text>
+                  </TouchableOpacity>
+                  <View style={styles.verticalDivider} />
+                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
+                    <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>Avaliar</Text>
+                  </TouchableOpacity>
+                  <View style={styles.verticalDivider} />
+                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
+                    <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>Corporal</Text>
+                  </TouchableOpacity>
+                  <View style={styles.verticalDivider} />
+                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
+                    <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>Testar</Text>
+                  </TouchableOpacity>
+                  <View style={styles.verticalDivider} />
+                  <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}>
+                    <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>Condic.</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+              </View>
+            )}
+          />
+        )}
       </View>
 
       <Modal
