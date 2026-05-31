@@ -3,7 +3,7 @@
 // Toda lógica de dados aqui. Layout delegado ao DashboardLayout.
 // Expo usa DashboardLayout.web.tsx na web automaticamente.
 // ============================================================
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
@@ -112,6 +112,26 @@ export default function Index() {
     return `${d}/${m}`;
   };
 
+  // Normaliza string: remove diacríticos + lowercase — busca insensível a acento
+  const normalize = useCallback(
+    (str: string) =>
+      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(),
+    []
+  );
+
+  // useMemo: referência estável → FlatList não re-monta → teclado não cai
+  const filteredClients = useMemo(() => {
+    const q = normalize(searchQuery);
+    if (!q) return clients;
+    return clients.filter(c => normalize(c.name ?? '').includes(q));
+  }, [clients, searchQuery, normalize]);
+
+  const scheduleFilteredClients = useMemo(() => {
+    const q = normalize(scheduleSearchQuery);
+    if (!q) return clients;
+    return clients.filter(c => normalize(c.name ?? '').includes(q));
+  }, [clients, scheduleSearchQuery, normalize]);
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
@@ -119,9 +139,6 @@ export default function Index() {
       </View>
     );
   }
-
-  const filteredClients = clients.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  const scheduleFilteredClients = clients.filter(c => c.name.toLowerCase().includes(scheduleSearchQuery.toLowerCase()));
 
   return (
     <DashboardLayout

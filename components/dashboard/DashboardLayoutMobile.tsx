@@ -156,6 +156,8 @@ export default function DashboardLayoutMobile({
           ListHeaderComponent={renderHeader}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.blue} />}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyEmoji}>👥</Text>
@@ -241,6 +243,7 @@ export default function DashboardLayoutMobile({
             <FlatList
               data={scheduleFilteredClients}
               keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.modalClientItem}
