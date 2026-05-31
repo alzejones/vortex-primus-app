@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Image, Text, StyleSheet, useWindowDimensions } from 'react-native';
 
 type Gender = 'male' | 'female' | 'm' | 'f' | 'M' | 'F' | 'Masculino' | 'Feminino';
 interface Props { bodyFatPercentage: number; gender: Gender; }
@@ -45,6 +45,9 @@ const TIERS_MALE = [
 ];
 const TIER_COLORS = ['#22C55E','#84CC16','#EAB308','#F97316','#EF4444','#DC2626','#991B1B'];
 
+const GAP = 2;
+const N = 7;
+
 function normalizeGender(g: Gender): 'male' | 'female' {
   return g === 'M' || g === 'm' || g === 'male' || g === 'Masculino' ? 'male' : 'female';
 }
@@ -54,14 +57,11 @@ function getActiveTier(pct: number, gender: 'male' | 'female'): number {
   return idx === -1 ? 6 : idx;
 }
 
-// Calcula largura do card baseado na tela real, descontando paddings do modal
-// Modal padding: ~32px cada lado = 64px total. Gap entre 7 cards: 2px × 6 = 12px
-const SCREEN_W = Dimensions.get('window').width;
-// Modal padding: ~28px cada lado = 56px. Gap 2px × 6 = 12px
-const CARD_W = Math.floor((SCREEN_W - 56 - 12) / 7);
-const IMG_H  = Math.floor(CARD_W * 2.2);
-
 export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
+  const { width: screenW } = useWindowDimensions();
+  const cardW = Math.floor((screenW - 56 - GAP * (N - 1)) / N);
+  const imgH  = Math.floor(cardW * 2.2);
+
   const g      = normalizeGender(gender);
   const tiers  = g === 'female' ? TIERS_FEMALE : TIERS_MALE;
   const assets = ASSETS[g];
@@ -83,15 +83,15 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
         {tiers.map((tier, i) => {
           const isActive = i === active;
           return (
-            <View key={i} style={{ width: CARD_W }}>
+            <View key={i} style={{ width: cardW }}>
               <View style={[
                 styles.card,
                 isActive ? { borderColor: color, borderWidth: 2.5 } : styles.cardInactive,
               ]}>
-                <View style={{ width: CARD_W, height: IMG_H, alignItems: 'center', justifyContent: 'flex-end' }}>
+                <View style={{ width: cardW, height: imgH, alignItems: 'center', justifyContent: 'flex-end' }}>
                   <Image
                     source={assets[i]}
-                    style={[{ width: CARD_W, height: IMG_H }, !isActive && styles.imgDim]}
+                    style={[{ width: cardW, height: imgH }, !isActive && styles.imgDim]}
                     resizeMode="contain"
                   />
                 </View>
