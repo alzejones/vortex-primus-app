@@ -57,7 +57,9 @@ function getActiveTier(pct: number, gender: 'male' | 'female'): number {
 // Calcula largura do card baseado na tela real, descontando paddings do modal
 // Modal padding: ~32px cada lado = 64px total. Gap entre 7 cards: 2px × 6 = 12px
 const SCREEN_W = Dimensions.get('window').width;
-const CARD_W = Math.floor((SCREEN_W - 64 - 12) / 7);
+// Modal tem padding externo + interno + borda ≈ 80px total
+// 7 cards com gap 1px entre eles = 6px de gap total
+const CARD_W = Math.floor((SCREEN_W - 80 - 6) / 7);
 const IMG_H  = Math.floor(CARD_W * 2.2);
 
 export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
