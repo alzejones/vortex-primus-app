@@ -21,14 +21,9 @@ import {
 } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { LineChart } from "react-native-gifted-charts";
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
 import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import AIReportModal from '../../components/AIReportModal';
-import EvolutionPanel from '../../components/EvolutionPanel';
-import MeasurementsEvolutionPanel from '../../components/MeasurementsEvolutionPanel';
-import TrunkMeasurementsChart from '../../components/TrunkMeasurementsChart';
-import LimbMeasurementsChart from '../../components/LimbMeasurementsChart';
 import { T } from "../../utils/theme";
 import BluetoothScaleConnector from "../../components/BluetoothScaleConnector";
 
@@ -834,11 +829,6 @@ export default function ClientAssessments() {
         </Modal>
 
             {/* TELA PRINCIPAL */}
-            <ScrollView 
-              keyboardShouldPersistTaps="handled" 
-              contentContainerStyle={{ paddingBottom: isDesktop ? 80 : 120 }}
-              showsVerticalScrollIndicator={true}
-            >
           <View style={styles.stickyHeader}>
             <View style={styles.headerRow}>
               <Text style={styles.headerItem}><Text style={styles.bold}>Nome: </Text>{client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}</Text>
@@ -846,44 +836,13 @@ export default function ClientAssessments() {
               <Text style={styles.headerItem}><Text style={styles.bold}>Alt: </Text>{client?.height_cm}cm</Text>
             </View>
           </View>
+            <ScrollView 
+              keyboardShouldPersistTaps="handled" 
+              contentContainerStyle={{ paddingBottom: isDesktop ? 80 : 120 }}
+              showsVerticalScrollIndicator={true}
+            >
 
           <View style={{ padding: 16 }}>
-            {evolution && <EvolutionPanel evolutionData={evolution} currentAssessment={assessments[0]} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} formatValue={formatValue} />}
-            {evolution && assessments?.length > 1 && <MeasurementsEvolutionPanel currentAssessment={assessments[0]} prevAssessment={assessments[1]} firstAssessment={assessments[assessments.length - 1]} />}
-
-            <View style={{ marginBottom: 20, alignItems: 'center', backgroundColor: T.card, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: T.border }}>
-              <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginVertical: 8, elevation: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 5 }}>
-                <LineChart data={fatData.map((val, index) => ({
-                  value: Number(val) || 0,
-                  label: chartLabels[index],
-                  dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
-                }))} data2={muscleData.map((val) => ({
-                  value: Number(val) || 0,
-                  dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
-                }))} height={220} width={chartWidth - 80} isAnimated animationDuration={1200} curved textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac" spacing={Math.max(35, (chartWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))} initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e" thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)" yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }} yAxisLabelSuffix="%" stepValue={5} maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5} noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)} rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)" />
-                <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
-                </View>
-                {fatData.length > 7 && <Text style={{ color: '#94a3b8', fontSize: 11, textAlign: 'center', marginTop: 16, fontStyle: 'italic' }}>↔️ Deslize o gráfico para o lado para ver o histórico completo</Text>}
-              </View>
-            </View>
-
-            <TrunkMeasurementsChart
-              chartAssessments={chartAssessments}
-              chartLabels={chartLabels}
-              chartWidth={chartWidth}
-            />
-
-            <LimbMeasurementsChart
-              chartAssessments={chartAssessments}
-              chartWidth={chartWidth}
-            />
-
-            <TouchableOpacity style={{ backgroundColor: T.bgAlt, padding: 16, borderRadius: 12, marginBottom: 24, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: T.border }} onPress={() => router.push({ pathname: "/(protected)/assessments/conditioning-evolution" as any, params: { client_id: clientId } } as any)}>
-              <Text style={{ color: T.t1, fontSize: 16, fontWeight: 'bold' }}>📈 Ver Evolução de Performance</Text>
-            </TouchableOpacity>
-
             <Text style={styles.pageTitle}>Histórico de Avaliações</Text>
 
             {assessments.map((assessment, index) => {
