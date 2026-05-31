@@ -72,6 +72,13 @@ supabase/              # Migrations e Edge Functions
 | `supplements` | Catálogo de suplementos |
 | `diets` | Planos alimentares |
 
+## Permissões (schema public)
+- GRANTs explícitos aplicados em 30/05/2026 (migration 20260530222841)
+- anon: SELECT em plans, foods, supported_scales apenas
+- authenticated: SELECT/INSERT/UPDATE/DELETE em todas as 23 tabelas
+- Default privileges configurados para tabelas futuras
+- Conformidade com requisito Supabase válida até 30/10/2026
+
 ---
 
 ## Padrão Web Responsivo
