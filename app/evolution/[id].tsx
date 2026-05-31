@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
 import EvolutionPanel from "../../components/EvolutionPanel";
@@ -184,7 +184,14 @@ export default function PublicAssessmentView() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          Platform.OS === 'web' && styles.scrollContentWeb
+        ]}
+        showsVerticalScrollIndicator={Platform.OS !== 'web'}
+        style={Platform.OS === 'web' ? styles.scrollWeb : undefined}
+      >
         <View style={styles.brandHeader}>
           <Text style={styles.brandTitle}>VORTEX PRIMUS</Text>
           <Text style={styles.brandSubtitle}>Relatório Oficial de Evolução</Text>
@@ -468,6 +475,16 @@ const styles = StyleSheet.create({
   labelsRow: { flexDirection: 'row', marginTop: 6 },
   miniLabel: { flex: 1, textAlign: 'center', fontSize: 9, color: T.t3, fontWeight: 'bold' },
   footer: { marginTop: 40, alignItems: 'center' },
+  scrollWeb: {
+    // No web, o ScrollView ocupa toda a tela mas o conteúdo fica centralizado
+  },
+  scrollContentWeb: {
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
   footerText: { color: T.t3, fontSize: 12, fontWeight: '600' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalCard: { backgroundColor: T.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: T.border, width: '100%' },
