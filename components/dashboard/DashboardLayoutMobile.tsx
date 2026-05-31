@@ -56,6 +56,7 @@ export default function DashboardLayoutMobile({
   getInitials, formatDateBR,
 }: DashboardLayoutProps) {
 
+  const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
 
   const renderHeader = () => (
@@ -73,6 +74,7 @@ export default function DashboardLayoutMobile({
         </TouchableOpacity>
       </View>
 
+      {!isSearching && (
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>
           <Text style={styles.widgetTitle}>📅 Agendamentos</Text>
@@ -106,7 +108,9 @@ export default function DashboardLayoutMobile({
           ))
         )}
       </View>
+      )}
 
+      {!isSearching && (
       <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
         <LinearGradient {...GradientPrimary} style={{ padding: 18, alignItems: 'center' }}>
           <TouchableOpacity onPress={() => router.push('/(protected)/client-create' as any)}>
@@ -114,7 +118,9 @@ export default function DashboardLayoutMobile({
           </TouchableOpacity>
         </LinearGradient>
       </View>
+      )}
 
+      {!isSearching && (
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>Alunos ativos</Text>
@@ -129,6 +135,7 @@ export default function DashboardLayoutMobile({
           }} />
         </View>
       </View>
+      )}
 
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -139,6 +146,7 @@ export default function DashboardLayoutMobile({
             placeholderTextColor={T.t3}
             value={searchQuery}
             onChangeText={onSearchChange}
+            autoCorrect={false}
           />
         </View>
       </View>
