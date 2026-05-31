@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Image, Text, StyleSheet } from 'react-native';
 
 type Gender = 'male' | 'female' | 'm' | 'f' | 'M' | 'F' | 'Masculino' | 'Feminino';
 interface Props { bodyFatPercentage: number; gender: Gender; }
@@ -45,9 +45,6 @@ const TIERS_MALE = [
 ];
 const TIER_COLORS = ['#22C55E','#84CC16','#EAB308','#F97316','#EF4444','#DC2626','#991B1B'];
 
-const GAP = 2;
-const N = 7;
-
 function normalizeGender(g: Gender): 'male' | 'female' {
   return g === 'M' || g === 'm' || g === 'male' || g === 'Masculino' ? 'male' : 'female';
 }
@@ -58,10 +55,6 @@ function getActiveTier(pct: number, gender: 'male' | 'female'): number {
 }
 
 export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
-  const { width: screenW } = useWindowDimensions();
-  const cardW = Math.floor((screenW - 56 - GAP * (N - 1)) / N);
-  const imgH  = Math.floor(cardW * 2.2);
-
   const g      = normalizeGender(gender);
   const tiers  = g === 'female' ? TIERS_FEMALE : TIERS_MALE;
   const assets = ASSETS[g];
@@ -83,15 +76,15 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
         {tiers.map((tier, i) => {
           const isActive = i === active;
           return (
-            <View key={i} style={{ width: cardW }}>
+            <View key={i} style={styles.cardWrapper}>
               <View style={[
                 styles.card,
                 isActive ? { borderColor: color, borderWidth: 2.5 } : styles.cardInactive,
               ]}>
-                <View style={{ width: cardW, height: imgH, alignItems: 'center', justifyContent: 'flex-end' }}>
+                <View style={styles.imgBox}>
                   <Image
                     source={assets[i]}
-                    style={[{ width: cardW, height: imgH }, !isActive && styles.imgDim]}
+                    style={[styles.img, !isActive && styles.imgDim]}
                     resizeMode="contain"
                   />
                 </View>
@@ -122,14 +115,17 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
 }
 
 const styles = StyleSheet.create({
-  wrapper:     { marginVertical: 12, marginHorizontal: -4 },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingHorizontal: 2 },
+  wrapper:     { marginVertical: 12, marginHorizontal: 0 },
+  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   title:       { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   badgeText:   { fontSize: 12, fontWeight: '700' },
-  row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2, paddingHorizontal: 0 },
+  row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
+  cardWrapper: { flex: 1, minWidth: 0 },
   card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#141e2e', borderWidth: 1.5, borderColor: '#1e2d45' },
   cardInactive:{ borderColor: '#1e2d45' },
+  imgBox:      { width: '100%', aspectRatio: 0.48, alignItems: 'center', justifyContent: 'flex-end' },
+  img:         { width: '100%', height: '100%' },
   imgDim:      { opacity: 0.35 },
   youBadge:    { alignItems: 'center', paddingVertical: 2 },
   youText:     { color: '#fff', fontSize: 8, fontWeight: '800' },
