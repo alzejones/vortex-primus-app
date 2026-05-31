@@ -185,13 +185,15 @@ export default function PublicAssessmentView() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {Platform.OS === 'web' && (
+        <style>{`html, body, #root { height: 100%; overflow: auto; }`}</style>
+      )}
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           Platform.OS === 'web' && styles.scrollContentWeb
         ]}
-        showsVerticalScrollIndicator={Platform.OS !== 'web'}
-        style={Platform.OS === 'web' ? styles.scrollWeb : undefined}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.brandHeader}>
           <Text style={styles.brandTitle}>VORTEX PRIMUS</Text>
@@ -445,7 +447,7 @@ export default function PublicAssessmentView() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+  container: { flex: 1, backgroundColor: T.bg, ...(Platform.OS === 'web' ? { height: '100vh' } as any : {}) },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
   scrollContent: { padding: 16, paddingBottom: 40 },
   brandHeader: { alignItems: 'center', marginBottom: 24, marginTop: 20 },
@@ -476,10 +478,7 @@ const styles = StyleSheet.create({
   labelsRow: { flexDirection: 'row', marginTop: 6 },
   miniLabel: { flex: 1, textAlign: 'center', fontSize: 9, color: T.t3, fontWeight: 'bold' },
   footer: { marginTop: 40, alignItems: 'center' },
-  scrollWeb: Platform.OS === 'web' ? {
-    height: '100vh',
-    overflow: 'auto',
-  } as any : {},
+  scrollWeb: {},
   scrollContentWeb: {
     maxWidth: 480,
     width: '100%',
