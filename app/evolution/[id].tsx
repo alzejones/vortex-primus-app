@@ -13,6 +13,7 @@ import { getMetabolicStatus } from "../../utils/assessmentCalculations";
 import { T } from "../../utils/theme";
 
 const screenWidth = Dimensions.get("window").width;
+const CONTENT_WIDTH = Platform.OS === 'web' ? Math.min(480, screenWidth) - 32 : screenWidth;
 
 const formatValue = (val: any) => {
   if (val === null || val === undefined || val === "") return "-";
@@ -221,7 +222,7 @@ export default function PublicAssessmentView() {
                 value: Number(val) || 0,
                 dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
               }))}
-              height={220} width={screenWidth - 80} isAnimated animationDuration={1200} curved
+              height={220} width={Platform.OS === 'web' ? CONTENT_WIDTH - 20 : screenWidth - 80} isAnimated animationDuration={1200} curved
               textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
               spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
               initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
@@ -408,7 +409,7 @@ export default function PublicAssessmentView() {
             const d = new Date(a.date);
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
           })}
-          chartWidth={screenWidth - 60}
+          chartWidth={Platform.OS === 'web' ? CONTENT_WIDTH - 20 : screenWidth - 60}
         />
 
         <LimbMeasurementsChart
@@ -416,7 +417,7 @@ export default function PublicAssessmentView() {
             const sorted = [...(assessments || [])].reverse();
             return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
           })()}
-          chartWidth={screenWidth - 60}
+          chartWidth={Platform.OS === 'web' ? CONTENT_WIDTH - 20 : screenWidth - 60}
         />
 
         <View style={{ marginTop: 24, paddingVertical: 14, backgroundColor: T.bgAlt, borderRadius: 12, borderWidth: 1, borderColor: T.border }}>
@@ -475,9 +476,10 @@ const styles = StyleSheet.create({
   labelsRow: { flexDirection: 'row', marginTop: 6 },
   miniLabel: { flex: 1, textAlign: 'center', fontSize: 9, color: T.t3, fontWeight: 'bold' },
   footer: { marginTop: 40, alignItems: 'center' },
-  scrollWeb: {
-    // No web, o ScrollView ocupa toda a tela mas o conteúdo fica centralizado
-  },
+  scrollWeb: Platform.OS === 'web' ? {
+    height: '100vh',
+    overflow: 'auto',
+  } as any : {},
   scrollContentWeb: {
     maxWidth: 480,
     width: '100%',
