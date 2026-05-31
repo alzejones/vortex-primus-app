@@ -7,6 +7,7 @@ import EvolutionPanel from "../../components/EvolutionPanel";
 import MeasurementsEvolutionPanel from "../../components/MeasurementsEvolutionPanel";
 import TrunkMeasurementsChart from "../../components/TrunkMeasurementsChart";
 import LimbMeasurementsChart from "../../components/LimbMeasurementsChart";
+import BodyAvatarRow from "../../components/BodyAvatarRow";
 import { supabase } from "../../lib/supabase";
 import { getMetabolicStatus } from "../../utils/assessmentCalculations";
 import { T } from "../../utils/theme";
@@ -193,6 +194,13 @@ export default function PublicAssessmentView() {
           <Text style={styles.clientName}>{client?.name}</Text>
           <Text style={styles.clientInfo}>Última Avaliação: {formatDateBR(currentAssessment.date)}</Text>
         </View>
+
+        {currentAssessment?.anthropometry?.[0]?.body_fat != null && (
+          <BodyAvatarRow
+            bodyFatPercentage={Number(currentAssessment.anthropometry[0].body_fat)}
+            gender={client?.gender}
+          />
+        )}
 
         {fatData.length > 0 && (
           <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24, elevation: 4, borderWidth: 1, borderColor: T.border }}>
