@@ -1,9 +1,18 @@
+console.log('[DEBUG 0] arquivo iniciando');
+
 import { Slot } from "expo-router";
 import { View } from "react-native";
+console.log('[DEBUG 0a] imports nativos ok');
+
 import StripeWrapper from "../components/StripeWrapper"; // 🔴 Importação do nosso Wrapper inteligente
+console.log('[DEBUG 0b] imports de componentes ok');
+
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
+console.log('[DEBUG 0c] imports de providers ok');
+
 import { T } from "../utils/theme";
+console.log('[DEBUG 0d] todos imports ok');
 
 console.log('[DEBUG 1] _layout.tsx carregado');
 
