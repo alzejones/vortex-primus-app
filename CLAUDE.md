@@ -99,3 +99,48 @@ supabase/              # Migrations e Edge Functions
 4. **Commits diretos em `main`** — workflow simplificado durante desenvolvimento
 5. **Arquivos `.tsx`** — desenvolvedor envia diretamente; Claude nunca deve pedir para exibir
 6. **Commit + push** ao final de cada bloco de trabalho
+
+---
+
+## Armadilhas Conhecidas
+
+### Padrão .web.tsx substitui completamente o arquivo original
+No Expo Router, arquivos com sufixo `.web.tsx` SUBSTITUEM (não 
+herdam) o arquivo `.tsx` correspondente na plataforma web.
+
+**REGRA OBRIGATÓRIA:** Qualquer `_layout.web.tsx` deve conter 
+a mesma árvore de providers do `_layout.tsx`:
+- StripeWrapper
+- ThemeProvider  
+- AuthProvider
+- View com T.bg
+
+Se um provider for omitido no `.web.tsx`, o contexto retorna 
+o valor default (ex: loading: true eterno no AuthContext) 
+causando tela branca no desktop sem nenhum erro visível no 
+build.
+
+**Origem do bug (01/06/2026):** `_layout.web.tsx` criado para 
+injetar CSS de scroll durante sessão de trabalho paralela com 
+projetos JusVia e mybox-iraja-games. O arquivo foi criado com 
+apenas `<Slot/>`, sem os providers. Build passou normalmente 
+(Ready ✅), mas AuthProvider nunca montava no web. Sintomas:
+- Desktop: tela branca sem erro no console
+- Mobile: OAuth Google voltava para tela de login
+
+**Diagnóstico:** `[AUTH] iniciando getSession` nunca aparecia 
+no console web — sinal de que AuthProvider não montava.
+
+### Projetos paralelos no mesmo terminal
+Trabalhar em 2+ projetos simultaneamente com múltiplos 
+terminais Claude Code abertos aumenta risco de arquivos 
+vazarem entre projetos ou configurações serem aplicadas 
+no projeto errado. Ao criar arquivos de plataforma 
+(.web.tsx, .native.tsx), verificar sempre se a árvore 
+de providers está completa.
+
+### JusVia e arquivos estáticos
+Arquivos HTML estáticos de outros projetos NÃO devem 
+ser colocados em public/ do Vortex Primus. O Expo copia 
+tudo de public/ para dist/, podendo corromper o build.
+JusVia tem repositório e projeto Vercel próprios.

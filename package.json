@@ -1,7 +1,7 @@
 {
   "name": "vortex-primus-app",
   "main": "expo-router/entry",
-  "version": "1.0.0-cache-bust",
+  "version": "1.0.0",
   "scripts": {
     "start": "expo start",
     "start:clean": "expo start --clear",
