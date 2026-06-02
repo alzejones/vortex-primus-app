@@ -201,7 +201,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
         water_percent = Math.round((60 - body_fat * 0.3) * 10) / 10;
       }
 
-      const muscle_mass_percentage = Math.round((100 - body_fat - 5) * 0.714 * 10) / 10;
+      const muscle_mass_percentage = Math.round((100 - body_fat - 5) * 10) / 10;
       const bone_mass = Math.round(weight * 0.044 * 10) / 10;
       const bmr = isMale
         ? Math.round(88.362 + (13.397 * weight) + (4.799 * heightCm) - (5.677 * age))
