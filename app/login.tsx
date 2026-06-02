@@ -27,6 +27,7 @@ if (Platform.OS !== "web") {
 }
 
 export default function Login() {
+  console.log('[DEBUG 4] login.tsx renderizando');
   const { session, role } = useAuth();
 
   // ─── Responsividade ───────────────────────────────────────────────
