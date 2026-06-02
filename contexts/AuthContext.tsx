@@ -79,13 +79,18 @@ export const AuthProvider = ({ children }: any) => {
 
   // 🧠 PEGAR SESSÃO INICIAL E OUVIR MUDANÇAS
   useEffect(() => {
+    console.log('[AUTH] iniciando getSession');
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('[AUTH] sessao:', session ? 'existe' : 'null');
       setSession(session);
       if (session?.user?.id) {
         setRole(await detectRole(session.user.id));
       }
+      console.log('[AUTH] loading=false');
       setLoading(false);
-    }).catch(() => {
+    }).catch((error) => {
+      console.log('[AUTH ERRO]', error);
+      console.log('[AUTH] loading=false (catch)');
       setLoading(false);
     });
 
@@ -128,6 +133,7 @@ export const AuthProvider = ({ children }: any) => {
             setRole(null);
           }
         } finally {
+          console.log('[AUTH] loading=false (finally)');
           setLoading(false);
         }
       }
