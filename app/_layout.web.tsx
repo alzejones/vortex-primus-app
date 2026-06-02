@@ -1,18 +1,13 @@
-if (typeof window !== 'undefined') {
-  window.onerror = (msg, src, line, col, err) =>
-    console.log('[ERRO GLOBAL]', msg, 'linha', line, err?.stack);
-  window.addEventListener('unhandledrejection', (e) =>
-    console.log('[PROMISE REJEITADA]', e.reason?.stack || e.reason));
-}
-console.log('[DEBUG WEB 1] _layout.web.tsx carregado');
-
 import { useEffect } from 'react';
 import { Slot } from 'expo-router';
+import { View } from 'react-native';
+import StripeWrapper from '../components/StripeWrapper';
+import { AuthProvider } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
+import { T } from '../utils/theme';
 
 export default function WebLayout() {
-  console.log('[DEBUG WEB 2] render web');
   useEffect(() => {
-    // Força scroll em todos os containers do Expo Web
     const style = document.createElement('style');
     style.innerHTML = `
       html, body { height: 100% !important; overflow: auto !important; }
@@ -23,5 +18,17 @@ export default function WebLayout() {
     return () => { document.head.removeChild(style); };
   }, []);
 
-  return <Slot />;
+  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+
+  return (
+    <StripeWrapper publishableKey={stripeKey}>
+      <ThemeProvider>
+        <AuthProvider>
+          <View style={{ flex: 1, backgroundColor: T.bg }}>
+            <Slot />
+          </View>
+        </AuthProvider>
+      </ThemeProvider>
+    </StripeWrapper>
+  );
 }
