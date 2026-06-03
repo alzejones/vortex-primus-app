@@ -895,5 +895,5 @@ const styles = StyleSheet.create({
   button: { backgroundColor: T.blue, padding: 16, borderRadius: 8, marginTop: 10 },
   historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: T.border, borderRadius: 8, backgroundColor: T.card },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: T.card, borderRadius: 15, padding: 20, width: '100%', maxHeight: '90%', borderWidth: 1, borderColor: T.border }
+  modalContent: { backgroundColor: T.card, borderRadius: 15, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90%', borderWidth: 1, borderColor: T.border, alignSelf: 'center' }
 });
