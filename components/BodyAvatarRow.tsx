@@ -31,8 +31,8 @@ const TIERS_FEMALE = [
   { label: 'Boa',          range: '20–24%', min: 20, max: 24.9 },
   { label: 'Aceitável',    range: '25–29%', min: 25, max: 29.9 },
   { label: 'Acima',        range: '30–34%', min: 30, max: 34.9 },
-  { label: 'Obesidade I',  range: '35–39%', min: 35, max: 39.9 },
-  { label: 'Obesidade II', range: '≥ 40%',  min: 40, max: 999  },
+  { label: 'Alto I',  range: '35–39%', min: 35, max: 39.9 },
+  { label: 'Alto II', range: '≥ 40%',  min: 40, max: 999  },
 ];
 const TIERS_MALE = [
   { label: 'Atlético',     range: '< 8%',   min: 0,  max: 7.9  },
@@ -40,8 +40,8 @@ const TIERS_MALE = [
   { label: 'Bom',          range: '13–17%', min: 13, max: 17.9 },
   { label: 'Aceitável',    range: '18–22%', min: 18, max: 22.9 },
   { label: 'Acima',        range: '23–27%', min: 23, max: 27.9 },
-  { label: 'Obesidade I',  range: '28–32%', min: 28, max: 32.9 },
-  { label: 'Obesidade II', range: '≥ 33%',  min: 33, max: 999  },
+  { label: 'Alto I',  range: '28–32%', min: 28, max: 32.9 },
+  { label: 'Alto II', range: '≥ 33%',  min: 33, max: 999  },
 ];
 const TIER_COLORS = ['#22C55E','#84CC16','#EAB308','#F97316','#EF4444','#DC2626','#991B1B'];
 
