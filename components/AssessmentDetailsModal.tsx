@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dimensions, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import {
   getMetabolicStatus
@@ -13,6 +13,10 @@ import AssessmentPhotoGallery from './AssessmentPhotoGallery';
 import BodyAvatarRow from './BodyAvatarRow';
 
 const screenWidth = Dimensions.get('window').width;
+const MODAL_MAX_W = 480;
+const CHART_W = Platform.OS === 'web'
+  ? Math.min(screenWidth, MODAL_MAX_W) - 60
+  : screenWidth - 100;
 
 interface AssessmentDetailsModalProps {
   visible: boolean;
@@ -191,7 +195,7 @@ export default function AssessmentDetailsModal({
                       value: Number(val) || 0,
                       dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
                     }))}
-                    height={220} width={screenWidth - 100} isAnimated animationDuration={1200} curved
+                    height={220} width={CHART_W} isAnimated animationDuration={1200} curved
                     textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
                     spacing={Math.max(35, (screenWidth - 160) / (fatData.length > 1 ? fatData.length - 1 : 1))}
                     initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
