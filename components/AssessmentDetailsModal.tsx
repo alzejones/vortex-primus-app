@@ -197,7 +197,7 @@ export default function AssessmentDetailsModal({
                     }))}
                     height={220} width={CHART_W} isAnimated animationDuration={1200} curved
                     textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
-                    spacing={Math.max(35, (screenWidth - 160) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+                    spacing={Math.max(28, (CHART_W - 60) / (fatData.length > 1 ? fatData.length - 1 : 1))}
                     initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
                     thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
                     yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
@@ -359,7 +359,7 @@ export default function AssessmentDetailsModal({
                   return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
                 })()}
                 chartLabels={chartLabels}
-                chartWidth={screenWidth - 60}
+                chartWidth={CHART_W}
               />
 
               <LimbMeasurementsChart
@@ -367,7 +367,7 @@ export default function AssessmentDetailsModal({
                   const sorted = [...(assessments || [])].reverse();
                   return sorted.filter((a: any) => a.anthropometry && a.anthropometry.length > 0);
                 })()}
-                chartWidth={screenWidth - 60}
+                chartWidth={CHART_W}
               />
               
               {/* Seção de fotos — só renderiza se houver fotos */}
