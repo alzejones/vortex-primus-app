@@ -702,7 +702,7 @@ export default function ClientAssessments() {
 
   return (
     <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
-      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
+      <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 480 : undefined }}>
         <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === "android" ? 48 : 0 }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
 
