@@ -26,7 +26,7 @@ const ASSETS = {
 };
 
 const TIERS_FEMALE = [
-  { label: 'Atlética',     range: '< 15%',  min: 0,  max: 14.9 },
+  { label: 'Baixo',        range: '< 15%',  min: 0,  max: 14.9 },
   { label: 'Excelente',    range: '15–19%', min: 15, max: 19.9 },
   { label: 'Boa',          range: '20–24%', min: 20, max: 24.9 },
   { label: 'Aceitável',    range: '25–29%', min: 25, max: 29.9 },
@@ -35,7 +35,7 @@ const TIERS_FEMALE = [
   { label: 'Alto II', range: '≥ 40%',  min: 40, max: 999  },
 ];
 const TIERS_MALE = [
-  { label: 'Atlético',     range: '< 8%',   min: 0,  max: 7.9  },
+  { label: 'Baixo',        range: '< 8%',   min: 0,  max: 7.9  },
   { label: 'Excelente',    range: '8–12%',  min: 8,  max: 12.9 },
   { label: 'Bom',          range: '13–17%', min: 13, max: 17.9 },
   { label: 'Aceitável',    range: '18–22%', min: 18, max: 22.9 },
