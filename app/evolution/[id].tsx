@@ -185,9 +185,7 @@ export default function PublicAssessmentView() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {Platform.OS === 'web' && (
-        <style>{`html, body, #root { height: 100%; overflow: auto; }`}</style>
-      )}
+      
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -447,7 +445,7 @@ export default function PublicAssessmentView() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, ...(Platform.OS === 'web' ? { height: '100vh' } as any : {}) },
+  container: { flex: 1, backgroundColor: T.bg },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
   scrollContent: { padding: 16, paddingBottom: 40 },
   brandHeader: { alignItems: 'center', marginBottom: 24, marginTop: 20 },
