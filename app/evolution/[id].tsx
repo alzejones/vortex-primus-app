@@ -159,6 +159,16 @@ export default function PublicAssessmentView() {
       ) || historyData[0];
       setCurrentAssessment(assessmentWithData);
 
+      // Incrementa view_count na antropometria da avaliação atual
+      const anthroId = assessmentWithData?.anthropometry?.[0]?.id;
+      const currentCount = assessmentWithData?.anthropometry?.[0]?.view_count || 0;
+      if (anthroId) {
+        await supabase
+          .from('anthropometry')
+          .update({ view_count: currentCount + 1 })
+          .eq('id', anthroId);
+      }
+
       const currentIdx = historyData.findIndex((a: any) => a.id === assessmentWithData.id);
       const prevWithData = historyData.slice(currentIdx + 1).find(
         (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
