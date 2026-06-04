@@ -631,10 +631,9 @@ export default function ClientAssessments() {
       await uploadPhotosForAssessment(assessment.id);
     }
 
-    setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "" });
-    setPendingPhotos([]);
-    setSaving(false);
     await fetchHistory();
+    setSaving(false);
+    setFormModalVisible(false);
   }
 
   function handleSendWhatsApp(assessment: any) {
@@ -801,7 +800,7 @@ export default function ClientAssessments() {
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); if(!editingAssessmentId) setFormModalVisible(false); }} disabled={saving}>
+                <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); }} disabled={saving}>
                   <Text style={{ color: T.white, textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text>
                 </TouchableOpacity>
               </View>
