@@ -121,6 +121,25 @@ export default function PublicAssessmentView() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [referencesVisible, setReferencesVisible] = useState(false);
 
+  // Fix scroll on web — this page is standalone (no tab bar)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const body = document.body as HTMLElement;
+      const html = document.documentElement as HTMLElement;
+      const root = document.getElementById('root') as HTMLElement | null;
+      body.style.overflow = 'auto';
+      html.style.overflow = 'auto';
+      html.style.height = 'auto';
+      if (root) { root.style.overflow = 'auto'; root.style.height = 'auto'; }
+      return () => {
+        body.style.overflow = '';
+        html.style.overflow = '';
+        html.style.height = '';
+        if (root) { root.style.overflow = ''; root.style.height = ''; }
+      };
+    }
+  }, []);
+
   useEffect(() => {
     if (clientId) loadPublicData();
   }, [clientId]);
@@ -192,7 +211,7 @@ export default function PublicAssessmentView() {
           Platform.OS === 'web' && styles.scrollContentWeb
         ]}
         showsVerticalScrollIndicator={false}
-        style={Platform.OS === 'web' ? ({ height: '100dvh', overflowY: 'auto' } as any) : undefined}
+        style={undefined}
       >
         <View style={styles.brandHeader}>
           <Text style={styles.brandTitle}>VORTEX PRIMUS</Text>
