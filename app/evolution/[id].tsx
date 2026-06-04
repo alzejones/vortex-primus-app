@@ -192,6 +192,7 @@ export default function PublicAssessmentView() {
           Platform.OS === 'web' && styles.scrollContentWeb
         ]}
         showsVerticalScrollIndicator={false}
+        style={Platform.OS === 'web' ? ({ height: '100dvh', overflowY: 'auto' } as any) : undefined}
       >
         <View style={styles.brandHeader}>
           <Text style={styles.brandTitle}>VORTEX PRIMUS</Text>
@@ -222,9 +223,9 @@ export default function PublicAssessmentView() {
                 value: Number(val) || 0,
                 dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
               }))}
-              height={220} width={Platform.OS === 'web' ? CONTENT_WIDTH - 20 : screenWidth - 80} isAnimated animationDuration={1200} curved
+              height={220} width={Platform.OS === 'web' ? CONTENT_WIDTH - 40 : screenWidth - 80} isAnimated animationDuration={1200} curved
               textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
-              spacing={Math.max(35, (screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+              spacing={Math.max(28, (Platform.OS === 'web' ? CONTENT_WIDTH - 80 : screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
               initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
               thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
               yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
