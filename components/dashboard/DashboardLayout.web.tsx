@@ -49,6 +49,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
     scheduleSearchQuery, onScheduleSearchChange, scheduleFilteredClients,
     refreshing, onRefresh,
     getInitials, formatDateBR,
+    overdueClients, birthdayClients,
   } = props;
 
   const pathname = usePathname();
@@ -66,6 +67,20 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   if (screenWidth < 768) return <MobileLayout {...props} />;
   // ─────────────────────────────────────────────────────────────
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
+
+  const today = new Date();
+  const currentDay = today.getDate();
+
+  const getDayOfMonth = (birth_date: string) => {
+    if (!birth_date) return 0;
+    return parseInt(birth_date.split('-')[2], 10);
+  };
+
+  const isBirthdayToday = (birth_date: string) => {
+    if (!birth_date) return false;
+    const [, , day] = birth_date.split('-').map(Number);
+    return day === currentDay;
+  };
 
   // ─── Sidebar ─────────────────────────────────────────────────
   const Sidebar = () => (
@@ -243,6 +258,112 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             </View>
           </View>
         ))
+      )}
+
+      {/* Widget: Reavaliações Pendentes */}
+      {overdueClients.length > 0 && (
+        <View style={{
+          backgroundColor: '#1a1a2e',
+          borderRadius: 16,
+          padding: 16,
+          marginTop: 16,
+          borderWidth: 1.5,
+          borderColor: '#ff6b35',
+        }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ff6b35' }} />
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ff9a6c' }}>Reavaliações Pendentes</Text>
+            </View>
+            <Text style={{ backgroundColor: '#ff6b35', color: '#fff', fontWeight: '900', fontSize: 12, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99, overflow: 'hidden' }}>
+              {overdueClients.length}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 11, color: '#ff9a6c', marginBottom: 12, opacity: 0.7 }}>Sem avaliação há 30+ dias</Text>
+          {overdueClients.slice(0, 3).map((client) => (
+            <TouchableOpacity
+              key={client.id}
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,107,53,0.15)' }}
+              onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
+              activeOpacity={0.75}
+            >
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,107,53,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                <Text style={{ color: '#ff9a6c', fontWeight: '800', fontSize: 12 }}>{getInitials(client.name)}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{client.name}</Text>
+                <Text style={{ fontSize: 11, color: '#ff9a6c', marginTop: 1 }}>
+                  {client.lastAssessmentDate
+                    ? `Última: ${Math.floor((new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24))} dias atrás`
+                    : 'Nunca avaliado'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); router.push(`/(protected)/schedule/new?client_id=${client.id}` as any); }}
+                style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(255,107,53,0.15)', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Text style={{ fontSize: 16 }}>📅</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+          {overdueClients.length > 3 && (
+            <Text style={{ fontSize: 11, color: '#ff9a6c', textAlign: 'center', marginTop: 10, opacity: 0.7 }}>
+              +{overdueClients.length - 3} mais precisam de reavaliação
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Widget: Aniversariantes */}
+      {birthdayClients.length > 0 && (
+        <View style={{
+          backgroundColor: '#0d1f2d',
+          borderRadius: 16,
+          padding: 16,
+          marginTop: 16,
+          borderWidth: 1.5,
+          borderColor: '#4fc3f7',
+        }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>🎂 Aniversariantes</Text>
+            <Text style={{ fontSize: 11, color: '#4fc3f7', fontWeight: '700', textTransform: 'capitalize' }}>
+              {new Date().toLocaleDateString('pt-BR', { month: 'long' })}
+            </Text>
+          </View>
+          {birthdayClients.map((client) => {
+            const isToday = isBirthdayToday(client.birth_date);
+            const day = getDayOfMonth(client.birth_date);
+            return (
+              <TouchableOpacity
+                key={client.id}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
+                  borderTopWidth: 1, borderTopColor: 'rgba(79,195,247,0.12)',
+                  ...(isToday ? { backgroundColor: 'rgba(79,195,247,0.08)', borderRadius: 10, paddingHorizontal: 8 } : {})
+                }}
+                onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
+                activeOpacity={0.75}
+              >
+                <View style={{
+                  width: 36, height: 36, borderRadius: 8, marginRight: 12,
+                  backgroundColor: isToday ? '#4fc3f7' : 'rgba(79,195,247,0.1)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Text style={{ fontSize: 15, fontWeight: '900', color: isToday ? '#0d1f2d' : '#4fc3f7' }}>
+                    {String(day).padStart(2, '0')}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: isToday ? '#4fc3f7' : '#fff' }}>
+                    {client.name}
+                  </Text>
+                  {isToday && <Text style={{ fontSize: 11, color: '#4fc3f7', fontWeight: '600', marginTop: 2 }}>🎉 Hoje!</Text>}
+                </View>
+                {isToday && <Text style={{ fontSize: 18 }}>🎂</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
       {/* Botão adicionar aluno */}
