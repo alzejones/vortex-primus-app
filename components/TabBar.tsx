@@ -7,19 +7,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { T } from "../utils/theme";
 
 const TABS = [
-  { key: "home",        label: "Home",    icon: "🏠", href: "/(protected)"               },
-  { key: "clients",     label: "Alunos",  icon: "👥", href: "/(protected)/clients"        },
-  { key: "schedule",    label: "Agenda",  icon: "📅", href: "/(protected)/schedule/"      },
-  { key: "config",      label: "Config",  icon: "⚙️", href: "/(protected)/trainer-profile"},
+  { key: "home",     label: "Home",    icon: "🏠", href: "/(protected)"                    },
+  { key: "clients",  label: "Alunos",  icon: "👥", href: "/(protected)/clients"             },
+  { key: "schedule", label: "Agenda",  icon: "📅", href: "/(protected)/schedule/"           },
+  { key: "goals",    label: "Metas",   icon: "🎯", href: "/(protected)/business-goals"      },
+  { key: "config",   label: "Config",  icon: "⚙️", href: "/(protected)/trainer-profile"     },
 ] as const;
 
 function isActive(key: string, pathname: string): boolean {
   switch (key) {
-    case "home":        return pathname === "/";
-    case "clients":     return pathname.startsWith("/clients") || pathname.startsWith("/client");
-    case "schedule":    return pathname.startsWith("/schedule");
-    case "config":      return pathname.startsWith("/trainer-profile");
-    default:            return false;
+    case "home":     return pathname === "/";
+    case "clients":  return pathname.startsWith("/clients") || pathname.startsWith("/client");
+    case "schedule": return pathname.startsWith("/schedule");
+    case "goals":    return pathname.startsWith("/business-goals");
+    case "config":   return pathname.startsWith("/trainer-profile");
+    default:         return false;
   }
 }
 
