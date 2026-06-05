@@ -137,33 +137,43 @@ export default function DashboardLayoutMobile({
           </View>
           <Text style={styles.alertSubtitle}>Sem avaliação há 30+ dias</Text>
           {overdueClients.slice(0, 3).map((client) => (
-            <TouchableOpacity
+            <View
               key={client.id}
               style={styles.alertClientRow}
-              onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
-              activeOpacity={0.75}
             >
-              <View style={styles.alertAvatar}>
-                <Text style={styles.alertAvatarText}>
-                  {getInitials(client.name)}
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.alertClientName}>{client.name}</Text>
-                <Text style={styles.alertClientSub}>
-                  {client.lastAssessmentDate
-                    ? (() => {
-                        const diff = Math.floor(
-                          (new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) /
-                            (1000 * 60 * 60 * 24)
-                        );
-                        return `Última: ${diff} dias atrás`;
-                      })()
-                    : 'Nunca avaliado'}
-                </Text>
-              </View>
-              <Text style={styles.alertChevron}>›</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.alertAvatar}>
+                  <Text style={styles.alertAvatarText}>
+                    {getInitials(client.name)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.alertClientName}>{client.name}</Text>
+                  <Text style={styles.alertClientSub}>
+                    {client.lastAssessmentDate
+                      ? (() => {
+                          const diff = Math.floor(
+                            (new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          );
+                          return `Última: ${diff} dias atrás`;
+                        })()
+                      : 'Nunca avaliado'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push(`/(protected)/schedule/new?client_id=${client.id}` as any)}
+                activeOpacity={0.75}
+                style={styles.alertScheduleBtn}
+              >
+                <Text style={styles.alertScheduleIcon}>📅</Text>
+              </TouchableOpacity>
+            </View>
           ))}
           {overdueClients.length > 3 && (
             <Text style={styles.alertMore}>+{overdueClients.length - 3} mais precisam de reavaliação</Text>
@@ -641,6 +651,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     opacity: 0.7,
+  },
+  alertScheduleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,107,53,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  alertScheduleIcon: {
+    fontSize: 18,
   },
 
   // ─── Widget Aniversariantes ────────────────────────────────────────
