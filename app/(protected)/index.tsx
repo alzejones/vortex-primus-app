@@ -24,6 +24,10 @@ export default function Index() {
   const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
   const [isScheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState('');
+  const [goalsWidget, setGoalsWidget] = useState<{
+    scheduledGoal: number; scheduledActual: number;
+    completedGoal: number; completedActual: number;
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,6 +133,29 @@ export default function Index() {
         .limit(3);
 
       if (agendaData) setUpcomingAppointments(agendaData);
+
+      // Metas do mês atual
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+
+      const [goalsData, { count: schedCount }, { count: compCount }] = await Promise.all([
+        supabase.from('trainer_goals').select('monthly_scheduled_goal, monthly_completed_goal')
+          .eq('trainer_id', trainer.id).maybeSingle(),
+        supabase.from('appointments').select('*', { count: 'exact', head: true })
+          .eq('trainer_id', trainer.id).gte('appointment_date', monthStart).lte('appointment_date', monthEnd),
+        supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
+          .eq('trainer_id', trainer.id).gte('assessment_date', monthStart).lte('assessment_date', monthEnd),
+      ]);
+
+      if (goalsData.data) {
+        setGoalsWidget({
+          scheduledGoal:  goalsData.data.monthly_scheduled_goal || 0,
+          scheduledActual: schedCount || 0,
+          completedGoal:  goalsData.data.monthly_completed_goal || 0,
+          completedActual: compCount || 0,
+        });
+      }
     } catch (error) {
       console.log('Erro ao carregar dashboard:', error);
     } finally {
@@ -206,6 +233,7 @@ export default function Index() {
       formatDateBR={formatDateBR}
       overdueClients={overdueClients}
       birthdayClients={birthdayClients}
+      goalsWidget={goalsWidget}
     />
   );
 }

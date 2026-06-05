@@ -46,6 +46,10 @@ export interface DashboardLayoutProps {
   formatDateBR: (iso: string) => string;
   overdueClients: Client[];
   birthdayClients: Client[];
+  goalsWidget?: {
+    scheduledGoal: number; scheduledActual: number;
+    completedGoal: number; completedActual: number;
+  } | null;
 }
 
 export default function DashboardLayoutMobile({
@@ -56,7 +60,7 @@ export default function DashboardLayoutMobile({
   scheduleSearchQuery, onScheduleSearchChange, scheduleFilteredClients,
   refreshing, onRefresh,
   getInitials, formatDateBR,
-  overdueClients, birthdayClients,
+  overdueClients, birthdayClients, goalsWidget,
 }: DashboardLayoutProps) {
 
   const isSearching = searchQuery.trim().length > 0;
@@ -124,6 +128,50 @@ export default function DashboardLayoutMobile({
           ))
         )}
       </View>
+
+      {/* Widget Metas do Mês */}
+      {goalsWidget && (goalsWidget.scheduledGoal > 0 || goalsWidget.completedGoal > 0) && (
+        <TouchableOpacity
+          style={{ backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: T.border }}
+          onPress={() => router.push('/(protected)/business-goals' as any)}
+          activeOpacity={0.8}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>🎯 Metas do Mês</Text>
+            <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>Ver detalhes →</Text>
+          </View>
+          {/* Barra agendamentos */}
+          {goalsWidget.scheduledGoal > 0 && (() => {
+            const pct = Math.min(Math.round((goalsWidget.scheduledActual / goalsWidget.scheduledGoal) * 100), 100);
+            return (
+              <View style={{ marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: T.t2 }}>📅 Agendamentos</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6' }}>{goalsWidget.scheduledActual}/{goalsWidget.scheduledGoal} · {pct}%</Text>
+                </View>
+                <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
+                  <View style={{ height: 6, width: `${pct}%` as any, backgroundColor: '#3b82f6', borderRadius: 3 }} />
+                </View>
+              </View>
+            );
+          })()}
+          {/* Barra realizações */}
+          {goalsWidget.completedGoal > 0 && (() => {
+            const pct = Math.min(Math.round((goalsWidget.completedActual / goalsWidget.completedGoal) * 100), 100);
+            return (
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: T.t2 }}>✅ Avaliações Feitas</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '800', color: '#22c55e' }}>{goalsWidget.completedActual}/{goalsWidget.completedGoal} · {pct}%</Text>
+                </View>
+                <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
+                  <View style={{ height: 6, width: `${pct}%` as any, backgroundColor: '#22c55e', borderRadius: 3 }} />
+                </View>
+              </View>
+            );
+          })()}
+        </TouchableOpacity>
+      )}
 
       {/* ─── Widget: Reavaliações Pendentes ─────────────────── */}
       {overdueClients.length > 0 && (
