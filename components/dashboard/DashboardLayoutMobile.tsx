@@ -315,7 +315,7 @@ export default function DashboardLayoutMobile({
                       </View>
                       <View>
                         <Text style={styles.clientName}>{item.name}</Text>
-                        <Text style={styles.clientSubText}>{item.email || 'Sem email'}</Text>
+                        <Text style={styles.clientSubText}>📲 {item.phone || 'Sem WhatsApp'}</Text>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -384,7 +384,7 @@ export default function DashboardLayoutMobile({
                     </View>
                     <View>
                       <Text style={styles.clientName}>{item.name}</Text>
-                      <Text style={styles.clientSubText}>{item.email || 'Sem email'}</Text>
+                      <Text style={styles.clientSubText}>📲 {item.phone || 'Sem WhatsApp'}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>

@@ -154,7 +154,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       </View>
       <View style={styles.clientInfo}>
         <Text style={styles.clientName}>{item.name}</Text>
-        <Text style={styles.clientEmail}>{item.email || '—'}</Text>
+        <Text style={styles.clientEmail}>📲 {item.phone || 'Sem WhatsApp'}</Text>
       </View>
               <View style={styles.clientActions}>
                 <TouchableOpacity
