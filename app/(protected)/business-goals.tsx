@@ -1,5 +1,7 @@
 // ============================================================
 // business-goals.tsx — Evolução de Negócio do Treinador
+// Metas mensais editáveis. Semanal e diário calculados dinamicamente
+// redistribuindo déficit pelos dias úteis (seg-sex) restantes.
 // ============================================================
 import { useCallback, useState } from 'react';
 import {
@@ -15,10 +17,6 @@ type Period = 'monthly' | 'weekly' | 'daily';
 interface Goals {
   monthly_scheduled_goal: number;
   monthly_completed_goal: number;
-  weekly_scheduled_goal: number;
-  weekly_completed_goal: number;
-  daily_scheduled_goal: number;
-  daily_completed_goal: number;
 }
 
 interface Actuals {
@@ -26,18 +24,55 @@ interface Actuals {
   completed: number;
 }
 
+// Conta dias úteis (seg-sex) entre duas datas inclusive
+function getWorkingDays(start: Date, end: Date): number {
+  let count = 0;
+  const d = new Date(start); d.setHours(0, 0, 0, 0);
+  const e = new Date(end);   e.setHours(0, 0, 0, 0);
+  while (d <= e) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) count++;
+    d.setDate(d.getDate() + 1);
+  }
+  return count;
+}
+
+// Retorna meta ajustada diária e semanal com base no déficit redistribuído
+function computeAdjusted(monthlyGoal: number, actualMonthToDate: number) {
+  const now = new Date();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const workingDaysRemaining = getWorkingDays(now, monthEnd); // inclui hoje
+  const remaining = Math.max(monthlyGoal - actualMonthToDate, 0);
+  const dailyGoal = workingDaysRemaining > 0
+    ? Math.ceil(remaining / workingDaysRemaining)
+    : remaining;
+
+  // Semana corrente: seg a sex (ou fim do mês, o que vier antes)
+  const dow = now.getDay();
+  const weekMon = new Date(now);
+  weekMon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  const weekFri = new Date(weekMon);
+  weekFri.setDate(weekMon.getDate() + 4);
+  const effectiveWeekEnd = weekFri <= monthEnd ? weekFri : monthEnd;
+  const workingDaysThisWeek = getWorkingDays(weekMon, effectiveWeekEnd);
+  const weeklyGoal = dailyGoal * workingDaysThisWeek;
+
+  return { dailyGoal, weeklyGoal };
+}
+
 function getDateRange(period: Period): { start: string; end: string } {
   const now = new Date();
   if (period === 'monthly') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
   }
   if (period === 'weekly') {
-    const day = now.getDay();
-    const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
-    return { start: mon.toISOString().split('T')[0], end: sun.toISOString().split('T')[0] };
+    const dow = now.getDay();
+    const mon = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+    return { start: mon.toISOString().split('T')[0], end: fri.toISOString().split('T')[0] };
   }
   const today = now.toISOString().split('T')[0];
   return { start: today, end: today };
@@ -61,10 +96,10 @@ function ProgressBar({ value, goal, color }: { value: number; goal: number; colo
 }
 
 function MetricCard({
-  label, icon, value, goal, color, onEdit,
+  label, icon, value, goal, color, onEdit, isComputed,
 }: {
   label: string; icon: string; value: number; goal: number;
-  color: string; onEdit: () => void;
+  color: string; onEdit?: () => void; isComputed?: boolean;
 }) {
   return (
     <View style={[styles.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
@@ -73,9 +108,15 @@ function MetricCard({
           <Text style={{ fontSize: 20 }}>{icon}</Text>
           <Text style={{ color: T.t1, fontSize: 14, fontWeight: '700' }}>{label}</Text>
         </View>
-        <TouchableOpacity onPress={onEdit} style={styles.editBtn}>
-          <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>✏️ Meta</Text>
-        </TouchableOpacity>
+        {onEdit && !isComputed ? (
+          <TouchableOpacity onPress={onEdit} style={styles.editBtn}>
+            <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>✏️ Meta</Text>
+          </TouchableOpacity>
+        ) : isComputed ? (
+          <View style={[styles.editBtn, { backgroundColor: 'transparent' }]}>
+            <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic' }}>ajustada</Text>
+          </View>
+        ) : null}
       </View>
       <ProgressBar value={value} goal={goal} color={color} />
     </View>
@@ -83,15 +124,12 @@ function MetricCard({
 }
 
 export default function BusinessGoals() {
-  const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<Period>('monthly');
+  const [loading, setLoading]     = useState(true);
+  const [period, setPeriod]       = useState<Period>('monthly');
   const [trainerId, setTrainerId] = useState<string | null>(null);
-  const [goals, setGoals] = useState<Goals>({
-    monthly_scheduled_goal: 0, monthly_completed_goal: 0,
-    weekly_scheduled_goal: 0, weekly_completed_goal: 0,
-    daily_scheduled_goal: 0, daily_completed_goal: 0,
-  });
-  const [actuals, setActuals] = useState<Actuals>({ scheduled: 0, completed: 0 });
+  const [goals, setGoals]         = useState<Goals>({ monthly_scheduled_goal: 0, monthly_completed_goal: 0 });
+  const [actuals, setActuals]     = useState<Actuals>({ scheduled: 0, completed: 0 });
+  const [monthActuals, setMonthActuals] = useState<Actuals>({ scheduled: 0, completed: 0 });
   const [editingField, setEditingField] = useState<keyof Goals | null>(null);
   const [editValue, setEditValue] = useState('');
 
@@ -107,8 +145,12 @@ export default function BusinessGoals() {
 
       const { data: goalsData } = await supabase
         .from('trainer_goals').select('*').eq('trainer_id', trainer.id).maybeSingle();
-      if (goalsData) setGoals(goalsData);
-
+      if (goalsData) {
+        setGoals({
+          monthly_scheduled_goal: goalsData.monthly_scheduled_goal || 0,
+          monthly_completed_goal:  goalsData.monthly_completed_goal  || 0,
+        });
+      }
       await loadActuals(trainer.id, period);
     } finally {
       setLoading(false);
@@ -116,14 +158,22 @@ export default function BusinessGoals() {
   }
 
   async function loadActuals(tid: string, p: Period) {
-    const { start, end } = getDateRange(p);
-    const [{ count: sched }, { count: comp }] = await Promise.all([
+    const { start, end }           = getDateRange(p);
+    const { start: ms, end: me }   = getDateRange('monthly');
+
+    const [{ count: sched }, { count: comp }, { count: schedM }, { count: compM }] = await Promise.all([
       supabase.from('appointments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('appointment_date', start).lte('appointment_date', end),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('assessment_date', start).lte('assessment_date', end),
+      supabase.from('appointments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', me),
+      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', me),
     ]);
+
     setActuals({ scheduled: sched || 0, completed: comp || 0 });
+    setMonthActuals({ scheduled: schedM || 0, completed: compM || 0 });
   }
 
   async function changePeriod(p: Period) {
@@ -135,16 +185,28 @@ export default function BusinessGoals() {
     if (!trainerId) return;
     const updated = { ...goals, [field]: value };
     await supabase.from('trainer_goals')
-      .upsert({ trainer_id: trainerId, ...updated }, { onConflict: 'trainer_id' });
+      .upsert(
+        { trainer_id: trainerId, ...updated },
+        { onConflict: 'trainer_id' }
+      );
     setGoals(updated);
     setEditingField(null);
   }
 
+  // Metas computadas dinamicamente para semanal e diário
+  const adjSched = computeAdjusted(goals.monthly_scheduled_goal, monthActuals.scheduled);
+  const adjComp  = computeAdjusted(goals.monthly_completed_goal,  monthActuals.completed);
+
+  const schedGoal = period === 'monthly' ? goals.monthly_scheduled_goal
+    : period === 'weekly'  ? adjSched.weeklyGoal
+    : adjSched.dailyGoal;
+
+  const compGoal  = period === 'monthly' ? goals.monthly_completed_goal
+    : period === 'weekly'  ? adjComp.weeklyGoal
+    : adjComp.dailyGoal;
+
   const periodLabels: Record<Period, string> = { monthly: 'Mensal', weekly: 'Semanal', daily: 'Diário' };
-  const schedKey = `${period}_scheduled_goal` as keyof Goals;
-  const compKey  = `${period}_completed_goal` as keyof Goals;
-  const schedGoal = goals[schedKey] as number;
-  const compGoal  = goals[compKey] as number;
+  const isComputed = period !== 'monthly';
 
   if (loading) return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
@@ -154,7 +216,6 @@ export default function BusinessGoals() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={styles.container}>
-      {/* Cabeçalho */}
       <Text style={styles.pageLabel}>PRODUTIVIDADE</Text>
       <Text style={styles.pageTitle}>Evolução de Negócio</Text>
 
@@ -173,18 +234,28 @@ export default function BusinessGoals() {
         ))}
       </View>
 
-      {/* Cards de progresso */}
+      {/* Nota de meta ajustada */}
+      {isComputed && (goals.monthly_scheduled_goal > 0 || goals.monthly_completed_goal > 0) && (
+        <View style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderRadius: 10, padding: 10, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: T.blue }}>
+          <Text style={{ fontSize: 12, color: T.t2, lineHeight: 18 }}>
+            📊 Metas {periodLabels[period].toLowerCase()}s calculadas automaticamente redistribuindo o déficit nos dias úteis restantes do mês.
+          </Text>
+        </View>
+      )}
+
       <MetricCard
         label="Agendamentos" icon="📅"
         value={actuals.scheduled} goal={schedGoal}
         color="#3b82f6"
-        onEdit={() => { setEditingField(schedKey); setEditValue(String(schedGoal)); }}
+        isComputed={isComputed}
+        onEdit={() => { setEditingField('monthly_scheduled_goal'); setEditValue(String(goals.monthly_scheduled_goal)); }}
       />
       <MetricCard
         label="Avaliações Realizadas" icon="✅"
         value={actuals.completed} goal={compGoal}
         color="#22c55e"
-        onEdit={() => { setEditingField(compKey); setEditValue(String(compGoal)); }}
+        isComputed={isComputed}
+        onEdit={() => { setEditingField('monthly_completed_goal'); setEditValue(String(goals.monthly_completed_goal)); }}
       />
 
       {/* Resumo numérico */}
@@ -210,17 +281,22 @@ export default function BusinessGoals() {
         </View>
       </View>
 
-      {/* Modal inline de edição de meta */}
+      {/* Edição de meta mensal */}
       {editingField && (
         <View style={styles.editCard}>
-          <Text style={styles.editTitle}>Definir Meta</Text>
+          <Text style={styles.editTitle}>
+            {editingField === 'monthly_scheduled_goal' ? '📅 Meta Mensal — Agendamentos' : '✅ Meta Mensal — Avaliações'}
+          </Text>
+          <Text style={{ fontSize: 12, color: T.t3, marginBottom: 12 }}>
+            As metas semanal e diária serão recalculadas automaticamente.
+          </Text>
           <TextInput
             style={styles.editInput}
             value={editValue}
             onChangeText={setEditValue}
             keyboardType="number-pad"
             autoFocus
-            placeholder="Ex: 20"
+            placeholder="Ex: 100"
             placeholderTextColor={T.t3}
           />
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
@@ -244,24 +320,24 @@ export default function BusinessGoals() {
 }
 
 const styles = StyleSheet.create({
-  container:       { padding: 20, paddingBottom: 40 },
-  pageLabel:       { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 4 },
-  pageTitle:       { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 24 },
-  periodRow:       { flexDirection: 'row', backgroundColor: T.card, borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 },
-  periodBtn:       { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
-  periodBtnActive: { backgroundColor: T.blue },
-  periodLabel:     { fontSize: 13, fontWeight: '700', color: T.t2 },
+  container:         { padding: 20, paddingBottom: 40 },
+  pageLabel:         { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 4 },
+  pageTitle:         { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 24 },
+  periodRow:         { flexDirection: 'row', backgroundColor: T.card, borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 },
+  periodBtn:         { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
+  periodBtnActive:   { backgroundColor: T.blue },
+  periodLabel:       { fontSize: 13, fontWeight: '700', color: T.t2 },
   periodLabelActive: { color: '#fff' },
-  card:            { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16 },
-  editBtn:         { backgroundColor: T.surface, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  summaryCard:     { backgroundColor: T.card, borderRadius: 16, padding: 16, marginTop: 8 },
-  summaryTitle:    { fontSize: 13, fontWeight: '700', color: T.t2, marginBottom: 16, textAlign: 'center' },
-  summaryRow:      { flexDirection: 'row' },
-  summaryItem:     { flex: 1, alignItems: 'center' },
-  summaryValue:    { fontSize: 28, fontWeight: '900', color: T.t1 },
-  summaryLabel:    { fontSize: 11, color: T.t3, marginTop: 4, fontWeight: '600' },
-  editCard:        { backgroundColor: T.card, borderRadius: 16, padding: 20, marginTop: 16, borderWidth: 1.5, borderColor: T.blue },
-  editTitle:       { fontSize: 16, fontWeight: '800', color: T.t1, marginBottom: 12 },
-  editInput:       { backgroundColor: T.surface, borderRadius: 10, padding: 14, fontSize: 24, fontWeight: '900', color: T.t1, textAlign: 'center', borderWidth: 1, borderColor: T.border },
-  editActionBtn:   { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
+  card:              { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16 },
+  editBtn:           { backgroundColor: T.surface, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  summaryCard:       { backgroundColor: T.card, borderRadius: 16, padding: 16, marginTop: 8 },
+  summaryTitle:      { fontSize: 13, fontWeight: '700', color: T.t2, marginBottom: 16, textAlign: 'center' },
+  summaryRow:        { flexDirection: 'row' },
+  summaryItem:       { flex: 1, alignItems: 'center' },
+  summaryValue:      { fontSize: 28, fontWeight: '900', color: T.t1 },
+  summaryLabel:      { fontSize: 11, color: T.t3, marginTop: 4, fontWeight: '600' },
+  editCard:          { backgroundColor: T.card, borderRadius: 16, padding: 20, marginTop: 16, borderWidth: 1.5, borderColor: T.blue },
+  editTitle:         { fontSize: 15, fontWeight: '800', color: T.t1, marginBottom: 6 },
+  editInput:         { backgroundColor: T.surface, borderRadius: 10, padding: 14, fontSize: 24, fontWeight: '900', color: T.t1, textAlign: 'center', borderWidth: 1, borderColor: T.border },
+  editActionBtn:     { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
 });
