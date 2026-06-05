@@ -42,7 +42,10 @@ function computeAdjusted(monthlyGoal: number, actualMonthToDate: number) {
   const now = new Date();
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-  const workingDaysRemaining = getWorkingDays(now, monthEnd); // inclui hoje
+  const cutoff = new Date(now);
+  cutoff.setHours(22, 0, 0, 0);
+  const startDay = now >= cutoff ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) : now;
+  const workingDaysRemaining = getWorkingDays(startDay, monthEnd);
   const remaining = Math.max(monthlyGoal - actualMonthToDate, 0);
   const dailyGoal = workingDaysRemaining > 0
     ? Math.ceil(remaining / workingDaysRemaining)
