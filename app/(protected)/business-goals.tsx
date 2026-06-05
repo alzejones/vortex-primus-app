@@ -130,6 +130,8 @@ export default function BusinessGoals() {
   const [goals, setGoals]         = useState<Goals>({ monthly_scheduled_goal: 0, monthly_completed_goal: 0 });
   const [actuals, setActuals]     = useState<Actuals>({ scheduled: 0, completed: 0 });
   const [monthActuals, setMonthActuals] = useState<Actuals>({ scheduled: 0, completed: 0 });
+  const [baseBeforeToday, setBaseBeforeToday]   = useState<Actuals>({ scheduled: 0, completed: 0 });
+  const [baseBeforeWeek,  setBaseBeforeWeek]    = useState<Actuals>({ scheduled: 0, completed: 0 });
   const [editingField, setEditingField] = useState<keyof Goals | null>(null);
   const [editValue, setEditValue] = useState('');
 
@@ -158,10 +160,26 @@ export default function BusinessGoals() {
   }
 
   async function loadActuals(tid: string, p: Period) {
-    const { start, end }           = getDateRange(p);
-    const { start: ms, end: me }   = getDateRange('monthly');
+    const { start, end }         = getDateRange(p);
+    const { start: ms, end: me } = getDateRange('monthly');
 
-    const [{ count: sched }, { count: comp }, { count: schedM }, { count: compM }] = await Promise.all([
+    // Ontem
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // Fim da semana passada (última sexta-feira)
+    const now2 = new Date();
+    const dow = now2.getDay(); // 0=Dom
+    const lastFri = new Date(now2);
+    lastFri.setDate(now2.getDate() - (dow === 0 ? 2 : dow === 6 ? 1 : dow + 1));
+    const lastFriStr = lastFri.toISOString().split('T')[0];
+
+    const [
+      { count: sched }, { count: comp },
+      { count: schedM }, { count: compM },
+      { count: schedY }, { count: compY },
+      { count: schedW }, { count: compW },
+    ] = await Promise.all([
       supabase.from('appointments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('appointment_date', start).lte('appointment_date', end),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
@@ -170,10 +188,20 @@ export default function BusinessGoals() {
         .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', me),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', me),
+      supabase.from('appointments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', yesterdayStr),
+      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', yesterdayStr),
+      supabase.from('appointments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', lastFriStr),
+      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', lastFriStr),
     ]);
 
     setActuals({ scheduled: sched || 0, completed: comp || 0 });
     setMonthActuals({ scheduled: schedM || 0, completed: compM || 0 });
+    setBaseBeforeToday({ scheduled: schedY || 0, completed: compY || 0 });
+    setBaseBeforeWeek({ scheduled: schedW || 0, completed: compW || 0 });
   }
 
   async function changePeriod(p: Period) {
@@ -193,9 +221,19 @@ export default function BusinessGoals() {
     setEditingField(null);
   }
 
-  // Metas computadas dinamicamente para semanal e diário
-  const adjSched = computeAdjusted(goals.monthly_scheduled_goal, monthActuals.scheduled);
-  const adjComp  = computeAdjusted(goals.monthly_completed_goal,  monthActuals.completed);
+  // Base correta por período:
+  // - diário: feitos até ontem
+  // - semanal: feitos até fim da semana passada
+  // - mensal: feitos no mês inteiro (para exibição)
+  const baseSchedForCalc = period === 'daily' ? baseBeforeToday.scheduled
+    : period === 'weekly' ? baseBeforeWeek.scheduled
+    : monthActuals.scheduled;
+  const baseCompForCalc  = period === 'daily' ? baseBeforeToday.completed
+    : period === 'weekly' ? baseBeforeWeek.completed
+    : monthActuals.completed;
+
+  const adjSched = computeAdjusted(goals.monthly_scheduled_goal, baseSchedForCalc);
+  const adjComp  = computeAdjusted(goals.monthly_completed_goal,  baseCompForCalc);
 
   const schedGoal = period === 'monthly' ? goals.monthly_scheduled_goal
     : period === 'weekly'  ? adjSched.weeklyGoal
