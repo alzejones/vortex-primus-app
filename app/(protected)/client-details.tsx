@@ -414,7 +414,24 @@ export default function ClientDetails() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.label}>WhatsApp / Telefone</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.label}>WhatsApp / Telefone</Text>
+            {phone.trim().length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  const digits = phone.replace(/\D/g, '');
+                  const waPhone = digits.startsWith('55') ? digits : `55${digits}`;
+                  const firstName = name.trim().split(' ')[0] || 'tudo';
+                  const msg = `Oi, ${firstName}! Tudo bem?\nAqui é do aplicativo Vortex Primus. 💪`;
+                  Linking.openURL(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, backgroundColor: 'rgba(37,211,102,0.12)', borderRadius: 8 }}
+              >
+                <Text style={{ fontSize: 14 }}>📲</Text>
+                <Text style={{ fontSize: 12, color: '#25D366', fontWeight: '700' }}>Abrir WhatsApp</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <TextInput
             style={styles.input}
             value={phone}
