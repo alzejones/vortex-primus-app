@@ -19,6 +19,8 @@ export default function Index() {
   const [currentClients, setCurrentClients] = useState(0);
   const [planStatus, setPlanStatus] = useState('');
   const [clients, setClients] = useState<any[]>([]);
+  const [overdueClients, setOverdueClients] = useState<any[]>([]);
+  const [birthdayClients, setBirthdayClients] = useState<any[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<any[]>([]);
   const [isScheduleModalVisible, setScheduleModalVisible] = useState(false);
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState('');
@@ -57,30 +59,71 @@ export default function Index() {
 
       const { data: clientList } = await supabase
         .from('clients')
-        .select(`*, physical_assessments ( id, anthropometry:anthropometry!anthropometry_assessment_id_fkey (view_count) )`)
+        .select(`
+          *,
+          physical_assessments (
+            id,
+            assessment_date,
+            anthropometry:anthropometry!anthropometry_assessment_id_fkey (view_count)
+          )
+        `)
         .eq('trainer_id', trainer.id)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       const clientsWithViews = (clientList || []).map((client: any) => {
         let totalViews = 0;
-        if (client.physical_assessments) {
-          client.physical_assessments.forEach((pa: any) => {
+        let lastAssessmentDate: string | null = null;
+
+        if (client.physical_assessments && client.physical_assessments.length > 0) {
+          // Pegar a data mais recente
+          const sorted = [...client.physical_assessments].sort(
+            (a: any, b: any) =>
+              new Date(b.assessment_date).getTime() - new Date(a.assessment_date).getTime()
+          );
+          lastAssessmentDate = sorted[0]?.assessment_date || null;
+
+          sorted.forEach((pa: any) => {
             if (pa.anthropometry?.length > 0) totalViews += (pa.anthropometry[0].view_count || 0);
           });
         }
-        return { ...client, totalViews };
+
+        return { ...client, totalViews, lastAssessmentDate };
       });
 
       setClients(clientsWithViews);
       setCurrentClients(clientsWithViews.length);
 
-      const today = new Date().toISOString().split('T')[0];
+      // Clientes sem avaliação há 30+ dias (ou nunca avaliados)
+      const today = new Date();
+      const overdueClients = clientsWithViews.filter((c: any) => {
+        if (!c.lastAssessmentDate) return true; // nunca avaliado
+        const last = new Date(c.lastAssessmentDate);
+        const diffDays = Math.floor((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays >= 30;
+      });
+      setOverdueClients(overdueClients);
+
+      // Aniversariantes do mês atual
+      const currentMonth = today.getMonth() + 1; // 1-12
+      const currentDay = today.getDate();
+      const birthdayClients = clientsWithViews.filter((c: any) => {
+        if (!c.birth_date) return false;
+        const [, month, day] = c.birth_date.split('-').map(Number);
+        return month === currentMonth;
+      }).sort((a: any, b: any) => {
+        const [, , dayA] = a.birth_date.split('-').map(Number);
+        const [, , dayB] = b.birth_date.split('-').map(Number);
+        return dayA - dayB;
+      });
+      setBirthdayClients(birthdayClients);
+
+      const todayISO = new Date().toISOString().split('T')[0];
       const { data: agendaData } = await supabase
         .from('appointments')
         .select('id, appointment_date, appointment_time, types, clients(name)')
         .eq('trainer_id', trainer.id)
-        .gte('appointment_date', today)
+        .gte('appointment_date', todayISO)
         .order('appointment_date', { ascending: true })
         .order('appointment_time', { ascending: true })
         .limit(3);
@@ -161,6 +204,8 @@ export default function Index() {
       onRefresh={onRefresh}
       getInitials={getInitials}
       formatDateBR={formatDateBR}
+      overdueClients={overdueClients}
+      birthdayClients={birthdayClients}
     />
   );
 }

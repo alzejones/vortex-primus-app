@@ -44,6 +44,8 @@ export interface DashboardLayoutProps {
   onRefresh: () => void;
   getInitials: (name: string) => string;
   formatDateBR: (iso: string) => string;
+  overdueClients: Client[];
+  birthdayClients: Client[];
 }
 
 export default function DashboardLayoutMobile({
@@ -54,10 +56,25 @@ export default function DashboardLayoutMobile({
   scheduleSearchQuery, onScheduleSearchChange, scheduleFilteredClients,
   refreshing, onRefresh,
   getInitials, formatDateBR,
+  overdueClients, birthdayClients,
 }: DashboardLayoutProps) {
 
   const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
+
+  const today = new Date();
+  const currentDay = today.getDate();
+
+  const getDayOfMonth = (birth_date: string) => {
+    if (!birth_date) return 0;
+    return parseInt(birth_date.split('-')[2], 10);
+  };
+
+  const isBirthdayToday = (birth_date: string) => {
+    if (!birth_date) return false;
+    const [, , day] = birth_date.split('-').map(Number);
+    return day === currentDay;
+  };
 
   const renderHeader = () => (
     <View style={{ paddingBottom: 15 }}>
@@ -107,6 +124,91 @@ export default function DashboardLayoutMobile({
           ))
         )}
       </View>
+
+      {/* ─── Widget: Reavaliações Pendentes ─────────────────── */}
+      {overdueClients.length > 0 && (
+        <View style={styles.alertWidget}>
+          <View style={styles.widgetHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={styles.alertDot} />
+              <Text style={styles.alertWidgetTitle}>Reavaliações Pendentes</Text>
+            </View>
+            <Text style={styles.alertCount}>{overdueClients.length}</Text>
+          </View>
+          <Text style={styles.alertSubtitle}>Sem avaliação há 30+ dias</Text>
+          {overdueClients.slice(0, 3).map((client) => (
+            <TouchableOpacity
+              key={client.id}
+              style={styles.alertClientRow}
+              onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
+              activeOpacity={0.75}
+            >
+              <View style={styles.alertAvatar}>
+                <Text style={styles.alertAvatarText}>
+                  {getInitials(client.name)}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertClientName}>{client.name}</Text>
+                <Text style={styles.alertClientSub}>
+                  {client.lastAssessmentDate
+                    ? (() => {
+                        const diff = Math.floor(
+                          (new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) /
+                            (1000 * 60 * 60 * 24)
+                        );
+                        return `Última: ${diff} dias atrás`;
+                      })()
+                    : 'Nunca avaliado'}
+                </Text>
+              </View>
+              <Text style={styles.alertChevron}>›</Text>
+            </TouchableOpacity>
+          ))}
+          {overdueClients.length > 3 && (
+            <Text style={styles.alertMore}>+{overdueClients.length - 3} mais precisam de reavaliação</Text>
+          )}
+        </View>
+      )}
+
+      {/* ─── Widget: Aniversariantes ─────────────────────────── */}
+      {birthdayClients.length > 0 && (
+        <View style={styles.birthdayWidget}>
+          <View style={styles.widgetHeader}>
+            <Text style={styles.birthdayWidgetTitle}>🎂 Aniversariantes</Text>
+            <Text style={styles.birthdayMonth}>
+              {new Date().toLocaleDateString('pt-BR', { month: 'long' })}
+            </Text>
+          </View>
+          {birthdayClients.map((client) => {
+            const isToday = isBirthdayToday(client.birth_date);
+            const day = getDayOfMonth(client.birth_date);
+            return (
+              <TouchableOpacity
+                key={client.id}
+                style={[styles.birthdayRow, isToday && styles.birthdayRowToday]}
+                onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.birthdayDayBox, isToday && styles.birthdayDayBoxToday]}>
+                  <Text style={[styles.birthdayDayText, isToday && styles.birthdayDayTextToday]}>
+                    {String(day).padStart(2, '0')}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.birthdayName, isToday && styles.birthdayNameToday]}>
+                    {client.name}
+                  </Text>
+                  {isToday && (
+                    <Text style={styles.birthdayTodayBadge}>🎉 Hoje!</Text>
+                  )}
+                </View>
+                {isToday && <Text style={{ fontSize: 20 }}>🎂</Text>}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
         <LinearGradient {...GradientPrimary} style={{ padding: 18, alignItems: 'center' }}>
@@ -460,4 +562,154 @@ const styles = StyleSheet.create({
   addClientFooterBtn: { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: T.card, borderRadius: 12, borderWidth: 1, borderColor: T.border },
   addClientFooterIcon: { fontSize: 18, color: T.blue, marginRight: 10, fontWeight: '800' },
   addClientFooterText: { fontSize: 15, color: T.blue, fontWeight: '700' },
+
+  // ─── Widget Reavaliações ───────────────────────────────────────────
+  alertWidget: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: '#ff6b35',
+  },
+  alertDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ff6b35',
+  },
+  alertWidgetTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#ff9a6c',
+  },
+  alertCount: {
+    backgroundColor: '#ff6b35',
+    color: T.white,
+    fontWeight: '900',
+    fontSize: 13,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 99,
+    overflow: 'hidden',
+  },
+  alertSubtitle: {
+    fontSize: 12,
+    color: '#ff9a6c',
+    marginBottom: 14,
+    opacity: 0.7,
+  },
+  alertClientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,107,53,0.15)',
+  },
+  alertAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,107,53,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  alertAvatarText: {
+    color: '#ff9a6c',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  alertClientName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.t1,
+  },
+  alertClientSub: {
+    fontSize: 12,
+    color: '#ff9a6c',
+    marginTop: 1,
+  },
+  alertChevron: {
+    fontSize: 20,
+    color: '#ff6b35',
+    marginLeft: 8,
+  },
+  alertMore: {
+    fontSize: 12,
+    color: '#ff9a6c',
+    textAlign: 'center',
+    marginTop: 12,
+    opacity: 0.7,
+  },
+
+  // ─── Widget Aniversariantes ────────────────────────────────────────
+  birthdayWidget: {
+    backgroundColor: '#0d1f2d',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: '#4fc3f7',
+  },
+  birthdayWidgetTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: T.t1,
+  },
+  birthdayMonth: {
+    fontSize: 12,
+    color: '#4fc3f7',
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  birthdayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(79,195,247,0.12)',
+  },
+  birthdayRowToday: {
+    backgroundColor: 'rgba(79,195,247,0.08)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    marginHorizontal: -10,
+    borderTopWidth: 0,
+    marginBottom: 4,
+  },
+  birthdayDayBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(79,195,247,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  birthdayDayBoxToday: {
+    backgroundColor: '#4fc3f7',
+  },
+  birthdayDayText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#4fc3f7',
+  },
+  birthdayDayTextToday: {
+    color: '#0d1f2d',
+  },
+  birthdayName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.t1,
+  },
+  birthdayNameToday: {
+    color: '#4fc3f7',
+  },
+  birthdayTodayBadge: {
+    fontSize: 12,
+    color: '#4fc3f7',
+    fontWeight: '600',
+    marginTop: 2,
+  },
 });
