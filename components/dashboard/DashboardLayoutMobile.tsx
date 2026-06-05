@@ -95,40 +95,6 @@ export default function DashboardLayoutMobile({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.planWidget}>
-        <View style={styles.widgetHeader}>
-          <Text style={styles.widgetTitle}>📅 Agendamentos</Text>
-          <TouchableOpacity onPress={() => router.push('/(protected)/schedule/' as any)}>
-            <Text style={styles.widgetLink}>Ver todas →</Text>
-          </TouchableOpacity>
-        </View>
-        {upcomingAppointments.length === 0 ? (
-          <TouchableOpacity
-            style={styles.widgetEmpty}
-            onPress={() => router.push('/(protected)/schedule/' as any)}
-            activeOpacity={0.7}
-          >
-            <Text style={{ color: T.t2, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
-              Nenhum agendamento.{'\n'}
-              <Text style={{ color: T.blue, fontWeight: '700' }}>Toque para agendar avaliações →</Text>
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          upcomingAppointments.map((apt) => (
-            <View key={apt.id} style={styles.agendaItem}>
-              <View style={styles.agendaDateBox}>
-                <Text style={styles.agendaDateText}>{formatDateBR(apt.appointment_date)}</Text>
-                <Text style={styles.agendaTimeText}>{apt.appointment_time?.substring(0, 5)}</Text>
-              </View>
-              <View style={styles.agendaInfo}>
-                <Text style={styles.agendaClientName}>{(apt.clients as any)?.name || 'Aluno'}</Text>
-                <Text style={styles.agendaTypes}>{apt.types}</Text>
-              </View>
-            </View>
-          ))
-        )}
-      </View>
-
       {/* Widget Metas do Mês */}
       {goalsWidget && (goalsWidget.scheduledGoal > 0 || goalsWidget.completedGoal > 0) && (
         <TouchableOpacity
@@ -172,6 +138,40 @@ export default function DashboardLayoutMobile({
           })()}
         </TouchableOpacity>
       )}
+
+      <View style={styles.planWidget}>
+        <View style={styles.widgetHeader}>
+          <Text style={styles.widgetTitle}>📅 Agendamentos</Text>
+          <TouchableOpacity onPress={() => router.push('/(protected)/schedule/' as any)}>
+            <Text style={styles.widgetLink}>Ver todas →</Text>
+          </TouchableOpacity>
+        </View>
+        {upcomingAppointments.length === 0 ? (
+          <TouchableOpacity
+            style={styles.widgetEmpty}
+            onPress={() => router.push('/(protected)/schedule/' as any)}
+            activeOpacity={0.7}
+          >
+            <Text style={{ color: T.t2, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+              Nenhum agendamento.{'\n'}
+              <Text style={{ color: T.blue, fontWeight: '700' }}>Toque para agendar avaliações →</Text>
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          upcomingAppointments.map((apt) => (
+            <View key={apt.id} style={styles.agendaItem}>
+              <View style={styles.agendaDateBox}>
+                <Text style={styles.agendaDateText}>{formatDateBR(apt.appointment_date)}</Text>
+                <Text style={styles.agendaTimeText}>{apt.appointment_time?.substring(0, 5)}</Text>
+              </View>
+              <View style={styles.agendaInfo}>
+                <Text style={styles.agendaClientName}>{(apt.clients as any)?.name || 'Aluno'}</Text>
+                <Text style={styles.agendaTypes}>{apt.types}</Text>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
 
       {/* ─── Widget: Reavaliações Pendentes ─────────────────── */}
       {overdueClients.length > 0 && (
@@ -551,7 +551,7 @@ const styles = StyleSheet.create({
   // ─── Header ─────────────────────────────────────────────────────
   headerTopArea: { marginBottom: 24, marginTop: 10 },
   greetingText: { fontSize: 14, fontWeight: '600', color: T.t3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  title: { fontSize: 32, fontWeight: '900', color: T.t1, letterSpacing: -0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: T.t1, letterSpacing: -0.5 },
 
 
   // ─── Widget de sessões ──────────────────────────────────────────
