@@ -174,7 +174,7 @@ export default function PublicAssessmentView() {
       if (clientError || !clientData) throw new Error("Acesso indisponível.");
       setClient(clientData);
 
-      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, anthropometry!anthropometry_assessment_id_fkey (*), trainer_scale:trainer_scales (supported_scale:supported_scales (protocol))`).eq("client_id", clientId).order("date", { ascending: false });
+      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, anthropometry!anthropometry_assessment_id_fkey (*)`).eq("client_id", clientId).order("date", { ascending: false });
       if (historyError || !historyData || historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
 
       setAssessments(historyData);

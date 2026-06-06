@@ -112,10 +112,7 @@ export default function ClientAssessments() {
         .select(`
           *,
           anthropometry:anthropometry!anthropometry_assessment_id_fkey (*),
-          assessment_photos (id, storage_path, label, created_at),
-          trainer_scale:trainer_scales (
-            supported_scale:supported_scales (protocol)
-          )
+          assessment_photos (id, storage_path, label, created_at)
         `)
         .eq("client_id", clientId)
         .order("date", { ascending: false });
@@ -872,7 +869,7 @@ export default function ClientAssessments() {
           </KeyboardAvoidingView>
         </SafeAreaView>
 
-        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} scaleProtocol={selectedAssessment?.trainer_scale?.supported_scale?.protocol ?? 'omron'} onExportAI={() => { setViewModalVisible(false); setAssessmentForReport(selectedAssessment); setAiReportVisible(true); }} />
+        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} onExportAI={() => { setViewModalVisible(false); setAssessmentForReport(selectedAssessment); setAiReportVisible(true); }} />
         <AIReportModal
           visible={aiReportVisible}
           onClose={() => { setAiReportVisible(false); setAssessmentForReport(null); }}
