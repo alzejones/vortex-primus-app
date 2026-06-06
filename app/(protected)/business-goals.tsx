@@ -64,6 +64,39 @@ function computeAdjusted(monthlyGoal: number, actualMonthToDate: number) {
   return { dailyGoal, weeklyGoal };
 }
 
+function computeTrend(monthlyGoal: number, actualMonthToDate: number): {
+  projection: number;
+  pct: number;
+  status: 'on-track' | 'warning' | 'risk';
+  color: string;
+  label: string;
+} | null {
+  if (monthlyGoal <= 0) return null;
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const daysElapsed  = getWorkingDays(monthStart, now);
+  const daysTotal    = getWorkingDays(monthStart, monthEnd);
+  if (daysElapsed === 0) return null;
+  const dailyAvg   = actualMonthToDate / daysElapsed;
+  const projection = Math.round(dailyAvg * daysTotal);
+  const pct        = Math.round((projection / monthlyGoal) * 100);
+  let status: 'on-track' | 'warning' | 'risk';
+  let color: string;
+  let label: string;
+  if (pct >= 90) {
+    status = 'on-track'; color = '#22c55e';
+    label = pct >= 100 ? '🎯 Meta atingida' : '✅ No ritmo';
+  } else if (pct >= 60) {
+    status = 'warning'; color = '#f59e0b';
+    label = '⚠️ Abaixo do ritmo';
+  } else {
+    status = 'risk'; color = '#ef4444';
+    label = '🔴 Meta em risco';
+  }
+  return { projection, pct, status, color, label };
+}
+
 function getDateRange(period: Period): { start: string; end: string } {
   const now = new Date();
   if (period === 'monthly') {
@@ -99,10 +132,11 @@ function ProgressBar({ value, goal, color }: { value: number; goal: number; colo
 }
 
 function MetricCard({
-  label, icon, value, goal, color, onEdit, isComputed,
+  label, icon, value, goal, color, onEdit, isComputed, trend,
 }: {
   label: string; icon: string; value: number; goal: number;
   color: string; onEdit?: () => void; isComputed?: boolean;
+  trend?: { projection: number; pct: number; color: string; label: string } | null;
 }) {
   return (
     <View style={[styles.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
@@ -122,6 +156,30 @@ function MetricCard({
         ) : null}
       </View>
       <ProgressBar value={value} goal={goal} color={color} />
+      {trend && (
+        <View style={{
+          flexDirection: 'row', justifyContent: 'space-between',
+          alignItems: 'center', marginTop: 10,
+          paddingTop: 10, borderTopWidth: 1, borderTopColor: T.border,
+        }}>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+            Tendência fim do mês
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: 11, fontWeight: '800', color: trend.color }}>
+              {trend.label}
+            </Text>
+            <View style={{
+              backgroundColor: trend.color + '22',
+              paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99,
+            }}>
+              <Text style={{ fontSize: 11, fontWeight: '900', color: trend.color }}>
+                {trend.projection}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -238,6 +296,13 @@ export default function BusinessGoals() {
   const adjSched = computeAdjusted(goals.monthly_scheduled_goal, baseSchedForCalc);
   const adjComp  = computeAdjusted(goals.monthly_completed_goal,  baseCompForCalc);
 
+  const trendSched = period === 'monthly'
+    ? computeTrend(goals.monthly_scheduled_goal, monthActuals.scheduled)
+    : null;
+  const trendComp  = period === 'monthly'
+    ? computeTrend(goals.monthly_completed_goal, monthActuals.completed)
+    : null;
+
   const schedGoal = period === 'monthly' ? goals.monthly_scheduled_goal
     : period === 'weekly'  ? adjSched.weeklyGoal
     : adjSched.dailyGoal;
@@ -289,6 +354,7 @@ export default function BusinessGoals() {
         value={actuals.scheduled} goal={schedGoal}
         color="#3b82f6"
         isComputed={isComputed}
+        trend={trendSched}
         onEdit={() => { setEditingField('monthly_scheduled_goal'); setEditValue(String(goals.monthly_scheduled_goal)); }}
       />
       <MetricCard
@@ -296,6 +362,7 @@ export default function BusinessGoals() {
         value={actuals.completed} goal={compGoal}
         color="#22c55e"
         isComputed={isComputed}
+        trend={trendComp}
         onEdit={() => { setEditingField('monthly_completed_goal'); setEditValue(String(goals.monthly_completed_goal)); }}
       />
 
