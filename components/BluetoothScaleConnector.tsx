@@ -29,6 +29,7 @@ interface Props {
   clientAge?: number;
   clientHeightCm?: number;
   clientIsMale?: boolean;
+  onScaleSelected?: (scale: any) => void;
 }
 
 // Xiaomi Mi Body Composition Scale 2 BLE Configuration
@@ -47,7 +48,7 @@ const FITDAYS_CHAR_NOTIFY_UUID = '0000ffb2-0000-1000-8000-00805f9b34fb';
 const FITDAYS_CHAR_WRITE_UUID  = '0000ffb1-0000-1000-8000-00805f9b34fb';
 
 
-export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry, clientAge = 35, clientHeightCm = 170, clientIsMale = true }: Props) {
+export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry, clientAge = 35, clientHeightCm = 170, clientIsMale = true, onScaleSelected }: Props) {
   const [trainerScales, setTrainerScales] = useState<any[]>([]);
   const [selectedScale, setSelectedScale] = useState<any | null>(null);
   const [loadingScales, setLoadingScales] = useState(false);
@@ -78,6 +79,13 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
     }
     fetchScales();
   }, [trainerId]);
+
+  // Notify parent when selectedScale changes
+  useEffect(() => {
+    if (onScaleSelected) {
+      onScaleSelected(selectedScale);
+    }
+  }, [selectedScale, onScaleSelected]);
 
   // Check if Web Bluetooth is supported
   const isBluetoothSupported = () => {

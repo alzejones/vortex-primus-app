@@ -174,7 +174,7 @@ export default function PublicAssessmentView() {
       if (clientError || !clientData) throw new Error("Acesso indisponível.");
       setClient(clientData);
 
-      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, anthropometry!anthropometry_assessment_id_fkey (*)`).eq("client_id", clientId).order("date", { ascending: false });
+      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, scale_protocol, anthropometry!anthropometry_assessment_id_fkey (*)`).eq("client_id", clientId).order("date", { ascending: false });
       if (historyError || !historyData || historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
 
       setAssessments(historyData);
@@ -327,7 +327,7 @@ export default function PublicAssessmentView() {
             </View>
 
             {(() => {
-              const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age, currentAssessment?.trainer_scale?.supported_scale?.protocol ?? 'omron');
+              const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age, currentAssessment?.scale_protocol ?? 'omron');
               const peso = Number(anthro?.weight) || 0;
               const val = anthro?.body_fat ?? "-";
               const gorduraKg = peso > 0 && val !== "-"
@@ -354,7 +354,7 @@ export default function PublicAssessmentView() {
             })()}
 
             {(() => {
-              const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age, currentAssessment?.trainer_scale?.supported_scale?.protocol ?? 'omron');
+              const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age, currentAssessment?.scale_protocol ?? 'omron');
               const peso = Number(anthro?.weight) || 0;
               const val = anthro?.muscle_mass_percentage ?? "-";
               const musculoKg = peso > 0 && val !== "-"

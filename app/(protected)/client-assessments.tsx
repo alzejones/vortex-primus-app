@@ -63,6 +63,7 @@ export default function ClientAssessments() {
 
   const [pendingPhotos, setPendingPhotos] = useState<{ uri: string; label: string }[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectedScale, setSelectedScale] = useState<any>(null);
 
   const formatDateBR = (date: Date) => {
     const d = date.getDate().toString().padStart(2, '0');
@@ -622,7 +623,13 @@ export default function ClientAssessments() {
 
     const { data: assessment } = await supabase
       .from("physical_assessments")
-      .insert([{ client_id: clientId, trainer_id: trainerId, date: isoDate, assessor_name: session?.user?.email || "Treinador" }])
+      .insert([{ 
+        client_id: clientId, 
+        trainer_id: trainerId, 
+        date: isoDate, 
+        assessor_name: session?.user?.email || "Treinador",
+        scale_protocol: selectedScale?.supported_scale?.protocol ?? null
+      }])
       .select().single();
 
     await supabase.from("anthropometry").insert({ assessment_id: assessment.id, ...payload });
@@ -786,6 +793,7 @@ export default function ClientAssessments() {
                   clientAge={clientAge}
                   clientHeightCm={clientHeightCm}
                   clientIsMale={clientIsMale}
+                  onScaleSelected={setSelectedScale}
                 />
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
@@ -869,7 +877,7 @@ export default function ClientAssessments() {
           </KeyboardAvoidingView>
         </SafeAreaView>
 
-        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} onExportAI={() => { setViewModalVisible(false); setAssessmentForReport(selectedAssessment); setAiReportVisible(true); }} />
+        <AssessmentDetailsModal visible={viewModalVisible} onClose={() => setViewModalVisible(false)} client={client} selectedAssessment={selectedAssessment} relativeEvolution={relativeEvolution} assessments={assessments} fatData={fatData} muscleData={muscleData} chartLabels={chartLabels} viewRef={viewRef} onShare={handleShareLink} calculateAge={calculateAge} getColor={getColor} formatValue={formatValue} styles={styles} getSignedUrl={getSignedUrl} scaleProtocol={selectedAssessment?.scale_protocol ?? 'omron'} onExportAI={() => { setViewModalVisible(false); setAssessmentForReport(selectedAssessment); setAiReportVisible(true); }} />
         <AIReportModal
           visible={aiReportVisible}
           onClose={() => { setAiReportVisible(false); setAssessmentForReport(null); }}
