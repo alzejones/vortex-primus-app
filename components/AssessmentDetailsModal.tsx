@@ -36,10 +36,11 @@ interface AssessmentDetailsModalProps {
   formatValue: (val: any) => any;
   styles: any;
   getSignedUrl: (path: string) => Promise<string | null>;
+  scaleProtocol?: string;
 }
 
 // 🔴 NOVA LÓGICA DE GORDURA CORPORAL (Planilha Omron)
-const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
+const getLocalBodyFatStatus = (value: any, gender: string, age: number, protocol: string = 'omron') => {
   const v = Number(value);
   if (isNaN(v) || v <= 0) return null;
 
@@ -54,6 +55,18 @@ const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
     if (age < 40) { L1 = 21.0; L2 = 33.0; L3 = 39.0; }
     else if (age < 60) { L1 = 23.0; L2 = 34.0; L3 = 40.0; }
     else { L1 = 24.0; L2 = 36.0; L3 = 42.0; }
+  }
+
+  if (protocol === 'fitdays') {
+    if (isMale) {
+      if (age < 40) { L1 = 8.0; L2 = 21.0; L3 = 26.0; }
+      else if (age < 60) { L1 = 11.0; L2 = 23.0; L3 = 29.0; }
+      else { L1 = 13.0; L2 = 25.0; L3 = 31.0; }
+    } else {
+      if (age < 40) { L1 = 21.0; L2 = 33.0; L3 = 39.0; }
+      else if (age < 60) { L1 = 23.0; L2 = 35.0; L3 = 41.0; }
+      else { L1 = 24.0; L2 = 36.0; L3 = 42.0; }
+    }
   }
 
   let label = "BAIXO"; let bg = "#e0f2fe"; let color = "#0284c7"; let pos = 0;
@@ -72,7 +85,7 @@ const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
 };
 
 // 🔴 NOVA LÓGICA DE MASSA MUSCULAR (Planilha Omron)
-const getLocalMuscleStatus = (value: any, gender: string, age: number) => {
+const getLocalMuscleStatus = (value: any, gender: string, age: number, protocol: string = 'omron') => {
   const v = Number(value);
   if (isNaN(v) || v <= 0) return null;
 
@@ -87,6 +100,18 @@ const getLocalMuscleStatus = (value: any, gender: string, age: number) => {
     if (age < 40) { L1 = 24.3; L2 = 30.4; L3 = 35.4; }
     else if (age < 60) { L1 = 24.1; L2 = 30.2; L3 = 35.2; }
     else { L1 = 23.9; L2 = 30.0; L3 = 35.0; }
+  }
+
+  if (protocol === 'fitdays') {
+    if (isMale) {
+      if (age < 40) { L1 = 60.0; L2 = 65.0; L3 = 70.0; }
+      else if (age < 60) { L1 = 58.0; L2 = 63.0; L3 = 68.0; }
+      else { L1 = 56.0; L2 = 61.0; L3 = 66.0; }
+    } else {
+      if (age < 40) { L1 = 55.0; L2 = 60.0; L3 = 65.0; }
+      else if (age < 60) { L1 = 53.0; L2 = 58.0; L3 = 63.0; }
+      else { L1 = 51.0; L2 = 56.0; L3 = 61.0; }
+    }
   }
 
   let label = "BAIXO"; let bg = "#fee2e2"; let color = "#dc2626"; let pos = 0;
@@ -135,7 +160,8 @@ export default function AssessmentDetailsModal({
   getColor,
   formatValue,
   styles,
-  getSignedUrl
+  getSignedUrl,
+  scaleProtocol = 'omron'
 }: AssessmentDetailsModalProps) {
 
   const [referencesVisible, setReferencesVisible] = useState(false);
@@ -229,7 +255,7 @@ export default function AssessmentDetailsModal({
 
                   {/* 🟢 BARRA DE GORDURA CORPORAL (ATUALIZADA) */}
                   {(() => {
-                    const bfStatus = getLocalBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date));
+                    const bfStatus = getLocalBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date), scaleProtocol);
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat ?? "-";
                     const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight) || 0;
                     const gorduraKg = peso > 0 && val !== "-"
@@ -263,7 +289,7 @@ export default function AssessmentDetailsModal({
 
                   {/* 🟢 BARRA DE MASSA MUSCULAR (ATUALIZADA) */}
                   {(() => {
-                    const mmStatus = getLocalMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date));
+                    const mmStatus = getLocalMuscleStatus(selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage, client?.gender, calculateAge(client?.birth_date), scaleProtocol);
                     const val = selectedAssessment?.anthropometry?.[0]?.muscle_mass_percentage ?? "-";
                     const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight) || 0;
                     const musculoKg = peso > 0 && val !== "-"

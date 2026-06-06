@@ -53,7 +53,7 @@ const calculateEvolution = (current: any, previous: any) => {
   };
 };
 
-const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
+const getLocalBodyFatStatus = (value: any, gender: string, age: number, protocol: string = 'omron') => {
   const v = Number(value);
   if (isNaN(v) || v <= 0) return null;
   const isMale = gender === 'M' || gender === 'Masculino';
@@ -67,6 +67,18 @@ const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
     else if (age < 60) { L1 = 23.0; L2 = 34.0; L3 = 40.0; }
     else { L1 = 24.0; L2 = 36.0; L3 = 42.0; }
   }
+
+  if (protocol === 'fitdays') {
+    if (isMale) {
+      if (age < 40) { L1 = 8.0; L2 = 21.0; L3 = 26.0; }
+      else if (age < 60) { L1 = 11.0; L2 = 23.0; L3 = 29.0; }
+      else { L1 = 13.0; L2 = 25.0; L3 = 31.0; }
+    } else {
+      if (age < 40) { L1 = 21.0; L2 = 33.0; L3 = 39.0; }
+      else if (age < 60) { L1 = 23.0; L2 = 35.0; L3 = 41.0; }
+      else { L1 = 24.0; L2 = 36.0; L3 = 42.0; }
+    }
+  }
   let label = "BAIXO"; let bg = "#e0f2fe"; let color = "#0284c7"; let pos = 0;
   if (v < L1) { label = "BAIXO"; pos = (v / L1) * 25; }
   else if (v < L2) { label = "NORMAL"; bg = "#dcfce7"; color = "#16a34a"; pos = 25 + ((v - L1) / (L2 - L1)) * 25; }
@@ -75,7 +87,7 @@ const getLocalBodyFatStatus = (value: any, gender: string, age: number) => {
   return { label, bg, color, pos: Math.min(Math.max(pos, 0), 100), limits: [L1, L2, L3] };
 };
 
-const getLocalMuscleStatus = (value: any, gender: string, age: number) => {
+const getLocalMuscleStatus = (value: any, gender: string, age: number, protocol: string = 'omron') => {
   const v = Number(value);
   if (isNaN(v) || v <= 0) return null;
   const isMale = gender === 'M' || gender === 'Masculino';
@@ -88,6 +100,18 @@ const getLocalMuscleStatus = (value: any, gender: string, age: number) => {
     if (age < 40) { L1 = 24.3; L2 = 30.4; L3 = 35.4; }
     else if (age < 60) { L1 = 24.1; L2 = 30.2; L3 = 35.2; }
     else { L1 = 23.9; L2 = 30.0; L3 = 35.0; }
+  }
+
+  if (protocol === 'fitdays') {
+    if (isMale) {
+      if (age < 40) { L1 = 60.0; L2 = 65.0; L3 = 70.0; }
+      else if (age < 60) { L1 = 58.0; L2 = 63.0; L3 = 68.0; }
+      else { L1 = 56.0; L2 = 61.0; L3 = 66.0; }
+    } else {
+      if (age < 40) { L1 = 55.0; L2 = 60.0; L3 = 65.0; }
+      else if (age < 60) { L1 = 53.0; L2 = 58.0; L3 = 63.0; }
+      else { L1 = 51.0; L2 = 56.0; L3 = 61.0; }
+    }
   }
   let label = "BAIXO"; let bg = "#fee2e2"; let color = "#dc2626"; let pos = 0;
   if (v < L1) { label = "BAIXO"; pos = (v / L1) * 25; }
@@ -150,7 +174,7 @@ export default function PublicAssessmentView() {
       if (clientError || !clientData) throw new Error("Acesso indisponível.");
       setClient(clientData);
 
-      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, anthropometry!anthropometry_assessment_id_fkey (*)`).eq("client_id", clientId).order("date", { ascending: false });
+      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, anthropometry!anthropometry_assessment_id_fkey (*), trainer_scale:trainer_scales (supported_scale:supported_scales (protocol))`).eq("client_id", clientId).order("date", { ascending: false });
       if (historyError || !historyData || historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
 
       setAssessments(historyData);
@@ -303,7 +327,7 @@ export default function PublicAssessmentView() {
             </View>
 
             {(() => {
-              const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age);
+              const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age, currentAssessment?.trainer_scale?.supported_scale?.protocol ?? 'omron');
               const peso = Number(anthro?.weight) || 0;
               const val = anthro?.body_fat ?? "-";
               const gorduraKg = peso > 0 && val !== "-"
@@ -330,7 +354,7 @@ export default function PublicAssessmentView() {
             })()}
 
             {(() => {
-              const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age);
+              const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age, currentAssessment?.trainer_scale?.supported_scale?.protocol ?? 'omron');
               const peso = Number(anthro?.weight) || 0;
               const val = anthro?.muscle_mass_percentage ?? "-";
               const musculoKg = peso > 0 && val !== "-"
