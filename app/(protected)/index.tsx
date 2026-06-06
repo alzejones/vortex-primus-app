@@ -100,10 +100,24 @@ export default function Index() {
 
       // Clientes sem avaliação há 30+ dias (ou nunca avaliados)
       const today = new Date();
+      const todayForOverdue = new Date().toISOString().split('T')[0];
+      const { data: futureAppointments } = await supabase
+        .from('appointments')
+        .select('client_id')
+        .eq('trainer_id', trainer.id)
+        .gte('appointment_date', todayForOverdue);
+
+      const clientsWithFutureAppt = new Set(
+        (futureAppointments || []).map((a: any) => a.client_id)
+      );
+
       const overdueClients = clientsWithViews.filter((c: any) => {
-        if (!c.lastAssessmentDate) return true; // nunca avaliado
+        if (clientsWithFutureAppt.has(c.id)) return false;
+        if (!c.lastAssessmentDate) return true;
         const last = new Date(c.lastAssessmentDate);
-        const diffDays = Math.floor((today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+        const diffDays = Math.floor(
+          (today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)
+        );
         return diffDays >= 30;
       });
       setOverdueClients(overdueClients);
