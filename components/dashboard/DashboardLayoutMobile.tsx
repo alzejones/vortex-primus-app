@@ -1,6 +1,7 @@
 // DashboardLayoutMobile.tsx — Layout mobile original (usado no app nativo e como fallback no browser mobile)
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import {
   FlatList, Modal, Platform, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput,
@@ -62,6 +63,7 @@ export default function DashboardLayoutMobile({
   getInitials, formatDateBR,
   overdueClients, birthdayClients, goalsWidget,
 }: DashboardLayoutProps) {
+  const [overdueModalVisible, setOverdueModalVisible] = useState(false);
 
   const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
@@ -224,7 +226,11 @@ export default function DashboardLayoutMobile({
             </View>
           ))}
           {overdueClients.length > 3 && (
-            <Text style={styles.alertMore}>+{overdueClients.length - 3} mais precisam de reavaliação</Text>
+            <TouchableOpacity onPress={() => setOverdueModalVisible(true)}>
+              <Text style={[styles.alertMore, { color: T.blue, textDecorationLine: 'underline' }]}>
+                +{overdueClients.length - 3} mais — ver todos
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -529,6 +535,63 @@ export default function DashboardLayoutMobile({
                 <Text style={styles.addClientFooterText}>Adicionar Novo Aluno</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={overdueModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setOverdueModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: T.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
+                🔴 Reavaliações Pendentes ({overdueClients.length})
+              </Text>
+              <TouchableOpacity onPress={() => setOverdueModalVisible(false)}>
+                <Text style={{ fontSize: 22, color: T.t3 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={overdueClients}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ padding: 16 }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: T.border }}
+                  onPress={() => {
+                    setOverdueModalVisible(false);
+                    router.push(`/(protected)/client-details?id=${item.id}` as any);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,107,53,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <Text style={{ color: '#ff9a6c', fontWeight: '800', fontSize: 13 }}>{getInitials(item.name)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: T.t1 }}>{item.name}</Text>
+                    <Text style={{ fontSize: 12, color: '#ff9a6c', marginTop: 2 }}>
+                      {item.lastAssessmentDate
+                        ? `Última: ${Math.floor((new Date().getTime() - new Date(item.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24))} dias atrás`
+                        : 'Nunca avaliado'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setOverdueModalVisible(false);
+                      router.push(`/(protected)/schedule/new?client_id=${item.id}` as any);
+                    }}
+                    style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: 'rgba(255,107,53,0.15)', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Text style={{ fontSize: 18 }}>📅</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              )}
+            />
           </View>
         </View>
       </Modal>

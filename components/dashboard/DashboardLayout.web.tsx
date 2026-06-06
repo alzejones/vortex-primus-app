@@ -231,7 +231,9 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   );
 
   // ─── Painel direito: próximas sessões ─────────────────────────
-  const SessionsPanel = () => (
+  const SessionsPanel = () => {
+    const [showAllOverdue, setShowAllOverdue] = useState(false);
+    return (
     <View style={styles.rightPanel}>
       <View style={styles.panelHeader}>
         <Text style={styles.panelTitle}>Agendamentos</Text>
@@ -329,7 +331,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             </Text>
           </View>
           <Text style={{ fontSize: 11, color: '#ff9a6c', marginBottom: 12, opacity: 0.7 }}>Sem avaliação há 30+ dias</Text>
-          {overdueClients.slice(0, 3).map((client) => (
+          {overdueClients.slice(0, showAllOverdue ? overdueClients.length : 3).map((client) => (
             <TouchableOpacity
               key={client.id}
               style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: 1, borderTopColor: 'rgba(255,107,53,0.15)' }}
@@ -355,10 +357,19 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
               </TouchableOpacity>
             </TouchableOpacity>
           ))}
-          {overdueClients.length > 3 && (
-            <Text style={{ fontSize: 11, color: '#ff9a6c', textAlign: 'center', marginTop: 10, opacity: 0.7 }}>
-              +{overdueClients.length - 3} mais precisam de reavaliação
-            </Text>
+          {overdueClients.length > 3 && !showAllOverdue && (
+            <TouchableOpacity onPress={() => setShowAllOverdue(true)}>
+              <Text style={{ fontSize: 11, color: T.blue, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
+                +{overdueClients.length - 3} mais — ver todos ↓
+              </Text>
+            </TouchableOpacity>
+          )}
+          {showAllOverdue && (
+            <TouchableOpacity onPress={() => setShowAllOverdue(false)}>
+              <Text style={{ fontSize: 11, color: T.t3, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
+                Recolher ↑
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -425,7 +436,8 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         </LinearGradient>
       </TouchableOpacity>
     </View>
-  );
+    );
+  };
 
   // ─── Render principal ─────────────────────────────────────────
   return (
