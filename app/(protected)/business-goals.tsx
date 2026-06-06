@@ -242,19 +242,19 @@ export default function BusinessGoals() {
       { count: schedW }, { count: compW },
     ] = await Promise.all([
       supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('appointment_date', start).lte('appointment_date', end),
+        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00').lte('created_at', end + 'T23:59:59'),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('assessment_date', start).lte('assessment_date', end),
       supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', me),
+        .eq('trainer_id', tid).gte('created_at', ms + 'T00:00:00').lte('created_at', me + 'T23:59:59'),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', me),
       supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', yesterdayStr),
+        .eq('trainer_id', tid).gte('created_at', ms + 'T00:00:00').lte('created_at', yesterdayStr + 'T23:59:59'),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', yesterdayStr),
       supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('appointment_date', ms).lte('appointment_date', lastFriStr),
+        .eq('trainer_id', tid).gte('created_at', ms + 'T00:00:00').lte('created_at', lastFriStr + 'T23:59:59'),
       supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
         .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', lastFriStr),
     ]);
