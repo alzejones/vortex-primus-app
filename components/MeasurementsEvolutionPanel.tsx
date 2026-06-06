@@ -23,6 +23,29 @@ export default function MeasurementsEvolutionPanel({
     return new Date(dateStr).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
+  const calcInterval = (dateStr1: string, dateStr2: string): string => {
+    if (!dateStr1 || !dateStr2) return '';
+    const d1 = new Date(dateStr1);
+    const d2 = new Date(dateStr2);
+    const earlier = d1 < d2 ? d1 : d2;
+    const later   = d1 > d2 ? d1 : d2;
+    let months = (later.getFullYear() - earlier.getFullYear()) * 12
+               + (later.getMonth() - earlier.getMonth());
+    const tmp = new Date(earlier);
+    tmp.setMonth(tmp.getMonth() + months);
+    let days = Math.round((later.getTime() - tmp.getTime()) / 86400000);
+    if (days < 0) {
+      months--;
+      const tmp2 = new Date(earlier);
+      tmp2.setMonth(tmp2.getMonth() + months);
+      days = Math.round((later.getTime() - tmp2.getTime()) / 86400000);
+    }
+    if (months === 0 && days === 0) return '';
+    if (months === 0) return `${days} dia${days !== 1 ? 's' : ''}`;
+    if (days === 0)   return `${months} ${months === 1 ? 'mês' : 'meses'}`;
+    return `${months} ${months === 1 ? 'mês' : 'meses'} e ${days}d`;
+  };
+
   const currDate = formatDate(currentAssessment?.date);
   const prevDate = formatDate(prevAssessment?.date);
   const firstDate = formatDate(firstAssessment?.date);
@@ -84,6 +107,15 @@ export default function MeasurementsEvolutionPanel({
           <View style={{ backgroundColor: T.surface, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: T.t3 }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{currDate}</Text></View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: T.t3 }}>Anterior:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{prevDate}</Text></View>
+            {calcInterval(currentAssessment?.date, prevAssessment?.date) ? (
+              <View style={{ marginTop: 6, alignItems: 'center' }}>
+                <View style={{ backgroundColor: 'rgba(234,88,12,0.12)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                  <Text style={{ fontSize: 10, color: '#ea580c', fontWeight: '700' }}>
+                    ⏱ {calcInterval(currentAssessment?.date, prevAssessment?.date)}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
 
           <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>TRONCO</Text>
@@ -107,6 +139,15 @@ export default function MeasurementsEvolutionPanel({
           <View style={{ backgroundColor: T.surface, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: T.t3 }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{currDate}</Text></View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: T.t3 }}>Início:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{firstDate}</Text></View>
+            {calcInterval(currentAssessment?.date, firstAssessment?.date) ? (
+              <View style={{ marginTop: 6, alignItems: 'center' }}>
+                <View style={{ backgroundColor: 'rgba(234,88,12,0.12)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
+                  <Text style={{ fontSize: 10, color: '#ea580c', fontWeight: '700' }}>
+                    ⏱ {calcInterval(currentAssessment?.date, firstAssessment?.date)}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
           </View>
 
           <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>TRONCO</Text>
