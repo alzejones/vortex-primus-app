@@ -1,5 +1,5 @@
 // Inteligência Omron: % de Gordura Corporal
-export const getBodyFatStatus = (value: any, gender: string | undefined, age: number) => {
+export const getBodyFatStatus = (value: any, gender: string | undefined, age: number, protocol?: string) => {
   const v = Number(value);
   if (!v || isNaN(v) || !gender || !age) return null;
   const isM = gender.toUpperCase() === 'M';
@@ -13,6 +13,19 @@ export const getBodyFatStatus = (value: any, gender: string | undefined, age: nu
     if (age < 40) { low = 21; normal = 33; high = 39; }
     else if (age < 60) { low = 23; normal = 34; high = 40; }
     else { low = 24; normal = 36; high = 42; }
+  }
+
+  // Faixas Fitdays — mesma referência OMS mas ajustada para o protocolo
+  if (protocol === 'fitdays') {
+    if (isM) {
+      if (age < 40) { low = 8; normal = 21; high = 26; }
+      else if (age < 60) { low = 11; normal = 23; high = 29; }
+      else { low = 13; normal = 25; high = 31; }
+    } else {
+      if (age < 40) { low = 21; normal = 33; high = 39; }
+      else if (age < 60) { low = 23; normal = 35; high = 41; }
+      else { low = 24; normal = 36; high = 42; }
+    }
   }
 
   let pos = 0;
@@ -36,7 +49,7 @@ export const getBodyFatStatus = (value: any, gender: string | undefined, age: nu
 };
 
 // Inteligência Omron: % de Massa Muscular
-export const getMuscleStatus = (value: any, gender: string | undefined, age: number) => {
+export const getMuscleStatus = (value: any, gender: string | undefined, age: number, protocol?: string) => {
   const v = Number(value);
   if (!v || isNaN(v) || !gender || !age) return null;
   const isM = gender.toUpperCase() === 'M';
@@ -50,6 +63,19 @@ export const getMuscleStatus = (value: any, gender: string | undefined, age: num
     if (age < 40) { low = 24.3; normal = 30.4; high = 35.4; }
     else if (age < 60) { low = 24.1; normal = 30.2; high = 35.2; }
     else { low = 22.5; normal = 28.8; high = 33.7; }
+  }
+
+  // Faixas Fitdays — baseadas em Taxa Muscular (escala 60-75%)
+  if (protocol === 'fitdays') {
+    if (isM) {
+      if (age < 40) { low = 60.0; normal = 65.0; high = 70.0; }
+      else if (age < 60) { low = 58.0; normal = 63.0; high = 68.0; }
+      else { low = 56.0; normal = 61.0; high = 66.0; }
+    } else {
+      if (age < 40) { low = 55.0; normal = 60.0; high = 65.0; }
+      else if (age < 60) { low = 53.0; normal = 58.0; high = 63.0; }
+      else { low = 51.0; normal = 56.0; high = 61.0; }
+    }
   }
 
   let pos = 0;
