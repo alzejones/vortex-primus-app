@@ -617,6 +617,7 @@ export default function ClientAssessments() {
       setPendingPhotos([]);
       await fetchHistory();
       setSaving(false);
+      setFormModalVisible(false);
       Alert.alert("Sucesso", "Avaliação atualizada");
       return;
     }
