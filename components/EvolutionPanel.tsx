@@ -72,9 +72,9 @@ export default function EvolutionPanel({
   const DataRow = ({ label, diffValue, currW, prevW, currF, prevF, currM, prevM, type, suffix = "" }: any) => {
     if (diffValue === null || diffValue === undefined) {
       return (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-          <Text style={{ fontSize: 12, color: T.t3, fontWeight: '500' }}>{label}</Text>
-          <Text style={{ fontSize: 12, fontWeight: '900', color: T.t3 }}>-</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center', gap: 4 }}>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '500', flex: 1, flexWrap: 'nowrap' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '900', color: T.t3, textAlign: 'right', flexShrink: 0 }}>-</Text>
         </View>
       );
     }
@@ -90,9 +90,9 @@ export default function EvolutionPanel({
     const emoji = getEmoji(diffValue);
 
     return (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-        <Text style={{ fontSize: 12, color: T.t3, fontWeight: '500' }}>{label}</Text>
-        <Text style={{ fontSize: 12, fontWeight: '900', color: color }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center', gap: 4 }}>
+        <Text style={{ fontSize: 11, color: T.t3, fontWeight: '500', flex: 1, flexWrap: 'nowrap' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+        <Text style={{ fontSize: 11, fontWeight: '900', color: color, textAlign: 'right', flexShrink: 0 }}>
            {valFormatted}{suffix} <Text style={{ fontSize: 10 }}>{emoji}</Text>
         </Text>
       </View>

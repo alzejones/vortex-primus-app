@@ -138,7 +138,7 @@ export default function MeasurementsEvolutionPanel({
               <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: T.border }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ fontSize: 11, color: T.t3, fontWeight: '700', flex: 1 }}>
-                    {total <= 0 ? '✅ Eliminado' : '📈 Ganho'}
+                    {total <= 0 ? '✅ Total Eliminado' : '📈 Total Ganho'}
                   </Text>
                   <Text style={{ fontSize: 13, fontWeight: '900', color }}>
                     {total > 0 ? '+' : ''}{total.toFixed(1)} cm
@@ -194,7 +194,7 @@ export default function MeasurementsEvolutionPanel({
               <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: T.border }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ fontSize: 11, color: T.t3, fontWeight: '700', flex: 1 }}>
-                    {total <= 0 ? '✅ Eliminado' : '📈 Ganho'}
+                    {total <= 0 ? '✅ Total Eliminado' : '📈 Total Ganho'}
                   </Text>
                   <Text style={{ fontSize: 13, fontWeight: '900', color }}>
                     {total > 0 ? '+' : ''}{total.toFixed(1)} cm
