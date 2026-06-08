@@ -124,6 +124,30 @@ export default function MeasurementsEvolutionPanel({
           <MeasureRow label="Cintura" diffValue={calcDiff(currAnthro?.waist, prevAnthro?.waist)} />
           <MeasureRow label="Quadril" diffValue={calcDiff(currAnthro?.hip, prevAnthro?.hip)} />
 
+          {(() => {
+            const vals = [
+              calcDiff(currAnthro?.chest,   prevAnthro?.chest),
+              calcDiff(currAnthro?.abdomen, prevAnthro?.abdomen),
+              calcDiff(currAnthro?.waist,   prevAnthro?.waist),
+              calcDiff(currAnthro?.hip,     prevAnthro?.hip),
+            ].filter(v => v !== null) as number[];
+            if (vals.length === 0) return null;
+            const total = vals.reduce((a, b) => a + b, 0);
+            const color = total < 0 ? '#22c55e' : total > 0 ? '#ef4444' : T.t3;
+            return (
+              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: T.border }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 11, color: T.t3, fontWeight: '700', flex: 1 }}>
+                    {total <= 0 ? '✅ Eliminado' : '📈 Ganho'}
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: '900', color }}>
+                    {total > 0 ? '+' : ''}{total.toFixed(1)} cm
+                  </Text>
+                </View>
+              </View>
+            );
+          })()}
+
           <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
 
           <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>MEMBROS (E/D)</Text>
@@ -155,6 +179,30 @@ export default function MeasurementsEvolutionPanel({
           <MeasureRow label="Abdômen" diffValue={calcDiff(currAnthro?.abdomen, firstAnthro?.abdomen)} />
           <MeasureRow label="Cintura" diffValue={calcDiff(currAnthro?.waist, firstAnthro?.waist)} />
           <MeasureRow label="Quadril" diffValue={calcDiff(currAnthro?.hip, firstAnthro?.hip)} />
+
+          {(() => {
+            const vals = [
+              calcDiff(currAnthro?.chest,   firstAnthro?.chest),
+              calcDiff(currAnthro?.abdomen, firstAnthro?.abdomen),
+              calcDiff(currAnthro?.waist,   firstAnthro?.waist),
+              calcDiff(currAnthro?.hip,     firstAnthro?.hip),
+            ].filter(v => v !== null) as number[];
+            if (vals.length === 0) return null;
+            const total = vals.reduce((a, b) => a + b, 0);
+            const color = total < 0 ? '#22c55e' : total > 0 ? '#ef4444' : T.t3;
+            return (
+              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: T.border }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 11, color: T.t3, fontWeight: '700', flex: 1 }}>
+                    {total <= 0 ? '✅ Eliminado' : '📈 Ganho'}
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: '900', color }}>
+                    {total > 0 ? '+' : ''}{total.toFixed(1)} cm
+                  </Text>
+                </View>
+              </View>
+            );
+          })()}
 
           <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
 
