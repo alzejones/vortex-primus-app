@@ -211,7 +211,7 @@ export default function AssessmentDetailsModal({
 
               <View style={{ alignItems: 'center', marginBottom: 24 }}>
                 <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 16, borderRadius: 16, elevation: 4 }}>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 16 }}>
+                  <View style={{ width: CHART_W, alignItems: 'flex-start' }}>
                     <LineChart
                     data={fatData.map((val, index) => ({
                       value: Number(val) || 0,
@@ -222,7 +222,7 @@ export default function AssessmentDetailsModal({
                       value: Number(val) || 0,
                       dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
                     }))}
-                    height={220} width={Math.max(CHART_W, fatData.length * 60 + 60)} isAnimated animationDuration={1200} curved
+                    height={220} width={Math.min(CHART_W, 68 + 40 + Math.max(fatData.length - 1, 1) * 60)} isAnimated animationDuration={1200} curved
                     textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
                     spacing={60}
                     initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
@@ -233,7 +233,7 @@ export default function AssessmentDetailsModal({
                     noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
                     rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
                     />
-                  </ScrollView>
+                  </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
