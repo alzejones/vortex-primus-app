@@ -49,9 +49,12 @@ export default function AssessmentHistoryCard({
   }
 
   const anthro = assessment.anthropometry?.[0];
-  const dateObj = new Date(assessment.date);
+  const [y, m, d] = (assessment.date as string).split('-');
+  const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
   const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const formattedTime = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const formattedTime = assessment.created_at
+    ? new Date(assessment.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+    : '';
 
   // Função auxiliar segura para 1 casa decimal
   const formatNum = (val: any) => val != null && val !== "" ? Number(val).toFixed(1) : '--';
