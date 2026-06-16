@@ -175,7 +175,8 @@ export default function ClientAssessments() {
 
   const chartLabels = chartAssessments.length > 0
     ? chartAssessments.map((a: any) => {
-        const d = new Date(a.date);
+        const [y, m, day] = a.date.split('-');
+        const d = new Date(Number(y), Number(m) - 1, Number(day));
         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
       })
     : ["-"];
@@ -265,7 +266,10 @@ export default function ClientAssessments() {
       return Math.ceil(delta / (1000 * 60 * 60 * 24));
     };
 
-    const formatDate = (d: string) => new Date(d).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
+    const formatDate = (dateStr: string) => {
+      const [y, m, day] = dateStr.split('-');
+      return new Date(Number(y), Number(m) - 1, Number(day)).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' });
+    };
     const isNotFirst = currentIndex !== assessments.length - 1;
 
     return {
@@ -375,7 +379,12 @@ export default function ClientAssessments() {
 
     setEditingAssessmentId(assessment.id);
     setEditingAnthropometryId(anthro.id);
-    const dateToSet = assessment.date ? formatDateBR(new Date(assessment.date)) : formatDateBR(new Date());
+    const dateToSet = assessment.date
+      ? (() => {
+          const [y, m, day] = assessment.date.split('-');
+          return formatDateBR(new Date(Number(y), Number(m) - 1, Number(day)));
+        })()
+      : formatDateBR(new Date());
 
     setForm((prev: any) => {
       const newForm = { ...prev, assessment_date: dateToSet };
