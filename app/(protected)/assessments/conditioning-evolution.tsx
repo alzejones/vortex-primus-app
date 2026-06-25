@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { supabase } from "../../../lib/supabase";
 import { T } from "../../../utils/theme";
+import StrengthDotMatrixChart from "../../../components/StrengthDotMatrixChart";
 
 export default function ConditioningEvolution() {
   const { client_id } = useLocalSearchParams();
@@ -433,6 +434,10 @@ export default function ConditioningEvolution() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
+        <StrengthDotMatrixChart
+          assessments={history}
+          periodDays={history.length > 1 ? calcDays(history[0].date, history[1].date) : 0}
+        />
         {renderStrengthCard(currentAss, previousAss, initialAss)}
         {renderEnduranceCard(currentAss, previousAss, initialAss)}
         {renderMobilityCard(currentAss, previousAss, initialAss)}
