@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import { View, Text } from "react-native";
 import { T } from "../utils/theme";
 
 interface Props {
@@ -8,19 +8,25 @@ interface Props {
 }
 
 const EX_STYLES = [
-  { colorOn: '#00D1DF', colorOff: 'rgba(0,209,223,0.10)', symbol: '●' },
-  { colorOn: '#BF3DFB', colorOff: 'rgba(191,61,251,0.10)', symbol: '■' },
-  { colorOn: '#FF9F1C', colorOff: 'rgba(255,159,28,0.10)',  symbol: '▲' },
-  { colorOn: '#3DDC84', colorOff: 'rgba(61,220,132,0.10)', symbol: '◆' },
+  { colorOn: '#00D1DF', colorOff: 'rgba(0,209,223,0.10)', symReps: '◉', symLoad: '●' },
+  { colorOn: '#BF3DFB', colorOff: 'rgba(191,61,251,0.10)', symReps: '▪', symLoad: '■' },
+  { colorOn: '#FF9F1C', colorOff: 'rgba(255,159,28,0.10)', symReps: '◀', symLoad: '▲' },
+  { colorOn: '#3DDC84', colorOff: 'rgba(61,220,132,0.10)', symReps: '★', symLoad: '◆' },
 ];
 
-const TOTAL_DOTS = 20;
+const TOTAL_DOTS = 16;
+const MAX_FILLED = TOTAL_DOTS - 3;
 
 function normalizeExerciseName(name: string): string {
   return name.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 8);
+}
+
+function calcFilled(val: number, maxVal: number): number {
+  if (!val || val <= 0 || maxVal <= 0) return 0;
+  return Math.min(Math.max(Math.round((val / maxVal) * TOTAL_DOTS), 1), MAX_FILLED);
 }
 
 export default function StrengthDotMatrixChart({ assessments, periodDays }: Props) {
@@ -39,45 +45,58 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
     return `${d}/${m}`;
   };
 
-  const formatValue = (loadKg: number, reps: number) => {
-    if (loadKg > 0 && reps > 0) return `${loadKg}kg×${reps}r`;
-    if (reps > 0) return `${reps}rep`;
-    return '–';
-  };
-
   const exerciseData = currStrength.map((ex: any, idx: number) => {
     const currLoad = Number(ex.load_kg) || 0;
     const currReps = Number(ex.repetitions) || 0;
-    const currVal = currLoad > 0 ? currLoad : currReps;
 
     const normalizedName = normalizeExerciseName(ex.exercise_name);
     const prevEx = prevStrength.find((p: any) => normalizeExerciseName(p.exercise_name) === normalizedName);
     const prevLoad = prevEx ? (Number(prevEx.load_kg) || 0) : 0;
     const prevReps = prevEx ? (Number(prevEx.repetitions) || 0) : 0;
-    const prevVal = prevLoad > 0 ? prevLoad : prevReps;
 
-    const maxVal = Math.max(currVal, prevVal > 0 ? prevVal : currVal);
-    const currDots = Math.max(1, Math.round((currVal / maxVal) * TOTAL_DOTS));
-    const prevDots = prevVal > 0 ? Math.max(1, Math.round((prevVal / maxVal) * TOTAL_DOTS)) : 0;
+    const maxLoad = Math.max(currLoad, prevLoad) * 1.6;
+    const maxReps = Math.max(currReps, prevReps) * 1.6;
+
+    const filledCurrLoad = calcFilled(currLoad, maxLoad);
+    const filledCurrReps = calcFilled(currReps, maxReps);
+    const filledPrevLoad = calcFilled(prevLoad, maxLoad);
+    const filledPrevReps = calcFilled(prevReps, maxReps);
+
+    const deltaLoad = prevLoad > 0 && currLoad > 0 ? currLoad - prevLoad : null;
+    const deltaReps = prevReps > 0 && currReps > 0 ? currReps - prevReps : null;
+
+    const pctLoad = deltaLoad !== null && prevLoad > 0 ? Math.round((deltaLoad / prevLoad) * 100) : null;
+    const pctReps = deltaReps !== null && prevReps > 0 ? Math.round((deltaReps / prevReps) * 100) : null;
 
     let percentText = '1ª aval.';
-    if (prevVal > 0) {
-      const percent = Math.round(((currVal - prevVal) / prevVal) * 100);
-      percentText = percent > 0 ? `+${percent}%` : `${percent}%`;
+    if (pctLoad !== null || pctReps !== null) {
+      const validPcts = [pctLoad, pctReps].filter(p => p !== null) as number[];
+      const avgPct = Math.round(validPcts.reduce((a, b) => a + b, 0) / validPcts.length);
+      percentText = (avgPct >= 0 ? '+' : '') + avgPct + '%';
     }
 
     const style = EX_STYLES[idx % EX_STYLES.length];
+    const anyLoad = currLoad > 0 || prevLoad > 0;
 
     return {
       name: ex.exercise_name,
       style,
       percentText,
-      currDots,
-      prevDots,
+      currLoad,
+      currReps,
+      prevLoad,
+      prevReps,
+      filledCurrLoad,
+      filledCurrReps,
+      filledPrevLoad,
+      filledPrevReps,
+      deltaLoad,
+      deltaReps,
+      pctLoad,
+      pctReps,
+      anyLoad,
       currDate: formatShortDate(curr.date),
       prevDate: prev ? formatShortDate(prev.date) : '',
-      currValText: formatValue(currLoad, currReps),
-      prevValText: prevVal > 0 ? formatValue(prevLoad, prevReps) : '–',
       sequenceNum: String(idx + 1).padStart(2, '0'),
     };
   });
@@ -124,7 +143,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
         </View>
       </View>
 
-      <ScrollView style={{ padding: 16 }}>
+      <View style={{ padding: 16 }}>
         {exerciseData.map((ex, idx) => (
           <View key={idx} style={{
             paddingBottom: 16,
@@ -174,93 +193,199 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
               </View>
             </View>
 
-            <View style={{ marginBottom: 8 }}>
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
+            <View>
+              <Text style={{
+                color: T.t3,
+                fontSize: 11,
+                fontWeight: '600',
                 marginBottom: 6,
               }}>
+                {ex.currDate}
+              </Text>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
                 <Text style={{
-                  color: T.t3,
-                  fontSize: 11,
-                  fontWeight: '600',
-                  width: 40,
+                  fontSize: 10,
+                  fontWeight: '700',
+                  color: `${ex.style.colorOn}73`,
+                  width: 28,
+                  textAlign: 'right',
+                  marginRight: 6,
                 }}>
-                  {ex.currDate}
+                  Rep
                 </Text>
-                <View style={{
-                  flexDirection: 'row',
-                  flex: 1,
-                  marginHorizontal: 8,
-                }}>
+                <View style={{ flexDirection: 'row' }}>
                   {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
                     <Text key={i} style={{
-                      fontSize: 14,
-                      color: i < ex.currDots ? ex.style.colorOn : ex.style.colorOff,
-                      textShadowColor: i < ex.currDots ? ex.style.colorOn : 'transparent',
-                      textShadowRadius: i < ex.currDots ? 6 : 0,
+                      fontSize: 12,
+                      color: i < ex.filledCurrReps ? ex.style.colorOn : ex.style.colorOff,
+                      textShadowColor: i < ex.filledCurrReps ? ex.style.colorOn : 'transparent',
+                      textShadowRadius: i < ex.filledCurrReps ? 6 : 0,
                       textShadowOffset: { width: 0, height: 0 },
+                      marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
                     }}>
-                      {ex.style.symbol}
+                      {ex.style.symReps}
                     </Text>
                   ))}
                 </View>
-                <Text style={{
-                  color: T.t2,
-                  fontSize: 11,
-                  fontWeight: '700',
-                  width: 70,
-                  textAlign: 'right',
-                }}>
-                  {ex.currValText}
-                </Text>
+                <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                  <Text style={{
+                    color: ex.style.colorOn,
+                    fontSize: 12,
+                    fontWeight: '800',
+                  }}>
+                    {ex.currReps}×
+                  </Text>
+                  {ex.deltaReps !== null && (
+                    <Text style={{
+                      color: ex.deltaReps > 0 ? ex.style.colorOn : '#FF5C5C',
+                      fontSize: 10,
+                      fontWeight: '700',
+                    }}>
+                      {ex.deltaReps > 0 ? '+' : ''}{ex.deltaReps} ({ex.pctReps! >= 0 ? '+' : ''}{ex.pctReps}%)
+                    </Text>
+                  )}
+                </View>
               </View>
 
+              {ex.anyLoad && ex.currLoad > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                  <Text style={{
+                    fontSize: 10,
+                    fontWeight: '700',
+                    color: `${ex.style.colorOn}73`,
+                    width: 28,
+                    textAlign: 'right',
+                    marginRight: 6,
+                  }}>
+                    Cg
+                  </Text>
+                  <View style={{ flexDirection: 'row' }}>
+                    {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
+                      <Text key={i} style={{
+                        fontSize: 12,
+                        color: i < ex.filledCurrLoad ? ex.style.colorOn : ex.style.colorOff,
+                        textShadowColor: i < ex.filledCurrLoad ? ex.style.colorOn : 'transparent',
+                        textShadowRadius: i < ex.filledCurrLoad ? 6 : 0,
+                        textShadowOffset: { width: 0, height: 0 },
+                        marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
+                      }}>
+                        {ex.style.symLoad}
+                      </Text>
+                    ))}
+                  </View>
+                  <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                    <Text style={{
+                      color: ex.style.colorOn,
+                      fontSize: 12,
+                      fontWeight: '800',
+                    }}>
+                      {ex.currLoad}kg
+                    </Text>
+                    {ex.deltaLoad !== null && (
+                      <Text style={{
+                        color: ex.deltaLoad > 0 ? ex.style.colorOn : '#FF5C5C',
+                        fontSize: 10,
+                        fontWeight: '700',
+                      }}>
+                        {ex.deltaLoad > 0 ? '+' : ''}{ex.deltaLoad} ({ex.pctLoad! >= 0 ? '+' : ''}{ex.pctLoad}%)
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              )}
+
               {prev && (
-                <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                }}>
+                <>
+                  <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
                   <Text style={{
                     color: T.t3,
                     fontSize: 11,
                     fontWeight: '600',
-                    width: 40,
+                    marginBottom: 6,
                   }}>
                     {ex.prevDate}
                   </Text>
-                  <View style={{
-                    flexDirection: 'row',
-                    flex: 1,
-                    marginHorizontal: 8,
-                  }}>
-                    {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                      <Text key={i} style={{
-                        fontSize: 14,
-                        color: i < ex.prevDots ? ex.style.colorOn : ex.style.colorOff,
-                        textShadowColor: i < ex.prevDots ? ex.style.colorOn : 'transparent',
-                        textShadowRadius: i < ex.prevDots ? 6 : 0,
-                        textShadowOffset: { width: 0, height: 0 },
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                    <Text style={{
+                      fontSize: 10,
+                      fontWeight: '700',
+                      color: `${ex.style.colorOn}73`,
+                      width: 28,
+                      textAlign: 'right',
+                      marginRight: 6,
+                    }}>
+                      Rep
+                    </Text>
+                    <View style={{ flexDirection: 'row' }}>
+                      {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
+                        <Text key={i} style={{
+                          fontSize: 12,
+                          color: i < ex.filledPrevReps ? ex.style.colorOn : ex.style.colorOff,
+                          textShadowColor: i < ex.filledPrevReps ? ex.style.colorOn : 'transparent',
+                          textShadowRadius: i < ex.filledPrevReps ? 6 : 0,
+                          textShadowOffset: { width: 0, height: 0 },
+                          marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
+                        }}>
+                          {ex.style.symReps}
+                        </Text>
+                      ))}
+                    </View>
+                    <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                      <Text style={{
+                        color: ex.style.colorOn,
+                        fontSize: 12,
+                        fontWeight: '800',
                       }}>
-                        {ex.style.symbol}
+                        {ex.prevReps > 0 ? (ex.anyLoad ? `${ex.prevReps}×` : `${ex.prevReps}rep`) : '–'}
                       </Text>
-                    ))}
+                    </View>
                   </View>
-                  <Text style={{
-                    color: T.t3,
-                    fontSize: 11,
-                    fontWeight: '700',
-                    width: 70,
-                    textAlign: 'right',
-                  }}>
-                    {ex.prevValText}
-                  </Text>
-                </View>
+
+                  {ex.anyLoad && ex.prevLoad > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                      <Text style={{
+                        fontSize: 10,
+                        fontWeight: '700',
+                        color: `${ex.style.colorOn}73`,
+                        width: 28,
+                        textAlign: 'right',
+                        marginRight: 6,
+                      }}>
+                        Cg
+                      </Text>
+                      <View style={{ flexDirection: 'row' }}>
+                        {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
+                          <Text key={i} style={{
+                            fontSize: 12,
+                            color: i < ex.filledPrevLoad ? ex.style.colorOn : ex.style.colorOff,
+                            textShadowColor: i < ex.filledPrevLoad ? ex.style.colorOn : 'transparent',
+                            textShadowRadius: i < ex.filledPrevLoad ? 6 : 0,
+                            textShadowOffset: { width: 0, height: 0 },
+                            marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
+                          }}>
+                            {ex.style.symLoad}
+                          </Text>
+                        ))}
+                      </View>
+                      <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                        <Text style={{
+                          color: ex.style.colorOn,
+                          fontSize: 12,
+                          fontWeight: '800',
+                        }}>
+                          {ex.prevLoad}kg
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </>
               )}
             </View>
           </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
