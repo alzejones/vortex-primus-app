@@ -91,6 +91,16 @@ export default function ConditioningEvolution() {
     return T.t2;
   };
 
+  const normalizeExerciseName = (name: string) => {
+    if (!name) return "";
+    return name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 8);
+  };
+
   const renderStrengthCard = (currentAss: any, previousAss: any, initialAss: any) => {
     const condCurr = currentAss.conditioning[0];
     const condPrev = previousAss ? previousAss.conditioning[0] : null;
@@ -148,8 +158,8 @@ export default function ConditioningEvolution() {
               </View>
             </View>
             {condCurr.strength.map((item: any, i: number) => {
-              const prevItem = condPrev?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
-              const initItem = condInit?.strength?.find((p: any) => p.exercise_name === item.exercise_name);
+              const prevItem = condPrev?.strength?.find((p: any) => normalizeExerciseName(p.exercise_name) === normalizeExerciseName(item.exercise_name));
+              const initItem = condInit?.strength?.find((p: any) => normalizeExerciseName(p.exercise_name) === normalizeExerciseName(item.exercise_name));
               const diffLoadPrev = getDiff(item.load_kg, prevItem?.load_kg);
               const diffRepsPrev = getDiff(item.repetitions, prevItem?.repetitions);
               const diffLoadInit = getDiff(item.load_kg, initItem?.load_kg);
@@ -252,8 +262,8 @@ export default function ConditioningEvolution() {
               </View>
             </View>
             {condCurr.endurance.map((item: any, i: number) => {
-              const prevItem = condPrev?.endurance?.find((p: any) => p.test_type === item.test_type);
-              const initItem = condInit?.endurance?.find((p: any) => p.test_type === item.test_type);
+              const prevItem = condPrev?.endurance?.find((p: any) => normalizeExerciseName(p.test_type) === normalizeExerciseName(item.test_type));
+              const initItem = condInit?.endurance?.find((p: any) => normalizeExerciseName(p.test_type) === normalizeExerciseName(item.test_type));
               const currVal1 = item.distance_m ?? item.repetitions ?? '-';
               const prevVal1 = prevItem?.distance_m ?? prevItem?.repetitions ?? '-';
               const initVal1 = initItem?.distance_m ?? initItem?.repetitions ?? '-';
@@ -358,8 +368,8 @@ export default function ConditioningEvolution() {
             </View>
 
             {condCurr.mobility.map((item: any, i: number) => {
-              const prevItem = condPrev?.mobility?.find((p: any) => p.test_name === item.test_name);
-              const initItem = condInit?.mobility?.find((p: any) => p.test_name === item.test_name);
+              const prevItem = condPrev?.mobility?.find((p: any) => normalizeExerciseName(p.test_name) === normalizeExerciseName(item.test_name));
+              const initItem = condInit?.mobility?.find((p: any) => normalizeExerciseName(p.test_name) === normalizeExerciseName(item.test_name));
               const currVal = item.notes ?? '-';
               const prevVal = prevItem?.notes ?? '-';
               const initVal = initItem?.notes ?? '-';
