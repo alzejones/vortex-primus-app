@@ -13,6 +13,7 @@ import {
 import { supabase } from "../../../lib/supabase";
 import { T } from "../../../utils/theme";
 import StrengthDotMatrixChart from "../../../components/StrengthDotMatrixChart";
+import EnduranceDotMatrixChart from "../../../components/EnduranceDotMatrixChart";
 
 export default function ConditioningEvolution() {
   const { client_id } = useLocalSearchParams();
@@ -439,6 +440,10 @@ export default function ConditioningEvolution() {
           periodDays={history.length > 1 ? calcDays(history[0].date, history[1].date) : 0}
         />
         {renderStrengthCard(currentAss, previousAss, initialAss)}
+        <EnduranceDotMatrixChart
+          assessments={history}
+          periodDays={history.length > 1 ? calcDays(history[0].date, history[1].date) : 0}
+        />
         {renderEnduranceCard(currentAss, previousAss, initialAss)}
         {renderMobilityCard(currentAss, previousAss, initialAss)}
 
