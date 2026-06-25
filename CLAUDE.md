@@ -1,12 +1,12 @@
 # CLAUDE.md — Vortex Primus
 
-Arquivo de contexto para Claude Code. Leia este arquivo antes de qualquer ação.
+Arquivo de contexto para Claude Code. Leia antes de qualquer ação.
 
 ---
 
-## Visão Geral do Projeto
+## Visão Geral
 
-**Vortex Primus** é um SaaS de gestão fitness para personal trainers, nutricionistas e coaches. Desenvolvido e mantido por um único desenvolvedor, com foco no mercado brasileiro. App em desenvolvimento ativo, ainda não aberto ao público.
+**Vortex Primus** é um SaaS de gestão fitness para personal trainers, nutricionistas e coaches. Desenvolvido e mantido por um único desenvolvedor, focado no mercado brasileiro. Em desenvolvimento ativo, não aberto ao público.
 
 ---
 
@@ -19,47 +19,18 @@ Arquivo de contexto para Claude Code. Leia este arquivo antes de qualquer ação
 | Pagamentos | Stripe |
 | Deploy | Vercel |
 
----
-
-## Estrutura Principal
-
-### Pastas Core
-```
-app/(protected)/         # Telas autenticadas
-  client-assessments.tsx # Avaliações físicas
-  clients.tsx           # CRUD clientes
-  diet.tsx              # Planejamento nutricional
-  supplements.tsx       # CRUD suplementos
-  schedule/             # Agendamento
-components/             # Componentes reutilizáveis
-  TabBar.web.tsx       # Sidebar web responsiva
-utils/                  # Utilitários
-  dietCalculations.ts   # Protocolo High Protein
-supabase/              # Migrations e Edge Functions
-```
-
-### Módulos Existentes
-- **Clientes**: CRUD completo + Edge Function `delete-client`
-- **Agenda**: Sistema de agendamentos
-- **Avaliações**: Antropometria + Fotos Antes/Depois + Balança Bluetooth BLE
-- **Dieta**: Protocolo High Protein + Banco TACO (597 alimentos)
-- **Suplementos**: Catálogo Herbalife Brasil (34 produtos)
+**IDs Críticos:**
+- Supabase Projeto: `rwyyvilshrjhfwlzudqg`
+- Vercel Deploy: `vortex-primus.vercel.app`
+- GitHub Repo: `vortex-primus-app`
 
 ---
 
-## IDs Críticos
+## ⚠️ CONTEXTO CRÍTICO — Banco de Dados
 
-| Recurso | ID |
-|---|---|
-| Supabase Projeto | `rwyyvilshrjhfwlzudqg` |
-| Vercel Deploy | `vortex-primus.vercel.app` |
-| GitHub Repo | `vortex-primus-app` |
+**O banco de dados original (`qgeezszpcuypqujplkde`) foi perdido em outage global do Supabase (27/04/2026) e reconstruído via engenharia reversa do código funcional. O projeto ativo atual é `rwyyvilshrjhfwlzudqg`.**
 
----
-
-## ⚠️ AVISO IMPORTANTE — Banco de Dados
-
-**O banco de dados foi perdido por incidente no Supabase (27/04/2026) e reconstruído via engenharia reversa do código. Podem existir divergências residuais. A fonte da verdade é SEMPRE o código — quando houver conflito entre código funcionando e banco, o banco deve ser ajustado para se adequar ao código, nunca o contrário.**
+**REGRA ABSOLUTA:** A fonte da verdade é **sempre o código funcionando**. Em conflito entre código e banco, o banco deve ser ajustado para adequar-se ao código, nunca o contrário.
 
 ### Tabelas Principais
 | Tabela | Descrição |
@@ -69,22 +40,103 @@ supabase/              # Migrations e Edge Functions
 | `physical_assessments` | Cabeçalho das avaliações |
 | `anthropometry` | Dados de bioimpedância/medidas |
 | `assessment_photos` | Fotos Antes/Depois (cascade delete) |
-| `supplements` | Catálogo de suplementos |
+| `supplements` | Catálogo de suplementos (71 registros) |
 | `diets` | Planos alimentares |
+| `foods` | Banco TACO (597 alimentos) |
+| `supported_scales` | Modelos de balança BLE (6 registros) |
 
-## Permissões (schema public)
-- GRANTs explícitos aplicados em 30/05/2026 (migration 20260530222841)
-- anon: SELECT em plans, foods, supported_scales apenas
-- authenticated: SELECT/INSERT/UPDATE/DELETE em todas as 23 tabelas
+### Permissões (schema public)
+- GRANTs explícitos aplicados em 30/05/2026 (migration `20260530222841`)
+- **anon**: SELECT em `plans`, `foods`, `supported_scales`
+- **authenticated**: SELECT/INSERT/UPDATE/DELETE em todas as 23 tabelas
 - Default privileges configurados para tabelas futuras
-- Conformidade com requisito Supabase válida até 30/10/2026
+- Conformidade válida até 30/10/2026
+
+---
+
+## Estrutura do Projeto
+
+```
+app/(protected)/         # Telas autenticadas
+  client-assessments.tsx # Avaliações físicas
+  clients.tsx            # CRUD clientes
+  diet.tsx               # Planejamento nutricional
+  supplements.tsx        # CRUD suplementos
+  schedule/              # Agendamento
+components/              # Componentes reutilizáveis
+  TabBar.web.tsx         # Sidebar web responsiva
+utils/                   # Utilitários
+  dietCalculations.ts    # Protocolo High Protein
+supabase/                # Migrations e Edge Functions
+```
+
+### Módulos Implementados
+- **Clientes**: CRUD + Edge Function `delete-client`
+- **Agenda**: Sistema de agendamentos
+- **Avaliações**: Antropometria + Fotos Antes/Depois + Balança BLE
+- **Dieta**: Protocolo High Protein + Banco TACO
+- **Suplementos**: Catálogo multibrands
+
+---
+
+## Protocolo High Protein (dietCalculations.ts)
+
+**Ordem de cálculo:** Proteína → Carboidratos (teto fixo) → Gordura (sobra)
+
+### Proteína (g/kg massa magra)
+| Objetivo | g/kg LBM | Referência |
+|---|---|---|
+| Emagrecimento | 2.7 | Helms ER et al. 2014 |
+| Hipertrofia | 2.8 | Morton RW et al. 2018 |
+| Manutenção | 2.2 | Phillips SM 2011 |
+| Saúde | 2.0 | Jäger R et al. 2017 |
+| Performance | 2.6 | Burke LM et al. 2019 |
+
+### Ajuste Calórico (TDEE)
+| Objetivo | Ajuste |
+|---|---|
+| Emagrecimento | -500 kcal |
+| Hipertrofia | +300 kcal |
+| Manutenção | 0 kcal |
+| Saúde | -200 kcal |
+| Performance | +200 kcal |
+
+### Teto de Carboidratos (Low Carb)
+| Objetivo | Teto (g) |
+|---|---|
+| Emagrecimento | 80 |
+| Saúde | 120 |
+| Manutenção | 180 |
+| Hipertrofia | 280 |
+| Performance | 300 |
+
+**Travas de segurança:**
+- Proteína: piso 1.6g/kg LBM
+- Carboidratos: piso 30g
+- Gordura: piso 0.8g/kg peso total (saúde hormonal)
+- Calorias: nunca abaixo do BMR
+
+**BMR:** Usa valor medido pela bioimpedância se disponível, senão Mifflin-St Jeor (1990).
+
+---
+
+## Balanças BLE Suportadas
+
+| Modelo | Manufacturer ID |
+|---|---|
+| AXL-396 (Be-Manage) | — |
+| Chipsea/OKOK | 4032 |
+| Entrada Manual | — |
+| Mi Body Composition Scale 2 | — |
+| RM-BD1904A (Fitdays) | — |
+| TEC-BF01 (Fitdays) | — |
 
 ---
 
 ## Padrão Web Responsivo
 
 - Arquivos `.tsx` são **mobile-only** — nunca modificar para web
-- Expo resolve automaticamente `.web.tsx` na web  
+- Expo resolve automaticamente `.web.tsx` na plataforma web
 - Breakpoint: **768px** (`utils/useBreakpoint.ts`)
 - Sidebar web: **240px** fixo
 - Layout: two-column grid no dashboard web
@@ -102,45 +154,35 @@ supabase/              # Migrations e Edge Functions
 
 ---
 
-## Armadilhas Conhecidas
+## ⚠️ Armadilha Crítica: Arquivos .web.tsx
 
-### Padrão .web.tsx substitui completamente o arquivo original
-No Expo Router, arquivos com sufixo `.web.tsx` SUBSTITUEM (não 
-herdam) o arquivo `.tsx` correspondente na plataforma web.
+**REGRA:** Arquivos `.web.tsx` **SUBSTITUEM completamente** (não herdam) o arquivo `.tsx` na plataforma web.
 
-**REGRA OBRIGATÓRIA:** Qualquer `_layout.web.tsx` deve conter 
-a mesma árvore de providers do `_layout.tsx`:
+**OBRIGATORIEDADE:** Qualquer `_layout.web.tsx` deve conter a **mesma árvore de providers** do `_layout.tsx`:
 - StripeWrapper
-- ThemeProvider  
+- ThemeProvider
 - AuthProvider
 - View com T.bg
 
-Se um provider for omitido no `.web.tsx`, o contexto retorna 
-o valor default (ex: loading: true eterno no AuthContext) 
-causando tela branca no desktop sem nenhum erro visível no 
-build.
+**Consequência de omissão:** Contextos retornam valores default (ex: `loading: true` eterno no AuthContext) → tela branca no desktop sem erro visível no build.
 
-**Origem do bug (01/06/2026):** `_layout.web.tsx` criado para 
-injetar CSS de scroll durante sessão de trabalho paralela com 
-projetos JusVia e mybox-iraja-games. O arquivo foi criado com 
-apenas `<Slot/>`, sem os providers. Build passou normalmente 
-(Ready ✅), mas AuthProvider nunca montava no web. Sintomas:
-- Desktop: tela branca sem erro no console
-- Mobile: OAuth Google voltava para tela de login
+**Validação:** Sempre verificar se `[AUTH] iniciando getSession` aparece no console web quando trabalhar com layouts de plataforma.
 
-**Diagnóstico:** `[AUTH] iniciando getSession` nunca aparecia 
-no console web — sinal de que AuthProvider não montava.
+---
 
-### Projetos paralelos no mesmo terminal
-Trabalhar em 2+ projetos simultaneamente com múltiplos 
-terminais Claude Code abertos aumenta risco de arquivos 
-vazarem entre projetos ou configurações serem aplicadas 
-no projeto errado. Ao criar arquivos de plataforma 
-(.web.tsx, .native.tsx), verificar sempre se a árvore 
-de providers está completa.
+## Projetos Paralelos
 
-### JusVia e arquivos estáticos
-Arquivos HTML estáticos de outros projetos NÃO devem 
-ser colocados em public/ do Vortex Primus. O Expo copia 
-tudo de public/ para dist/, podendo corromper o build.
-JusVia tem repositório e projeto Vercel próprios.
+Trabalhar em múltiplos projetos simultaneamente com terminais Claude Code paralelos aumenta risco de vazamento de arquivos entre projetos. Ao criar arquivos de plataforma (`.web.tsx`, `.native.tsx`), sempre verificar a árvore de providers completa.
+
+**Projetos separados:**
+- **JusVia**: repositório e Vercel próprios — arquivos HTML estáticos NÃO vão em `public/` do Vortex Primus
+- **mybox-iraja-games**: repositório independente
+
+---
+
+## important-instruction-reminders
+
+Do what has been asked; nothing more, nothing less.  
+NEVER create files unless absolutely necessary.  
+ALWAYS prefer editing an existing file to creating a new one.  
+NEVER proactively create documentation files (*.md) or README files unless explicitly requested.

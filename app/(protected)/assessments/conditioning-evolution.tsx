@@ -58,12 +58,21 @@ export default function ConditioningEvolution() {
     fetchEvolution();
   }, [client_id]);
 
-  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
-  const calcDays = (d1: string, d2: string) => Math.ceil(Math.abs(new Date(d1).getTime() - new Date(d2).getTime()) / (1000 * 60 * 60 * 24));
+  const formatDate = (dateString: string) => {
+    const [y, m, d] = dateString.split('-');
+    return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  };
+  const calcDays = (d1: string, d2: string) => {
+    const [y1, m1, d1s] = d1.split('-');
+    const [y2, m2, d2s] = d2.split('-');
+    const date1 = new Date(Number(y1), Number(m1) - 1, Number(d1s));
+    const date2 = new Date(Number(y2), Number(m2) - 1, Number(d2s));
+    return Math.ceil(Math.abs(date1.getTime() - date2.getTime()) / (1000 * 60 * 60 * 24));
+  };
 
   const getDiff = (curr: any, prev: any) => {
     if (curr === null || curr === undefined || curr === "") return "-";
-    if (prev === null || prev === undefined || prev === "") return curr;
+    if (prev === null || prev === undefined || prev === "") return "-";
     const diff = Number(curr) - Number(prev);
     if (isNaN(diff)) return "-";
     return diff > 0 ? `+${diff}` : diff;
@@ -100,11 +109,21 @@ export default function ConditioningEvolution() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.tableContainer}>
             <View style={styles.headerRow}>
-              <View style={[styles.headerCell, { width: 180 }]}>
+              <View style={[styles.headerCell, { width: 130 }]}>
                 <Text style={styles.headerLabel}>Data da Última</Text><Text style={styles.headerDate}>{dateCurr}</Text>
                 <View style={styles.subHeaderArea}>
-                  <Text style={[styles.subHeaderText, { flex: 1.5, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, textAlign: 'left' }]}>Exercício</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 60 }]}>
+                <Text style={styles.headerLabel}> </Text><Text style={styles.headerDate}> </Text>
+                <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Carga</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 60 }]}>
+                <Text style={styles.headerLabel}> </Text><Text style={styles.headerDate}> </Text>
+                <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
                 </View>
               </View>
@@ -138,10 +157,14 @@ export default function ConditioningEvolution() {
 
               return (
                 <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
-                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
-                    <Text style={[styles.exerciseText, { flex: 1.5 }]} numberOfLines={1}>{item.exercise_name}</Text>
-                    <Text style={[styles.valueText, { flex: 1 }]}>{item.load_kg || '-'}</Text>
-                    <Text style={[styles.valueText, { flex: 1 }]}>{item.repetitions || '-'}</Text>
+                  <View style={[styles.dataCell, { width: 130 }]}>
+                    <Text style={[styles.exerciseText]} numberOfLines={1}>{item.exercise_name}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 60 }]}>
+                    <Text style={[styles.valueText]}>{item.load_kg || '-'}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 60 }]}>
+                    <Text style={[styles.valueText]}>{item.repetitions || '-'}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: T.surfaceAlt }]}>
                     <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevItem?.load_kg || '-'}</Text>
@@ -149,10 +172,18 @@ export default function ConditioningEvolution() {
                   </View>
                   <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: getDiffColor(diffLoadPrev) }]}>{diffLoadPrev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsPrev) }]}>{diffRepsPrev}</Text>
+                      {diffLoadPrev === "-" && diffRepsPrev === "-" ? (
+                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                      ) : (
+                        <><Text style={[styles.diffText, { color: getDiffColor(diffLoadPrev) }]}>{diffLoadPrev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsPrev) }]}>{diffRepsPrev}</Text></>
+                      )}
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: getDiffColor(diffLoadInit) }]}>{diffLoadInit}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsInit) }]}>{diffRepsInit}</Text>
+                      {diffLoadInit === "-" && diffRepsInit === "-" ? (
+                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                      ) : (
+                        <><Text style={[styles.diffText, { color: getDiffColor(diffLoadInit) }]}>{diffLoadInit}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsInit) }]}>{diffRepsInit}</Text></>
+                      )}
                     </View>
                   </View>
                 </View>
@@ -182,11 +213,21 @@ export default function ConditioningEvolution() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.tableContainer}>
             <View style={styles.headerRow}>
-              <View style={[styles.headerCell, { width: 180 }]}>
+              <View style={[styles.headerCell, { width: 130 }]}>
                 <Text style={styles.headerLabel}>Data da Última</Text><Text style={styles.headerDate}>{dateCurr}</Text>
                 <View style={styles.subHeaderArea}>
-                  <Text style={[styles.subHeaderText, { flex: 1.5, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, textAlign: 'left' }]}>Exercício</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 60 }]}>
+                <Text style={styles.headerLabel}> </Text><Text style={styles.headerDate}> </Text>
+                <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Dist/Reps</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 60 }]}>
+                <Text style={styles.headerLabel}> </Text><Text style={styles.headerDate}> </Text>
+                <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Tempo</Text>
                 </View>
               </View>
@@ -226,10 +267,14 @@ export default function ConditioningEvolution() {
 
               return (
                 <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
-                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
-                    <Text style={[styles.exerciseText, { flex: 1.5 }]} numberOfLines={1}>{item.test_type}</Text>
-                    <Text style={[styles.valueText, { flex: 1 }]}>{currVal1}</Text>
-                    <Text style={[styles.valueText, { flex: 1 }]}>{currVal2}</Text>
+                  <View style={[styles.dataCell, { width: 130 }]}>
+                    <Text style={[styles.exerciseText]} numberOfLines={1}>{item.test_type}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 60 }]}>
+                    <Text style={[styles.valueText]}>{currVal1}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 60 }]}>
+                    <Text style={[styles.valueText]}>{currVal2}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: T.surfaceAlt }]}>
                     <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevVal1}</Text>
@@ -237,10 +282,18 @@ export default function ConditioningEvolution() {
                   </View>
                   <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: getDiffColor(diff1Prev) }]}>{diff1Prev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Prev, true) }]}>{diff2Prev}</Text>
+                      {diff1Prev === "-" && diff2Prev === "-" ? (
+                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                      ) : (
+                        <><Text style={[styles.diffText, { color: getDiffColor(diff1Prev) }]}>{diff1Prev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Prev, true) }]}>{diff2Prev}</Text></>
+                      )}
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: getDiffColor(diff1Init) }]}>{diff1Init}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Init, true) }]}>{diff2Init}</Text>
+                      {diff1Init === "-" && diff2Init === "-" ? (
+                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                      ) : (
+                        <><Text style={[styles.diffText, { color: getDiffColor(diff1Init) }]}>{diff1Init}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Init, true) }]}>{diff2Init}</Text></>
+                      )}
                     </View>
                   </View>
                 </View>
@@ -270,10 +323,15 @@ export default function ConditioningEvolution() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.tableContainer}>
             <View style={styles.headerRow}>
-              <View style={[styles.headerCell, { width: 180 }]}>
+              <View style={[styles.headerCell, { width: 130 }]}>
                 <Text style={styles.headerLabel}>Data da Última</Text><Text style={styles.headerDate}>{dateCurr}</Text>
                 <View style={styles.subHeaderArea}>
-                  <Text style={[styles.subHeaderText, { flex: 2, textAlign: 'left' }]}>Exercício</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, textAlign: 'left' }]}>Exercício</Text>
+                </View>
+              </View>
+              <View style={[styles.headerCell, { width: 120 }]}>
+                <Text style={styles.headerLabel}> </Text><Text style={styles.headerDate}> </Text>
+                <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Resultado</Text>
                 </View>
               </View>
@@ -310,19 +368,21 @@ export default function ConditioningEvolution() {
 
               return (
                 <View key={i} style={[styles.dataRow, i % 2 === 0 && styles.rowEven]}>
-                  <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
-                    <Text style={[styles.exerciseText, { flex: 2 }]} numberOfLines={1}>{item.test_name}</Text>
-                    <Text style={[styles.valueText, { flex: 1 }]}>{currVal}</Text>
+                  <View style={[styles.dataCell, { width: 130 }]}>
+                    <Text style={[styles.exerciseText]} numberOfLines={1}>{item.test_name}</Text>
+                  </View>
+                  <View style={[styles.dataCell, { width: 120 }]}>
+                    <Text style={[styles.valueText]}>{currVal}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: T.surfaceAlt }]}>
                     <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevVal}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: getDiffColor(diffPrev) }]}>{diffPrev}</Text>
+                      <Text style={[styles.diffText, { color: diffPrev === "-" ? T.t3 : getDiffColor(diffPrev) }]}>{diffPrev}</Text>
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: getDiffColor(diffInit) }]}>{diffInit}</Text>
+                      <Text style={[styles.diffText, { color: diffInit === "-" ? T.t3 : getDiffColor(diffInit) }]}>{diffInit}</Text>
                     </View>
                   </View>
                 </View>
