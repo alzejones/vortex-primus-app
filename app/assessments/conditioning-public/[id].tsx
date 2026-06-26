@@ -9,7 +9,7 @@ import { T } from "../../../utils/theme";
 
 export default function PublicConditioningView() {
   const { id } = useLocalSearchParams();
-  const clientId = id as string;
+  const clientId = Array.isArray(id) ? id[0] : id as string;
 
   const [loading, setLoading] = useState(true);
   const [clientName, setClientName] = useState("");
@@ -66,9 +66,8 @@ export default function PublicConditioningView() {
       if (error) throw error;
 
       const filteredData = (data as any[] || []).filter(a => a.conditioning && a.conditioning.length > 0);
-      if (filteredData.length === 0) throw new Error("Nenhum teste de condicionamento encontrado.");
-      
       setHistory(filteredData);
+      if (filteredData.length === 0) setErrorMsg("Nenhum teste de condicionamento encontrado.");
     } catch (error: any) {
       setErrorMsg(error.message);
     } finally {
