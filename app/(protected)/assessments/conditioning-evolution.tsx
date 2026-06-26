@@ -2,6 +2,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
+  Linking,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -59,6 +61,37 @@ export default function ConditioningEvolution() {
 
     fetchEvolution();
   }, [client_id]);
+
+  const handleShare = async () => {
+    try {
+      const link = `https://vortex-primus.vercel.app/assessments/conditioning-public/${client_id}`;
+      
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("phone, name")
+        .eq("id", client_id)
+        .single();
+
+      const firstName = clientData?.name?.split(" ")[0] || clientName.split(" ")[0];
+      const message = `Olá, *${firstName}*!\n\nSeu histórico de *Condicionamento Físico* está disponível no *Vortex Primus*.\n\n_Clique e veja *agora*:_ 💪\n${link}\n\nContinue evoluindo! 🔥`;
+
+      const encodedMessage = encodeURIComponent(message);
+      const phone = clientData?.phone || "";
+      const whatsappUrl = phone
+        ? `whatsapp://send?phone=${phone}&text=${encodedMessage}`
+        : `whatsapp://send?text=${encodedMessage}`;
+
+      const canOpen = await Linking.canOpenURL(whatsappUrl);
+      if (canOpen) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
+      }
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error);
+      Alert.alert("Erro", "Não foi possível gerar o link de compartilhamento.");
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const [y, m, d] = dateString.split('-');
@@ -431,7 +464,15 @@ export default function ConditioningEvolution() {
         <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
           <Text style={{ color: T.blue, fontWeight: "700" }}>← Voltar para {clientName}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Condicionamento Físico</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.title}>Condicionamento Físico</Text>
+          <TouchableOpacity
+            style={styles.shareButton}
+            onPress={handleShare}
+          >
+            <Text style={styles.shareButtonText}>📲 COMPARTILHAR</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
@@ -519,4 +560,6 @@ const styles = StyleSheet.create({
   detailsBtn: { backgroundColor: T.surfaceAlt, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
   detailsBtnActive: { backgroundColor: T.blue },
   detailsBtnText: { fontSize: 12, fontWeight: "700", color: T.t3 },
+  shareButton: { backgroundColor: T.blue, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  shareButtonText: { color: T.white, fontSize: 11, fontWeight: "800" },
 });
