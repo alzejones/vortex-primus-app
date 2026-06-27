@@ -209,6 +209,29 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                   DIST / REP
                 </Text>
 
+                {ex.prevDist > 0 && ex.currDist === ex.prevDist ? (
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    marginBottom: 8,
+                  }}>
+                    <Text style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: '#334155',
+                    }}>
+                      Dist:
+                    </Text>
+                    <Text style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: hexAlpha(ex.style.color, 0.7),
+                    }}>
+                      {ex.currDist}{ex.suffix}
+                    </Text>
+                  </View>
+                ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ flex: 1, marginRight: 12 }}>
                     <View style={{ position: 'relative', height: 60 }}>
@@ -362,6 +385,7 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                     )}
                   </View>
                 </View>
+                )}
               </View>
 
               {(ex.currTime > 0 || ex.prevTime > 0) && (
@@ -455,71 +479,87 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <View style={{ flex: 1, marginRight: 12 }}>
                         <View style={{ position: 'relative', height: 60 }}>
-                          {ex.prevTime > 0 && (
-                            <>
-                              <View style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: `${Math.min((ex.prevTime / maxTime) * 100, 93)}%`,
-                                transform: [{ translateX: -((Math.min((ex.prevTime / maxTime) * 100, 93)) * 0.01) * 30 }],
-                              }}>
-                                <Text style={{
-                                  fontSize: 9,
-                                  fontWeight: '700',
-                                  color: '#334155',
-                                }}>
-                                  {ex.prevDate}
-                                </Text>
-                              </View>
-                              <View style={{
-                                position: 'absolute',
-                                top: 13,
-                                left: `${Math.min((ex.prevTime / maxTime) * 100, 93)}%`,
-                                transform: [{ translateX: -((Math.min((ex.prevTime / maxTime) * 100, 93)) * 0.01) * 30 }],
-                              }}>
-                                <Text style={{
-                                  fontSize: 11,
-                                  fontWeight: '700',
-                                  color: '#475569',
-                                }}>
-                                  {ex.prevTime}s
-                                </Text>
-                              </View>
-                            </>
-                          )}
+                          {(() => {
+                            const posBefore = Math.min((ex.prevTime / maxTime) * 100, 93);
+                            const posAfter  = Math.min((ex.currTime / maxTime) * 100, 93);
+                            const gap = Math.abs(posAfter - posBefore);
+                            const overlap = ex.prevTime > 0 && ex.currTime > 0 && gap < 18;
 
-                          {ex.currTime > 0 && (
-                            <>
-                              <View style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: `${Math.min((ex.currTime / maxTime) * 100, 93)}%`,
-                                transform: [{ translateX: -((Math.min((ex.currTime / maxTime) * 100, 93)) * 0.01) * 30 }],
-                              }}>
-                                <Text style={{
-                                  fontSize: 9,
-                                  fontWeight: '700',
-                                  color: hexAlpha(ex.style.color, 0.8),
-                                }}>
-                                  {ex.currDate}
-                                </Text>
-                              </View>
-                              <View style={{
-                                position: 'absolute',
-                                top: 13,
-                                left: `${Math.min((ex.currTime / maxTime) * 100, 93)}%`,
-                                transform: [{ translateX: -((Math.min((ex.currTime / maxTime) * 100, 93)) * 0.01) * 30 }],
-                              }}>
-                                <Text style={{
-                                  fontSize: 12,
-                                  fontWeight: '800',
-                                  color: ex.deltaTime !== null && ex.deltaTime < 0 ? ex.style.color : '#64748B',
-                                }}>
-                                  {ex.currTime}s
-                                </Text>
-                              </View>
-                            </>
-                          )}
+                            const topPrevDate  = overlap ? 0  : 0;
+                            const topCurrDate  = overlap ? 11 : 0;
+                            const topPrevVal   = overlap ? 13 : 13;
+                            const topCurrVal   = overlap ? 24 : 13;
+
+                            return (
+                              <>
+                                {ex.prevTime > 0 && (
+                                  <>
+                                    <View style={{
+                                      position: 'absolute',
+                                      top: topPrevDate,
+                                      left: `${posBefore}%`,
+                                      transform: [{ translateX: -(posBefore * 0.01) * 30 }],
+                                    }}>
+                                      <Text style={{
+                                        fontSize: 9,
+                                        fontWeight: '700',
+                                        color: '#334155',
+                                      }}>
+                                        {ex.prevDate}
+                                      </Text>
+                                    </View>
+                                    <View style={{
+                                      position: 'absolute',
+                                      top: topPrevVal,
+                                      left: `${posBefore}%`,
+                                      transform: [{ translateX: -(posBefore * 0.01) * 30 }],
+                                    }}>
+                                      <Text style={{
+                                        fontSize: 11,
+                                        fontWeight: '700',
+                                        color: '#475569',
+                                      }}>
+                                        {ex.prevTime}s
+                                      </Text>
+                                    </View>
+                                  </>
+                                )}
+
+                                {ex.currTime > 0 && (
+                                  <>
+                                    <View style={{
+                                      position: 'absolute',
+                                      top: topCurrDate,
+                                      left: `${posAfter}%`,
+                                      transform: [{ translateX: -(posAfter * 0.01) * 30 }],
+                                    }}>
+                                      <Text style={{
+                                        fontSize: 9,
+                                        fontWeight: '700',
+                                        color: hexAlpha(ex.style.color, 0.8),
+                                      }}>
+                                        {ex.currDate}
+                                      </Text>
+                                    </View>
+                                    <View style={{
+                                      position: 'absolute',
+                                      top: topCurrVal,
+                                      left: `${posAfter}%`,
+                                      transform: [{ translateX: -(posAfter * 0.01) * 30 }],
+                                    }}>
+                                      <Text style={{
+                                        fontSize: 12,
+                                        fontWeight: '800',
+                                        color: ex.deltaTime !== null && ex.deltaTime < 0 ? ex.style.color : '#64748B',
+                                      }}>
+                                        {ex.currTime}s
+                                      </Text>
+                                    </View>
+                                  </>
+                                )}
+                              </>
+                            );
+                          })()}
 
                           <View style={{
                             position: 'absolute',
