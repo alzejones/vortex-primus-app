@@ -485,6 +485,9 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                             const gap = Math.abs(posAfter - posBefore);
                             const overlap = ex.prevTime > 0 && ex.currTime > 0 && gap < 18;
 
+                            const adjustedPosBefore = overlap ? Math.min(posBefore + 10, 93) : posBefore;
+                            const adjustedPosAfter  = overlap ? Math.max(posAfter  - 10,  2) : posAfter;
+
                             const topPrevDate  = overlap ? 0  : 0;
                             const topCurrDate  = overlap ? 11 : 0;
                             const topPrevVal   = overlap ? 13 : 13;
@@ -497,8 +500,8 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                                     <View style={{
                                       position: 'absolute',
                                       top: topPrevDate,
-                                      left: `${posBefore}%`,
-                                      transform: [{ translateX: -(posBefore * 0.01) * 30 }],
+                                      left: `${adjustedPosBefore}%`,
+                                      transform: [{ translateX: -(adjustedPosBefore * 0.01) * 30 }],
                                     }}>
                                       <Text style={{
                                         fontSize: 9,
@@ -511,8 +514,8 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                                     <View style={{
                                       position: 'absolute',
                                       top: topPrevVal,
-                                      left: `${posBefore}%`,
-                                      transform: [{ translateX: -(posBefore * 0.01) * 30 }],
+                                      left: `${adjustedPosBefore}%`,
+                                      transform: [{ translateX: -(adjustedPosBefore * 0.01) * 30 }],
                                     }}>
                                       <Text style={{
                                         fontSize: 11,
@@ -530,8 +533,8 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                                     <View style={{
                                       position: 'absolute',
                                       top: topCurrDate,
-                                      left: `${posAfter}%`,
-                                      transform: [{ translateX: -(posAfter * 0.01) * 30 }],
+                                      left: `${adjustedPosAfter}%`,
+                                      transform: [{ translateX: -(adjustedPosAfter * 0.01) * 30 }],
                                     }}>
                                       <Text style={{
                                         fontSize: 9,
@@ -544,8 +547,8 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
                                     <View style={{
                                       position: 'absolute',
                                       top: topCurrVal,
-                                      left: `${posAfter}%`,
-                                      transform: [{ translateX: -(posAfter * 0.01) * 30 }],
+                                      left: `${adjustedPosAfter}%`,
+                                      transform: [{ translateX: -(adjustedPosAfter * 0.01) * 30 }],
                                     }}>
                                       <Text style={{
                                         fontSize: 12,
