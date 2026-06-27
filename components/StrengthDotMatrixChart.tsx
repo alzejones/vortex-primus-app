@@ -14,6 +14,8 @@ const EX_STYLES = [
   { color: '#F59E0B' },
 ];
 
+const SCALE = 1.4;
+
 function hexAlpha(color: string, alpha: number): string {
   const map: Record<string, string> = {
     '#06B6D4': `0,182,212`,
@@ -26,7 +28,7 @@ function hexAlpha(color: string, alpha: number): string {
 }
 
 function getEmoji(pct: number | null): string {
-  if (pct === null || pct <= 0) return '';
+  if (!pct || pct <= 0) return '';
   if (pct < 10)  return '👊';
   if (pct < 30)  return '💪';
   if (pct < 60)  return '🔥';
@@ -75,6 +77,12 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
     const style = EX_STYLES[idx % EX_STYLES.length];
     const anyLoad = currLoad > 0 || prevLoad > 0;
 
+    const maxPct = Math.max(
+      pctLoad !== null && pctLoad > 0 ? pctLoad : 0,
+      pctReps !== null && pctReps > 0 ? pctReps : 0
+    );
+    const hasGain = maxPct > 0;
+
     return {
       name: ex.exercise_name,
       style,
@@ -90,6 +98,8 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
       currDate: formatShortDate(curr.date),
       prevDate: prev ? formatShortDate(prev.date) : '',
       sequenceNum: String(idx + 1).padStart(2, '0'),
+      hasGain,
+      maxPct,
     };
   });
 
@@ -137,21 +147,8 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
 
       <View style={{ padding: 16 }}>
         {exerciseData.map((ex, idx) => {
-          const SCALE = 1.4;
           const maxReps = Math.max(ex.currReps, ex.prevReps) * SCALE || 1;
           const maxLoad = Math.max(ex.currLoad, ex.prevLoad) * SCALE || 1;
-          const posBeforeReps = Math.min((ex.prevReps / maxReps) * 100, 93);
-          const posAfterReps = Math.min((ex.currReps / maxReps) * 100, 93);
-          const posBeforeLoad = Math.min((ex.prevLoad / maxLoad) * 100, 93);
-          const posAfterLoad = Math.min((ex.currLoad / maxLoad) * 100, 93);
-
-          const deltaPctReps = ex.pctReps;
-          const deltaPctLoad = ex.pctLoad;
-          const maxPct = Math.max(
-            deltaPctReps !== null && deltaPctReps > 0 ? deltaPctReps : 0,
-            deltaPctLoad !== null && deltaPctLoad > 0 ? deltaPctLoad : 0
-          );
-          const hasEvolution = maxPct > 0;
 
           return (
             <View key={idx}>
@@ -179,7 +176,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                     {ex.name}
                   </Text>
                 </View>
-                {hasEvolution && (
+                {ex.hasGain && (
                   <View style={{
                     backgroundColor: hexAlpha(ex.style.color, 0.12),
                     borderWidth: 1,
@@ -193,7 +190,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                       fontSize: 11,
                       fontWeight: '800',
                     }}>
-                      {getEmoji(maxPct)} Evoluiu!
+                      {getEmoji(ex.maxPct)} Evoluiu!
                     </Text>
                   </View>
                 )}
@@ -213,128 +210,234 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                     REPETIÇÕES
                   </Text>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1, marginRight: 12 }}>
-                      <View style={{ position: 'relative', height: 38 }}>
-                        {ex.prevReps > 0 && (
+                  {ex.currReps === ex.prevReps && ex.prevReps > 0 ? (
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 6,
+                      marginBottom: 16,
+                    }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={{
+                          fontSize: 9,
+                          fontWeight: '700',
+                          color: '#334155',
+                        }}>
+                          {ex.prevDate} — {ex.currDate}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1, marginRight: 12 }}>
+                        <View style={{ position: 'relative', height: 60 }}>
                           <View style={{
                             position: 'absolute',
-                            top: 0,
-                            left: `${posBeforeReps}%`,
-                            transform: [{ translateX: -(posBeforeReps * 0.01) * 30 }],
+                            top: 13,
+                            left: `${Math.min((ex.currReps / maxReps) * 100, 93)}%`,
+                            transform: [{ translateX: -((Math.min((ex.currReps / maxReps) * 100, 93)) * 0.01) * 30 }],
                           }}>
                             <Text style={{
                               fontSize: 11,
                               fontWeight: '700',
-                              color: '#475569',
+                              color: ex.style.color,
                             }}>
-                              {ex.prevReps}×
+                              {ex.currReps}×
                             </Text>
                           </View>
-                        )}
 
-                        <View style={{
-                          position: 'absolute',
-                          top: 0,
-                          left: `${posAfterReps}%`,
-                          transform: [{ translateX: -(posAfterReps * 0.01) * 30 }],
-                        }}>
-                          <Text style={{
-                            fontSize: 12,
-                            fontWeight: '800',
-                            color: ex.style.color,
-                          }}>
-                            {ex.currReps}×
-                          </Text>
-                        </View>
-
-                        <View style={{
-                          position: 'absolute',
-                          bottom: 4,
-                          left: 0,
-                          right: 0,
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: hexAlpha(ex.style.color, 0.06),
-                        }} />
-
-                        {ex.prevReps > 0 && (
                           <View style={{
                             position: 'absolute',
-                            bottom: 4,
+                            bottom: 6,
                             left: 0,
-                            width: `${posBeforeReps}%`,
+                            right: 0,
                             height: 6,
                             borderRadius: 3,
-                            backgroundColor: hexAlpha(ex.style.color, 0.35),
+                            backgroundColor: hexAlpha(ex.style.color, 0.06),
                           }} />
-                        )}
 
-                        {posAfterReps > posBeforeReps && (
                           <View style={{
                             position: 'absolute',
                             bottom: 4,
-                            left: `${posBeforeReps}%`,
-                            width: `${posAfterReps - posBeforeReps}%`,
-                            height: 6,
-                            borderTopRightRadius: 3,
-                            borderBottomRightRadius: 3,
+                            left: `${Math.min((ex.currReps / maxReps) * 100, 93)}%`,
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
                             backgroundColor: ex.style.color,
-                          }} />
-                        )}
-
-                        {ex.prevReps > 0 && (
-                          <View style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: `${posBeforeReps}%`,
-                            width: 12,
-                            height: 12,
-                            borderRadius: 6,
-                            backgroundColor: hexAlpha(ex.style.color, 0.5),
-                            borderWidth: 2,
+                            borderWidth: 3,
                             borderColor: T.card,
-                            marginLeft: -6,
+                            marginLeft: -9,
+                            shadowColor: ex.style.color,
+                            shadowRadius: 8,
+                            shadowOpacity: 0.7,
+                            shadowOffset: { width: 0, height: 0 },
+                            elevation: 6,
                           }} />
-                        )}
-
-                        <View style={{
-                          position: 'absolute',
-                          bottom: -2,
-                          left: `${posAfterReps}%`,
-                          width: 18,
-                          height: 18,
-                          borderRadius: 9,
-                          backgroundColor: ex.style.color,
-                          borderWidth: 3,
-                          borderColor: T.card,
-                          marginLeft: -9,
-                          shadowColor: ex.style.color,
-                          shadowRadius: 8,
-                          shadowOpacity: 0.7,
-                          shadowOffset: { width: 0, height: 0 },
-                          elevation: 6,
-                        }} />
+                        </View>
+                      </View>
+                      <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
+                        <Text style={{
+                          fontSize: 12,
+                          fontWeight: '800',
+                          color: '#334155',
+                        }}>
+                          0%
+                        </Text>
                       </View>
                     </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1, marginRight: 12 }}>
+                        <View style={{ position: 'relative', height: 60 }}>
+                          {ex.prevReps > 0 && (
+                            <>
+                              <View style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: `${Math.min((ex.prevReps / maxReps) * 100, 93)}%`,
+                                transform: [{ translateX: -((Math.min((ex.prevReps / maxReps) * 100, 93)) * 0.01) * 30 }],
+                              }}>
+                                <Text style={{
+                                  fontSize: 9,
+                                  fontWeight: '700',
+                                  color: '#334155',
+                                }}>
+                                  {ex.prevDate}
+                                </Text>
+                              </View>
+                              <View style={{
+                                position: 'absolute',
+                                top: 13,
+                                left: `${Math.min((ex.prevReps / maxReps) * 100, 93)}%`,
+                                transform: [{ translateX: -((Math.min((ex.prevReps / maxReps) * 100, 93)) * 0.01) * 30 }],
+                              }}>
+                                <Text style={{
+                                  fontSize: 11,
+                                  fontWeight: '700',
+                                  color: '#475569',
+                                }}>
+                                  {ex.prevReps}×
+                                </Text>
+                              </View>
+                            </>
+                          )}
 
-                    <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
-                      <Text style={{
-                        fontSize: 12,
-                        fontWeight: '800',
-                        color: ex.deltaReps !== null
-                          ? (ex.deltaReps > 0 ? ex.style.color : '#64748B')
-                          : '#334155',
-                      }}>
-                        {deltaPctReps !== null ? `${deltaPctReps >= 0 ? '+' : ''}${deltaPctReps}%` : '1ª'}
-                      </Text>
-                      {ex.deltaReps !== null && ex.deltaReps > 0 && (
-                        <Text style={{ fontSize: 14, marginTop: 2 }}>
-                          {getEmoji(ex.pctReps)}
+                          <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${Math.min((ex.currReps / maxReps) * 100, 93)}%`,
+                            transform: [{ translateX: -((Math.min((ex.currReps / maxReps) * 100, 93)) * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 9,
+                              fontWeight: '700',
+                              color: hexAlpha(ex.style.color, 0.8),
+                            }}>
+                              {ex.currDate}
+                            </Text>
+                          </View>
+                          <View style={{
+                            position: 'absolute',
+                            top: 13,
+                            left: `${Math.min((ex.currReps / maxReps) * 100, 93)}%`,
+                            transform: [{ translateX: -((Math.min((ex.currReps / maxReps) * 100, 93)) * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 12,
+                              fontWeight: '800',
+                              color: ex.style.color,
+                            }}>
+                              {ex.currReps}×
+                            </Text>
+                          </View>
+
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 6,
+                            left: 0,
+                            right: 0,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: hexAlpha(ex.style.color, 0.06),
+                          }} />
+
+                          {ex.prevReps > 0 && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: 0,
+                              width: `${Math.min((ex.prevReps / maxReps) * 100, 93)}%`,
+                              height: 6,
+                              backgroundColor: hexAlpha(ex.style.color, 0.35),
+                            }} />
+                          )}
+
+                          {Math.min((ex.currReps / maxReps) * 100, 93) > Math.min((ex.prevReps / maxReps) * 100, 93) && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: `${Math.min((ex.prevReps / maxReps) * 100, 93)}%`,
+                              width: `${Math.min((ex.currReps / maxReps) * 100, 93) - Math.min((ex.prevReps / maxReps) * 100, 93)}%`,
+                              height: 6,
+                              backgroundColor: ex.style.color,
+                            }} />
+                          )}
+
+                          {ex.prevReps > 0 && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: `${Math.min((ex.prevReps / maxReps) * 100, 93)}%`,
+                              width: 12,
+                              height: 12,
+                              borderRadius: 6,
+                              backgroundColor: hexAlpha(ex.style.color, 0.5),
+                              borderWidth: 2,
+                              borderColor: T.card,
+                              marginLeft: -6,
+                              shadowColor: ex.style.color,
+                              shadowRadius: 4,
+                              shadowOpacity: 0.3,
+                              shadowOffset: { width: 0, height: 0 },
+                            }} />
+                          )}
+
+                          <View style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            left: `${Math.min((ex.currReps / maxReps) * 100, 93)}%`,
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            backgroundColor: ex.style.color,
+                            borderWidth: 3,
+                            borderColor: T.card,
+                            marginLeft: -9,
+                            shadowColor: ex.style.color,
+                            shadowRadius: 8,
+                            shadowOpacity: 0.7,
+                            shadowOffset: { width: 0, height: 0 },
+                            elevation: 6,
+                          }} />
+                        </View>
+                      </View>
+
+                      <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52, paddingTop: 28 }}>
+                        <Text style={{
+                          fontSize: 12,
+                          fontWeight: '800',
+                          color: ex.deltaReps !== null
+                            ? (ex.deltaReps > 0 ? ex.style.color : '#64748B')
+                            : '#334155',
+                        }}>
+                          {ex.pctReps !== null ? `${ex.pctReps >= 0 ? '+' : ''}${ex.pctReps}%` : '1ª'}
                         </Text>
-                      )}
+                        {ex.deltaReps !== null && ex.deltaReps > 0 && (
+                          <Text style={{ fontSize: 14, marginTop: 2 }}>
+                            {getEmoji(ex.pctReps)}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                  </View>
+                  )}
                 </View>
               )}
 
@@ -352,132 +455,189 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                     CARGA
                   </Text>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1, marginRight: 12 }}>
-                      <View style={{ position: 'relative', height: 38 }}>
-                        {ex.prevLoad > 0 && (
+                  {ex.currLoad === ex.prevLoad && ex.prevLoad > 0 ? (
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: 6,
+                    }}>
+                      <Text style={{
+                        fontSize: 11,
+                        fontWeight: '700',
+                        color: '#334155',
+                      }}>
+                        Carga:
+                      </Text>
+                      <Text style={{
+                        fontSize: 11,
+                        fontWeight: '700',
+                        color: hexAlpha(ex.style.color, 0.7),
+                      }}>
+                        {ex.currLoad}kg
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ flex: 1, marginRight: 12 }}>
+                        <View style={{ position: 'relative', height: 60 }}>
+                          {ex.prevLoad > 0 && (
+                            <>
+                              <View style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: `${Math.min((ex.prevLoad / maxLoad) * 100, 93)}%`,
+                                transform: [{ translateX: -((Math.min((ex.prevLoad / maxLoad) * 100, 93)) * 0.01) * 30 }],
+                              }}>
+                                <Text style={{
+                                  fontSize: 9,
+                                  fontWeight: '700',
+                                  color: '#334155',
+                                }}>
+                                  {ex.prevDate}
+                                </Text>
+                              </View>
+                              <View style={{
+                                position: 'absolute',
+                                top: 13,
+                                left: `${Math.min((ex.prevLoad / maxLoad) * 100, 93)}%`,
+                                transform: [{ translateX: -((Math.min((ex.prevLoad / maxLoad) * 100, 93)) * 0.01) * 30 }],
+                              }}>
+                                <Text style={{
+                                  fontSize: 11,
+                                  fontWeight: '700',
+                                  color: '#475569',
+                                }}>
+                                  {ex.prevLoad}kg
+                                </Text>
+                              </View>
+                            </>
+                          )}
+
+                          {ex.currLoad > 0 && (
+                            <>
+                              <View style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: `${Math.min((ex.currLoad / maxLoad) * 100, 93)}%`,
+                                transform: [{ translateX: -((Math.min((ex.currLoad / maxLoad) * 100, 93)) * 0.01) * 30 }],
+                              }}>
+                                <Text style={{
+                                  fontSize: 9,
+                                  fontWeight: '700',
+                                  color: hexAlpha(ex.style.color, 0.8),
+                                }}>
+                                  {ex.currDate}
+                                </Text>
+                              </View>
+                              <View style={{
+                                position: 'absolute',
+                                top: 13,
+                                left: `${Math.min((ex.currLoad / maxLoad) * 100, 93)}%`,
+                                transform: [{ translateX: -((Math.min((ex.currLoad / maxLoad) * 100, 93)) * 0.01) * 30 }],
+                              }}>
+                                <Text style={{
+                                  fontSize: 12,
+                                  fontWeight: '800',
+                                  color: ex.style.color,
+                                }}>
+                                  {ex.currLoad}kg
+                                </Text>
+                              </View>
+                            </>
+                          )}
+
                           <View style={{
                             position: 'absolute',
-                            top: 0,
-                            left: `${posBeforeLoad}%`,
-                            transform: [{ translateX: -(posBeforeLoad * 0.01) * 30 }],
-                          }}>
-                            <Text style={{
-                              fontSize: 11,
-                              fontWeight: '700',
-                              color: '#475569',
-                            }}>
-                              {ex.prevLoad}kg
-                            </Text>
-                          </View>
-                        )}
-
-                        {ex.currLoad > 0 && (
-                          <View style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: `${posAfterLoad}%`,
-                            transform: [{ translateX: -(posAfterLoad * 0.01) * 30 }],
-                          }}>
-                            <Text style={{
-                              fontSize: 12,
-                              fontWeight: '800',
-                              color: ex.style.color,
-                            }}>
-                              {ex.currLoad}kg
-                            </Text>
-                          </View>
-                        )}
-
-                        <View style={{
-                          position: 'absolute',
-                          bottom: 4,
-                          left: 0,
-                          right: 0,
-                          height: 6,
-                          borderRadius: 3,
-                          backgroundColor: hexAlpha(ex.style.color, 0.06),
-                        }} />
-
-                        {ex.prevLoad > 0 && (
-                          <View style={{
-                            position: 'absolute',
-                            bottom: 4,
+                            bottom: 6,
                             left: 0,
-                            width: `${posBeforeLoad}%`,
+                            right: 0,
                             height: 6,
                             borderRadius: 3,
-                            backgroundColor: hexAlpha(ex.style.color, 0.35),
+                            backgroundColor: hexAlpha(ex.style.color, 0.06),
                           }} />
-                        )}
 
-                        {posAfterLoad > posBeforeLoad && (
-                          <View style={{
-                            position: 'absolute',
-                            bottom: 4,
-                            left: `${posBeforeLoad}%`,
-                            width: `${posAfterLoad - posBeforeLoad}%`,
-                            height: 6,
-                            borderTopRightRadius: 3,
-                            borderBottomRightRadius: 3,
-                            backgroundColor: ex.style.color,
-                          }} />
-                        )}
+                          {ex.prevLoad > 0 && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: 0,
+                              width: `${Math.min((ex.prevLoad / maxLoad) * 100, 93)}%`,
+                              height: 6,
+                              backgroundColor: hexAlpha(ex.style.color, 0.35),
+                            }} />
+                          )}
 
-                        {ex.prevLoad > 0 && (
-                          <View style={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: `${posBeforeLoad}%`,
-                            width: 12,
-                            height: 12,
-                            borderRadius: 6,
-                            backgroundColor: hexAlpha(ex.style.color, 0.5),
-                            borderWidth: 2,
-                            borderColor: T.card,
-                            marginLeft: -6,
-                          }} />
-                        )}
+                          {ex.currLoad > 0 && Math.min((ex.currLoad / maxLoad) * 100, 93) > Math.min((ex.prevLoad / maxLoad) * 100, 93) && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: `${Math.min((ex.prevLoad / maxLoad) * 100, 93)}%`,
+                              width: `${Math.min((ex.currLoad / maxLoad) * 100, 93) - Math.min((ex.prevLoad / maxLoad) * 100, 93)}%`,
+                              height: 6,
+                              backgroundColor: ex.style.color,
+                            }} />
+                          )}
 
-                        {ex.currLoad > 0 && (
-                          <View style={{
-                            position: 'absolute',
-                            bottom: -2,
-                            left: `${posAfterLoad}%`,
-                            width: 18,
-                            height: 18,
-                            borderRadius: 9,
-                            backgroundColor: ex.style.color,
-                            borderWidth: 3,
-                            borderColor: T.card,
-                            marginLeft: -9,
-                            shadowColor: ex.style.color,
-                            shadowRadius: 8,
-                            shadowOpacity: 0.7,
-                            shadowOffset: { width: 0, height: 0 },
-                            elevation: 6,
-                          }} />
+                          {ex.prevLoad > 0 && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: `${Math.min((ex.prevLoad / maxLoad) * 100, 93)}%`,
+                              width: 12,
+                              height: 12,
+                              borderRadius: 6,
+                              backgroundColor: hexAlpha(ex.style.color, 0.5),
+                              borderWidth: 2,
+                              borderColor: T.card,
+                              marginLeft: -6,
+                              shadowColor: ex.style.color,
+                              shadowRadius: 4,
+                              shadowOpacity: 0.3,
+                              shadowOffset: { width: 0, height: 0 },
+                            }} />
+                          )}
+
+                          {ex.currLoad > 0 && (
+                            <View style={{
+                              position: 'absolute',
+                              bottom: -2,
+                              left: `${Math.min((ex.currLoad / maxLoad) * 100, 93)}%`,
+                              width: 18,
+                              height: 18,
+                              borderRadius: 9,
+                              backgroundColor: ex.style.color,
+                              borderWidth: 3,
+                              borderColor: T.card,
+                              marginLeft: -9,
+                              shadowColor: ex.style.color,
+                              shadowRadius: 8,
+                              shadowOpacity: 0.7,
+                              shadowOffset: { width: 0, height: 0 },
+                              elevation: 6,
+                            }} />
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52, paddingTop: 28 }}>
+                        <Text style={{
+                          fontSize: 12,
+                          fontWeight: '800',
+                          color: ex.deltaLoad !== null
+                            ? (ex.deltaLoad > 0 ? ex.style.color : '#64748B')
+                            : '#334155',
+                        }}>
+                          {ex.pctLoad !== null ? `${ex.pctLoad >= 0 ? '+' : ''}${ex.pctLoad}%` : '1ª'}
+                        </Text>
+                        {ex.deltaLoad !== null && ex.deltaLoad > 0 && (
+                          <Text style={{ fontSize: 14, marginTop: 2 }}>
+                            {getEmoji(ex.pctLoad)}
+                          </Text>
                         )}
                       </View>
                     </View>
-
-                    <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
-                      <Text style={{
-                        fontSize: 12,
-                        fontWeight: '800',
-                        color: ex.deltaLoad !== null
-                          ? (ex.deltaLoad > 0 ? ex.style.color : '#64748B')
-                          : '#334155',
-                      }}>
-                        {deltaPctLoad !== null ? `${deltaPctLoad >= 0 ? '+' : ''}${deltaPctLoad}%` : '1ª'}
-                      </Text>
-                      {ex.deltaLoad !== null && ex.deltaLoad > 0 && (
-                        <Text style={{ fontSize: 14, marginTop: 2 }}>
-                          {getEmoji(ex.pctLoad)}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                  )}
                 </View>
               )}
 
