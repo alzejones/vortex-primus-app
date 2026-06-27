@@ -8,25 +8,37 @@ interface Props {
 }
 
 const EX_STYLES = [
-  { colorOn: '#00D1DF', colorOff: 'rgba(0,209,223,0.10)', symReps: '◉', symLoad: '●' },
-  { colorOn: '#BF3DFB', colorOff: 'rgba(191,61,251,0.10)', symReps: '▪', symLoad: '■' },
-  { colorOn: '#FF9F1C', colorOff: 'rgba(255,159,28,0.10)', symReps: '◀', symLoad: '▲' },
-  { colorOn: '#3DDC84', colorOff: 'rgba(61,220,132,0.10)', symReps: '★', symLoad: '◆' },
+  { color: '#06B6D4' },
+  { color: '#10B981' },
+  { color: '#8B5CF6' },
+  { color: '#F59E0B' },
 ];
 
-const TOTAL_DOTS = 16;
-const MAX_FILLED = TOTAL_DOTS - 3;
+function hexAlpha(color: string, alpha: number): string {
+  const map: Record<string, string> = {
+    '#06B6D4': `0,182,212`,
+    '#10B981': `16,185,129`,
+    '#8B5CF6': `139,92,246`,
+    '#F59E0B': `245,158,11`,
+  };
+  const rgb = map[color] || '255,255,255';
+  return `rgba(${rgb},${alpha})`;
+}
+
+function getEmoji(pct: number | null): string {
+  if (pct === null || pct <= 0) return '';
+  if (pct < 10)  return '👊';
+  if (pct < 30)  return '💪';
+  if (pct < 60)  return '🔥';
+  if (pct < 100) return '⚡';
+  return '🏆';
+}
 
 function normalizeExerciseName(name: string): string {
   return name.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 8);
-}
-
-function calcFilled(val: number, maxVal: number): number {
-  if (!val || val <= 0 || maxVal <= 0) return 0;
-  return Math.min(Math.max(Math.round((val / maxVal) * TOTAL_DOTS), 1), MAX_FILLED);
 }
 
 export default function StrengthDotMatrixChart({ assessments, periodDays }: Props) {
@@ -54,26 +66,11 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
     const prevLoad = prevEx ? (Number(prevEx.load_kg) || 0) : 0;
     const prevReps = prevEx ? (Number(prevEx.repetitions) || 0) : 0;
 
-    const maxLoad = Math.max(currLoad, prevLoad) * 1.6;
-    const maxReps = Math.max(currReps, prevReps) * 1.6;
-
-    const filledCurrLoad = calcFilled(currLoad, maxLoad);
-    const filledCurrReps = calcFilled(currReps, maxReps);
-    const filledPrevLoad = calcFilled(prevLoad, maxLoad);
-    const filledPrevReps = calcFilled(prevReps, maxReps);
-
     const deltaLoad = prevLoad > 0 && currLoad > 0 ? currLoad - prevLoad : null;
     const deltaReps = prevReps > 0 && currReps > 0 ? currReps - prevReps : null;
 
     const pctLoad = deltaLoad !== null && prevLoad > 0 ? Math.round((deltaLoad / prevLoad) * 100) : null;
     const pctReps = deltaReps !== null && prevReps > 0 ? Math.round((deltaReps / prevReps) * 100) : null;
-
-    let percentText = '1ª aval.';
-    if (pctLoad !== null || pctReps !== null) {
-      const validPcts = [pctLoad, pctReps].filter(p => p !== null) as number[];
-      const avgPct = Math.round(validPcts.reduce((a, b) => a + b, 0) / validPcts.length);
-      percentText = (avgPct >= 0 ? '+' : '') + avgPct + '%';
-    }
 
     const style = EX_STYLES[idx % EX_STYLES.length];
     const anyLoad = currLoad > 0 || prevLoad > 0;
@@ -81,15 +78,10 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
     return {
       name: ex.exercise_name,
       style,
-      percentText,
       currLoad,
       currReps,
       prevLoad,
       prevReps,
-      filledCurrLoad,
-      filledCurrReps,
-      filledPrevLoad,
-      filledPrevReps,
       deltaLoad,
       deltaReps,
       pctLoad,
@@ -144,247 +136,357 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
       </View>
 
       <View style={{ padding: 16 }}>
-        {exerciseData.map((ex, idx) => (
-          <View key={idx} style={{
-            paddingBottom: 16,
-            marginBottom: 16,
-            borderBottomWidth: idx < exerciseData.length - 1 ? 1 : 0,
-            borderBottomColor: T.border,
-          }}>
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={{
-                  color: ex.style.colorOn,
-                  fontSize: 14,
-                  fontWeight: '800',
-                  marginRight: 8,
-                }}>
-                  {ex.sequenceNum}
-                </Text>
-                <Text style={{
-                  color: T.t1,
-                  fontSize: 14,
-                  fontWeight: '700',
-                  flex: 1,
-                }} numberOfLines={1}>
-                  {ex.name}
-                </Text>
-              </View>
+        {exerciseData.map((ex, idx) => {
+          const SCALE = 1.4;
+          const maxReps = Math.max(ex.currReps, ex.prevReps) * SCALE || 1;
+          const maxLoad = Math.max(ex.currLoad, ex.prevLoad) * SCALE || 1;
+          const posBeforeReps = Math.min((ex.prevReps / maxReps) * 100, 93);
+          const posAfterReps = Math.min((ex.currReps / maxReps) * 100, 93);
+          const posBeforeLoad = Math.min((ex.prevLoad / maxLoad) * 100, 93);
+          const posAfterLoad = Math.min((ex.currLoad / maxLoad) * 100, 93);
+
+          const deltaPctReps = ex.pctReps;
+          const deltaPctLoad = ex.pctLoad;
+          const maxPct = Math.max(
+            deltaPctReps !== null && deltaPctReps > 0 ? deltaPctReps : 0,
+            deltaPctLoad !== null && deltaPctLoad > 0 ? deltaPctLoad : 0
+          );
+          const hasEvolution = maxPct > 0;
+
+          return (
+            <View key={idx}>
               <View style={{
-                backgroundColor: `${ex.style.colorOn}21`,
-                borderWidth: 1,
-                borderColor: ex.style.colorOn,
-                borderRadius: 12,
-                paddingVertical: 4,
-                paddingHorizontal: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 12,
               }}>
-                <Text style={{
-                  color: ex.style.colorOn,
-                  fontSize: 11,
-                  fontWeight: '700',
-                }}>
-                  {ex.percentText}
-                </Text>
-              </View>
-            </View>
-
-            <View>
-              <Text style={{
-                color: T.t3,
-                fontSize: 11,
-                fontWeight: '600',
-                marginBottom: 6,
-              }}>
-                {ex.currDate}
-              </Text>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                <Text style={{
-                  fontSize: 10,
-                  fontWeight: '700',
-                  color: `${ex.style.colorOn}73`,
-                  width: 28,
-                  textAlign: 'right',
-                  marginRight: 6,
-                }}>
-                  Rep
-                </Text>
-                <View style={{ flexDirection: 'row' }}>
-                  {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                    <Text key={i} style={{
-                      fontSize: 12,
-                      color: i < ex.filledCurrReps ? ex.style.colorOn : ex.style.colorOff,
-                      textShadowColor: i < ex.filledCurrReps ? ex.style.colorOn : 'transparent',
-                      textShadowRadius: i < ex.filledCurrReps ? 6 : 0,
-                      textShadowOffset: { width: 0, height: 0 },
-                      marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                    }}>
-                      {ex.style.symReps}
-                    </Text>
-                  ))}
-                </View>
-                <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                   <Text style={{
-                    color: ex.style.colorOn,
-                    fontSize: 12,
+                    color: ex.style.color,
+                    fontSize: 14,
                     fontWeight: '800',
+                    marginRight: 8,
                   }}>
-                    {ex.currReps}×
+                    {ex.sequenceNum}
                   </Text>
-                  {ex.deltaReps !== null && (
-                    <Text style={{
-                      color: ex.deltaReps > 0 ? ex.style.colorOn : '#FF5C5C',
-                      fontSize: 10,
-                      fontWeight: '700',
-                    }}>
-                      {ex.deltaReps > 0 ? '+' : ''}{ex.deltaReps} ({ex.pctReps! >= 0 ? '+' : ''}{ex.pctReps}%)
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              {ex.anyLoad && ex.currLoad > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
                   <Text style={{
-                    fontSize: 10,
+                    color: T.t1,
+                    fontSize: 14,
                     fontWeight: '700',
-                    color: `${ex.style.colorOn}73`,
-                    width: 28,
-                    textAlign: 'right',
-                    marginRight: 6,
-                  }}>
-                    Cg
+                    flex: 1,
+                  }} numberOfLines={1}>
+                    {ex.name}
                   </Text>
-                  <View style={{ flexDirection: 'row' }}>
-                    {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                      <Text key={i} style={{
-                        fontSize: 12,
-                        color: i < ex.filledCurrLoad ? ex.style.colorOn : ex.style.colorOff,
-                        textShadowColor: i < ex.filledCurrLoad ? ex.style.colorOn : 'transparent',
-                        textShadowRadius: i < ex.filledCurrLoad ? 6 : 0,
-                        textShadowOffset: { width: 0, height: 0 },
-                        marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                      }}>
-                        {ex.style.symLoad}
-                      </Text>
-                    ))}
-                  </View>
-                  <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                </View>
+                {hasEvolution && (
+                  <View style={{
+                    backgroundColor: hexAlpha(ex.style.color, 0.12),
+                    borderWidth: 1,
+                    borderColor: hexAlpha(ex.style.color, 0.25),
+                    borderRadius: 20,
+                    paddingVertical: 3,
+                    paddingHorizontal: 10,
+                  }}>
                     <Text style={{
-                      color: ex.style.colorOn,
-                      fontSize: 12,
+                      color: ex.style.color,
+                      fontSize: 11,
                       fontWeight: '800',
                     }}>
-                      {ex.currLoad}kg
+                      {getEmoji(maxPct)} Evoluiu!
                     </Text>
-                    {ex.deltaLoad !== null && (
+                  </View>
+                )}
+              </View>
+
+              {ex.currReps > 0 && (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{
+                    fontSize: 9,
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1.2,
+                    opacity: 0.4,
+                    color: ex.style.color,
+                    marginBottom: 14,
+                  }}>
+                    REPETIÇÕES
+                  </Text>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <View style={{ position: 'relative', height: 38 }}>
+                        {ex.prevReps > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${posBeforeReps}%`,
+                            transform: [{ translateX: -(posBeforeReps * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: '#475569',
+                            }}>
+                              {ex.prevReps}×
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: `${posAfterReps}%`,
+                          transform: [{ translateX: -(posAfterReps * 0.01) * 30 }],
+                        }}>
+                          <Text style={{
+                            fontSize: 12,
+                            fontWeight: '800',
+                            color: ex.style.color,
+                          }}>
+                            {ex.currReps}×
+                          </Text>
+                        </View>
+
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          left: 0,
+                          right: 0,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: hexAlpha(ex.style.color, 0.06),
+                        }} />
+
+                        {ex.prevReps > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 4,
+                            left: 0,
+                            width: `${posBeforeReps}%`,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: hexAlpha(ex.style.color, 0.35),
+                          }} />
+                        )}
+
+                        {posAfterReps > posBeforeReps && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 4,
+                            left: `${posBeforeReps}%`,
+                            width: `${posAfterReps - posBeforeReps}%`,
+                            height: 6,
+                            borderTopRightRadius: 3,
+                            borderBottomRightRadius: 3,
+                            backgroundColor: ex.style.color,
+                          }} />
+                        )}
+
+                        {ex.prevReps > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: `${posBeforeReps}%`,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 6,
+                            backgroundColor: hexAlpha(ex.style.color, 0.5),
+                            borderWidth: 2,
+                            borderColor: T.card,
+                            marginLeft: -6,
+                          }} />
+                        )}
+
+                        <View style={{
+                          position: 'absolute',
+                          bottom: -2,
+                          left: `${posAfterReps}%`,
+                          width: 18,
+                          height: 18,
+                          borderRadius: 9,
+                          backgroundColor: ex.style.color,
+                          borderWidth: 3,
+                          borderColor: T.card,
+                          marginLeft: -9,
+                          shadowColor: ex.style.color,
+                          shadowRadius: 8,
+                          shadowOpacity: 0.7,
+                          shadowOffset: { width: 0, height: 0 },
+                          elevation: 6,
+                        }} />
+                      </View>
+                    </View>
+
+                    <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
                       <Text style={{
-                        color: ex.deltaLoad > 0 ? ex.style.colorOn : '#FF5C5C',
-                        fontSize: 10,
-                        fontWeight: '700',
+                        fontSize: 12,
+                        fontWeight: '800',
+                        color: ex.deltaReps !== null
+                          ? (ex.deltaReps > 0 ? ex.style.color : '#64748B')
+                          : '#334155',
                       }}>
-                        {ex.deltaLoad > 0 ? '+' : ''}{ex.deltaLoad} ({ex.pctLoad! >= 0 ? '+' : ''}{ex.pctLoad}%)
+                        {deltaPctReps !== null ? `${deltaPctReps >= 0 ? '+' : ''}${deltaPctReps}%` : '1ª'}
                       </Text>
-                    )}
+                      {ex.deltaReps !== null && ex.deltaReps > 0 && (
+                        <Text style={{ fontSize: 14, marginTop: 2 }}>
+                          {getEmoji(ex.pctReps)}
+                        </Text>
+                      )}
+                    </View>
                   </View>
                 </View>
               )}
 
-              {prev && (
-                <>
-                  <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+              {ex.anyLoad && (ex.currLoad > 0 || ex.prevLoad > 0) && (
+                <View style={{ marginBottom: 16 }}>
                   <Text style={{
-                    color: T.t3,
-                    fontSize: 11,
-                    fontWeight: '600',
-                    marginBottom: 6,
+                    fontSize: 9,
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1.2,
+                    opacity: 0.4,
+                    color: ex.style.color,
+                    marginBottom: 14,
                   }}>
-                    {ex.prevDate}
+                    CARGA
                   </Text>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                    <Text style={{
-                      fontSize: 10,
-                      fontWeight: '700',
-                      color: `${ex.style.colorOn}73`,
-                      width: 28,
-                      textAlign: 'right',
-                      marginRight: 6,
-                    }}>
-                      Rep
-                    </Text>
-                    <View style={{ flexDirection: 'row' }}>
-                      {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                        <Text key={i} style={{
-                          fontSize: 12,
-                          color: i < ex.filledPrevReps ? ex.style.colorOn : ex.style.colorOff,
-                          textShadowColor: i < ex.filledPrevReps ? ex.style.colorOn : 'transparent',
-                          textShadowRadius: i < ex.filledPrevReps ? 6 : 0,
-                          textShadowOffset: { width: 0, height: 0 },
-                          marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                        }}>
-                          {ex.style.symReps}
-                        </Text>
-                      ))}
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <View style={{ position: 'relative', height: 38 }}>
+                        {ex.prevLoad > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${posBeforeLoad}%`,
+                            transform: [{ translateX: -(posBeforeLoad * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: '#475569',
+                            }}>
+                              {ex.prevLoad}kg
+                            </Text>
+                          </View>
+                        )}
+
+                        {ex.currLoad > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${posAfterLoad}%`,
+                            transform: [{ translateX: -(posAfterLoad * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 12,
+                              fontWeight: '800',
+                              color: ex.style.color,
+                            }}>
+                              {ex.currLoad}kg
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          left: 0,
+                          right: 0,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: hexAlpha(ex.style.color, 0.06),
+                        }} />
+
+                        {ex.prevLoad > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 4,
+                            left: 0,
+                            width: `${posBeforeLoad}%`,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: hexAlpha(ex.style.color, 0.35),
+                          }} />
+                        )}
+
+                        {posAfterLoad > posBeforeLoad && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 4,
+                            left: `${posBeforeLoad}%`,
+                            width: `${posAfterLoad - posBeforeLoad}%`,
+                            height: 6,
+                            borderTopRightRadius: 3,
+                            borderBottomRightRadius: 3,
+                            backgroundColor: ex.style.color,
+                          }} />
+                        )}
+
+                        {ex.prevLoad > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: `${posBeforeLoad}%`,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 6,
+                            backgroundColor: hexAlpha(ex.style.color, 0.5),
+                            borderWidth: 2,
+                            borderColor: T.card,
+                            marginLeft: -6,
+                          }} />
+                        )}
+
+                        {ex.currLoad > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            left: `${posAfterLoad}%`,
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            backgroundColor: ex.style.color,
+                            borderWidth: 3,
+                            borderColor: T.card,
+                            marginLeft: -9,
+                            shadowColor: ex.style.color,
+                            shadowRadius: 8,
+                            shadowOpacity: 0.7,
+                            shadowOffset: { width: 0, height: 0 },
+                            elevation: 6,
+                          }} />
+                        )}
+                      </View>
                     </View>
-                    <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+
+                    <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
                       <Text style={{
-                        color: ex.style.colorOn,
                         fontSize: 12,
                         fontWeight: '800',
+                        color: ex.deltaLoad !== null
+                          ? (ex.deltaLoad > 0 ? ex.style.color : '#64748B')
+                          : '#334155',
                       }}>
-                        {ex.prevReps > 0 ? (ex.anyLoad ? `${ex.prevReps}×` : `${ex.prevReps}rep`) : '–'}
+                        {deltaPctLoad !== null ? `${deltaPctLoad >= 0 ? '+' : ''}${deltaPctLoad}%` : '1ª'}
                       </Text>
+                      {ex.deltaLoad !== null && ex.deltaLoad > 0 && (
+                        <Text style={{ fontSize: 14, marginTop: 2 }}>
+                          {getEmoji(ex.pctLoad)}
+                        </Text>
+                      )}
                     </View>
                   </View>
+                </View>
+              )}
 
-                  {ex.anyLoad && ex.prevLoad > 0 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                      <Text style={{
-                        fontSize: 10,
-                        fontWeight: '700',
-                        color: `${ex.style.colorOn}73`,
-                        width: 28,
-                        textAlign: 'right',
-                        marginRight: 6,
-                      }}>
-                        Cg
-                      </Text>
-                      <View style={{ flexDirection: 'row' }}>
-                        {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                          <Text key={i} style={{
-                            fontSize: 12,
-                            color: i < ex.filledPrevLoad ? ex.style.colorOn : ex.style.colorOff,
-                            textShadowColor: i < ex.filledPrevLoad ? ex.style.colorOn : 'transparent',
-                            textShadowRadius: i < ex.filledPrevLoad ? 6 : 0,
-                            textShadowOffset: { width: 0, height: 0 },
-                            marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                          }}>
-                            {ex.style.symLoad}
-                          </Text>
-                        ))}
-                      </View>
-                      <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
-                        <Text style={{
-                          color: ex.style.colorOn,
-                          fontSize: 12,
-                          fontWeight: '800',
-                        }}>
-                          {ex.prevLoad}kg
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </>
+              {idx < exerciseData.length - 1 && (
+                <View style={{ height: 1, backgroundColor: T.border, marginVertical: 12 }} />
               )}
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

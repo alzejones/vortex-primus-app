@@ -8,25 +8,37 @@ interface Props {
 }
 
 const EX_STYLES = [
-  { colorOn: '#00D1DF', colorOff: 'rgba(0,209,223,0.10)', symA: '●', symB: '◉' },
-  { colorOn: '#BF3DFB', colorOff: 'rgba(191,61,251,0.10)', symA: '■', symB: '▪' },
-  { colorOn: '#FF9F1C', colorOff: 'rgba(255,159,28,0.10)', symA: '▲', symB: '◀' },
-  { colorOn: '#3DDC84', colorOff: 'rgba(61,220,132,0.10)', symA: '◆', symB: '★' },
+  { color: '#06B6D4' },
+  { color: '#10B981' },
+  { color: '#8B5CF6' },
+  { color: '#F59E0B' },
 ];
 
-const TOTAL_DOTS = 16;
-const MAX_FILLED = TOTAL_DOTS - 3;
+function hexAlpha(color: string, alpha: number): string {
+  const map: Record<string, string> = {
+    '#06B6D4': `0,182,212`,
+    '#10B981': `16,185,129`,
+    '#8B5CF6': `139,92,246`,
+    '#F59E0B': `245,158,11`,
+  };
+  const rgb = map[color] || '255,255,255';
+  return `rgba(${rgb},${alpha})`;
+}
+
+function getEmoji(pct: number | null): string {
+  if (pct === null || pct <= 0) return '';
+  if (pct < 10)  return '👊';
+  if (pct < 30)  return '💪';
+  if (pct < 60)  return '🔥';
+  if (pct < 100) return '⚡';
+  return '🏆';
+}
 
 function normalizeExerciseName(name: string): string {
   return name.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '')
     .slice(0, 8);
-}
-
-function calcFilled(val: number, maxVal: number): number {
-  if (!val || val <= 0 || maxVal <= 0) return 0;
-  return Math.min(Math.max(Math.round((val / maxVal) * TOTAL_DOTS), 1), MAX_FILLED);
 }
 
 export default function EnduranceDotMatrixChart({ assessments, periodDays }: Props) {
@@ -54,64 +66,31 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
     const prevDist = prevItem ? (Number(prevItem.distance_m) || Number(prevItem.repetitions) || 0) : 0;
     const prevTime = prevItem ? (Number(prevItem.time_seconds) || 0) : 0;
 
-    const maxDist = Math.max(currDist, prevDist) * 1.6;
-    const maxTime = Math.max(currTime, prevTime) * 1.6;
-
-    const filledCurrDist = calcFilled(currDist, maxDist);
-    const filledCurrTime = calcFilled(currTime, maxTime);
-    const filledPrevDist = calcFilled(prevDist, maxDist);
-    const filledPrevTime = calcFilled(prevTime, maxTime);
-
     const deltaDist = prevDist > 0 && currDist > 0 ? currDist - prevDist : null;
     const deltaTime = prevTime > 0 && currTime > 0 ? currTime - prevTime : null;
 
     const pctDist = deltaDist !== null && prevDist > 0 ? Math.round((deltaDist / prevDist) * 100) : null;
     const pctTime = deltaTime !== null && prevTime > 0 ? Math.round((deltaTime / prevTime) * 100) : null;
 
-    let percentText = '1ª aval.';
-    if (pctDist !== null || pctTime !== null) {
-      const validPcts = [];
-      if (pctDist !== null) validPcts.push(pctDist);
-      if (pctTime !== null) validPcts.push(-pctTime);
-      const avgPct = Math.round(validPcts.reduce((a, b) => a + b, 0) / validPcts.length);
-      percentText = (avgPct >= 0 ? '+' : '') + avgPct + '%';
-    }
-
     const style = EX_STYLES[idx % EX_STYLES.length];
 
     const distanceVal = Number(item.distance_m) || 0;
-    const repsVal = Number(item.repetitions) || 0;
-    const currDistLabel = distanceVal > 0 ? `${currDist}m` : repsVal > 0 ? `${currDist}rep` : '–';
-    const currTimeLabel = currTime > 0 ? `${currTime}s` : '–';
-
-    const prevDistanceVal = prevItem ? (Number(prevItem.distance_m) || 0) : 0;
-    const prevRepsVal = prevItem ? (Number(prevItem.repetitions) || 0) : 0;
-    const prevDistLabel = prevDist > 0 ? (prevDistanceVal > 0 ? `${prevDist}m` : prevRepsVal > 0 ? `${prevDist}rep` : '–') : '–';
-    const prevTimeLabel = prevTime > 0 ? `${prevTime}s` : '–';
 
     return {
       name: item.test_type,
       style,
-      percentText,
       currDist,
       currTime,
       prevDist,
       prevTime,
-      filledCurrDist,
-      filledCurrTime,
-      filledPrevDist,
-      filledPrevTime,
       deltaDist,
       deltaTime,
       pctDist,
       pctTime,
-      currDistLabel,
-      currTimeLabel,
-      prevDistLabel,
-      prevTimeLabel,
       currDate: formatShortDate(curr.date),
       prevDate: prev ? formatShortDate(prev.date) : '',
       sequenceNum: String(idx + 1).padStart(2, '0'),
+      distance_m: distanceVal,
     };
   });
 
@@ -158,247 +137,358 @@ export default function EnduranceDotMatrixChart({ assessments, periodDays }: Pro
       </View>
 
       <View style={{ padding: 16 }}>
-        {exerciseData.map((ex, idx) => (
-          <View key={idx} style={{
-            paddingBottom: 16,
-            marginBottom: 16,
-            borderBottomWidth: idx < exerciseData.length - 1 ? 1 : 0,
-            borderBottomColor: T.border,
-          }}>
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={{
-                  color: ex.style.colorOn,
-                  fontSize: 14,
-                  fontWeight: '800',
-                  marginRight: 8,
-                }}>
-                  {ex.sequenceNum}
-                </Text>
-                <Text style={{
-                  color: T.t1,
-                  fontSize: 14,
-                  fontWeight: '700',
-                  flex: 1,
-                }} numberOfLines={1}>
-                  {ex.name}
-                </Text>
-              </View>
+        {exerciseData.map((ex, idx) => {
+          const SCALE = 1.4;
+          const maxDist = Math.max(ex.currDist, ex.prevDist) * SCALE || 1;
+          const maxTime = Math.max(ex.currTime, ex.prevTime) * SCALE || 1;
+          const posBeforeDist = Math.min((ex.prevDist / maxDist) * 100, 93);
+          const posAfterDist = Math.min((ex.currDist / maxDist) * 100, 93);
+          const posBeforeTime = Math.min((ex.prevTime / maxTime) * 100, 93);
+          const posAfterTime = Math.min((ex.currTime / maxTime) * 100, 93);
+
+          const deltaPctDist = ex.pctDist;
+          const deltaPctTime = ex.pctTime;
+
+          const hasEvolution = (ex.deltaDist !== null && ex.deltaDist > 0) || (ex.deltaTime !== null && ex.deltaTime < 0);
+          const maxPct = Math.max(
+            deltaPctDist !== null && deltaPctDist > 0 ? deltaPctDist : 0,
+            deltaPctTime !== null && deltaPctTime < 0 ? -deltaPctTime : 0
+          );
+
+          const suffix = ex.distance_m > 0 ? 'm' : 'rep';
+
+          return (
+            <View key={idx}>
               <View style={{
-                backgroundColor: `${ex.style.colorOn}21`,
-                borderWidth: 1,
-                borderColor: ex.style.colorOn,
-                borderRadius: 12,
-                paddingVertical: 4,
-                paddingHorizontal: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 12,
               }}>
-                <Text style={{
-                  color: ex.style.colorOn,
-                  fontSize: 11,
-                  fontWeight: '700',
-                }}>
-                  {ex.percentText}
-                </Text>
-              </View>
-            </View>
-
-            <View>
-              <Text style={{
-                color: T.t3,
-                fontSize: 11,
-                fontWeight: '600',
-                marginBottom: 6,
-              }}>
-                {ex.currDate}
-              </Text>
-
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                <Text style={{
-                  fontSize: 10,
-                  fontWeight: '700',
-                  color: `${ex.style.colorOn}73`,
-                  width: 28,
-                  textAlign: 'right',
-                  marginRight: 6,
-                }}>
-                  D/R
-                </Text>
-                <View style={{ flexDirection: 'row' }}>
-                  {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                    <Text key={i} style={{
-                      fontSize: 12,
-                      color: i < ex.filledCurrDist ? ex.style.colorOn : ex.style.colorOff,
-                      textShadowColor: i < ex.filledCurrDist ? ex.style.colorOn : 'transparent',
-                      textShadowRadius: i < ex.filledCurrDist ? 6 : 0,
-                      textShadowOffset: { width: 0, height: 0 },
-                      marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                    }}>
-                      {ex.style.symA}
-                    </Text>
-                  ))}
-                </View>
-                <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
                   <Text style={{
-                    color: ex.style.colorOn,
-                    fontSize: 12,
+                    color: ex.style.color,
+                    fontSize: 14,
                     fontWeight: '800',
+                    marginRight: 8,
                   }}>
-                    {ex.currDistLabel}
+                    {ex.sequenceNum}
                   </Text>
-                  {ex.deltaDist !== null && (
-                    <Text style={{
-                      color: ex.deltaDist > 0 ? ex.style.colorOn : '#FF5C5C',
-                      fontSize: 10,
-                      fontWeight: '700',
-                    }}>
-                      {ex.deltaDist > 0 ? '+' : ''}{ex.deltaDist} ({ex.pctDist! >= 0 ? '+' : ''}{ex.pctDist}%)
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              {ex.currTime > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
                   <Text style={{
-                    fontSize: 10,
+                    color: T.t1,
+                    fontSize: 14,
                     fontWeight: '700',
-                    color: `${ex.style.colorOn}73`,
-                    width: 28,
-                    textAlign: 'right',
-                    marginRight: 6,
-                  }}>
-                    Tmp
+                    flex: 1,
+                  }} numberOfLines={1}>
+                    {ex.name}
                   </Text>
-                  <View style={{ flexDirection: 'row' }}>
-                    {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                      <Text key={i} style={{
-                        fontSize: 12,
-                        color: i < ex.filledCurrTime ? ex.style.colorOn : ex.style.colorOff,
-                        textShadowColor: i < ex.filledCurrTime ? ex.style.colorOn : 'transparent',
-                        textShadowRadius: i < ex.filledCurrTime ? 6 : 0,
-                        textShadowOffset: { width: 0, height: 0 },
-                        marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                      }}>
-                        {ex.style.symB}
-                      </Text>
-                    ))}
-                  </View>
-                  <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+                </View>
+                {hasEvolution && (
+                  <View style={{
+                    backgroundColor: hexAlpha(ex.style.color, 0.12),
+                    borderWidth: 1,
+                    borderColor: hexAlpha(ex.style.color, 0.25),
+                    borderRadius: 20,
+                    paddingVertical: 3,
+                    paddingHorizontal: 10,
+                  }}>
                     <Text style={{
-                      color: ex.style.colorOn,
-                      fontSize: 12,
+                      color: ex.style.color,
+                      fontSize: 11,
                       fontWeight: '800',
                     }}>
-                      {ex.currTimeLabel}
+                      {getEmoji(maxPct)} Evoluiu!
                     </Text>
-                    {ex.deltaTime !== null && (
-                      <Text style={{
-                        color: ex.deltaTime < 0 ? ex.style.colorOn : '#FF5C5C',
-                        fontSize: 10,
-                        fontWeight: '700',
+                  </View>
+                )}
+              </View>
+
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{
+                  fontSize: 9,
+                  fontWeight: '800',
+                  textTransform: 'uppercase',
+                  letterSpacing: 1.2,
+                  opacity: 0.4,
+                  color: ex.style.color,
+                  marginBottom: 14,
+                }}>
+                  DIST / REP
+                </Text>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <View style={{ position: 'relative', height: 38 }}>
+                      {ex.prevDist > 0 && (
+                        <View style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: `${posBeforeDist}%`,
+                          transform: [{ translateX: -(posBeforeDist * 0.01) * 30 }],
+                        }}>
+                          <Text style={{
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: '#475569',
+                          }}>
+                            {ex.prevDist}{suffix}
+                          </Text>
+                        </View>
+                      )}
+
+                      <View style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: `${posAfterDist}%`,
+                        transform: [{ translateX: -(posAfterDist * 0.01) * 30 }],
                       }}>
-                        {ex.deltaTime > 0 ? '+' : ''}{ex.deltaTime}s ({ex.pctTime! >= 0 ? '+' : ''}{ex.pctTime}%)
+                        <Text style={{
+                          fontSize: 12,
+                          fontWeight: '800',
+                          color: ex.style.color,
+                        }}>
+                          {ex.currDist}{suffix}
+                        </Text>
+                      </View>
+
+                      <View style={{
+                        position: 'absolute',
+                        bottom: 4,
+                        left: 0,
+                        right: 0,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: hexAlpha(ex.style.color, 0.06),
+                      }} />
+
+                      {ex.prevDist > 0 && (
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          left: 0,
+                          width: `${posBeforeDist}%`,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: hexAlpha(ex.style.color, 0.35),
+                        }} />
+                      )}
+
+                      {posAfterDist > posBeforeDist && (
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          left: `${posBeforeDist}%`,
+                          width: `${posAfterDist - posBeforeDist}%`,
+                          height: 6,
+                          borderTopRightRadius: 3,
+                          borderBottomRightRadius: 3,
+                          backgroundColor: ex.style.color,
+                        }} />
+                      )}
+
+                      {ex.prevDist > 0 && (
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: `${posBeforeDist}%`,
+                          width: 12,
+                          height: 12,
+                          borderRadius: 6,
+                          backgroundColor: hexAlpha(ex.style.color, 0.5),
+                          borderWidth: 2,
+                          borderColor: T.card,
+                          marginLeft: -6,
+                        }} />
+                      )}
+
+                      <View style={{
+                        position: 'absolute',
+                        bottom: -2,
+                        left: `${posAfterDist}%`,
+                        width: 18,
+                        height: 18,
+                        borderRadius: 9,
+                        backgroundColor: ex.style.color,
+                        borderWidth: 3,
+                        borderColor: T.card,
+                        marginLeft: -9,
+                        shadowColor: ex.style.color,
+                        shadowRadius: 8,
+                        shadowOpacity: 0.7,
+                        shadowOffset: { width: 0, height: 0 },
+                        elevation: 6,
+                      }} />
+                    </View>
+                  </View>
+
+                  <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
+                    <Text style={{
+                      fontSize: 12,
+                      fontWeight: '800',
+                      color: ex.deltaDist !== null
+                        ? (ex.deltaDist > 0 ? ex.style.color : '#64748B')
+                        : '#334155',
+                    }}>
+                      {deltaPctDist !== null ? `${deltaPctDist >= 0 ? '+' : ''}${deltaPctDist}%` : '1ª'}
+                    </Text>
+                    {ex.deltaDist !== null && ex.deltaDist > 0 && (
+                      <Text style={{ fontSize: 14, marginTop: 2 }}>
+                        {getEmoji(ex.pctDist)}
                       </Text>
                     )}
                   </View>
                 </View>
-              )}
+              </View>
 
-              {prev && (
-                <>
-                  <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+              {(ex.currTime > 0 || ex.prevTime > 0) && (
+                <View style={{ marginBottom: 16 }}>
                   <Text style={{
-                    color: T.t3,
-                    fontSize: 11,
-                    fontWeight: '600',
-                    marginBottom: 6,
+                    fontSize: 9,
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    letterSpacing: 1.2,
+                    opacity: 0.4,
+                    color: ex.style.color,
+                    marginBottom: 14,
                   }}>
-                    {ex.prevDate}
+                    TEMPO
                   </Text>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                    <Text style={{
-                      fontSize: 10,
-                      fontWeight: '700',
-                      color: `${ex.style.colorOn}73`,
-                      width: 28,
-                      textAlign: 'right',
-                      marginRight: 6,
-                    }}>
-                      D/R
-                    </Text>
-                    <View style={{ flexDirection: 'row' }}>
-                      {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                        <Text key={i} style={{
-                          fontSize: 12,
-                          color: i < ex.filledPrevDist ? ex.style.colorOn : ex.style.colorOff,
-                          textShadowColor: i < ex.filledPrevDist ? ex.style.colorOn : 'transparent',
-                          textShadowRadius: i < ex.filledPrevDist ? 6 : 0,
-                          textShadowOffset: { width: 0, height: 0 },
-                          marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                        }}>
-                          {ex.style.symA}
-                        </Text>
-                      ))}
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                      <View style={{ position: 'relative', height: 38 }}>
+                        {ex.prevTime > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${posBeforeTime}%`,
+                            transform: [{ translateX: -(posBeforeTime * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: '#475569',
+                            }}>
+                              {ex.prevTime}s
+                            </Text>
+                          </View>
+                        )}
+
+                        {ex.currTime > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: `${posAfterTime}%`,
+                            transform: [{ translateX: -(posAfterTime * 0.01) * 30 }],
+                          }}>
+                            <Text style={{
+                              fontSize: 12,
+                              fontWeight: '800',
+                              color: ex.style.color,
+                            }}>
+                              {ex.currTime}s
+                            </Text>
+                          </View>
+                        )}
+
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          left: 0,
+                          right: 0,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: hexAlpha(ex.style.color, 0.06),
+                        }} />
+
+                        {ex.prevTime > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 4,
+                            left: 0,
+                            width: `${posBeforeTime}%`,
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: hexAlpha(ex.style.color, 0.35),
+                          }} />
+                        )}
+
+                        {posAfterTime > posBeforeTime && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 4,
+                            left: `${posBeforeTime}%`,
+                            width: `${posAfterTime - posBeforeTime}%`,
+                            height: 6,
+                            borderTopRightRadius: 3,
+                            borderBottomRightRadius: 3,
+                            backgroundColor: ex.style.color,
+                          }} />
+                        )}
+
+                        {ex.prevTime > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: `${posBeforeTime}%`,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 6,
+                            backgroundColor: hexAlpha(ex.style.color, 0.5),
+                            borderWidth: 2,
+                            borderColor: T.card,
+                            marginLeft: -6,
+                          }} />
+                        )}
+
+                        {ex.currTime > 0 && (
+                          <View style={{
+                            position: 'absolute',
+                            bottom: -2,
+                            left: `${posAfterTime}%`,
+                            width: 18,
+                            height: 18,
+                            borderRadius: 9,
+                            backgroundColor: ex.style.color,
+                            borderWidth: 3,
+                            borderColor: T.card,
+                            marginLeft: -9,
+                            shadowColor: ex.style.color,
+                            shadowRadius: 8,
+                            shadowOpacity: 0.7,
+                            shadowOffset: { width: 0, height: 0 },
+                            elevation: 6,
+                          }} />
+                        )}
+                      </View>
                     </View>
-                    <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
+
+                    <View style={{ flexShrink: 0, alignItems: 'flex-start', width: 52 }}>
                       <Text style={{
-                        color: ex.style.colorOn,
                         fontSize: 12,
                         fontWeight: '800',
+                        color: ex.deltaTime !== null
+                          ? (ex.deltaTime < 0 ? ex.style.color : '#64748B')
+                          : '#334155',
                       }}>
-                        {ex.prevDistLabel}
+                        {deltaPctTime !== null ? `${deltaPctTime >= 0 ? '+' : ''}${deltaPctTime}%` : '1ª'}
                       </Text>
+                      {ex.deltaTime !== null && ex.deltaTime < 0 && (
+                        <Text style={{ fontSize: 14, marginTop: 2 }}>
+                          {getEmoji(-ex.pctTime!)}
+                        </Text>
+                      )}
                     </View>
                   </View>
+                </View>
+              )}
 
-                  {ex.prevTime > 0 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                      <Text style={{
-                        fontSize: 10,
-                        fontWeight: '700',
-                        color: `${ex.style.colorOn}73`,
-                        width: 28,
-                        textAlign: 'right',
-                        marginRight: 6,
-                      }}>
-                        Tmp
-                      </Text>
-                      <View style={{ flexDirection: 'row' }}>
-                        {Array.from({ length: TOTAL_DOTS }).map((_, i) => (
-                          <Text key={i} style={{
-                            fontSize: 12,
-                            color: i < ex.filledPrevTime ? ex.style.colorOn : ex.style.colorOff,
-                            textShadowColor: i < ex.filledPrevTime ? ex.style.colorOn : 'transparent',
-                            textShadowRadius: i < ex.filledPrevTime ? 6 : 0,
-                            textShadowOffset: { width: 0, height: 0 },
-                            marginRight: i < TOTAL_DOTS - 1 ? 3 : 0,
-                          }}>
-                            {ex.style.symB}
-                          </Text>
-                        ))}
-                      </View>
-                      <View style={{ marginLeft: 7, flexDirection: 'column', alignItems: 'flex-start', flexShrink: 0 }}>
-                        <Text style={{
-                          color: ex.style.colorOn,
-                          fontSize: 12,
-                          fontWeight: '800',
-                        }}>
-                          {ex.prevTimeLabel}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </>
+              {idx < exerciseData.length - 1 && (
+                <View style={{ height: 1, backgroundColor: T.border, marginVertical: 12 }} />
               )}
             </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
