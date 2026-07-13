@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
@@ -83,6 +86,7 @@ export default function ClientDiet() {
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
   const [mealLogs, setMealLogs] = useState<any[]>([]);
+  const [generatingAI, setGeneratingAI] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -216,12 +220,72 @@ export default function ClientDiet() {
     }
   }
 
-  function handleGenerateAI() {
-    Alert.alert(
-      "Em breve!",
-      "🚀 A geração automática de plano alimentar por Inteligência Artificial estará disponível na próxima atualização do Vortex Primus.",
-      [{ text: "OK" }]
-    );
+  async function handleGenerateAI() {
+    if (!clientId || generatingAI) return;
+    setGeneratingAI(true);
+    try {
+      // 1) Gera o JSON do plano (cardápio 7 dias + nota científica + lista
+      //    de compras) chamando a Edge Function generate-diet, que já
+      //    aplica o protocolo completo Vortex Primus + Claude API.
+      const { data: plan, error: dietError } = await supabase.functions.invoke(
+        "generate-diet",
+        { body: { client_id: clientId } }
+      );
+
+      if (dietError) throw new Error(dietError.message);
+      if (plan && (plan as any).error) throw new Error((plan as any).error);
+      if (!plan) throw new Error("A IA não retornou nenhum plano.");
+
+      // 2) Gera o PDF a partir do JSON, via função Python (ReportLab)
+      //    hospedada em /api/generate-pdf.
+      const pdfResp = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(plan),
+      });
+
+      if (!pdfResp.ok) {
+        const errJson = await pdfResp.json().catch(() => ({}));
+        throw new Error(errJson.error || "Erro ao gerar o PDF do plano.");
+      }
+
+      const blob = await pdfResp.blob();
+      const primeiroNome = (client?.name || "aluno").split(" ")[0].toLowerCase();
+
+      if (Platform.OS === "web") {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `plano-alimentar-${primeiroNome}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        const fileUri = `${FileSystem.cacheDirectory}plano-alimentar-${primeiroNome}.pdf`;
+        const base64: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error("Falha ao ler o PDF gerado."));
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1] ?? "");
+          };
+          reader.readAsDataURL(blob);
+        });
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        await Sharing.shareAsync(fileUri, { mimeType: "application/pdf" });
+      }
+    } catch (err: any) {
+      console.error("Erro ao gerar plano com IA:", err);
+      Alert.alert(
+        "Não foi possível gerar o plano",
+        err?.message ?? "Tente novamente em instantes."
+      );
+    } finally {
+      setGeneratingAI(false);
+    }
   }
 
   if (loading) {
@@ -316,9 +380,21 @@ export default function ClientDiet() {
       {dietResult && <ScienceReferencesModal />}
 
       {/* Botão Gerar com IA */}
-      <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={[styles.aiBtn, generatingAI && styles.aiBtnDisabled]}
+        onPress={handleGenerateAI}
+        activeOpacity={0.85}
+        disabled={generatingAI}
+      >
         <LinearGradient {...GradientAI} style={styles.aiBtnGradient}>
-          <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+          {generatingAI ? (
+            <View style={styles.aiBtnLoadingRow}>
+              <ActivityIndicator size="small" color={T.white} />
+              <Text style={styles.aiBtnText}>  Gerando plano com IA…</Text>
+            </View>
+          ) : (
+            <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+          )}
         </LinearGradient>
       </TouchableOpacity>
 
@@ -451,8 +527,10 @@ const styles = StyleSheet.create({
   macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 
   aiBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
+  aiBtnDisabled: { opacity: 0.75 },
   aiBtnGradient: { paddingVertical: 14, alignItems: "center", justifyContent: "center", borderRadius: 14 },
   aiBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+  aiBtnLoadingRow: { flexDirection: "row", alignItems: "center" },
 
   emptyPlan: { alignItems: "center", padding: 40 },
   emptyPlanText: { color: T.t2, fontSize: 15, marginBottom: 20 },
