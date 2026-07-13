@@ -7,75 +7,126 @@ const corsHeaders = {
 }
 
 // ------------------------------------------------------------
-// Protocolo Vortex Primus — regras de cálculo de macros
-//
-// CONFIRMADO com 2 exemplos reais (Maria da Silva Santos e Vanessa Isola):
-//   emagrecimento -> proteína = massa_magra_kg * 2.7 | carbo = 80g fixo
-//                    déficit = TDEE - 500, com piso no BMR
-//                    gordura = resto das calorias após proteína+carbo
-//
-// INFERIDO por padrão (NÃO confirmado com exemplo real) para saude,
-// manutencao e hipertrofia — usa o topo da faixa documentada no protocolo.
-// Validar contra utils/dietCalculations.ts e ajustar se divergir.
+// Réplica exata de utils/dietCalculations.ts (confirmado via
+// cat/sed direto no arquivo real do repo — não é dedução).
 // ------------------------------------------------------------
-const ACTIVITY_MULTIPLIERS: Record<string, number> = {
-  sedentario:             1.2,
-  levemente_ativo:        1.375,
-  moderadamente_ativo:    1.55,
-  muito_ativo:            1.725,
-  extremamente_ativo:     1.9,
+type Objective = 'emagrecimento' | 'hipertrofia' | 'manutencao' | 'saude' | 'performance'
+type ActivityLevel = 'sedentario' | 'leve' | 'moderado' | 'intenso' | 'muito_intenso'
+
+const PROTEIN_PER_KG_LBM: Record<Objective, number> = {
+  emagrecimento: 2.7,
+  hipertrofia:   2.8,
+  manutencao:    2.2,
+  saude:         2.0,
+  performance:   2.6,
 }
 
-interface Protocol {
-  proteinPerKgLean: number
-  carbG: number
-  calAdjust: (tdee: number, bmr: number) => number
+const CALORIE_ADJUSTMENT: Record<Objective, number> = {
+  emagrecimento: -500,
+  hipertrofia:   300,
+  manutencao:    0,
+  saude:         -200,
+  performance:   200,
 }
 
-const PROTOCOL: Record<string, Protocol> = {
-  emagrecimento: {
-    proteinPerKgLean: 2.7,
-    carbG: 80,
-    calAdjust: (tdee, bmr) => Math.max(tdee - 500, bmr),
-  },
-  saude: {
-    proteinPerKgLean: 2.2,
-    carbG: 120,
-    calAdjust: (tdee, bmr) => Math.max(tdee - 175, bmr),
-  },
-  manutencao: {
-    proteinPerKgLean: 2.2,
-    carbG: 120,
-    calAdjust: (tdee, bmr) => Math.max(tdee - 175, bmr),
-  },
-  hipertrofia: {
-    proteinPerKgLean: 2.8,
-    carbG: 280,
-    calAdjust: (tdee, _bmr) => tdee + 300,
-  },
-  performance: {
-    // Objetivo não coberto pelo protocolo documentado.
-    // Usa a mesma regra da hipertrofia até definição específica.
-    proteinPerKgLean: 2.8,
-    carbG: 280,
-    calAdjust: (tdee, _bmr) => tdee + 200,
-  },
+const CARB_CEILING_G: Record<Objective, number> = {
+  emagrecimento: 80,
+  saude:         120,
+  manutencao:    180,
+  hipertrofia:   280,
+  performance:   300,
 }
 
-const OBJECTIVE_LABELS: Record<string, string> = {
+const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
+  sedentario:    1.2,
+  leve:          1.375,
+  moderado:      1.55,
+  intenso:       1.725,
+  muito_intenso: 1.9,
+}
+
+const OBJECTIVE_LABELS: Record<Objective, string> = {
   emagrecimento: 'Emagrecimento',
   hipertrofia:   'Hipertrofia',
   manutencao:    'Manutenção',
-  saude:         'Saúde e Qualidade de Vida',
+  saude:         'Saúde Geral',
   performance:   'Performance',
 }
 
-const ACTIVITY_LABELS: Record<string, string> = {
-  sedentario:             'Sedentário',
-  levemente_ativo:        'Levemente ativo (1–3 dias/semana)',
-  moderadamente_ativo:    'Moderadamente ativo (3–5 dias/semana)',
-  muito_ativo:            'Muito ativo (6–7 dias/semana)',
-  extremamente_ativo:     'Extremamente ativo (atleta/trabalho físico intenso)',
+const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
+  sedentario:    'Sedentário',
+  leve:          'Leve (1-3x/semana)',
+  moderado:      'Moderado (3-5x/semana)',
+  intenso:       'Intenso (6-7x/semana)',
+  muito_intenso: 'Muito Intenso (2x/dia)',
+}
+
+interface DietCalcResult {
+  bmr: number
+  tdee: number
+  lean_mass: number
+  macros: { calories: number; protein: number; carbs: number; fat: number }
+}
+
+function calculateDietPlan(p: {
+  weight_kg: number; height_cm: number; age: number; gender: 'M' | 'F'
+  body_fat_percent: number; activity: ActivityLevel; objective: Objective
+  measured_bmr?: number
+}): DietCalcResult {
+  const { weight_kg, height_cm, age, gender, body_fat_percent, activity, objective, measured_bmr } = p
+
+  // 1. BMR
+  let bmr: number
+  if (measured_bmr && measured_bmr > 0) {
+    bmr = measured_bmr
+  } else if (gender === 'M') {
+    bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
+  } else {
+    bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
+  }
+
+  // 2. TDEE
+  const multiplier = ACTIVITY_MULTIPLIERS[activity] ?? 1.375
+  const tdee = Math.max(bmr * multiplier, bmr)
+
+  // 3. Calorias alvo — nunca abaixo do BMR
+  const rawTargetCalories = tdee + CALORIE_ADJUSTMENT[objective]
+  const targetCalories = Math.max(rawTargetCalories, bmr)
+
+  // 4. Massa magra
+  const fatPct = Math.min(Math.max(body_fat_percent, 0), 99)
+  const lbm = weight_kg * (1 - fatPct / 100)
+
+  // 5. Proteína — piso de 1.6g/kg LBM
+  let proteinG = Math.max(lbm * PROTEIN_PER_KG_LBM[objective], lbm * 1.6)
+
+  // 6. Carboidratos — teto fixo, piso de 30g
+  const carbsG = Math.max(CARB_CEILING_G[objective], 30)
+
+  // 7. Gordura — resto das calorias, piso de 0.8g/kg peso
+  const fatFloorG = weight_kg * 0.8
+  const fatFromRemainder = (targetCalories - proteinG * 4 - carbsG * 4) / 9
+  let fatG = Math.max(fatFromRemainder, fatFloorG)
+
+  // 8. Trava de segurança: se passar de 105% da meta, reduz proteína até o piso
+  const totalCal = proteinG * 4 + carbsG * 4 + fatG * 9
+  if (totalCal > targetCalories * 1.05) {
+    const calForProtein = targetCalories - carbsG * 4 - fatFloorG * 9
+    proteinG = Math.max(calForProtein / 4, lbm * 1.6)
+    fatG = Math.max((targetCalories - proteinG * 4 - carbsG * 4) / 9, fatFloorG)
+  }
+
+  return {
+    bmr:       Math.round(bmr),
+    tdee:      Math.round(tdee),
+    lean_mass: parseFloat(lbm.toFixed(1)),
+    macros: {
+      calories: Math.round(targetCalories),
+      protein:  Math.round(proteinG),
+      carbs:    Math.round(carbsG),
+      fat:      Math.round(fatG),
+    },
+  }
 }
 
 function calcAge(birthDate: string): number {
@@ -85,11 +136,6 @@ function calcAge(birthDate: string): number {
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
   return age
-}
-
-function calculateBMR(weight_kg: number, height_cm: number, age: number, gender: string): number {
-  const base = 10 * weight_kg + 6.25 * height_cm - 5 * age
-  return gender.toUpperCase() === 'M' ? base + 5 : base - 161
 }
 
 function classificaVisceral(v: number): string {
@@ -390,34 +436,34 @@ serve(async (req) => {
       throw new Error('Dados insuficientes para gerar o plano. Complete o perfil do aluno (objetivo, nível de atividade, altura, data de nascimento, sexo).')
     }
 
-    const age      = calcAge(client.birth_date)
-    const bmr      = anthro.basal_metabolic_rate != null
-                       ? parseFloat(anthro.basal_metabolic_rate)
-                       : calculateBMR(weight, client.height_cm, age, client.gender)
-    const tdee     = bmr * (ACTIVITY_MULTIPLIERS[client.activity_level] ?? 1.2)
-    const leanMass = weight * (1 - bodyFat / 100)
+    const age = calcAge(client.birth_date)
 
-    const protocol = PROTOCOL[client.objective] ?? PROTOCOL['manutencao']
-    const calAlvo  = protocol.calAdjust(tdee, bmr)
-    const proteinG = leanMass * protocol.proteinPerKgLean
-    const carbG    = protocol.carbG
-    const fatG     = Math.max((calAlvo - proteinG * 4 - carbG * 4) / 9, 0)
+    const calc = calculateDietPlan({
+      weight_kg:        weight,
+      height_cm:        client.height_cm,
+      age,
+      gender:           client.gender as 'M' | 'F',
+      body_fat_percent: bodyFat,
+      activity:         client.activity_level as ActivityLevel,
+      objective:        client.objective as Objective,
+      measured_bmr:     anthro.basal_metabolic_rate != null ? parseFloat(anthro.basal_metabolic_rate) : undefined,
+    })
 
     const visceralRaw = anthro.body_fat_index != null ? Math.round(parseFloat(anthro.body_fat_index)) : null
 
     const aluno = {
       nome:          client.name,
-      objetivo:      OBJECTIVE_LABELS[client.objective] ?? client.objective,
+      objetivo:      OBJECTIVE_LABELS[client.objective as Objective] ?? client.objective,
       peso:          `${weight.toFixed(1)} kg`,
       gordura:       `${bodyFat.toFixed(1)}%`,
       massa_musc:    anthro.muscle_mass_percentage != null ? `${parseFloat(anthro.muscle_mass_percentage).toFixed(1)}%` : 'N/D',
       idade_metab:   anthro.metabolic_age != null ? `${Math.round(parseFloat(anthro.metabolic_age))} anos` : 'N/D',
-      bmr_tdee:      `${Math.round(bmr)} / ${Math.round(tdee)}`,
+      bmr_tdee:      `${calc.bmr} / ${calc.tdee}`,
       gord_visceral: visceralRaw != null ? classificaVisceral(visceralRaw) : 'N/D',
-      cal_alvo:      `${Math.round(calAlvo)} kcal`,
-      proteina:      `${Math.round(proteinG)}g`,
-      carbo:         `${Math.round(carbG)}g`,
-      gorduras:      `${Math.round(fatG)}g`,
+      cal_alvo:      `${calc.macros.calories} kcal`,
+      proteina:      `${calc.macros.protein}g`,
+      carbo:         `${calc.macros.carbs}g`,
+      gorduras:      `${calc.macros.fat}g`,
     }
 
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
@@ -430,8 +476,8 @@ aluno: ${JSON.stringify(aluno)}
 
 Contexto adicional (não incluir no JSON, usar apenas para montar o cardápio):
 Sexo: ${client.gender === 'M' ? 'Masculino' : 'Feminino'} | Idade: ${age} anos | Altura: ${client.height_cm} cm
-Massa magra: ${leanMass.toFixed(1)} kg
-Nível de atividade: ${ACTIVITY_LABELS[client.activity_level] ?? client.activity_level}
+Massa magra: ${calc.lean_mass.toFixed(1)} kg
+Nível de atividade: ${ACTIVITY_LABELS[client.activity_level as ActivityLevel] ?? client.activity_level}
 Restrições alimentares informadas: ${client.food_restrictions || 'Nenhuma informada'}
 
 Gere o JSON completo (coach, aluno, cardapio, nota, lista_compras) seguindo
