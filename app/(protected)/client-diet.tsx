@@ -232,7 +232,17 @@ export default function ClientDiet() {
         { body: { client_id: clientId } }
       );
 
-      if (dietError) throw new Error(dietError.message);
+      if (dietError) {
+        let detail = dietError.message;
+        try {
+          const ctx = (dietError as any)?.context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.json();
+            if (body?.error) detail = body.error;
+          }
+        } catch {}
+        throw new Error(detail);
+      }
       if (plan && (plan as any).error) throw new Error((plan as any).error);
       if (!plan) throw new Error("A IA não retornou nenhum plano.");
 
