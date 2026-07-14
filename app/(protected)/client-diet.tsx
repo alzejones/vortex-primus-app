@@ -279,10 +279,12 @@ export default function ClientDiet() {
       }
     } catch (err: any) {
       console.error("Erro ao gerar plano com IA:", err);
-      Alert.alert(
-        "Não foi possível gerar o plano",
-        err?.message ?? "Tente novamente em instantes."
-      );
+      const msg = err?.message ?? "Tente novamente em instantes.";
+      if (Platform.OS === "web") {
+        window.alert(`Não foi possível gerar o plano\n\n${msg}`);
+      } else {
+        Alert.alert("Não foi possível gerar o plano", msg);
+      }
     } finally {
       setGeneratingAI(false);
     }
