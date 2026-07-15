@@ -75,7 +75,6 @@ function calculateDietPlan(p: {
 }): DietCalcResult {
   const { weight_kg, height_cm, age, gender, body_fat_percent, activity, objective, measured_bmr } = p
 
-  // 1. BMR
   let bmr: number
   if (measured_bmr && measured_bmr > 0) {
     bmr = measured_bmr
@@ -85,30 +84,23 @@ function calculateDietPlan(p: {
     bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
   }
 
-  // 2. TDEE
   const multiplier = ACTIVITY_MULTIPLIERS[activity] ?? 1.375
   const tdee = Math.max(bmr * multiplier, bmr)
 
-  // 3. Calorias alvo — nunca abaixo do BMR
   const rawTargetCalories = tdee + CALORIE_ADJUSTMENT[objective]
   const targetCalories = Math.max(rawTargetCalories, bmr)
 
-  // 4. Massa magra
   const fatPct = Math.min(Math.max(body_fat_percent, 0), 99)
   const lbm = weight_kg * (1 - fatPct / 100)
 
-  // 5. Proteína — piso de 1.6g/kg LBM
   let proteinG = Math.max(lbm * PROTEIN_PER_KG_LBM[objective], lbm * 1.6)
 
-  // 6. Carboidratos — teto fixo, piso de 30g
   const carbsG = Math.max(CARB_CEILING_G[objective], 30)
 
-  // 7. Gordura — resto das calorias, piso de 0.8g/kg peso
   const fatFloorG = weight_kg * 0.8
   const fatFromRemainder = (targetCalories - proteinG * 4 - carbsG * 4) / 9
   let fatG = Math.max(fatFromRemainder, fatFloorG)
 
-  // 8. Trava de segurança: se passar de 105% da meta, reduz proteína até o piso
   const totalCal = proteinG * 4 + carbsG * 4 + fatG * 9
   if (totalCal > targetCalories * 1.05) {
     const calForProtein = targetCalories - carbsG * 4 - fatFloorG * 9
@@ -143,6 +135,93 @@ function classificaVisceral(v: number): string {
   if (v <= 6) return `${v} (Normal)`
   if (v <= 9) return `${v} (Atenção)`
   return `${v} (ALERTA)`
+}
+
+// ------------------------------------------------------------
+// Matriz de decisão de suplementação Herbalife (confirmada com
+// Alzejones em 2026-07 — cortes numéricos validados em código
+// real: client-assessments.tsx / tabela Omron / classificaVisceral).
+// O objetivo cadastrado no perfil do aluno SEMPRE tem prioridade
+// máxima. Nenhuma decisão aqui é deixada para a IA — o modelo
+// apenas aplica o texto de posicionamento aos produtos já
+// marcados como INCLUIR/modo definido.
+// ------------------------------------------------------------
+type UsoShake = 'substituto' | 'adicionado' | 'complemento' | 'nenhum'
+
+function massaMuscularBaixa(percent: number, gender: 'M' | 'F'): boolean {
+  const normalMin = gender === 'M' ? 33.1 : 24.3
+  return percent < normalMin
+}
+
+function mencionaFuncaoIntestinal(foodRestrictions: string): boolean {
+  const texto = (foodRestrictions || '').toLowerCase()
+  return /intestin|digest|constipa[çc][aã]o|inflama[çc][aã]o intestinal/.test(texto)
+}
+
+function decidirUsoShake(objective: Objective): UsoShake {
+  if (objective === 'emagrecimento') return 'substituto'
+  if (objective === 'hipertrofia') return 'adicionado'
+  if (objective === 'manutencao' || objective === 'saude') return 'complemento'
+  return 'nenhum'
+}
+
+interface HerbalifeDecision {
+  usoShake: UsoShake
+  incluirWhey: boolean
+  incluirCreatina: boolean
+  incluirCR7: boolean
+  incluirFiberConcentrate: boolean
+  incluirHerbalConcentrate: boolean
+}
+
+function decidirProtocoloHerbalife(p: {
+  objective: Objective
+  activityLevel: ActivityLevel
+  gender: 'M' | 'F'
+  muscleMassPercent: number | null
+  visceralRaw: number | null
+  foodRestrictions: string
+}): HerbalifeDecision {
+  const activityIntensa = p.activityLevel === 'intenso' || p.activityLevel === 'muito_intenso'
+
+  const incluirWhey =
+    p.objective === 'hipertrofia' ||
+    p.objective === 'performance' ||
+    activityIntensa ||
+    (p.muscleMassPercent != null && massaMuscularBaixa(p.muscleMassPercent, p.gender))
+
+  const incluirCreatina = p.objective === 'performance'
+  const incluirCR7 = activityIntensa || p.objective === 'performance'
+  const incluirFiberConcentrate =
+    (p.visceralRaw != null && p.visceralRaw > 6) ||
+    mencionaFuncaoIntestinal(p.foodRestrictions)
+  const incluirHerbalConcentrate = p.activityLevel === 'sedentario'
+
+  return {
+    usoShake: decidirUsoShake(p.objective),
+    incluirWhey,
+    incluirCreatina,
+    incluirCR7,
+    incluirFiberConcentrate,
+    incluirHerbalConcentrate,
+  }
+}
+
+function formatarBlocoDecisaoHerbalife(d: HerbalifeDecision): string {
+  const shakeLabel: Record<UsoShake, string> = {
+    substituto: 'SUBSTITUTO de refeição (café da manhã E jantar)',
+    adicionado: 'ADICIONADO após café da manhã, almoço E jantar',
+    complemento: 'COMPLEMENTO apenas no café da manhã',
+    nenhum: 'NÃO incluir (upsell "Performance + Alta Nutrição" fica só no catálogo, fora do cardápio)',
+  }
+
+  return `Protocolo de Suplementação Herbalife (decidido em código — NÃO recalcular, apenas aplicar):
+- Shake F1 + NutreV: modo = ${d.usoShake.toUpperCase()} → ${shakeLabel[d.usoShake]}
+- Whey 3W: ${d.incluirWhey ? 'INCLUIR' : 'NÃO incluir'}
+- Creatina Premium: ${d.incluirCreatina ? 'INCLUIR' : 'NÃO incluir'}
+- CR7 Drive: ${d.incluirCR7 ? 'INCLUIR' : 'NÃO incluir'}
+- Fiber Concentrate: ${d.incluirFiberConcentrate ? 'INCLUIR' : 'NÃO incluir'}
+- Herbal Concentrate: ${d.incluirHerbalConcentrate ? 'INCLUIR' : 'NÃO incluir'}`
 }
 
 // ------------------------------------------------------------
@@ -203,44 +282,62 @@ ELIMINAR SEMPRE: Refrigerantes, Álcool, Açúcar, Doces, Pães, Massas,
 ═══════════════════════════════════════════════
 PRODUTOS HERBALIFE — POSICIONAMENTO OBRIGATÓRIO
 ═══════════════════════════════════════════════
-Shake F1 + NutreV:
-  - SEMPRE no café da manhã, JUNTO à refeição sólida (nunca substitui)
-  - No cardápio: texto limpo "Shake F1 + NutreV Herbalife" sem instrução de preparo
-  - Preparo (apenas em seções técnicas, nunca inline): "No liquidificador
-    adicione: • 250ml de água • 2 colheres e meia (de sopa) do Shake
-    Herbalife • 2 colheres e meia (de sopa) do NutreV Herbalife
-    • 3 a 5 pedras de gelo."
-  - Exceção: pode substituir o JANTAR quando explicitamente solicitado
+IMPORTANTE: a DECISÃO de incluir cada produto (e o modo do Shake) já vem
+PRONTA no bloco "Protocolo de Suplementação Herbalife" da mensagem do
+usuário — foi calculada em código a partir do objetivo, nível de
+atividade, % de massa muscular e gordura visceral do aluno. Você NUNCA
+decide isso sozinho: apenas aplica o texto de posicionamento abaixo aos
+produtos marcados INCLUIR e ao modo do Shake indicado. Produtos NÃO
+marcados como INCLUIR não devem aparecer em nenhuma refeição do cardápio.
 
-Herbal Concentrate:
-  - Café da manhã como termogênico — SEMPRE antes do Shake
+Shake F1 + NutreV — 4 modos possíveis (use o modo exato informado):
+  • Modo SUBSTITUTO: substitui a refeição sólida no café da manhã E no
+    jantar. Texto no cardápio: "Shake F1 + NutreV Herbalife (substitui a
+    refeição)".
+  • Modo ADICIONADO: entra ADICIONADO (sem substituir nada) após café da
+    manhã, almoço E jantar — 3x ao dia. Texto: "Shake F1 + NutreV
+    Herbalife" logo após a refeição sólida de cada uma dessas 3 refeições.
+  • Modo COMPLEMENTO: entra apenas no café da manhã, junto à refeição
+    sólida (nunca substitui). Texto: "Shake F1 + NutreV Herbalife".
+  • Modo NENHUM: não incluir o Shake F1 + NutreV em nenhuma refeição do
+    cardápio.
+  - Preparo (apenas em seções técnicas, nunca inline, quando o modo não
+    for NENHUM): "No liquidificador adicione: • 250ml de água • 2
+    colheres e meia (de sopa) do Shake Herbalife • 2 colheres e meia (de
+    sopa) do NutreV Herbalife • 3 a 5 pedras de gelo."
+
+Herbal Concentrate (incluir apenas se marcado INCLUIR):
+  - Café da manhã como termogênico — SEMPRE antes do Shake (se houver)
   - Texto: "Herbal Concentrate (1 dose em 240ml de água — termogênico matinal)"
-  - Também pode ser usado pré-atividade física ou como hidratação diária
 
-CR7 Drive:
+CR7 Drive (incluir apenas se marcado INCLUIR):
   - Dias de TREINO: label "Pré-Treino", 20 min antes do treino
   - Texto: "CR7 Drive (1 dose em 400ml de água gelada — 20 min antes do treino)"
   - Dias de DESCANSO: omitir completamente
 
-Whey 3W Herbalife:
+Whey 3W Herbalife (incluir apenas se marcado INCLUIR):
   - SEMPRE pós-treino, até 40 min após o esforço
   - Texto: "Whey 3W Herbalife (1 dose em 300ml de água — até 40 min após o treino)"
   - Dias de descanso: omitir (exceto se solicitado para jantar)
+  - Se Creatina também estiver INCLUIR, combine no mesmo texto (ver abaixo)
 
-Creatina Premium Herbalife 24:
-  - Junto ao Whey no pós-treino (dias de treino)
-  - Texto pós-treino: "Whey 3W Herbalife + Creatina Premium (1 dose de cada
+Creatina Premium Herbalife 24 (incluir apenas se marcado INCLUIR):
+  - Junto ao Whey no pós-treino (dias de treino), se Whey também INCLUIR:
+    "Whey 3W Herbalife + Creatina Premium (1 dose de cada em 300ml de água
+    — até 40 min após o treino)"
+  - Se Whey NÃO estiver incluído, usar sozinha: "Creatina Premium (1 dose
     em 300ml de água — até 40 min após o treino)"
   - Dias de descanso: separada em água — "Creatina Premium (1 dose em água
     — uso diário sem pausa)"
 
-Fiber Concentrate:
+Fiber Concentrate (incluir apenas se marcado INCLUIR):
   - SEMPRE no café da tarde
   - Texto: "Fiber Concentrate (1 dose em água)"
 
 Sopa Instantânea Herbalife:
   - Lanche da manhã APENAS — NUNCA substitui refeição principal
-  - Apenas Shake F1 + NutreV tem nutrientes suficientes para substituir refeição
+  - Apenas o Shake F1 + NutreV (modo SUBSTITUTO) tem nutrientes
+    suficientes para substituir refeição
 
 ═══════════════════════════════════════════════
 PROTOCOLOS DE RESTRIÇÃO ALIMENTAR
@@ -250,13 +347,13 @@ PESCETARIANO:
   - Manter: peixes (salmão, atum, tilápia, sardinha), ovos
   - Adicionar: leguminosas (lentilha, grão-de-bico, feijão) como fonte
     proteica + carbo funcional (80g cozido, controlado)
-  - Soja (Shake F1): dose única diária
+  - Soja (Shake F1, se incluído): dose única diária
 
 HIPOTIREOIDISMO:
   - Crucíferas SEMPRE cozidas/refogadas — NUNCA cruas
   - Castanha-do-pará: 2–3 unidades/dia (selênio para conversão T4→T3)
   - Peixes de água salgada priorizados (iodo natural)
-  - Soja (Shake F1): dose única diária
+  - Soja (Shake F1, se incluído): dose única diária
   - Avisar sobre medicação: "tome a medicação tireoidiana 30–60 min antes,
     em jejum, antes deste café"
 
@@ -264,18 +361,19 @@ ENDOMETRIOSE:
   - Priorizar gorduras anti-inflamatórias (azeite, abacate, oleaginosas)
   - Cúrcuma em pó em todos os almoços
   - Crucíferas sempre cozidas
-  - Soja (Shake F1): dose única diária
+  - Soja (Shake F1, se incluído): dose única diária
 
 LACTOSE:
-  - Shake F1 + NutreV: preparar com água fria ou leite vegetal sem lactose
+  - Shake F1 + NutreV (se incluído): preparar com água fria ou leite
+    vegetal sem lactose
   - Sem queijos, iogurte, leite de vaca no cardápio sólido
   - Lista de compras: incluir leite vegetal (amêndoas, coco ou aveia)
 
 GLÚTEN:
   - Eliminar trigo e todos os derivados
-  - Shake F1 é livre de glúten — marcar como "Sem Glúten ✅" nas specs
+  - Shake F1 é livre de glúten — marcar como "Sem Glúten ✅" nas specs (se incluído)
   - Temperos: apenas naturais sem glúten
-  - Lista de compras: marcar Shake F1 como "(sem glúten)"
+  - Lista de compras: marcar Shake F1 como "(sem glúten)" (se incluído)
 
 RESTRIÇÃO A PEIXES E FRUTOS DO MAR:
   - Remover todos os peixes e frutos do mar
@@ -293,7 +391,7 @@ GORDURA VISCERAL — CLASSIFICAÇÃO
 ═══════════════════════════════════════════════
 NOTA CIENTÍFICA — ESTRUTURA OBRIGATÓRIA
 ═══════════════════════════════════════════════
-- 3 parágrafos separados por \\n\\n
+- 3 parágrafos separados por \n\n
 - Cada parágrafo começa com <b>N. Título:</b>
 - Tom: científico, nominativo ("Vanessa, o seu protocolo...")
 - Tópico 1: meta proteica e preservação muscular
@@ -339,7 +437,7 @@ Retorne APENAS o JSON abaixo, sem texto antes ou depois, sem markdown:
       ]
     }
   ],
-  "nota": "Parágrafo intro...\\n\\n<b>1. Título:</b> Texto...\\n\\n<b>2. Título:</b> Texto...\\n\\n<b>3. Título:</b> Texto...",
+  "nota": "Parágrafo intro...\n\n<b>1. Título:</b> Texto...\n\n<b>2. Título:</b> Texto...\n\n<b>3. Título:</b> Texto...",
   "lista_compras": [
     {
       "categoria": "🥚  OVOS & LATICÍNIOS",
@@ -450,6 +548,16 @@ serve(async (req) => {
     })
 
     const visceralRaw = anthro.body_fat_index != null ? Math.round(parseFloat(anthro.body_fat_index)) : null
+    const muscleMassPercent = anthro.muscle_mass_percentage != null ? parseFloat(anthro.muscle_mass_percentage) : null
+
+    const herbalifeDecision = decidirProtocoloHerbalife({
+      objective:         client.objective as Objective,
+      activityLevel:     client.activity_level as ActivityLevel,
+      gender:            client.gender as 'M' | 'F',
+      muscleMassPercent,
+      visceralRaw,
+      foodRestrictions:  client.food_restrictions || '',
+    })
 
     const aluno = {
       nome:          client.name,
@@ -479,6 +587,8 @@ Sexo: ${client.gender === 'M' ? 'Masculino' : 'Feminino'} | Idade: ${age} anos |
 Massa magra: ${calc.lean_mass.toFixed(1)} kg
 Nível de atividade: ${ACTIVITY_LABELS[client.activity_level as ActivityLevel] ?? client.activity_level}
 Restrições alimentares informadas: ${client.food_restrictions || 'Nenhuma informada'}
+
+${formatarBlocoDecisaoHerbalife(herbalifeDecision)}
 
 Gere o JSON completo (coach, aluno, cardapio, nota, lista_compras) seguindo
 todas as regras do protocolo Vortex Primus definidas nas instruções do
