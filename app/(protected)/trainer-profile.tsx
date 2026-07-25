@@ -6,6 +6,7 @@ import {
     Platform,
     ScrollView,
     StyleSheet,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -23,6 +24,11 @@ export default function TrainerProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [planName, setPlanName] = useState("Carregando...");
+  
+  // Estados Herbalife
+  const [isHerbalifeConsultant, setIsHerbalifeConsultant] = useState(false);
+  const [herbalifePresidentName, setHerbalifePresidentName] = useState("");
+  const [herbalifePresidentPhone, setHerbalifePresidentPhone] = useState("");
 
   // Feedback visual
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
@@ -30,6 +36,17 @@ export default function TrainerProfile() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  function formatPhoneInput(text: string): string {
+    const digits = text.replace(/\D/g, "");
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  }
+
+  function removePhoneMask(text: string): string {
+    return text.replace(/\D/g, "");
+  }
 
   async function loadProfile() {
     try {
@@ -40,7 +57,7 @@ export default function TrainerProfile() {
       // 1. Busca dados básicos do treinador
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select("id, name, email")
+        .select("id, name, email, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
         .eq("user_id", user.id)
         .single();
 
@@ -49,6 +66,9 @@ export default function TrainerProfile() {
       setTrainerId(trainer.id);
       setName(trainer.name || "");
       setEmail(trainer.email || "");
+      setIsHerbalifeConsultant(trainer.is_herbalife_consultant || false);
+      setHerbalifePresidentName(trainer.herbalife_president_name || "");
+      setHerbalifePresidentPhone(trainer.herbalife_president_phone || "");
 
       // 2. Busca assinatura ativa + plano via trainer_subscriptions
       const { data: sub } = await supabase
@@ -80,13 +100,36 @@ export default function TrainerProfile() {
       return;
     }
 
+    if (isHerbalifeConsultant) {
+      if (!herbalifePresidentName.trim()) {
+        setStatusMsg({ text: "O nome do Presidente não pode estar vazio quando o vínculo Herbalife está ativo.", type: "error" });
+        return;
+      }
+      if (removePhoneMask(herbalifePresidentPhone).length < 10) {
+        setStatusMsg({ text: "Informe um celular válido do Presidente (com DDD).", type: "error" });
+        return;
+      }
+    }
+
     try {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
+      const updateData: any = { name: name.trim() };
+
+      if (isHerbalifeConsultant) {
+        updateData.is_herbalife_consultant = true;
+        updateData.herbalife_president_name = herbalifePresidentName.trim();
+        updateData.herbalife_president_phone = removePhoneMask(herbalifePresidentPhone);
+      } else {
+        updateData.is_herbalife_consultant = false;
+        updateData.herbalife_president_name = null;
+        updateData.herbalife_president_phone = null;
+      }
+
       const { error } = await supabase
         .from("trainers")
-        .update({ name: name.trim() })
+        .update(updateData)
         .eq("id", trainerId);
 
       if (error) throw error;
@@ -171,6 +214,53 @@ export default function TrainerProfile() {
           </View>
         </View>
 
+        <View style={styles.formCard}>
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Sou Consultor Independente Herbalife</Text>
+            <Switch
+              value={isHerbalifeConsultant}
+              onValueChange={(val) => {
+                setIsHerbalifeConsultant(val);
+                setStatusMsg({ text: "", type: "" });
+              }}
+              trackColor={{ false: "#cbd5e1", true: "#86efac" }}
+              thumbColor={isHerbalifeConsultant ? "#22c55e" : "#f1f5f9"}
+            />
+          </View>
+
+          {isHerbalifeConsultant && (
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Nome do Presidente</Text>
+                <TextInput
+                  style={styles.input}
+                  value={herbalifePresidentName}
+                  onChangeText={(t) => {
+                    setHerbalifePresidentName(t);
+                    setStatusMsg({ text: "", type: "" });
+                  }}
+                  placeholder="Nome completo do Presidente"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Celular do Presidente</Text>
+                <TextInput
+                  style={styles.input}
+                  value={herbalifePresidentPhone}
+                  onChangeText={(t) => {
+                    setHerbalifePresidentPhone(formatPhoneInput(t));
+                    setStatusMsg({ text: "", type: "" });
+                  }}
+                  placeholder="(00) 00000-0000"
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                />
+              </View>
+            </>
+          )}
+        </View>
+
         <TouchableOpacity 
           style={styles.saveButton} 
           onPress={handleUpdateProfile} 
@@ -220,5 +310,8 @@ const styles = StyleSheet.create({
 
   saveButton: { backgroundColor: "#0f172a", padding: 18, borderRadius: 16, alignItems: "center", shadowColor: "#0f172a", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 5 },
   saveButtonText: { color: "#ffffff", fontWeight: "bold", fontSize: 16, letterSpacing: 0.5 },
+
+  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+  switchLabel: { fontSize: 15, fontWeight: "700", color: "#0f172a", flex: 1, marginRight: 12 },
 });
 
