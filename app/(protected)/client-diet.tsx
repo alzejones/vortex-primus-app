@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -200,11 +201,12 @@ export default function ClientDiet() {
   }
 
   function handleGenerateAI() {
-    Alert.alert(
-      "Em breve!",
-      "🚀 A geração automática de plano alimentar por Inteligência Artificial estará disponível na próxima atualização do Vortex Primus.",
-      [{ text: "OK" }]
-    );
+    const msg = "🚀 A geração automática de plano alimentar por Inteligência Artificial estará disponível na próxima atualização do Vortex Primus.";
+    if (Platform.OS === "web") {
+      window.alert(`Em breve!\n\n${msg}`);
+    } else {
+      Alert.alert("Em breve!", msg, [{ text: "OK" }]);
+    }
   }
 
   if (loading) {
