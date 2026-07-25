@@ -29,6 +29,7 @@ export default function TrainerProfile() {
   const [isHerbalifeConsultant, setIsHerbalifeConsultant] = useState(false);
   const [herbalifePresidentName, setHerbalifePresidentName] = useState("");
   const [herbalifePresidentPhone, setHerbalifePresidentPhone] = useState("");
+  const [downlineCount, setDownlineCount] = useState(0);
 
   // Feedback visual
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
@@ -80,6 +81,16 @@ export default function TrainerProfile() {
 
       const planData = sub?.plans as any;
       setPlanName(planData?.name ? `${planData.name} (Ativo)` : "Sem Plano Ativo");
+
+      // 3. Verifica se é Presidente Herbalife (tem downlines)
+      try {
+        const { data: downlines, error: downlineError } = await supabase.rpc('get_downline_stats');
+        if (!downlineError && downlines && Array.isArray(downlines)) {
+          setDownlineCount(downlines.length);
+        }
+      } catch (downlineError) {
+        console.log("Não foi possível carregar downlines (ignorado):", downlineError);
+      }
 
     } catch (error) {
       console.error("Erro ao carregar perfil:", error);
@@ -261,6 +272,21 @@ export default function TrainerProfile() {
           )}
         </View>
 
+        {downlineCount > 0 && (
+          <TouchableOpacity 
+            style={styles.teamCard}
+            onPress={() => router.push("/(protected)/herbalife-team" as any)}
+          >
+            <View style={styles.teamCardContent}>
+              <View>
+                <Text style={styles.teamCardTitle}>👥 Minha Equipe Herbalife</Text>
+                <Text style={styles.teamCardSubtitle}>{downlineCount} {downlineCount === 1 ? 'consultor vinculado' : 'consultores vinculados'}</Text>
+              </View>
+              <Text style={styles.teamCardArrow}>→</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity 
           style={styles.saveButton} 
           onPress={handleUpdateProfile} 
@@ -313,5 +339,11 @@ const styles = StyleSheet.create({
 
   switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
   switchLabel: { fontSize: 15, fontWeight: "700", color: "#0f172a", flex: 1, marginRight: 12 },
+
+  teamCard: { backgroundColor: "#fff", borderRadius: 24, borderWidth: 1, borderColor: "#e2e8f0", shadowColor: "#64748b", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2, marginBottom: 24 },
+  teamCardContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 24 },
+  teamCardTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginBottom: 4 },
+  teamCardSubtitle: { fontSize: 14, color: "#64748b", fontWeight: "600" },
+  teamCardArrow: { fontSize: 28, color: "#4f46e5", fontWeight: "bold" },
 });
 
