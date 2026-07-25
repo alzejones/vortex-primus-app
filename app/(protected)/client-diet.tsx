@@ -1,6 +1,5 @@
-import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,12 +10,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
-import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import { supabase } from "../../lib/supabase";
 import {
   ACTIVITY_LABELS,
@@ -26,8 +22,6 @@ import {
   Objective,
   calculateDietPlan,
 } from "../../utils/dietCalculations";
-import { GradientAI, GradientSuccess } from "../../utils/gradients";
-import { T } from "../../utils/theme";
 
 // ------------------------------------------------------------
 // Tipos
@@ -85,31 +79,18 @@ export default function ClientDiet() {
   const [lastBio, setLastBio] = useState<LastBio | null>(null);
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
-  const [mealLogs, setMealLogs] = useState<any[]>([]);
-  const [generatingAI, setGeneratingAI] = useState(false);
+
 
   useFocusEffect(
     useCallback(() => {
-      if (clientId) {
-        load();
-        loadMealLogs();
-      }
+      if (clientId) load();
     }, [clientId])
   );
-
-  async function loadMealLogs() {
-    const { data } = await supabase
-      .from("meal_log")
-      .select("id, consumed_at, meal_type, total_calories, total_protein, total_carbs, total_fat, notes")
-      .eq("client_id", clientId)
-      .order("consumed_at", { ascending: false })
-      .limit(10);
-    if (data) setMealLogs(data);
-  }
 
   async function load() {
     setLoading(true);
     try {
+      // 1. Dados do cliente
       const { data: clientData, error: clientErr } = await supabase
         .from("clients")
         .select("id, name, height_cm, birth_date, gender, objective, activity_level")
@@ -119,6 +100,7 @@ export default function ClientDiet() {
       if (clientErr || !clientData) throw clientErr;
       setClient(clientData);
 
+      // 2. Última avaliação física com antropometria
       const { data: assessments, error: assessmentsErr } = await supabase
         .from("physical_assessments")
         .select("id")
@@ -129,36 +111,35 @@ export default function ClientDiet() {
       if (assessmentsErr) throw assessmentsErr;
 
       let weight = 0;
-      let bodyFat = 20;
-      let anthro: any = null;
+      let bodyFat = 20; // fallback conservador
 
       if (assessments && assessments.length > 0) {
-        const { data: anthroData } = await supabase
+        const { data: anthro } = await supabase
           .from("anthropometry")
           .select("weight, body_fat, muscle_mass_percentage, basal_metabolic_rate, metabolic_age")
           .eq("assessment_id", assessments[0].id)
           .maybeSingle();
 
-        if (anthroData) {
-          anthro = anthroData;
-          weight   = parseFloat(anthroData.weight)   || 0;
-          bodyFat  = parseFloat(anthroData.body_fat)  || 20;
+        if (anthro) {
+          weight   = parseFloat(anthro.weight)   || 0;
+          bodyFat  = parseFloat(anthro.body_fat)  || 20;
           setLastBio({
             weight,
-            body_fat: parseFloat(anthroData.body_fat) || 0,
-            muscle_mass_percentage: anthroData.muscle_mass_percentage != null
-              ? parseFloat(anthroData.muscle_mass_percentage)
+            body_fat: parseFloat(anthro.body_fat) || 0,
+            muscle_mass_percentage: anthro.muscle_mass_percentage != null
+              ? parseFloat(anthro.muscle_mass_percentage)
               : null,
-            basal_metabolic_rate: anthroData.basal_metabolic_rate != null
-              ? parseFloat(anthroData.basal_metabolic_rate)
+            basal_metabolic_rate: anthro.basal_metabolic_rate != null
+              ? parseFloat(anthro.basal_metabolic_rate)
               : null,
-            metabolic_age: anthroData.metabolic_age != null
-              ? parseFloat(anthroData.metabolic_age)
+            metabolic_age: anthro.metabolic_age != null
+              ? parseFloat(anthro.metabolic_age)
               : null,
           });
         }
       }
 
+      // 3. Calcula macros se tiver dados suficientes
       if (
         weight > 0 &&
         clientData.height_cm &&
@@ -175,13 +156,11 @@ export default function ClientDiet() {
           body_fat_percent: bodyFat,
           activity:         clientData.activity_level as ActivityLevel,
           objective:        clientData.objective as Objective,
-          measured_bmr:     anthro?.basal_metabolic_rate
-                              ? Number(anthro.basal_metabolic_rate)
-                              : undefined,
         });
         setDietResult(result);
       }
 
+      // 4. Plano ativo com refeições e alimentos
       const { data: plan } = await supabase
         .from("meal_plans")
         .select(`
@@ -200,6 +179,7 @@ export default function ClientDiet() {
         .maybeSingle();
 
       if (plan) {
+        // Ordena refeições e alimentos
         const sorted: MealPlan = {
           ...plan,
           meal_plan_meals: (plan.meal_plan_meals as MealItem[])
@@ -220,90 +200,19 @@ export default function ClientDiet() {
     }
   }
 
-  async function handleGenerateAI() {
-    if (!clientId || generatingAI) return;
-    setGeneratingAI(true);
-    try {
-      // 1) Gera o JSON do plano (cardápio 7 dias + nota científica + lista
-      //    de compras) chamando a Edge Function generate-diet, que já
-      //    aplica o protocolo completo Vortex Primus + Claude API.
-      const { data: plan, error: dietError } = await supabase.functions.invoke(
-        "generate-diet",
-        { body: { client_id: clientId } }
-      );
-
-      if (dietError) {
-        let detail = dietError.message;
-        try {
-          const ctx = (dietError as any)?.context;
-          if (ctx && typeof ctx.json === "function") {
-            const body = await ctx.json();
-            if (body?.error) detail = body.error;
-          }
-        } catch {}
-        throw new Error(detail);
-      }
-      if (plan && (plan as any).error) throw new Error((plan as any).error);
-      if (!plan) throw new Error("A IA não retornou nenhum plano.");
-
-      // 2) Gera o PDF a partir do JSON, via função Python (ReportLab)
-      //    hospedada em /api/generate-pdf.
-      const pdfResp = await fetch("/api/generate-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(plan),
-      });
-
-      if (!pdfResp.ok) {
-        const errJson = await pdfResp.json().catch(() => ({}));
-        throw new Error(errJson.error || "Erro ao gerar o PDF do plano.");
-      }
-
-      const blob = await pdfResp.blob();
-      const primeiroNome = (client?.name || "aluno").split(" ")[0].toLowerCase();
-
-      if (Platform.OS === "web") {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `plano-alimentar-${primeiroNome}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        const fileUri = `${FileSystem.cacheDirectory}plano-alimentar-${primeiroNome}.pdf`;
-        const base64: string = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onerror = () => reject(new Error("Falha ao ler o PDF gerado."));
-          reader.onload = () => {
-            const result = reader.result as string;
-            resolve(result.split(",")[1] ?? "");
-          };
-          reader.readAsDataURL(blob);
-        });
-        await FileSystem.writeAsStringAsync(fileUri, base64, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        await Sharing.shareAsync(fileUri, { mimeType: "application/pdf" });
-      }
-    } catch (err: any) {
-      console.error("Erro ao gerar plano com IA:", err);
-      const msg = err?.message ?? "Tente novamente em instantes.";
-      if (Platform.OS === "web") {
-        window.alert(`Não foi possível gerar o plano\n\n${msg}`);
-      } else {
-        Alert.alert("Não foi possível gerar o plano", msg);
-      }
-    } finally {
-      setGeneratingAI(false);
+  function handleGenerateAI() {
+    const msg = "🚀 A geração automática de plano alimentar por Inteligência Artificial estará disponível na próxima atualização do Vortex Primus.";
+    if (Platform.OS === "web") {
+      window.alert(`Em breve!\n\n${msg}`);
+    } else {
+      Alert.alert("Em breve!", msg, [{ text: "OK" }]);
     }
   }
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={T.green} />
+        <ActivityIndicator size="large" color="#059669" />
       </View>
     );
   }
@@ -338,16 +247,16 @@ export default function ClientDiet() {
         )}
       </View>
 
-      {/* ── Última Avaliação Corporal ── */}
+      {/* ── Linha 1: Última Avaliação Corporal ── */}
       {lastBio && lastBio.weight > 0 && (
         <View style={styles.macroCard}>
           <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Peso",         value: Number(lastBio.weight).toFixed(1),                                                                      unit: "kg",   color: "#94a3b8" },
-              { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),                                                                     unit: "%",    color: T.red },
-              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",         unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: T.blue },
-              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? Number(lastBio.basal_metabolic_rate).toFixed(1)    : "—",         unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: T.green },
+              { label: "Peso",         value: `${lastBio.weight}`,                                                                          unit: "kg",   color: "#374151" },
+              { label: "% Gordura",    value: `${lastBio.body_fat}`,                                                                         unit: "%",    color: "#dc2626" },
+              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? `${lastBio.muscle_mass_percentage}` : "—",             unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: "#2563eb" },
+              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? `${lastBio.basal_metabolic_rate}`    : "—",             unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: "#059669" },
             ].map((item) => (
               <View key={item.label} style={[styles.macroBox, { borderTopColor: item.color }]}>
                 <Text style={[styles.macroValue, { color: item.color }]}>{item.value}</Text>
@@ -359,16 +268,16 @@ export default function ClientDiet() {
         </View>
       )}
 
-      {/* ── Metas Calculadas ── */}
+      {/* ── Linha 2: Metas Calculadas ── */}
       {dietResult ? (
         <View style={styles.macroCard}>
           <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
           <View style={styles.macroRow}>
             {[
-              { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: T.green },
-              { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: T.blue },
-              { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: T.orange },
-              { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: T.red },
+              { label: "Calorias", value: `${dietResult.macros.calories}`, unit: "kcal", color: "#059669" },
+              { label: "Proteína", value: `${dietResult.macros.protein}`,  unit: "g",    color: "#2563eb" },
+              { label: "Carbs",    value: `${dietResult.macros.carbs}`,    unit: "g",    color: "#d97706" },
+              { label: "Gordura",  value: `${dietResult.macros.fat}`,      unit: "g",    color: "#dc2626" },
             ].map((m) => (
               <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
                 <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
@@ -378,36 +287,20 @@ export default function ClientDiet() {
             ))}
           </View>
           <Text style={styles.macroSub}>
-            BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Massa magra {Number(dietResult.lean_mass).toFixed(1)} kg
+            BMR {dietResult.bmr} kcal · TDEE {dietResult.tdee} kcal · Massa magra {dietResult.lean_mass} kg
           </Text>
         </View>
       ) : (
-        <View style={styles.warnCard}>
-          <Text style={styles.warnText}>
-            Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma Avaliação de Composição Corporal.
+        <View style={[styles.macroCard, { backgroundColor: "#fef3c7" }]}>
+          <Text style={{ color: "#92400e", fontSize: 13, fontWeight: "600" }}>
+            Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma avaliação física.
           </Text>
         </View>
       )}
 
-      {dietResult && <ScienceReferencesModal />}
-
       {/* Botão Gerar com IA */}
-      <TouchableOpacity
-        style={[styles.aiBtn, generatingAI && styles.aiBtnDisabled]}
-        onPress={handleGenerateAI}
-        activeOpacity={0.85}
-        disabled={generatingAI}
-      >
-        <LinearGradient {...GradientAI} style={styles.aiBtnGradient}>
-          {generatingAI ? (
-            <View style={styles.aiBtnLoadingRow}>
-              <ActivityIndicator size="small" color={T.white} />
-              <Text style={styles.aiBtnText}>  Gerando plano com IA…</Text>
-            </View>
-          ) : (
-            <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
-          )}
-        </LinearGradient>
+      <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI}>
+        <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
       </TouchableOpacity>
 
       {/* Plano alimentar */}
@@ -442,17 +335,18 @@ export default function ClientDiet() {
             </View>
           </View>
 
-          {/* ── Plano vs Meta ── */}
+          {/* ── Linha 3: Plano vs Meta ── */}
           {dietResult && (
             <View style={styles.macroBarsCard}>
               <Text style={styles.macroBarsTitle}>Plano vs Meta</Text>
-              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color={T.green} />
-              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color={T.blue} />
-              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color={T.orange} />
-              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color={T.red} />
+              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color="#059669" />
+              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color="#2563eb" />
+              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color="#d97706" />
+              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color="#dc2626" />
             </View>
           )}
 
+          {/* Refeições */}
           {mealPlan.meal_plan_meals.map((meal) => (
             <MealCard key={meal.id} meal={meal} />
           ))}
@@ -465,40 +359,11 @@ export default function ClientDiet() {
             onPress={() =>
               router.push(`/(protected)/diet-plan-form?client_id=${clientId}` as any)
             }
-            activeOpacity={0.85}
           >
-            <LinearGradient {...GradientSuccess} style={styles.createBtnGradient}>
-              <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
-            </LinearGradient>
+            <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
           </TouchableOpacity>
         </View>
       )}
-
-      {/* ── Refeições Registradas pelo Aluno ── */}
-      <View style={styles.logSection}>
-        <Text style={styles.logSectionTitle}>📖 Refeições Registradas pelo Aluno</Text>
-        {mealLogs.length === 0 ? (
-          <Text style={styles.logEmpty}>O aluno ainda não registrou nenhuma refeição.</Text>
-        ) : (
-          mealLogs.map((log) => {
-            const dt = new Date(log.consumed_at);
-            const dateStr = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-            const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-            return (
-              <View key={log.id} style={styles.logCard}>
-                <View style={styles.logCardHeader}>
-                  <Text style={styles.logDate}>{dateStr} {timeStr}</Text>
-                  {log.meal_type ? <Text style={styles.logType}>{log.meal_type}</Text> : null}
-                </View>
-                <Text style={styles.logMacros}>
-                  {Number(log.total_calories ?? 0).toFixed(0)} kcal · P {Number(log.total_protein ?? 0).toFixed(1)}g · C {Number(log.total_carbs ?? 0).toFixed(1)}g · G {Number(log.total_fat ?? 0).toFixed(1)}g
-                </Text>
-                {log.notes ? <Text style={styles.logNotes}>{log.notes}</Text> : null}
-              </View>
-            );
-          })
-        )}
-      </View>
     </ScrollView>
   );
 }
@@ -507,56 +372,39 @@ export default function ClientDiet() {
 // Estilos
 // ------------------------------------------------------------
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   header: { marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "800", color: T.t1, marginBottom: 6 },
-  badge: { alignSelf: "flex-start", backgroundColor: "rgba(16,185,129,0.12)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 4, borderWidth: 1, borderColor: "rgba(16,185,129,0.25)" },
-  badgeText: { color: T.green, fontWeight: "700", fontSize: 12 },
-  subLabel: { color: T.t3, fontSize: 12 },
+  title: { fontSize: 26, fontWeight: "800", color: "#111827", marginBottom: 6 },
+  badge: { alignSelf: "flex-start", backgroundColor: "#d1fae5", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 4 },
+  badgeText: { color: "#065f46", fontWeight: "700", fontSize: 12 },
+  subLabel: { color: "#6b7280", fontSize: 12 },
 
-  macroCard: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
-  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  macroCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
+  macroCardTitle: { fontSize: 13, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
   macroRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
   macroValue: { fontSize: 20, fontWeight: "800" },
-  macroUnit: { fontSize: 11, color: T.t3 },
-  macroLabel: { fontSize: 11, color: T.t2, fontWeight: "600", marginTop: 2 },
-  macroSub: { fontSize: 11, color: T.t3, textAlign: "center" },
-
-  warnCard: { backgroundColor: "rgba(245,158,11,0.08)", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "rgba(245,158,11,0.25)" },
-  warnText: { color: T.orange, fontSize: 13, fontWeight: "600" },
+  macroUnit: { fontSize: 11, color: "#6b7280" },
+  macroLabel: { fontSize: 11, color: "#374151", fontWeight: "600", marginTop: 2 },
+  macroSub: { fontSize: 11, color: "#9ca3af", textAlign: "center" },
 
   planHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
   planActions: { flexDirection: "row", alignItems: "center" },
-  planTitle: { fontSize: 18, fontWeight: "800", color: T.t1 },
-  planNotes: { fontSize: 12, color: T.t3, marginTop: 2 },
-  editBtn: { backgroundColor: T.surfaceAlt, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: T.border },
-  editBtnText: { fontWeight: "700", color: T.t1, fontSize: 13 },
+  planTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
+  planNotes: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  editBtn: { backgroundColor: "#f3f4f6", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: "#e5e7eb" },
+  editBtnText: { fontWeight: "700", color: "#374151", fontSize: 13 },
 
-  macroBarsCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
-  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
-
-  aiBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
-  aiBtnDisabled: { opacity: 0.75 },
-  aiBtnGradient: { paddingVertical: 14, alignItems: "center", justifyContent: "center", borderRadius: 14 },
-  aiBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
-  aiBtnLoadingRow: { flexDirection: "row", alignItems: "center" },
+  macroBarsCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 
   emptyPlan: { alignItems: "center", padding: 40 },
-  emptyPlanText: { color: T.t2, fontSize: 15, marginBottom: 20 },
-  createBtn: { borderRadius: 14, overflow: "hidden" },
-  createBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
-  createBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+  emptyPlanText: { color: "#6b7280", fontSize: 15, marginBottom: 20 },
+  createBtn: { backgroundColor: "#059669", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
+  createBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 
-  logSection: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: T.border },
-  logSectionTitle: { fontSize: 15, fontWeight: "800", color: T.t1, marginBottom: 12 },
-  logEmpty: { color: T.t3, fontSize: 13, fontStyle: "italic" },
-  logCard: { backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: T.border },
-  logCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  logDate: { fontSize: 12, color: T.t2, fontWeight: "600" },
-  logType: { fontSize: 11, color: T.green, fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  logMacros: { fontSize: 13, color: T.t1, fontWeight: "700" },
-  logNotes: { fontSize: 11, color: T.t3, fontStyle: "italic", marginTop: 4 },
+  aiBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#D4AF37" },
+  aiBtnText: { color: "#D4AF37", fontWeight: "800", fontSize: 15 },
 });
