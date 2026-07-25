@@ -1,0 +1,48 @@
+#!/bin/bash
+set -e
+cd /home/p/vortex-primus-app
+
+CLIENT_DIET=$(find . -name "client-diet.tsx" -not -path "*/node_modules/*" | head -1)
+if [ -z "$CLIENT_DIET" ]; then
+  echo "ERRO: client-diet.tsx não encontrado."
+  exit 1
+fi
+echo "Arquivo: $CLIENT_DIET"
+
+python3 - "$CLIENT_DIET" << 'PYEOF'
+import sys
+path = sys.argv[1]
+with open(path, encoding="utf-8") as f:
+    content = f.read()
+
+old = "      if (dietError) throw new Error(dietError.message);"
+
+new = '''      if (dietError) {
+        let detail = dietError.message;
+        try {
+          const ctx = (dietError as any)?.context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.json();
+            if (body?.error) detail = body.error;
+          }
+        } catch {}
+        throw new Error(detail);
+      }'''
+
+if old not in content:
+    print(">>> AVISO: trecho original não encontrado — nada foi alterado. Precisa editar manualmente.")
+    sys.exit(1)
+else:
+    content = content.replace(old, new)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(">>> OK: agora o popup vai mostrar a mensagem real da Edge Function.")
+PYEOF
+
+git add "$CLIENT_DIET"
+git commit -m "fix: extrai mensagem real de erro da Edge Function (em vez do generico non-2xx)"
+git push origin main
+
+echo ""
+echo "Pronto. Aguarde o deploy automatico na Vercel e clique em 'Gerar Plano com IA' de novo."
+echo "Dessa vez o popup deve mostrar a razao especifica do erro 400."

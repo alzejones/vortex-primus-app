@@ -28,6 +28,7 @@ export default function TrainerProfile() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [planName, setPlanName] = useState("Carregando...");
   const [maxClients, setMaxClients] = useState(0);
   const [currentClients, setCurrentClients] = useState(0);
@@ -64,7 +65,7 @@ export default function TrainerProfile() {
 
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select("id, name, email, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
+        .select("id, name, email, phone, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
         .eq("user_id", user.id)
         .single();
 
@@ -73,6 +74,7 @@ export default function TrainerProfile() {
       setTrainerId(trainer.id);
       setName(trainer.name || "");
       setEmail(trainer.email || "");
+      setPhone(trainer.phone || "");
       setIsHerbalifeConsultant(trainer.is_herbalife_consultant || false);
       setHerbalifePresidentName(trainer.herbalife_president_name || "");
       setHerbalifePresidentPhone(trainer.herbalife_president_phone || "");
@@ -125,13 +127,18 @@ export default function TrainerProfile() {
       return;
     }
 
+    if (phone.trim() && removePhoneMask(phone).length !== 11) {
+      setStatusMsg({ text: "Informe o celular completo, com DDD e o 9 (11 dígitos).", type: "error" });
+      return;
+    }
+
     if (isHerbalifeConsultant) {
       if (!herbalifePresidentName.trim()) {
         setStatusMsg({ text: "O nome do Presidente não pode estar vazio quando o vínculo Herbalife está ativo.", type: "error" });
         return;
       }
-      if (removePhoneMask(herbalifePresidentPhone).length < 10) {
-        setStatusMsg({ text: "Informe um celular válido do Presidente (com DDD).", type: "error" });
+      if (removePhoneMask(herbalifePresidentPhone).length !== 11) {
+        setStatusMsg({ text: "Informe o celular completo do Presidente, com DDD e o 9 (11 dígitos).", type: "error" });
         return;
       }
     }
@@ -140,7 +147,10 @@ export default function TrainerProfile() {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
-      const updateData: any = { name: name.trim() };
+      const updateData: any = {
+        name: name.trim(),
+        phone: phone.trim() ? removePhoneMask(phone) : null
+      };
 
       if (isHerbalifeConsultant) {
         updateData.is_herbalife_consultant = true;
@@ -222,6 +232,20 @@ export default function TrainerProfile() {
               selectTextOnFocus={false}
             />
             <Text style={styles.helperText}>O e-mail é a sua chave de acesso e não pode ser alterado por aqui.</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Celular</Text>
+            <TextInput
+              style={styles.input}
+              value={phone}
+              onChangeText={(t) => { setPhone(formatPhoneInput(t)); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="(00) 00000-0000"
+              placeholderTextColor={T.t3}
+              keyboardType="phone-pad"
+              maxLength={15}
+            />
+            <Text style={styles.helperText}>Usado para vincular você como Presidente Herbalife à sua equipe de downlines.</Text>
           </View>
 
         </View>

@@ -1,0 +1,1347 @@
+#!/bin/bash
+# ============================================================
+# Vortex Primus — instala o botão "Gerar Plano com IA"
+# Uso: chmod +x instalar-vortex-ia.sh && ./instalar-vortex-ia.sh
+# ============================================================
+set -e
+REPO="/home/p/vortex-primus-app"
+cd "$REPO"
+
+echo "=== 1/6 · Fontes NotoSans ==="
+mkdir -p fonts
+curl -sL -o fonts/NotoSans-Regular.ttf   https://github.com/notofonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf
+curl -sL -o fonts/NotoSans-Bold.ttf      https://github.com/notofonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Bold.ttf
+curl -sL -o fonts/NotoSans-ExtraBold.ttf https://github.com/notofonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-ExtraBold.ttf
+curl -sL -o fonts/NotoSans-Italic.ttf    https://github.com/notofonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Italic.ttf
+echo "OK: $(ls fonts | wc -l) fontes"
+
+echo "=== 2/6 · requirements.txt ==="
+cat > requirements.txt << 'REQEOF'
+reportlab==4.2.5
+Pillow==10.4.0
+REQEOF
+
+echo "=== 3/6 · api/generate-pdf.py ==="
+mkdir -p api
+cat > api/generate-pdf.py << 'PYEOF_VORTEX'
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Adaptado de gerar_plano.py (projeto Vortex-Nutrição) para rodar como
+# Vercel Python Serverless Function. Layout, cores e estilos idênticos
+# ao script original — só a entrada/saída mudou (dict -> bytes em vez
+# de arquivo -> arquivo).
+#
+from http.server import BaseHTTPRequestHandler
+import json
+import os
+from io import BytesIO
+
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import cm, mm
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
+    TableStyle, PageBreak, HRFlowable, KeepTogether)
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
+
+FD = os.environ.get("FONTS_DIR", os.path.join(os.path.dirname(__file__), "..", "fonts"))
+pdfmetrics.registerFont(TTFont("NotoSans", f"{FD}/NotoSans-Regular.ttf"))
+pdfmetrics.registerFont(TTFont("NotoSans-Bold", f"{FD}/NotoSans-Bold.ttf"))
+pdfmetrics.registerFont(TTFont("NotoSans-ExtraBold", f"{FD}/NotoSans-ExtraBold.ttf"))
+pdfmetrics.registerFont(TTFont("NotoSans-Italic", f"{FD}/NotoSans-Italic.ttf"))
+
+C_CYAN=colors.HexColor("#00D1DF");C_PINK=colors.HexColor("#FF4D8C")
+C_YELLOW=colors.HexColor("#FFB800");C_DARK=colors.HexColor("#333333")
+C_MUTED=colors.HexColor("#6C757D");C_BG_METRICS=colors.HexColor("#E8EBEF")
+C_BORDER=colors.HexColor("#DDE2E6");C_WHITE=colors.white
+C_DAY_HEADER=colors.HexColor("#006B73")
+ML=1.5*cm;MR=1.5*cm;CW=A4[0]-ML-MR
+
+def S(n,**k):return ParagraphStyle(n,**k)
+ST_BODY=S("b",fontName="NotoSans",fontSize=9.5,leading=13.5,textColor=colors.HexColor("#333333"),alignment=TA_LEFT)
+ST_MEAL=S("m",fontName="NotoSans-Bold",fontSize=9.5,leading=13.5,textColor=colors.HexColor("#00D2DF"),alignment=TA_LEFT)
+ST_DAY=S("d",fontName="NotoSans-ExtraBold",fontSize=10,leading=12,textColor=colors.white,alignment=TA_LEFT)
+ST_HDR=S("h",fontName="NotoSans-Bold",fontSize=8,leading=10,textColor=colors.white,alignment=TA_LEFT)
+ST_NOME=S("n",fontName="NotoSans-Bold",fontSize=13,leading=16,textColor=colors.HexColor("#333333"),alignment=TA_LEFT)
+ST_OBJ=S("o",fontName="NotoSans",fontSize=9,leading=12,textColor=colors.HexColor("#666666"),alignment=TA_LEFT)
+ST_ML=S("ml",fontName="NotoSans-Bold",fontSize=7,leading=9,textColor=colors.HexColor("#6C757D"),alignment=TA_CENTER)
+ST_MV=S("mv",fontName="NotoSans-ExtraBold",fontSize=10.5,leading=13,textColor=colors.HexColor("#333333"),alignment=TA_CENTER)
+ST_MP=S("mp",fontName="NotoSans-ExtraBold",fontSize=10.5,leading=13,textColor=colors.HexColor("#FF4D8C"),alignment=TA_CENTER)
+ST_MY=S("my",fontName="NotoSans-ExtraBold",fontSize=10.5,leading=13,textColor=colors.HexColor("#FFB800"),alignment=TA_CENTER)
+ST_MC=S("mc",fontName="NotoSans-ExtraBold",fontSize=10.5,leading=13,textColor=colors.HexColor("#00D1DF"),alignment=TA_CENTER)
+ST_CT=S("ct",fontName="NotoSans-ExtraBold",fontSize=11,leading=14,textColor=colors.HexColor("#00D1DF"),alignment=TA_LEFT)
+ST_ES=S("es",fontName="NotoSans-Italic",fontSize=8.5,leading=13,textColor=colors.HexColor("#555555"),alignment=TA_LEFT)
+ST_NT=S("nt",fontName="NotoSans-Bold",fontSize=11,leading=14,textColor=colors.HexColor("#BF3DFB"),alignment=TA_LEFT)
+ST_NB=S("nb",fontName="NotoSans",fontSize=9.5,leading=14,textColor=colors.HexColor("#2C3E50"),alignment=TA_JUSTIFY)
+ST_CAT=S("cat",fontName="NotoSans-Bold",fontSize=8,leading=9.5,textColor=colors.white,alignment=TA_LEFT)
+ST_IT=S("it",fontName="NotoSans",fontSize=7.8,leading=10.5,textColor=colors.HexColor("#333333"),alignment=TA_LEFT)
+ST_QT=S("qt",fontName="NotoSans-Bold",fontSize=7.8,leading=10.5,textColor=colors.HexColor("#6C757D"),alignment=TA_RIGHT)
+
+COLOR_MAP={"gordura":ST_MP,"gord_visceral":ST_MP,"cal_alvo":ST_MP,"gorduras":ST_MP,
+           "idade_metab":ST_MY,"carbo":ST_MY,"proteina":ST_MC,
+           "peso":ST_MV,"massa_musc":ST_MV,"bmr_tdee":ST_MV}
+
+def make_on_page(coach=None):
+    def on_page(canvas,doc):
+        W,H=A4;canvas.saveState()
+        canvas.setFillColor(colors.white);canvas.setStrokeColor(colors.HexColor("#DDE2E6"));canvas.setLineWidth(0.5)
+        canvas.roundRect(1.5*cm,1.5*cm,W-3*cm,H-3*cm,4,fill=1,stroke=1)
+        ht=H-1.5*cm-0.3*cm;hh=1.35*cm
+        canvas.setFillColor(colors.HexColor("#00D1DF"));canvas.roundRect(1.5*cm,ht-hh,W-3*cm,hh,4,fill=1,stroke=0)
+        canvas.setFont("NotoSans-ExtraBold",18);canvas.setFillColor(colors.white)
+        canvas.drawString(1.5*cm+8,ht-hh+0.42*cm,"VORTEX PRIMUS")
+        canvas.setFont("NotoSans-Bold",7.5);canvas.setFillColor(colors.HexColor("#DDFBFC"))
+        canvas.drawString(1.5*cm+8,ht-hh+0.18*cm,"PLANO ALIMENTAR INTEGRADO")
+        canvas.setFont("NotoSans-Bold",10);canvas.setFillColor(colors.white)
+        canvas.drawRightString(W-1.5*cm-8,ht-hh+0.52*cm,"MYBOX IRAJÁ")
+        canvas.setFont("NotoSans-Bold",8);canvas.setFillColor(colors.HexColor("#333333"))
+        canvas.drawRightString(W-1.5*cm-8,ht-hh-0.22*cm,"EVOLUÇÃO CONSTANTE DE PERFORMANCE")
+        if coach:
+            canvas.setFont("NotoSans",7.5);canvas.setFillColor(colors.HexColor("#00D1DF"))
+            canvas.drawRightString(W-1.5*cm-8,ht-hh-0.5*cm,f"Coach {coach}")
+        canvas.setFont("NotoSans",8);canvas.setFillColor(colors.HexColor("#ADB5BD"))
+        fd=f"Coach {coach}" if coach else "Jardim Irajá, Ribeirão Preto, SP"
+        canvas.drawString(1.5*cm+8,1.5*cm+0.25*cm,f"VORTEX PRIMUS © 2026  |  MyBox Irajá  |  {fd}")
+        canvas.restoreState()
+    return on_page
+
+def cell_m(lbl,val,vstyle,cw):
+    return Table([[Paragraph(lbl,ST_ML)],[Paragraph(val,vstyle)]],colWidths=[cw-2],
+        style=TableStyle([("ALIGN",(0,0),(-1,-1),"CENTER"),("TOPPADDING",(0,0),(-1,-1),4),
+            ("BOTTOMPADDING",(0,0),(-1,-1),4),("LEFTPADDING",(0,0),(-1,-1),2),("RIGHTPADDING",(0,0),(-1,-1),2)]))
+
+def bloco_metricas(a):
+    items=[("PESO",a["peso"],"peso"),("GORDURA",a["gordura"],"gordura"),
+           ("MASSA MUSC.",a["massa_musc"],"massa_musc"),("IDADE METAB.",a["idade_metab"],"idade_metab"),
+           ("BMR / TDEE",a["bmr_tdee"],"bmr_tdee"),("GORD. VISCERAL",a["gord_visceral"],"gord_visceral")]
+    cw=CW/6
+    t=Table([[cell_m(l,v,COLOR_MAP[k],cw) for l,v,k in items]],colWidths=[cw]*6,rowHeights=[1.3*cm])
+    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#E8EBEF")),
+        ("GRID",(0,0),(-1,-1),0.5,colors.HexColor("#DDE2E6")),
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+    return t
+
+def bloco_macros(a):
+    items=[("CALORIAS ALVO",a["cal_alvo"],"cal_alvo"),("PROTEÍNAS",a["proteina"],"proteina"),
+           ("CARBOIDRATOS",a["carbo"],"carbo"),("GORDURAS",a["gorduras"],"gorduras")]
+    cw=CW/4
+    t=Table([[cell_m(l,v,COLOR_MAP[k],cw) for l,v,k in items]],colWidths=[cw]*4,rowHeights=[1.3*cm])
+    t.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#E8EBEF")),
+        ("GRID",(0,0),(-1,-1),0.5,colors.HexColor("#DDE2E6")),
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+    return t
+
+def bloco_dia(dd):
+    rows=[[Paragraph(dd["dia"],ST_DAY),Paragraph("DESCRIÇÃO DO PROTOCOLO",ST_HDR)]]
+    for ref,desc in dd["refeicoes"]:
+        rows.append([Paragraph(ref,ST_MEAL),Paragraph(desc,ST_BODY)])
+    t=Table(rows,colWidths=[3.7*cm,CW-3.7*cm])
+    t.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,0),C_DAY_HEADER),
+        ("TOPPADDING",(0,0),(-1,0),6),("BOTTOMPADDING",(0,0),(-1,0),6),
+        ("LEFTPADDING",(0,0),(-1,0),7),("RIGHTPADDING",(0,0),(-1,0),7),
+        ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#F0F2F4")]),
+        ("TOPPADDING",(0,1),(-1,-1),5),("BOTTOMPADDING",(0,1),(-1,-1),5),
+        ("LEFTPADDING",(0,1),(-1,-1),7),("RIGHTPADDING",(0,1),(-1,-1),7),
+        ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("GRID",(0,0),(-1,-1),0.5,colors.HexColor("#DDE2E6")),
+        ("LINEBELOW",(0,0),(-1,0),0.5,colors.HexColor("#DDE2E6"))]))
+    return KeepTogether([t,Spacer(1,3.5*mm)])
+
+def bloco_nota(texto,primeiro_nome):
+    sep=HRFlowable(width=CW,thickness=0.75,color=colors.HexColor("#DDE2E6"),dash=(4,4))
+    tit=Paragraph(f"🧬 DIRECIONAMENTO ESTRATÉGICO E NOTA CIENTÍFICA — EXCLUSIVO PARA {primeiro_nome.upper()}",ST_NT)
+    ps=texto.strip().split("\n\n")
+    rows=[[Paragraph(p.strip(),ST_NB)] for p in ps]+[[Spacer(1,2.5*mm)]]
+    inner=Table(rows,colWidths=[CW-1.2*cm],style=TableStyle([
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+    box=Table([[inner]],colWidths=[CW])
+    box.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F9F9F9")),
+        ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
+        ("LEFTPADDING",(0,0),(-1,-1),10),("RIGHTPADDING",(0,0),(-1,-1),10),
+        ("BOX",(0,0),(-1,-1),0.75,colors.HexColor("#DDE2E6"))]))
+    return [Spacer(1,3*mm),KeepTogether([sep,Spacer(1,3*mm),tit,Spacer(1,3*mm),box])]
+
+def bloco_lista(lista):
+    col_w=(CW-4*mm)/2
+    def make_block(cat,itens):
+        rows=[[Paragraph(cat,ST_CAT),Paragraph("",ST_CAT)]]
+        for item,qtd in itens:
+            rows.append([Paragraph(f"◻  {item}",ST_IT),Paragraph(qtd,ST_QT)])
+        t=Table(rows,colWidths=[col_w*0.60,col_w*0.40])
+        t.setStyle(TableStyle([
+            ("BACKGROUND",(0,0),(-1,0),C_DAY_HEADER),("SPAN",(0,0),(-1,0)),
+            ("TOPPADDING",(0,0),(-1,0),5),("BOTTOMPADDING",(0,0),(-1,0),5),
+            ("LEFTPADDING",(0,0),(-1,0),8),("RIGHTPADDING",(0,0),(-1,0),6),
+            ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.white,colors.HexColor("#F0F2F4")]),
+            ("TOPPADDING",(0,1),(-1,-1),3),("BOTTOMPADDING",(0,1),(-1,-1),3),
+            ("LEFTPADDING",(0,1),(-1,-1),8),("RIGHTPADDING",(0,1),(-1,-1),6),
+            ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+            ("GRID",(0,0),(-1,-1),0.4,colors.HexColor("#DDE2E6"))]))
+        return t
+    esq,dir_=[],[]
+    for idx,cat in enumerate(lista):
+        blk=make_block(cat["categoria"],[(i["item"],i["qtd"]) for i in cat["itens"]])
+        if idx<3:esq.append(blk);esq.append(Spacer(1,3*mm))
+        else:dir_.append(blk);dir_.append(Spacer(1,3*mm))
+    def col_t(items,cw):
+        t=Table([[i] for i in items],colWidths=[cw])
+        t.setStyle(TableStyle([("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+            ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+        return t
+    layout=Table([[col_t(esq,col_w),Spacer(4*mm,1),col_t(dir_,col_w)]],colWidths=[col_w,4*mm,col_w])
+    layout.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+    story=[
+        Paragraph("🛒  LISTA DE COMPRAS — SEMANA",ST_CT),
+        Spacer(1,1*mm),
+        HRFlowable(width=CW,thickness=1.5,color=colors.HexColor("#00D1DF")),
+        Spacer(1,2*mm),
+        Paragraph("Itens necessários para o plano semanal. Quantidades estimadas para 1 pessoa / 7 dias.",ST_ES),
+        Spacer(1,5*mm),layout,Spacer(1,4*mm),
+        HRFlowable(width=CW,thickness=0.5,color=colors.HexColor("#DDE2E6")),
+        Spacer(1,2*mm),
+        Paragraph("<i>* Priorize alimentos frescos e in natura. Verifique o estoque antes de comprar.</i>",
+            ParagraphStyle("rod",fontName="NotoSans-Italic",fontSize=7.5,leading=11,
+                textColor=colors.HexColor("#6C757D"),alignment=TA_LEFT))]
+    return story
+
+def gerar_bytes(dados: dict) -> bytes:
+    aluno=dados["aluno"];cardapio=dados["cardapio"];nota=dados["nota"]
+    lista=dados.get("lista_compras",[]);coach=dados.get("coach")
+    primeiro_nome=aluno["nome"].split()[0]
+    buf=BytesIO()
+    doc=SimpleDocTemplate(buf,pagesize=A4,
+        leftMargin=1.8*cm,rightMargin=1.8*cm,topMargin=3.2*cm,bottomMargin=1.8*cm,
+        title=f'Plano Alimentar — {aluno["nome"]}',author="Vortex Primus / MyBox Irajá")
+    story=[]
+    story.append(Paragraph(aluno["nome"],ST_NOME));story.append(Spacer(1,2*mm))
+    story.append(Paragraph(f'Objetivo Principal: <font name="NotoSans-Bold">{aluno["objetivo"]}</font>',ST_OBJ))
+    story.append(Spacer(1,4*mm));story.append(bloco_metricas(aluno));story.append(Spacer(1,3*mm))
+    story.append(Paragraph("METAS DE MACRONUTRIENTES DIÁRIAS (AJUSTE DE PRECISÃO)",ST_CT))
+    story.append(Spacer(1,1.5*mm));story.append(bloco_macros(aluno));story.append(Spacer(1,5*mm))
+    story.append(Paragraph("PLANEJAMENTO NUTRICIONAL DE 7 DIAS",ST_CT));story.append(Spacer(1,2*mm))
+    story.append(Paragraph("*Estratégia Funcional: Cardápio estruturado com alimentos in natura e sólidos. O fracionamento proteico protege a musculatura e ativa o gasto digestivo. O protocolo Herbalife potencializa a termogênese, a hidratação e o controle glicêmico ao longo do dia.",ST_ES))
+    story.append(Spacer(1,4*mm))
+    story.append(bloco_dia(cardapio[0]));story.append(PageBreak())
+    story.append(bloco_dia(cardapio[1]));story.append(bloco_dia(cardapio[2]));story.append(PageBreak())
+    story.append(bloco_dia(cardapio[3]));story.append(bloco_dia(cardapio[4]));story.append(PageBreak())
+    story.append(bloco_dia(cardapio[5]));story.append(bloco_dia(cardapio[6]))
+    story+=bloco_nota(nota,primeiro_nome)
+    if lista:story.append(PageBreak());story+=bloco_lista(lista)
+    doc.build(story,onFirstPage=make_on_page(coach),onLaterPages=make_on_page(coach))
+    return buf.getvalue()
+
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            dados = json.loads(body)
+            pdf_bytes = gerar_bytes(dados)
+            nome_arq = dados.get("aluno", {}).get("nome", "aluno").split()[0].lower()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/pdf')
+            self.send_header('Content-Disposition', f'attachment; filename="plano-alimentar-{nome_arq}.pdf"')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(pdf_bytes)
+        except Exception as e:
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+PYEOF_VORTEX
+
+echo "=== 4/6 · Edge Function (cópia local — já deployada no Supabase v3) ==="
+mkdir -p supabase/functions/generate-diet
+cat > supabase/functions/generate-diet/index.ts << 'TSEOF_VORTEX'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// ------------------------------------------------------------
+// Protocolo Vortex Primus — regras de cálculo de macros
+//
+// CONFIRMADO com 2 exemplos reais (Maria da Silva Santos e Vanessa Isola):
+//   emagrecimento -> proteína = massa_magra_kg * 2.7 | carbo = 80g fixo
+//                    déficit = TDEE - 500, com piso no BMR
+//                    gordura = resto das calorias após proteína+carbo
+//
+// INFERIDO por padrão (NÃO confirmado com exemplo real) para saude,
+// manutencao e hipertrofia — usa o topo da faixa documentada no protocolo.
+// Validar contra utils/dietCalculations.ts e ajustar se divergir.
+// ------------------------------------------------------------
+const ACTIVITY_MULTIPLIERS: Record<string, number> = {
+  sedentario:             1.2,
+  levemente_ativo:        1.375,
+  moderadamente_ativo:    1.55,
+  muito_ativo:            1.725,
+  extremamente_ativo:     1.9,
+}
+
+interface Protocol {
+  proteinPerKgLean: number
+  carbG: number
+  calAdjust: (tdee: number, bmr: number) => number
+}
+
+const PROTOCOL: Record<string, Protocol> = {
+  emagrecimento: {
+    proteinPerKgLean: 2.7,
+    carbG: 80,
+    calAdjust: (tdee, bmr) => Math.max(tdee - 500, bmr),
+  },
+  saude: {
+    proteinPerKgLean: 2.2,
+    carbG: 120,
+    calAdjust: (tdee, bmr) => Math.max(tdee - 175, bmr),
+  },
+  manutencao: {
+    proteinPerKgLean: 2.2,
+    carbG: 120,
+    calAdjust: (tdee, bmr) => Math.max(tdee - 175, bmr),
+  },
+  hipertrofia: {
+    proteinPerKgLean: 2.8,
+    carbG: 280,
+    calAdjust: (tdee, _bmr) => tdee + 300,
+  },
+  performance: {
+    // Objetivo não coberto pelo protocolo documentado.
+    // Usa a mesma regra da hipertrofia até definição específica.
+    proteinPerKgLean: 2.8,
+    carbG: 280,
+    calAdjust: (tdee, _bmr) => tdee + 200,
+  },
+}
+
+const OBJECTIVE_LABELS: Record<string, string> = {
+  emagrecimento: 'Emagrecimento',
+  hipertrofia:   'Hipertrofia',
+  manutencao:    'Manutenção',
+  saude:         'Saúde e Qualidade de Vida',
+  performance:   'Performance',
+}
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  sedentario:             'Sedentário',
+  levemente_ativo:        'Levemente ativo (1–3 dias/semana)',
+  moderadamente_ativo:    'Moderadamente ativo (3–5 dias/semana)',
+  muito_ativo:            'Muito ativo (6–7 dias/semana)',
+  extremamente_ativo:     'Extremamente ativo (atleta/trabalho físico intenso)',
+}
+
+function calcAge(birthDate: string): number {
+  const birth = new Date(birthDate)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
+function calculateBMR(weight_kg: number, height_cm: number, age: number, gender: string): number {
+  const base = 10 * weight_kg + 6.25 * height_cm - 5 * age
+  return gender.toUpperCase() === 'M' ? base + 5 : base - 161
+}
+
+function classificaVisceral(v: number): string {
+  if (v <= 4) return `${v} (Ótimo)`
+  if (v <= 6) return `${v} (Normal)`
+  if (v <= 9) return `${v} (Atenção)`
+  return `${v} (ALERTA)`
+}
+
+// ------------------------------------------------------------
+// System prompt — protocolo completo Vortex Primus / MyBox Irajá
+// ------------------------------------------------------------
+const SYSTEM_PROMPT = `Você é o nutricionista especialista do sistema Vortex Primus / MyBox Irajá,
+Ribeirão Preto SP. Ao receber os dados de avaliação de um aluno, gere um
+JSON completo e válido com cardápio semanal de 7 dias, nota científica e
+lista de compras, seguindo TODAS as regras abaixo sem exceção.
+
+═══════════════════════════════════════════════
+REGRAS DE PORÇÃO POR SEXO
+═══════════════════════════════════════════════
+Feminino:  proteína animal 120–140g/refeição | ovos 2–3 | oleaginosas 30g
+Masculino: proteína animal 160–200g/refeição | ovos 3–4 | oleaginosas 40g
+
+═══════════════════════════════════════════════
+PROTOCOLOS POR OBJETIVO
+═══════════════════════════════════════════════
+Emagrecimento (High Protein):
+  - Carbo: 80g/dia (exclusivamente vegetais baixo IG, oleaginosas, frutas pontuais)
+  - Proteína: 2.5–2.7g/kg massa magra
+  - Déficit: 400–500 kcal abaixo do TDEE | Nunca abaixo do BMR
+
+Saúde Geral / Manutenção:
+  - Carbo: 120g/dia
+  - Proteína: 2.0–2.2g/kg massa magra
+  - Déficit suave: 150–200 kcal abaixo do TDEE
+
+Hipertrofia:
+  - Carbo: 280g+ (fontes funcionais em todas as refeições)
+  - Proteína: 2.7–2.8g/kg massa magra
+  - Superávit: +300 kcal acima do TDEE
+
+═══════════════════════════════════════════════
+ALIMENTOS PERMITIDOS (Guia Vortex Primus)
+═══════════════════════════════════════════════
+PROTEÍNAS: Ovos, Peito/Coxa Frango, Peixes Água Salgada, Salmão, Atum,
+  Sardinha em lata, Carne Bovina Magra (patinho/alcatra/coxão mole),
+  Lombo/Pernil de Porco Magro, Lentilha, Feijão, Grão-de-bico, Ervilha
+
+LEGUMES & VERDURAS: Espinafre, Brócolis, Couve, Repolho, Couve-flor,
+  Alface, Acelga, Rabanete, Aspargos, Vagens, Agrião, Pepino, Cenoura,
+  Palmito, Abóbora, Cogumelos, Chucrute, Abobrinha, Chuchu, Tomate,
+  Cebola, Alho, Pimentão
+
+FRUTAS: Abacate, Limão, Maçã, Pera, Pêssego, Morango, Kiwi, Cereja,
+  Ameixa, Goiaba (pontuais — 1 porção/lanche)
+
+OLEAGINOSAS (moderação): Amendoins, Nozes, Pistache, Castanha de Caju,
+  Amêndoas, Castanha-do-pará
+
+GORDURAS BOAS: Azeite de oliva extra virgem, Manteiga de boa qualidade
+
+ELIMINAR SEMPRE: Refrigerantes, Álcool, Açúcar, Doces, Pães, Massas,
+  Pizzas, Arroz Branco, Farinhas Refinadas, Batata Inglesa, Trigo
+
+═══════════════════════════════════════════════
+PRODUTOS HERBALIFE — POSICIONAMENTO OBRIGATÓRIO
+═══════════════════════════════════════════════
+Shake F1 + NutreV:
+  - SEMPRE no café da manhã, JUNTO à refeição sólida (nunca substitui)
+  - No cardápio: texto limpo "Shake F1 + NutreV Herbalife" sem instrução de preparo
+  - Preparo (apenas em seções técnicas, nunca inline): "No liquidificador
+    adicione: • 250ml de água • 2 colheres e meia (de sopa) do Shake
+    Herbalife • 2 colheres e meia (de sopa) do NutreV Herbalife
+    • 3 a 5 pedras de gelo."
+  - Exceção: pode substituir o JANTAR quando explicitamente solicitado
+
+Herbal Concentrate:
+  - Café da manhã como termogênico — SEMPRE antes do Shake
+  - Texto: "Herbal Concentrate (1 dose em 240ml de água — termogênico matinal)"
+  - Também pode ser usado pré-atividade física ou como hidratação diária
+
+CR7 Drive:
+  - Dias de TREINO: label "Pré-Treino", 20 min antes do treino
+  - Texto: "CR7 Drive (1 dose em 400ml de água gelada — 20 min antes do treino)"
+  - Dias de DESCANSO: omitir completamente
+
+Whey 3W Herbalife:
+  - SEMPRE pós-treino, até 40 min após o esforço
+  - Texto: "Whey 3W Herbalife (1 dose em 300ml de água — até 40 min após o treino)"
+  - Dias de descanso: omitir (exceto se solicitado para jantar)
+
+Creatina Premium Herbalife 24:
+  - Junto ao Whey no pós-treino (dias de treino)
+  - Texto pós-treino: "Whey 3W Herbalife + Creatina Premium (1 dose de cada
+    em 300ml de água — até 40 min após o treino)"
+  - Dias de descanso: separada em água — "Creatina Premium (1 dose em água
+    — uso diário sem pausa)"
+
+Fiber Concentrate:
+  - SEMPRE no café da tarde
+  - Texto: "Fiber Concentrate (1 dose em água)"
+
+Sopa Instantânea Herbalife:
+  - Lanche da manhã APENAS — NUNCA substitui refeição principal
+  - Apenas Shake F1 + NutreV tem nutrientes suficientes para substituir refeição
+
+═══════════════════════════════════════════════
+PROTOCOLOS DE RESTRIÇÃO ALIMENTAR
+═══════════════════════════════════════════════
+PESCETARIANO:
+  - Remover: frango, bovina, porco e todas as carnes terrestres
+  - Manter: peixes (salmão, atum, tilápia, sardinha), ovos
+  - Adicionar: leguminosas (lentilha, grão-de-bico, feijão) como fonte
+    proteica + carbo funcional (80g cozido, controlado)
+  - Soja (Shake F1): dose única diária
+
+HIPOTIREOIDISMO:
+  - Crucíferas SEMPRE cozidas/refogadas — NUNCA cruas
+  - Castanha-do-pará: 2–3 unidades/dia (selênio para conversão T4→T3)
+  - Peixes de água salgada priorizados (iodo natural)
+  - Soja (Shake F1): dose única diária
+  - Avisar sobre medicação: "tome a medicação tireoidiana 30–60 min antes,
+    em jejum, antes deste café"
+
+ENDOMETRIOSE:
+  - Priorizar gorduras anti-inflamatórias (azeite, abacate, oleaginosas)
+  - Cúrcuma em pó em todos os almoços
+  - Crucíferas sempre cozidas
+  - Soja (Shake F1): dose única diária
+
+LACTOSE:
+  - Shake F1 + NutreV: preparar com água fria ou leite vegetal sem lactose
+  - Sem queijos, iogurte, leite de vaca no cardápio sólido
+  - Lista de compras: incluir leite vegetal (amêndoas, coco ou aveia)
+
+GLÚTEN:
+  - Eliminar trigo e todos os derivados
+  - Shake F1 é livre de glúten — marcar como "Sem Glúten ✅" nas specs
+  - Temperos: apenas naturais sem glúten
+  - Lista de compras: marcar Shake F1 como "(sem glúten)"
+
+RESTRIÇÃO A PEIXES E FRUTOS DO MAR:
+  - Remover todos os peixes e frutos do mar
+  - Proteínas: apenas frango, carne bovina, porco e ovos
+  - Selênio via castanha-do-pará, zinco via ovos e carnes
+
+═══════════════════════════════════════════════
+GORDURA VISCERAL — CLASSIFICAÇÃO
+═══════════════════════════════════════════════
+1–4:  "X (Ótimo)"
+5–6:  "X (Normal)"
+7–9:  "X (Atenção)"
+10+:  "X (ALERTA)"
+
+═══════════════════════════════════════════════
+NOTA CIENTÍFICA — ESTRUTURA OBRIGATÓRIA
+═══════════════════════════════════════════════
+- 3 parágrafos separados por \\n\\n
+- Cada parágrafo começa com <b>N. Título:</b>
+- Tom: científico, nominativo ("Vanessa, o seu protocolo...")
+- Tópico 1: meta proteica e preservação muscular
+- Tópico 2: produto(s) Herbalife OU controle glicêmico
+- Tópico 3: déficit/superávit calórico e BMR protegido
+
+═══════════════════════════════════════════════
+LISTA DE COMPRAS — 6 CATEGORIAS FIXAS
+═══════════════════════════════════════════════
+1. 🥚  OVOS & LATICÍNIOS
+2. 🍗  CARNES & PEIXES
+3. 🥦  LEGUMES & VERDURAS
+4. 🍎  FRUTAS
+5. 🥜  OLEAGINOSAS
+6. 🟢  HERBALIFE & DESPENSA
+
+═══════════════════════════════════════════════
+SCHEMA JSON DE SAÍDA — OBRIGATÓRIO
+═══════════════════════════════════════════════
+Retorne APENAS o JSON abaixo, sem texto antes ou depois, sem markdown:
+
+{
+  "coach": "string",
+  "aluno": {
+    "nome": "string",
+    "objetivo": "string",
+    "peso": "string (ex: 73.8 kg)",
+    "gordura": "string (ex: 40.8%)",
+    "massa_musc": "string (ex: 25.4%)",
+    "idade_metab": "string (ex: 54 anos)",
+    "bmr_tdee": "string (ex: 1446 / 1735)",
+    "gord_visceral": "string (ex: 8 (Atenção))",
+    "cal_alvo": "string (ex: 1446 kcal)",
+    "proteina": "string (ex: 118g)",
+    "carbo": "string (ex: 80g)",
+    "gorduras": "string (ex: 73g)"
+  },
+  "cardapio": [
+    {
+      "dia": "SEGUNDA-FEIRA",
+      "refeicoes": [
+        ["label da refeição", "descrição completa dos alimentos"]
+      ]
+    }
+  ],
+  "nota": "Parágrafo intro...\\n\\n<b>1. Título:</b> Texto...\\n\\n<b>2. Título:</b> Texto...\\n\\n<b>3. Título:</b> Texto...",
+  "lista_compras": [
+    {
+      "categoria": "🥚  OVOS & LATICÍNIOS",
+      "itens": [
+        {"item": "Ovos de galinha", "qtd": "3 dúzias"}
+      ]
+    }
+  ]
+}
+
+Os campos "coach" e "aluno" serão fornecidos prontos na mensagem do usuário
+— reutilize-os exatamente como recebidos, sem recalcular. Gere "cardapio"
+(exatamente 7 dias, dia 1 = Segunda-feira, dia 7 = Domingo, exatamente 5
+refeições por dia: Café da Manhã, Lanche da Manhã, Almoço, Café da Tarde,
+Jantar), "nota" e "lista_compras".`
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const body = await req.json()
+    const { client_id } = body
+    if (!client_id) throw new Error('client_id é obrigatório')
+
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error('Não autorizado')
+
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    )
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
+    if (userError || !user) throw new Error('Sessão inválida')
+
+    const { data: client, error: clientErr } = await supabaseAdmin
+      .from('clients')
+      .select('id, name, trainer_id, user_id, birth_date, gender, height_cm, objective, activity_level, food_restrictions')
+      .eq('id', client_id)
+      .single()
+    if (clientErr || !client) throw new Error('Cliente não encontrado')
+
+    const { data: trainer } = await supabaseAdmin
+      .from('trainers')
+      .select('id, name')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const isTrainer = trainer != null && trainer.id === client.trainer_id
+    const isClient  = client.user_id === user.id
+    if (!isTrainer && !isClient) throw new Error('Acesso negado')
+
+    let trainerName = ''
+    if (isTrainer && trainer) {
+      trainerName = trainer.name ?? ''
+    } else {
+      const { data: trainerData } = await supabaseAdmin
+        .from('trainers')
+        .select('name')
+        .eq('id', client.trainer_id)
+        .single()
+      trainerName = trainerData?.name ?? ''
+    }
+
+    const { data: assessments } = await supabaseAdmin
+      .from('physical_assessments')
+      .select('id, date')
+      .eq('client_id', client_id)
+      .order('date', { ascending: false })
+      .limit(1)
+
+    if (!assessments || assessments.length === 0) {
+      throw new Error('Nenhuma avaliação física encontrada. Registre uma avaliação de composição corporal antes de gerar o plano.')
+    }
+
+    const { data: anthro } = await supabaseAdmin
+      .from('anthropometry')
+      .select('weight, body_fat, muscle_mass_percentage, basal_metabolic_rate, metabolic_age, body_fat_index')
+      .eq('assessment_id', assessments[0].id)
+      .maybeSingle()
+
+    if (!anthro || anthro.weight == null || anthro.body_fat == null) {
+      throw new Error('Avaliação sem dados de bioimpedância (peso e % de gordura). Complete a avaliação antes de gerar o plano.')
+    }
+
+    const weight  = parseFloat(anthro.weight)
+    const bodyFat = parseFloat(anthro.body_fat)
+
+    if (!weight || !client.height_cm || !client.birth_date || !client.gender || !client.objective || !client.activity_level) {
+      throw new Error('Dados insuficientes para gerar o plano. Complete o perfil do aluno (objetivo, nível de atividade, altura, data de nascimento, sexo).')
+    }
+
+    const age      = calcAge(client.birth_date)
+    const bmr      = anthro.basal_metabolic_rate != null
+                       ? parseFloat(anthro.basal_metabolic_rate)
+                       : calculateBMR(weight, client.height_cm, age, client.gender)
+    const tdee     = bmr * (ACTIVITY_MULTIPLIERS[client.activity_level] ?? 1.2)
+    const leanMass = weight * (1 - bodyFat / 100)
+
+    const protocol = PROTOCOL[client.objective] ?? PROTOCOL['manutencao']
+    const calAlvo  = protocol.calAdjust(tdee, bmr)
+    const proteinG = leanMass * protocol.proteinPerKgLean
+    const carbG    = protocol.carbG
+    const fatG     = Math.max((calAlvo - proteinG * 4 - carbG * 4) / 9, 0)
+
+    const visceralRaw = anthro.body_fat_index != null ? Math.round(parseFloat(anthro.body_fat_index)) : null
+
+    const aluno = {
+      nome:          client.name,
+      objetivo:      OBJECTIVE_LABELS[client.objective] ?? client.objective,
+      peso:          `${weight.toFixed(1)} kg`,
+      gordura:       `${bodyFat.toFixed(1)}%`,
+      massa_musc:    anthro.muscle_mass_percentage != null ? `${parseFloat(anthro.muscle_mass_percentage).toFixed(1)}%` : 'N/D',
+      idade_metab:   anthro.metabolic_age != null ? `${Math.round(parseFloat(anthro.metabolic_age))} anos` : 'N/D',
+      bmr_tdee:      `${Math.round(bmr)} / ${Math.round(tdee)}`,
+      gord_visceral: visceralRaw != null ? classificaVisceral(visceralRaw) : 'N/D',
+      cal_alvo:      `${Math.round(calAlvo)} kcal`,
+      proteina:      `${Math.round(proteinG)}g`,
+      carbo:         `${Math.round(carbG)}g`,
+      gorduras:      `${Math.round(fatG)}g`,
+    }
+
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+    if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY não configurada')
+
+    const userPrompt = `Dados do aluno para gerar o plano alimentar:
+
+coach: "${trainerName}"
+aluno: ${JSON.stringify(aluno)}
+
+Contexto adicional (não incluir no JSON, usar apenas para montar o cardápio):
+Sexo: ${client.gender === 'M' ? 'Masculino' : 'Feminino'} | Idade: ${age} anos | Altura: ${client.height_cm} cm
+Massa magra: ${leanMass.toFixed(1)} kg
+Nível de atividade: ${ACTIVITY_LABELS[client.activity_level] ?? client.activity_level}
+Restrições alimentares informadas: ${client.food_restrictions || 'Nenhuma informada'}
+
+Gere o JSON completo (coach, aluno, cardapio, nota, lista_compras) seguindo
+todas as regras do protocolo Vortex Primus definidas nas instruções do
+sistema. Reutilize os campos "coach" e "aluno" exatamente como fornecidos
+acima.`
+
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key':         anthropicKey,
+        'anthropic-version': '2023-06-01',
+        'content-type':      'application/json',
+      },
+      body: JSON.stringify({
+        model:      'claude-sonnet-4-6',
+        max_tokens: 8192,
+        system:     SYSTEM_PROMPT,
+        messages:   [{ role: 'user', content: userPrompt }],
+      }),
+    })
+
+    if (!claudeResponse.ok) {
+      const errText = await claudeResponse.text()
+      console.error('[generate-diet] Claude API error status:', claudeResponse.status, errText)
+      let detail = errText
+      try { detail = JSON.parse(errText)?.error?.message ?? errText } catch {}
+      throw new Error(`Claude API (${claudeResponse.status}): ${detail}`)
+    }
+
+    const claudeData = await claudeResponse.json()
+    const rawContent: string = claudeData.content?.[0]?.text ?? ''
+
+    let plan
+    try {
+      plan = JSON.parse(rawContent)
+    } catch {
+      const match = rawContent.match(/\{[\s\S]*\}/)
+      if (!match) throw new Error('Resposta da IA com formato inválido. Tente novamente.')
+      plan = JSON.parse(match[0])
+    }
+
+    return new Response(
+      JSON.stringify(plan),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+    )
+
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    )
+  }
+})
+TSEOF_VORTEX
+
+echo "=== 5/6 · Botão em client-diet.tsx (localizado automaticamente) ==="
+CLIENT_DIET=$(find . -name "client-diet.tsx" -not -path "*/node_modules/*" | head -1)
+if [ -z "$CLIENT_DIET" ]; then
+  echo "ERRO: client-diet.tsx não encontrado no repo. Abortando essa etapa."
+  echo "Localize manualmente com: find . -name 'client-diet.tsx' -not -path '*/node_modules/*'"
+else
+  echo "Encontrado em: $CLIENT_DIET"
+  cat > "$CLIENT_DIET" << 'TSXEOF_VORTEX'
+import { LinearGradient } from "expo-linear-gradient";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import MacroBar from "../../components/MacroBar";
+import MealCard, { MealItem } from "../../components/MealCard";
+import DietPlanPDF from "../../components/DietPlanPDF";
+import ScienceReferencesModal from "../../components/ScienceReferencesModal";
+import { supabase } from "../../lib/supabase";
+import {
+  ACTIVITY_LABELS,
+  ActivityLevel,
+  DietCalculationResult,
+  OBJECTIVE_LABELS,
+  Objective,
+  calculateDietPlan,
+} from "../../utils/dietCalculations";
+import { GradientAI, GradientSuccess } from "../../utils/gradients";
+import { T } from "../../utils/theme";
+
+// ------------------------------------------------------------
+// Tipos
+// ------------------------------------------------------------
+interface LastBio {
+  weight: number;
+  body_fat: number;
+  muscle_mass_percentage: number | null;
+  basal_metabolic_rate: number | null;
+  metabolic_age: number | null;
+}
+
+interface MealPlan {
+  id: string;
+  title: string;
+  objective: string | null;
+  meals_per_day: number | null;
+  notes: string | null;
+  meal_plan_meals: MealItem[];
+}
+
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+function calcAge(birthDate: string): number {
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function sumMacros(foods: { calories: number | null; protein: number | null; carbs: number | null; fat: number | null }[]) {
+  return foods.reduce(
+    (acc, f) => ({
+      calories: acc.calories + (f.calories || 0),
+      protein:  acc.protein  + (f.protein  || 0),
+      carbs:    acc.carbs    + (f.carbs    || 0),
+      fat:      acc.fat      + (f.fat      || 0),
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+}
+
+// ------------------------------------------------------------
+// Screen
+// ------------------------------------------------------------
+export default function ClientDiet() {
+  const { id } = useLocalSearchParams();
+  const clientId = id as string;
+
+  const [loading, setLoading] = useState(true);
+  const [client, setClient] = useState<any>(null);
+  const [lastBio, setLastBio] = useState<LastBio | null>(null);
+  const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
+  const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [mealLogs, setMealLogs] = useState<any[]>([]);
+  const [generatingAI, setGeneratingAI] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (clientId) {
+        load();
+        loadMealLogs();
+      }
+    }, [clientId])
+  );
+
+  async function loadMealLogs() {
+    const { data } = await supabase
+      .from("meal_log")
+      .select("id, consumed_at, meal_type, total_calories, total_protein, total_carbs, total_fat, notes")
+      .eq("client_id", clientId)
+      .order("consumed_at", { ascending: false })
+      .limit(10);
+    if (data) setMealLogs(data);
+  }
+
+  async function load() {
+    setLoading(true);
+    try {
+      const { data: clientData, error: clientErr } = await supabase
+        .from("clients")
+        .select("id, name, height_cm, birth_date, gender, objective, activity_level")
+        .eq("id", clientId)
+        .single();
+
+      if (clientErr || !clientData) throw clientErr;
+      setClient(clientData);
+
+      const { data: assessments, error: assessmentsErr } = await supabase
+        .from("physical_assessments")
+        .select("id")
+        .eq("client_id", clientId)
+        .order("date", { ascending: false })
+        .limit(1);
+
+      if (assessmentsErr) throw assessmentsErr;
+
+      let weight = 0;
+      let bodyFat = 20;
+      let anthro: any = null;
+
+      if (assessments && assessments.length > 0) {
+        const { data: anthroData } = await supabase
+          .from("anthropometry")
+          .select("weight, body_fat, muscle_mass_percentage, basal_metabolic_rate, metabolic_age")
+          .eq("assessment_id", assessments[0].id)
+          .maybeSingle();
+
+        if (anthroData) {
+          anthro = anthroData;
+          weight   = parseFloat(anthroData.weight)   || 0;
+          bodyFat  = parseFloat(anthroData.body_fat)  || 20;
+          setLastBio({
+            weight,
+            body_fat: parseFloat(anthroData.body_fat) || 0,
+            muscle_mass_percentage: anthroData.muscle_mass_percentage != null
+              ? parseFloat(anthroData.muscle_mass_percentage)
+              : null,
+            basal_metabolic_rate: anthroData.basal_metabolic_rate != null
+              ? parseFloat(anthroData.basal_metabolic_rate)
+              : null,
+            metabolic_age: anthroData.metabolic_age != null
+              ? parseFloat(anthroData.metabolic_age)
+              : null,
+          });
+        }
+      }
+
+      if (
+        weight > 0 &&
+        clientData.height_cm &&
+        clientData.birth_date &&
+        clientData.gender &&
+        clientData.objective &&
+        clientData.activity_level
+      ) {
+        const result = calculateDietPlan({
+          weight_kg:        weight,
+          height_cm:        clientData.height_cm,
+          age:              calcAge(clientData.birth_date),
+          gender:           clientData.gender as "M" | "F",
+          body_fat_percent: bodyFat,
+          activity:         clientData.activity_level as ActivityLevel,
+          objective:        clientData.objective as Objective,
+          measured_bmr:     anthro?.basal_metabolic_rate
+                              ? Number(anthro.basal_metabolic_rate)
+                              : undefined,
+        });
+        setDietResult(result);
+      }
+
+      const { data: plan } = await supabase
+        .from("meal_plans")
+        .select(`
+          id, title, objective, meals_per_day, notes,
+          meal_plan_meals (
+            id, name, time_suggestion, order_index,
+            meal_plan_foods (
+              id, name, quantity, calories, protein, carbs, fat, order_index
+            )
+          )
+        `)
+        .eq("client_id", clientId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (plan) {
+        const sorted: MealPlan = {
+          ...plan,
+          meal_plan_meals: (plan.meal_plan_meals as MealItem[])
+            .sort((a, b) => a.order_index - b.order_index)
+            .map((meal) => ({
+              ...meal,
+              meal_plan_foods: [...meal.meal_plan_foods].sort(
+                (a, b) => a.order_index - b.order_index
+              ),
+            })),
+        };
+        setMealPlan(sorted);
+      }
+    } catch (err) {
+      console.error("Erro ao carregar dieta:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGenerateAI() {
+    if (!clientId || generatingAI) return;
+    setGeneratingAI(true);
+    try {
+      // 1) Gera o JSON do plano (cardápio 7 dias + nota científica + lista
+      //    de compras) chamando a Edge Function generate-diet, que já
+      //    aplica o protocolo completo Vortex Primus + Claude API.
+      const { data: plan, error: dietError } = await supabase.functions.invoke(
+        "generate-diet",
+        { body: { client_id: clientId } }
+      );
+
+      if (dietError) throw new Error(dietError.message);
+      if (plan && (plan as any).error) throw new Error((plan as any).error);
+      if (!plan) throw new Error("A IA não retornou nenhum plano.");
+
+      // 2) Gera o PDF a partir do JSON, via função Python (ReportLab)
+      //    hospedada em /api/generate-pdf.
+      const pdfResp = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(plan),
+      });
+
+      if (!pdfResp.ok) {
+        const errJson = await pdfResp.json().catch(() => ({}));
+        throw new Error(errJson.error || "Erro ao gerar o PDF do plano.");
+      }
+
+      const blob = await pdfResp.blob();
+      const primeiroNome = (client?.name || "aluno").split(" ")[0].toLowerCase();
+
+      if (Platform.OS === "web") {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `plano-alimentar-${primeiroNome}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        const fileUri = `${FileSystem.cacheDirectory}plano-alimentar-${primeiroNome}.pdf`;
+        const base64: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error("Falha ao ler o PDF gerado."));
+          reader.onload = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1] ?? "");
+          };
+          reader.readAsDataURL(blob);
+        });
+        await FileSystem.writeAsStringAsync(fileUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        await Sharing.shareAsync(fileUri, { mimeType: "application/pdf" });
+      }
+    } catch (err: any) {
+      console.error("Erro ao gerar plano com IA:", err);
+      Alert.alert(
+        "Não foi possível gerar o plano",
+        err?.message ?? "Tente novamente em instantes."
+      );
+    } finally {
+      setGeneratingAI(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={T.green} />
+      </View>
+    );
+  }
+
+  const allFoods = mealPlan
+    ? mealPlan.meal_plan_meals.flatMap((m) => m.meal_plan_foods)
+    : [];
+  const { calories, protein, carbs, fat } = sumMacros(allFoods);
+  const planTotals = {
+    calories: parseFloat(calories.toFixed(1)),
+    protein:  parseFloat(protein.toFixed(1)),
+    carbs:    parseFloat(carbs.toFixed(1)),
+    fat:      parseFloat(fat.toFixed(1)),
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 60 }}>
+      {/* Cabeçalho */}
+      <View style={styles.header}>
+        <Text style={styles.title}>{client?.name}</Text>
+        {client?.objective && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {OBJECTIVE_LABELS[client.objective as Objective] ?? client.objective}
+            </Text>
+          </View>
+        )}
+        {client?.activity_level && (
+          <Text style={styles.subLabel}>
+            {ACTIVITY_LABELS[client.activity_level as ActivityLevel] ?? client.activity_level}
+          </Text>
+        )}
+      </View>
+
+      {/* ── Última Avaliação Corporal ── */}
+      {lastBio && lastBio.weight > 0 && (
+        <View style={styles.macroCard}>
+          <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
+          <View style={styles.macroRow}>
+            {[
+              { label: "Peso",         value: Number(lastBio.weight).toFixed(1),                                                                      unit: "kg",   color: "#94a3b8" },
+              { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),                                                                     unit: "%",    color: T.red },
+              { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",         unit: lastBio.muscle_mass_percentage != null ? "%" : "",    color: T.blue },
+              { label: "Metab. Basal", value: lastBio.basal_metabolic_rate    != null ? Number(lastBio.basal_metabolic_rate).toFixed(1)    : "—",         unit: lastBio.basal_metabolic_rate    != null ? "kcal" : "", color: T.green },
+            ].map((item) => (
+              <View key={item.label} style={[styles.macroBox, { borderTopColor: item.color }]}>
+                <Text style={[styles.macroValue, { color: item.color }]}>{item.value}</Text>
+                <Text style={styles.macroUnit}>{item.unit}</Text>
+                <Text style={styles.macroLabel}>{item.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* ── Metas Calculadas ── */}
+      {dietResult ? (
+        <View style={styles.macroCard}>
+          <Text style={styles.macroCardTitle}>Metas Calculadas</Text>
+          <View style={styles.macroRow}>
+            {[
+              { label: "Calorias", value: Number(dietResult.macros.calories).toFixed(1), unit: "kcal", color: T.green },
+              { label: "Proteína", value: Number(dietResult.macros.protein).toFixed(1),  unit: "g",    color: T.blue },
+              { label: "Carbs",    value: Number(dietResult.macros.carbs).toFixed(1),    unit: "g",    color: T.orange },
+              { label: "Gordura",  value: Number(dietResult.macros.fat).toFixed(1),      unit: "g",    color: T.red },
+            ].map((m) => (
+              <View key={m.label} style={[styles.macroBox, { borderTopColor: m.color }]}>
+                <Text style={[styles.macroValue, { color: m.color }]}>{m.value}</Text>
+                <Text style={styles.macroUnit}>{m.unit}</Text>
+                <Text style={styles.macroLabel}>{m.label}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.macroSub}>
+            BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Massa magra {Number(dietResult.lean_mass).toFixed(1)} kg
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.warnCard}>
+          <Text style={styles.warnText}>
+            Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma Avaliação de Composição Corporal.
+          </Text>
+        </View>
+      )}
+
+      {dietResult && <ScienceReferencesModal />}
+
+      {/* Botão Gerar com IA */}
+      <TouchableOpacity
+        style={[styles.aiBtn, generatingAI && styles.aiBtnDisabled]}
+        onPress={handleGenerateAI}
+        activeOpacity={0.85}
+        disabled={generatingAI}
+      >
+        <LinearGradient {...GradientAI} style={styles.aiBtnGradient}>
+          {generatingAI ? (
+            <View style={styles.aiBtnLoadingRow}>
+              <ActivityIndicator size="small" color={T.white} />
+              <Text style={styles.aiBtnText}>  Gerando plano com IA…</Text>
+            </View>
+          ) : (
+            <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+
+      {/* Plano alimentar */}
+      {mealPlan ? (
+        <>
+          <View style={styles.planHeader}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.planTitle}>{mealPlan.title}</Text>
+              {mealPlan.notes ? (
+                <Text style={styles.planNotes}>{mealPlan.notes}</Text>
+              ) : null}
+            </View>
+            <View style={styles.planActions}>
+              <DietPlanPDF
+                data={{
+                  clientName:  client?.name ?? "",
+                  objective:   client?.objective ?? null,
+                  mealPlan,
+                  dietResult,
+                }}
+              />
+              <TouchableOpacity
+                style={[styles.editBtn, { marginLeft: 8 }]}
+                onPress={() =>
+                  router.push(
+                    `/(protected)/diet-plan-form?client_id=${clientId}&plan_id=${mealPlan.id}` as any
+                  )
+                }
+              >
+                <Text style={styles.editBtnText}>✏️ Editar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* ── Plano vs Meta ── */}
+          {dietResult && (
+            <View style={styles.macroBarsCard}>
+              <Text style={styles.macroBarsTitle}>Plano vs Meta</Text>
+              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color={T.green} />
+              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color={T.blue} />
+              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color={T.orange} />
+              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color={T.red} />
+            </View>
+          )}
+
+          {mealPlan.meal_plan_meals.map((meal) => (
+            <MealCard key={meal.id} meal={meal} />
+          ))}
+        </>
+      ) : (
+        <View style={styles.emptyPlan}>
+          <Text style={styles.emptyPlanText}>Nenhum plano alimentar cadastrado.</Text>
+          <TouchableOpacity
+            style={styles.createBtn}
+            onPress={() =>
+              router.push(`/(protected)/diet-plan-form?client_id=${clientId}` as any)
+            }
+            activeOpacity={0.85}
+          >
+            <LinearGradient {...GradientSuccess} style={styles.createBtnGradient}>
+              <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── Refeições Registradas pelo Aluno ── */}
+      <View style={styles.logSection}>
+        <Text style={styles.logSectionTitle}>📖 Refeições Registradas pelo Aluno</Text>
+        {mealLogs.length === 0 ? (
+          <Text style={styles.logEmpty}>O aluno ainda não registrou nenhuma refeição.</Text>
+        ) : (
+          mealLogs.map((log) => {
+            const dt = new Date(log.consumed_at);
+            const dateStr = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+            const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <View key={log.id} style={styles.logCard}>
+                <View style={styles.logCardHeader}>
+                  <Text style={styles.logDate}>{dateStr} {timeStr}</Text>
+                  {log.meal_type ? <Text style={styles.logType}>{log.meal_type}</Text> : null}
+                </View>
+                <Text style={styles.logMacros}>
+                  {Number(log.total_calories ?? 0).toFixed(0)} kcal · P {Number(log.total_protein ?? 0).toFixed(1)}g · C {Number(log.total_carbs ?? 0).toFixed(1)}g · G {Number(log.total_fat ?? 0).toFixed(1)}g
+                </Text>
+                {log.notes ? <Text style={styles.logNotes}>{log.notes}</Text> : null}
+              </View>
+            );
+          })
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ------------------------------------------------------------
+// Estilos
+// ------------------------------------------------------------
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+
+  header: { marginBottom: 16 },
+  title: { fontSize: 26, fontWeight: "800", color: T.t1, marginBottom: 6 },
+  badge: { alignSelf: "flex-start", backgroundColor: "rgba(16,185,129,0.12)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 4, borderWidth: 1, borderColor: "rgba(16,185,129,0.25)" },
+  badgeText: { color: T.green, fontWeight: "700", fontSize: 12 },
+  subLabel: { color: T.t3, fontSize: 12 },
+
+  macroCard: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  macroRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
+  macroValue: { fontSize: 20, fontWeight: "800" },
+  macroUnit: { fontSize: 11, color: T.t3 },
+  macroLabel: { fontSize: 11, color: T.t2, fontWeight: "600", marginTop: 2 },
+  macroSub: { fontSize: 11, color: T.t3, textAlign: "center" },
+
+  warnCard: { backgroundColor: "rgba(245,158,11,0.08)", borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: "rgba(245,158,11,0.25)" },
+  warnText: { color: T.orange, fontSize: 13, fontWeight: "600" },
+
+  planHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
+  planActions: { flexDirection: "row", alignItems: "center" },
+  planTitle: { fontSize: 18, fontWeight: "800", color: T.t1 },
+  planNotes: { fontSize: 12, color: T.t3, marginTop: 2 },
+  editBtn: { backgroundColor: T.surfaceAlt, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: T.border },
+  editBtnText: { fontWeight: "700", color: T.t1, fontSize: 13 },
+
+  macroBarsCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+
+  aiBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
+  aiBtnDisabled: { opacity: 0.75 },
+  aiBtnGradient: { paddingVertical: 14, alignItems: "center", justifyContent: "center", borderRadius: 14 },
+  aiBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+  aiBtnLoadingRow: { flexDirection: "row", alignItems: "center" },
+
+  emptyPlan: { alignItems: "center", padding: 40 },
+  emptyPlanText: { color: T.t2, fontSize: 15, marginBottom: 20 },
+  createBtn: { borderRadius: 14, overflow: "hidden" },
+  createBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
+  createBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+
+  logSection: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: T.border },
+  logSectionTitle: { fontSize: 15, fontWeight: "800", color: T.t1, marginBottom: 12 },
+  logEmpty: { color: T.t3, fontSize: 13, fontStyle: "italic" },
+  logCard: { backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: T.border },
+  logCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
+  logDate: { fontSize: 12, color: T.t2, fontWeight: "600" },
+  logType: { fontSize: 11, color: T.green, fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  logMacros: { fontSize: 13, color: T.t1, fontWeight: "700" },
+  logNotes: { fontSize: 11, color: T.t3, fontStyle: "italic", marginTop: 4 },
+});
+TSXEOF_VORTEX
+fi
+
+echo "=== 6/6 · Dependências, verificação e commit ==="
+npx expo install expo-file-system expo-sharing
+
+DIET_CALC=$(find . -name "dietCalculations.ts" -not -path "*/node_modules/*" | head -1)
+if [ -n "$DIET_CALC" ]; then
+  echo ""
+  echo ">>>>> COPIE O BLOCO ABAIXO E COLE NO CHAT COM O CLAUDE <<<<<"
+  echo "----- INÍCIO $DIET_CALC -----"
+  cat "$DIET_CALC"
+  echo "----- FIM $DIET_CALC -----"
+  echo ">>>>> FIM DO BLOCO PARA COLAR <<<<<"
+  echo ""
+else
+  echo "AVISO: dietCalculations.ts não encontrado — não consegui listar."
+fi
+
+git add fonts requirements.txt api/generate-pdf.py supabase/functions/generate-diet/index.ts
+[ -n "$CLIENT_DIET" ] && git add "$CLIENT_DIET"
+git commit -m "feat: conecta botao Gerar Plano com IA (generate-diet + api/generate-pdf)"
+
+echo ""
+echo "Tudo pronto e commitado. Revise com 'git log -1 -p' e depois:"
+echo "  git push origin main"
