@@ -241,7 +241,7 @@ export default function HerbalifeTeam() {
       <Text style={styles.subtitle}>
         {capitalizedMonth} · {downlines.length} {downlines.length === 1 ? 'consultor ativo' : 'consultores ativos'}
       </Text>
-      <Text style={styles.helperNote}>Previsto = fechamento estimado no ritmo diário atual</Text>
+      <Text style={styles.helperNote}>Previsto = ritmo esperado até hoje · Tendência = fechamento estimado no ritmo atual</Text>
 
       {downlines.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -265,11 +265,17 @@ export default function HerbalifeTeam() {
                   <Text style={styles.statValue}>{metaTotalAgend}</Text>
                 </View>
                 <View style={styles.statCol}>
+                  <Text style={styles.statCaption}>PREVISTO</Text>
+                  <Text style={styles.statValue}>
+                    {trendGrupoAgend ? trendGrupoAgend.expected : '—'}
+                  </Text>
+                </View>
+                <View style={styles.statCol}>
                   <Text style={styles.statCaption}>REALIZADO</Text>
                   <Text style={styles.statValue}>{totalAgendGrupo}</Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>PREVISTO</Text>
+                  <Text style={styles.statCaption}>TENDÊNCIA</Text>
                   <Text style={[styles.statValue, { color: trendGrupoAgend ? trendGrupoAgend.color : 'rgba(255,255,255,0.5)' }]}>
                     {trendGrupoAgend ? trendGrupoAgend.projection : '—'}
                   </Text>
@@ -296,11 +302,17 @@ export default function HerbalifeTeam() {
                   <Text style={styles.statValue}>{metaTotalAval}</Text>
                 </View>
                 <View style={styles.statCol}>
+                  <Text style={styles.statCaption}>PREVISTO</Text>
+                  <Text style={styles.statValue}>
+                    {trendGrupoAval ? trendGrupoAval.expected : '—'}
+                  </Text>
+                </View>
+                <View style={styles.statCol}>
                   <Text style={styles.statCaption}>REALIZADO</Text>
                   <Text style={styles.statValue}>{totalAvalGrupo}</Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>PREVISTO</Text>
+                  <Text style={styles.statCaption}>TENDÊNCIA</Text>
                   <Text style={[styles.statValue, { color: trendGrupoAval ? trendGrupoAval.color : 'rgba(255,255,255,0.5)' }]}>
                     {trendGrupoAval ? trendGrupoAval.projection : '—'}
                   </Text>
@@ -430,11 +442,17 @@ export default function HerbalifeTeam() {
                         <Text style={styles.miniStatNum}>{downline.metaAgendamentos}</Text>
                       </View>
                       <View style={styles.miniStatCol}>
+                        <Text style={styles.miniStatLabel}>Previsto</Text>
+                        <Text style={styles.miniStatNum}>
+                          {downline.trendAgend ? downline.trendAgend.expected : '—'}
+                        </Text>
+                      </View>
+                      <View style={styles.miniStatCol}>
                         <Text style={styles.miniStatLabel}>Feito</Text>
                         <Text style={styles.miniStatNum}>{downline.agendamentosMes}</Text>
                       </View>
                       <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Previsto</Text>
+                        <Text style={styles.miniStatLabel}>Tendência</Text>
                         <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : T.t3 }]}>
                           {downline.trendAgend ? downline.trendAgend.projection : '—'}
                         </Text>
@@ -463,11 +481,17 @@ export default function HerbalifeTeam() {
                         <Text style={styles.miniStatNum}>{downline.metaAvaliacoes}</Text>
                       </View>
                       <View style={styles.miniStatCol}>
+                        <Text style={styles.miniStatLabel}>Previsto</Text>
+                        <Text style={styles.miniStatNum}>
+                          {downline.trendAval ? downline.trendAval.expected : '—'}
+                        </Text>
+                      </View>
+                      <View style={styles.miniStatCol}>
                         <Text style={styles.miniStatLabel}>Feito</Text>
                         <Text style={styles.miniStatNum}>{downline.avaliacoesMes}</Text>
                       </View>
                       <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Previsto</Text>
+                        <Text style={styles.miniStatLabel}>Tendência</Text>
                         <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : T.t3 }]}>
                           {downline.trendAval ? downline.trendAval.projection : '—'}
                         </Text>
@@ -540,8 +564,8 @@ const styles = StyleSheet.create({
   heroMeta: { fontSize: 16, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
   statGrid: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, marginBottom: 10 },
   statCol: { alignItems: 'center', flex: 1 },
-  statCaption: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5, marginBottom: 2 },
-  statValue: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  statCaption: { fontSize: 9, fontWeight: '800', color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5, marginBottom: 2 },
+  statValue: { fontSize: 17, fontWeight: '900', color: '#fff' },
   progressBar: { height: 8, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: 8, borderRadius: 4 },
   heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginVertical: 20 },
@@ -589,8 +613,8 @@ const styles = StyleSheet.create({
   miniStatCaption: { fontSize: 10, fontWeight: '800', color: T.t3, letterSpacing: 0.4, marginBottom: 6, textTransform: 'uppercase' },
   miniStatGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   miniStatCol: { alignItems: 'center' },
-  miniStatLabel: { fontSize: 9, fontWeight: '700', color: T.t3, marginBottom: 1 },
-  miniStatNum: { fontSize: 15, fontWeight: '900', color: T.t1 },
+  miniStatLabel: { fontSize: 8, fontWeight: '700', color: T.t3, marginBottom: 1 },
+  miniStatNum: { fontSize: 13, fontWeight: '900', color: T.t1 },
   miniProgressBar: { height: 6, backgroundColor: T.surface, borderRadius: 3, overflow: 'hidden' },
   miniProgressFill: { height: 6, borderRadius: 3 },
 

@@ -17,6 +17,7 @@ export function getWorkingDays(start: Date, end: Date): number {
 
 export function computeTrend(monthlyGoal: number, actualMonthToDate: number): {
   projection: number;
+  expected: number;
   pct: number;
   status: 'on-track' | 'warning' | 'risk';
   color: string;
@@ -31,6 +32,7 @@ export function computeTrend(monthlyGoal: number, actualMonthToDate: number): {
   if (daysElapsed === 0) return null;
   const dailyAvg   = actualMonthToDate / daysElapsed;
   const projection = Math.round(dailyAvg * daysTotal);
+  const expected   = Math.round(monthlyGoal * (daysTotal > 0 ? daysElapsed / daysTotal : 0));
   const pct        = Math.round((projection / monthlyGoal) * 100);
   let status: 'on-track' | 'warning' | 'risk';
   let color: string;
@@ -45,5 +47,5 @@ export function computeTrend(monthlyGoal: number, actualMonthToDate: number): {
     status = 'risk'; color = '#ef4444';
     label = '🔴 Meta em risco';
   }
-  return { projection, pct, status, color, label };
+  return { projection, expected, pct, status, color, label };
 }
