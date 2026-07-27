@@ -10,7 +10,7 @@ const TABS = [
   { key: "home",     label: "Home",    icon: "🏠", href: "/(protected)"                    },
   { key: "clients",  label: "Alunos",  icon: "👥", href: "/(protected)/clients"             },
   { key: "schedule", label: "Agenda",  icon: "📅", href: "/(protected)/schedule/"           },
-  { key: "goals",    label: "Metas",   icon: "🎯", href: "/(protected)/business-goals"      },
+  { key: "goals",    label: "Negócio", icon: "💼", href: "/(protected)/business-goals"      },
   { key: "config",   label: "Config",  icon: "⚙️", href: "/(protected)/trainer-profile"     },
 ] as const;
 
@@ -19,7 +19,7 @@ function isActive(key: string, pathname: string): boolean {
     case "home":     return pathname === "/";
     case "clients":  return pathname.startsWith("/clients") || pathname.startsWith("/client");
     case "schedule": return pathname.startsWith("/schedule");
-    case "goals":    return pathname.startsWith("/business-goals");
+    case "goals":    return pathname.startsWith("/business-goals") || pathname.startsWith("/herbalife-vendas") || pathname.startsWith("/herbalife-relatorios");
     case "config":   return pathname.startsWith("/trainer-profile");
     default:         return false;
   }
