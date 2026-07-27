@@ -132,7 +132,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .maybeSingle(),
           supabase
             .from('herbalife_sales')
-            .select('id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients(name)')
+            .select('id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
             .eq('trainer_id', trainer.id)
             .eq('sale_date', today)
             .order('created_at', { ascending: false }),
