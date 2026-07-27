@@ -56,7 +56,7 @@ function calcAge(birthDate: string): number {
 }
 
 function sumMacros(foods: { calories: number | null; protein: number | null; carbs: number | null; fat: number | null }[]) {
-  return foods.reduce(
+  return foods.reduce<{ calories: number; protein: number; carbs: number; fat: number }>(
     (acc, f) => ({
       calories: acc.calories + (f.calories || 0),
       protein:  acc.protein  + (f.protein  || 0),
@@ -303,6 +303,18 @@ export default function ClientDiet() {
         <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
       </TouchableOpacity>
 
+      {/* Botão Confirmar Venda Herbalife */}
+      <TouchableOpacity
+        style={styles.hbBtn}
+        onPress={() =>
+          router.push(
+            `/(protected)/herbalife-vendas?client_id=${clientId}` as any
+          )
+        }
+      >
+        <Text style={styles.hbBtnText}>💰 Confirmar Venda Herbalife</Text>
+      </TouchableOpacity>
+
       {/* Plano alimentar */}
       {mealPlan ? (
         <>
@@ -407,4 +419,7 @@ const styles = StyleSheet.create({
 
   aiBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#D4AF37" },
   aiBtnText: { color: "#D4AF37", fontWeight: "800", fontSize: 15 },
+
+  hbBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#4ADE80" },
+  hbBtnText: { color: "#4ADE80", fontWeight: "800", fontSize: 15 },
 });

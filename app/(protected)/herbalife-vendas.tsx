@@ -4,7 +4,7 @@
 // Fechado) + vendas do dia. Alimenta toda a cascata de
 // relatórios (v_herbalife_daily/weekly/monthly).
 // ============================================================
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -75,6 +75,8 @@ interface SaleRow {
 }
 
 export default function HerbalifeVendas() {
+  const { client_id: prefillClientId } = useLocalSearchParams();
+  const [prefillDone, setPrefillDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -157,6 +159,23 @@ export default function HerbalifeVendas() {
       setKitItems((ki as any) || []);
       setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
       setClients((cl as any) || []);
+
+      // Pré-seleção vinda da tela de dieta (Confirmar Venda)
+      if (prefillClientId && !prefillDone) {
+        const found = ((cl as any) || []).find((c: any) => c.id === prefillClientId);
+        if (found) {
+          setSelClient(found);
+          setSaleType('acesso');
+          setSelKit(null);
+          setSelProduct(null);
+          setQty('1');
+          setPrice('');
+          setManualName('');
+          setIsIndicacao(false);
+          setModalOpen(true);
+        }
+        setPrefillDone(true);
+      }
     } catch (e) {
       console.error('Erro ao carregar vendas Herbalife:', e);
     } finally {
