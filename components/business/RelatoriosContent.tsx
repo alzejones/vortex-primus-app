@@ -189,6 +189,26 @@ export default function RelatoriosContent() {
               </View>
             ))}
             {monthly.length === 0 && <Text style={s.empty}>Sem dados mensais.</Text>}
+
+            {monthly.length > 0 && (
+              <>
+                <Text style={s.trendTitle}>— Tendências —</Text>
+                <View style={s.headRow}>
+                  <Text style={[s.hCell, { flex: 1 }]}>Mês</Text>
+                  <Text style={[s.hCell, { flex: 1 }]}>P.V.T.</Text>
+                  <Text style={[s.hCell, { flex: 1.4 }]}>Ganhos</Text>
+                </View>
+                {monthly.map((r) => (
+                  <View key={`tend-${r.month_start}`} style={s.row}>
+                    <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>
+                      {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
+                    </Text>
+                    <Text style={[s.cell, { flex: 1 }]}>{Number(r.tendencia_pvt).toFixed(2)}</Text>
+                    <Text style={[s.cell, { flex: 1.4, color: T.blue }]}>{brl(r.tendencia_ganhos)}</Text>
+                  </View>
+                ))}
+              </>
+            )}
           </>
         )}
       </ScrollView>
@@ -209,6 +229,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1E1E1E' },
   cell: { flex: 0.8, color: '#BBB', fontSize: 12 },
   empty: { color: '#777', fontStyle: 'italic', marginTop: 12 },
+  trendTitle: { color: '#FFF', fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 },
   weekCard: { backgroundColor: '#1A1A1A', borderRadius: 12, padding: 14, marginBottom: 10 },
   weekTitle: { color: '#FFF', fontWeight: '700', marginBottom: 8 },
   weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
