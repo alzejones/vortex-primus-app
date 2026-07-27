@@ -4,7 +4,7 @@
 // Fechado) + vendas do dia. Alimenta toda a cascata de
 // relatórios (v_herbalife_daily/weekly/monthly).
 // ============================================================
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -105,6 +105,7 @@ export default function HerbalifeVendas() {
   const [manualName, setManualName] = useState('');
   const [isIndicacao, setIsIndicacao] = useState(false);
   const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | null>(null);
+  const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -258,6 +259,11 @@ export default function HerbalifeVendas() {
     setPickerOpen(null);
   }
 
+  function openPicker(type: 'kit' | 'produto' | 'cliente') {
+    setPickerSearch('');
+    setPickerOpen(type);
+  }
+
   async function saveSale() {
     if (!trainerId) return;
     const chargedUnit = parseFloat(price.replace(',', '.'));
@@ -392,7 +398,12 @@ export default function HerbalifeVendas() {
           <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={T.blue} />
         }
       >
-        <Text style={s.title}>Vendas Herbalife</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={s.title}>Vendas Herbalife</Text>
+          <TouchableOpacity onPress={() => router.push('/herbalife-relatorios' as any)}>
+            <Text style={{ color: T.blue, fontWeight: '700', fontSize: 13 }}>📊 Relatórios</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* resumo do dia */}
         <View style={s.cardsRow}>
@@ -470,18 +481,18 @@ export default function HerbalifeVendas() {
               </View>
 
               {saleType === 'acesso' ? (
-                <TouchableOpacity style={s.selector} onPress={() => setPickerOpen('kit')}>
+                <TouchableOpacity style={s.selector} onPress={() => openPicker('kit')}>
                   <Text style={s.selectorTxt}>{selKit ? selKit.name : 'Selecionar kit…'}</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity style={s.selector} onPress={() => setPickerOpen('produto')}>
+                <TouchableOpacity style={s.selector} onPress={() => openPicker('produto')}>
                   <Text style={s.selectorTxt} numberOfLines={1}>
                     {selProduct ? selProduct.name : 'Selecionar produto…'}
                   </Text>
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity style={s.selector} onPress={() => setPickerOpen('cliente')}>
+              <TouchableOpacity style={s.selector} onPress={() => openPicker('cliente')}>
                 <Text style={s.selectorTxt}>
                   {selClient ? selClient.name : 'Cliente cadastrado (opcional)…'}
                 </Text>
@@ -532,14 +543,24 @@ export default function HerbalifeVendas() {
             <Text style={s.modalTitle}>
               {pickerOpen === 'kit' ? 'Kits' : pickerOpen === 'produto' ? 'Produtos' : 'Clientes'}
             </Text>
+            <TextInput
+              style={s.input}
+              placeholder="Buscar por nome…"
+              placeholderTextColor="#777"
+              value={pickerSearch}
+              onChangeText={setPickerSearch}
+              autoFocus
+            />
             <FlatList
-              data={
+              data={(
                 pickerOpen === 'kit'
                   ? kits
                   : pickerOpen === 'produto'
                   ? pricing.filter((p) => p.name)
                   : clients
-              }
+              ).filter((item: any) =>
+                (item.name || '').toLowerCase().includes(pickerSearch.trim().toLowerCase())
+              )}
               keyExtractor={(item: any) => item.id || item.supplement_id}
               renderItem={({ item }: any) => (
                 <TouchableOpacity
@@ -562,7 +583,7 @@ export default function HerbalifeVendas() {
                 </TouchableOpacity>
               )}
             />
-            <TouchableOpacity style={[s.btn, s.btnGhost, { marginTop: 8 }]} onPress={() => setPickerOpen(null)}>
+            <TouchableOpacity style={[s.btn, s.btnGhost, { marginTop: 8 }]} onPress={() => { setPickerSearch(''); setPickerOpen(null); }}>
               <Text style={s.btnGhostTxt}>Fechar</Text>
             </TouchableOpacity>
           </View>
