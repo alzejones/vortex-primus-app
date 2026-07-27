@@ -1,0 +1,598 @@
+// ============================================================
+// herbalife-vendas.tsx — Lançamento de Vendas Herbalife
+// Contador de convites + Nova Venda (Acesso/Kit ou Produto
+// Fechado) + vendas do dia. Alimenta toda a cascata de
+// relatórios (v_herbalife_daily/weekly/monthly).
+// ============================================================
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../lib/supabase';
+import { T } from '../../utils/theme';
+
+// ---------- helpers ----------
+function notify(title: string, msg: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
+  else Alert.alert(title, msg);
+}
+const brl = (v: number) =>
+  `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
+
+// ---------- tipos ----------
+interface Kit {
+  id: string;
+  name: string;
+  default_price: number;
+}
+interface KitItem {
+  kit_id: string;
+  supplement_id: string;
+  doses_used: number;
+}
+interface Pricing {
+  supplement_id: string;
+  sku: string;
+  pv: number;
+  price_venda: number;
+  price_bronze: number;
+  price_prata: number;
+  price_ouro: number;
+  price_25: number;
+  price_35: number;
+  price_42: number;
+  price_50: number;
+  doses_per_package: number | null;
+  name?: string;
+}
+interface ClientRow {
+  id: string;
+  name: string;
+  herbalife_discount_level: string;
+}
+interface SaleRow {
+  id: string;
+  client_name_manual: string | null;
+  client_status: string | null;
+  sale_type: string;
+  total_charged: number;
+  total_profit: number;
+  total_pv: number;
+  clients?: { name: string } | null;
+}
+
+export default function HerbalifeVendas() {
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [trainerLevel, setTrainerLevel] = useState<string>('50');
+
+  // resumo do dia
+  const [convites, setConvites] = useState(0);
+  const [acessosHoje, setAcessosHoje] = useState(0);
+  const [ganhosHoje, setGanhosHoje] = useState(0);
+  const [vendasHoje, setVendasHoje] = useState<SaleRow[]>([]);
+
+  // catálogo
+  const [kits, setKits] = useState<Kit[]>([]);
+  const [kitItems, setKitItems] = useState<KitItem[]>([]);
+  const [pricing, setPricing] = useState<Pricing[]>([]);
+  const [clients, setClients] = useState<ClientRow[]>([]);
+
+  // modal nova venda
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saleType, setSaleType] = useState<'acesso' | 'produto_fechado'>('acesso');
+  const [selKit, setSelKit] = useState<Kit | null>(null);
+  const [selProduct, setSelProduct] = useState<Pricing | null>(null);
+  const [qty, setQty] = useState('1');
+  const [price, setPrice] = useState('');
+  const [selClient, setSelClient] = useState<ClientRow | null>(null);
+  const [manualName, setManualName] = useState('');
+  const [isIndicacao, setIsIndicacao] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id;
+      if (!uid) return;
+      const { data: trainer } = await supabase
+        .from('trainers')
+        .select('id, herbalife_discount_level')
+        .eq('user_id', uid)
+        .single();
+      if (!trainer) return;
+      setTrainerId(trainer.id);
+      setTrainerLevel(trainer.herbalife_discount_level || '50');
+
+      const today = new Date().toISOString().slice(0, 10);
+
+      const [{ data: daily }, { data: sales }, { data: k }, { data: ki }, { data: pr }, { data: cl }] =
+        await Promise.all([
+          supabase
+            .from('v_herbalife_daily')
+            .select('convites, acessos, ganhos')
+            .eq('trainer_id', trainer.id)
+            .eq('report_date', today)
+            .maybeSingle(),
+          supabase
+            .from('herbalife_sales')
+            .select('id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients(name)')
+            .eq('trainer_id', trainer.id)
+            .eq('sale_date', today)
+            .order('created_at', { ascending: false }),
+          supabase.from('herbalife_kits').select('id, name, default_price').eq('active', true).order('name'),
+          supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
+          supabase
+            .from('herbalife_pricing')
+            .select('*, supplements(name)')
+            .order('sku'),
+          supabase
+            .from('clients')
+            .select('id, name, herbalife_discount_level')
+            .eq('trainer_id', trainer.id)
+            .eq('is_active', true)
+            .order('name'),
+        ]);
+
+      setConvites(daily?.convites ?? 0);
+      setAcessosHoje(daily?.acessos ?? 0);
+      setGanhosHoje(Number(daily?.ganhos ?? 0));
+      setVendasHoje((sales as any) || []);
+      setKits((k as any) || []);
+      setKitItems((ki as any) || []);
+      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
+      setClients((cl as any) || []);
+    } catch (e) {
+      console.error('Erro ao carregar vendas Herbalife:', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  // ---------- convites ----------
+  async function bumpInvites(delta: number) {
+    if (!trainerId) return;
+    const { data, error } = await supabase.rpc('increment_daily_invites', {
+      p_trainer_id: trainerId,
+      p_delta: delta,
+    });
+    if (!error) setConvites(data ?? 0);
+  }
+
+  // ---------- custo por nível do consultor ----------
+  function trainerUnitCost(p: Pricing): number {
+    const map: Record<string, number> = {
+      '25': p.price_25,
+      '35': p.price_35,
+      '42': p.price_42,
+      '50': p.price_50,
+    };
+    return Number(map[trainerLevel] ?? p.price_50);
+  }
+  function clientUnitPrice(p: Pricing, level: string): number {
+    const map: Record<string, number> = {
+      venda: p.price_venda,
+      bronze: p.price_bronze,
+      prata: p.price_prata,
+      ouro: p.price_ouro,
+    };
+    return Number(map[level] ?? p.price_venda);
+  }
+
+  // custo do kit = soma (custo_pote/doses) * doses_usadas
+  function kitCost(kit: Kit): { cost: number; pv: number } {
+    let cost = 0;
+    let pv = 0;
+    for (const item of kitItems.filter((i) => i.kit_id === kit.id)) {
+      const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+      if (!p) continue;
+      const doses = p.doses_per_package || 1;
+      cost += (trainerUnitCost(p) / doses) * Number(item.doses_used);
+      pv += (Number(p.pv) / doses) * Number(item.doses_used);
+    }
+    return { cost, pv };
+  }
+
+  function openNewSale() {
+    setSaleType('acesso');
+    setSelKit(null);
+    setSelProduct(null);
+    setQty('1');
+    setPrice('');
+    setSelClient(null);
+    setManualName('');
+    setIsIndicacao(false);
+    setModalOpen(true);
+  }
+
+  function pickKit(k: Kit) {
+    setSelKit(k);
+    setPrice(String(k.default_price));
+    setPickerOpen(null);
+  }
+  function pickProduct(p: Pricing) {
+    setSelProduct(p);
+    const level = selClient?.herbalife_discount_level || 'venda';
+    setPrice(String(clientUnitPrice(p, level)));
+    setPickerOpen(null);
+  }
+
+  async function saveSale() {
+    if (!trainerId) return;
+    const chargedUnit = parseFloat(price.replace(',', '.'));
+    const quantity = parseInt(qty) || 1;
+    if (isNaN(chargedUnit) || chargedUnit <= 0) {
+      notify('Atenção', 'Informe um valor válido.');
+      return;
+    }
+    if (saleType === 'acesso' && !selKit) {
+      notify('Atenção', 'Selecione um kit.');
+      return;
+    }
+    if (saleType === 'produto_fechado' && !selProduct) {
+      notify('Atenção', 'Selecione um produto.');
+      return;
+    }
+    if (!selClient && !manualName.trim()) {
+      notify('Atenção', 'Selecione um cliente ou digite o nome.');
+      return;
+    }
+    setSaving(true);
+    try {
+      // status N/I automático: indicação > repetidor (já comprou) > novo
+      let status: 'novo' | 'indicacao' | 'repetidor' = 'novo';
+      if (isIndicacao) status = 'indicacao';
+      else if (selClient) {
+        const { count } = await supabase
+          .from('herbalife_sales')
+          .select('id', { count: 'exact', head: true })
+          .eq('client_id', selClient.id);
+        if ((count ?? 0) > 0) status = 'repetidor';
+      }
+
+      let totalCharged = 0;
+      let totalCost = 0;
+      let totalPv = 0;
+      const items: any[] = [];
+
+      if (saleType === 'acesso' && selKit) {
+        const { cost, pv } = kitCost(selKit);
+        totalCharged = chargedUnit * quantity;
+        totalCost = cost * quantity;
+        totalPv = pv * quantity;
+        for (const item of kitItems.filter((i) => i.kit_id === selKit.id)) {
+          const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+          if (!p) continue;
+          const doses = p.doses_per_package || 1;
+          items.push({
+            supplement_id: item.supplement_id,
+            kit_id: selKit.id,
+            quantity: Number(item.doses_used) * quantity,
+            unit_charged: 0,
+            unit_cost: trainerUnitCost(p) / doses,
+            pv: (Number(p.pv) / doses) * Number(item.doses_used),
+          });
+        }
+      } else if (selProduct) {
+        const cost = trainerUnitCost(selProduct);
+        totalCharged = chargedUnit * quantity;
+        totalCost = cost * quantity;
+        totalPv = Number(selProduct.pv) * quantity;
+        items.push({
+          supplement_id: selProduct.supplement_id,
+          kit_id: null,
+          quantity,
+          unit_charged: chargedUnit,
+          unit_cost: cost,
+          pv: Number(selProduct.pv),
+        });
+      }
+
+      const { data: sale, error } = await supabase
+        .from('herbalife_sales')
+        .insert({
+          trainer_id: trainerId,
+          client_id: selClient?.id ?? null,
+          client_name_manual: selClient ? null : manualName.trim(),
+          client_status: status,
+          sale_type: saleType,
+          origin: 'manual',
+          total_charged: totalCharged,
+          total_cost: Number(totalCost.toFixed(2)),
+          total_pv: Number(totalPv.toFixed(2)),
+        })
+        .select('id')
+        .single();
+      if (error) throw error;
+
+      const { error: itemsErr } = await supabase
+        .from('herbalife_sale_items')
+        .insert(items.map((i) => ({ ...i, sale_id: sale.id })));
+      if (itemsErr) throw itemsErr;
+
+      setModalOpen(false);
+      load();
+    } catch (e: any) {
+      console.error(e);
+      notify('Erro', e.message || 'Falha ao salvar a venda.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteSale(id: string) {
+    const doDelete = async () => {
+      await supabase.from('herbalife_sales').delete().eq('id', id);
+      load();
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Excluir esta venda?')) doDelete();
+    } else {
+      Alert.alert('Excluir venda', 'Confirma a exclusão?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={[s.center, { backgroundColor: T.bg }]}>
+        <ActivityIndicator size="large" color={T.blue} />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={T.blue} />
+        }
+      >
+        <Text style={s.title}>Vendas Herbalife</Text>
+
+        {/* resumo do dia */}
+        <View style={s.cardsRow}>
+          <View style={s.card}>
+            <Text style={s.cardLabel}>Convites</Text>
+            <View style={s.counterRow}>
+              <TouchableOpacity style={s.counterBtn} onPress={() => bumpInvites(-1)}>
+                <Text style={s.counterBtnTxt}>−</Text>
+              </TouchableOpacity>
+              <Text style={s.cardValue}>{convites}</Text>
+              <TouchableOpacity style={[s.counterBtn, { backgroundColor: T.blue }]} onPress={() => bumpInvites(1)}>
+                <Text style={[s.counterBtnTxt, { color: '#000' }]}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={s.card}>
+            <Text style={s.cardLabel}>Acessos hoje</Text>
+            <Text style={s.cardValue}>{acessosHoje}</Text>
+          </View>
+          <View style={s.card}>
+            <Text style={s.cardLabel}>Ganhos hoje</Text>
+            <Text style={[s.cardValue, { color: '#4ADE80' }]}>{brl(ganhosHoje)}</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity style={s.primaryBtn} onPress={openNewSale}>
+          <Text style={s.primaryBtnTxt}>+ Nova Venda</Text>
+        </TouchableOpacity>
+
+        <Text style={s.sectionTitle}>Vendas de hoje</Text>
+        {vendasHoje.length === 0 && (
+          <Text style={s.empty}>Nenhuma venda lançada hoje.</Text>
+        )}
+        {vendasHoje.map((v) => (
+          <TouchableOpacity key={v.id} style={s.saleRow} onLongPress={() => deleteSale(v.id)}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.saleName}>
+                {v.clients?.name || v.client_name_manual || 'Cliente'}
+                {v.client_status ? `  ·  ${v.client_status[0].toUpperCase()}` : ''}
+              </Text>
+              <Text style={s.saleMeta}>
+                {v.sale_type === 'acesso' ? 'Acesso' : 'Produto fechado'} · PV {Number(v.total_pv).toFixed(2)}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={s.saleCharged}>{brl(Number(v.total_charged))}</Text>
+              <Text style={s.saleProfit}>lucro {brl(Number(v.total_profit))}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+        {vendasHoje.length > 0 && (
+          <Text style={s.hint}>Segure numa venda para excluir.</Text>
+        )}
+      </ScrollView>
+
+      {/* ---------- MODAL NOVA VENDA ---------- */}
+      <Modal visible={modalOpen} animationType="slide" transparent>
+        <View style={s.modalBg}>
+          <View style={s.modalBox}>
+            <ScrollView>
+              <Text style={s.modalTitle}>Nova Venda</Text>
+
+              <View style={s.toggleRow}>
+                {(['acesso', 'produto_fechado'] as const).map((t) => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[s.toggleBtn, saleType === t && s.toggleBtnActive]}
+                    onPress={() => { setSaleType(t); setSelKit(null); setSelProduct(null); setPrice(''); }}
+                  >
+                    <Text style={[s.toggleTxt, saleType === t && s.toggleTxtActive]}>
+                      {t === 'acesso' ? 'Acesso (Kit)' : 'Produto Fechado'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {saleType === 'acesso' ? (
+                <TouchableOpacity style={s.selector} onPress={() => setPickerOpen('kit')}>
+                  <Text style={s.selectorTxt}>{selKit ? selKit.name : 'Selecionar kit…'}</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity style={s.selector} onPress={() => setPickerOpen('produto')}>
+                  <Text style={s.selectorTxt} numberOfLines={1}>
+                    {selProduct ? selProduct.name : 'Selecionar produto…'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity style={s.selector} onPress={() => setPickerOpen('cliente')}>
+                <Text style={s.selectorTxt}>
+                  {selClient ? selClient.name : 'Cliente cadastrado (opcional)…'}
+                </Text>
+              </TouchableOpacity>
+              {!selClient && (
+                <TextInput
+                  style={s.input}
+                  placeholder="Ou nome do cliente avulso"
+                  placeholderTextColor="#777"
+                  value={manualName}
+                  onChangeText={setManualName}
+                />
+              )}
+
+              <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
+                <View style={[s.checkbox, isIndicacao && { backgroundColor: T.blue }]} />
+                <Text style={s.checkTxt}>Veio por indicação</Text>
+              </TouchableOpacity>
+
+              <View style={s.inline}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={s.label}>Qtd</Text>
+                  <TextInput style={s.input} keyboardType="numeric" value={qty} onChangeText={setQty} />
+                </View>
+                <View style={{ flex: 2 }}>
+                  <Text style={s.label}>Valor unitário (editável)</Text>
+                  <TextInput style={s.input} keyboardType="numeric" value={price} onChangeText={setPrice} />
+                </View>
+              </View>
+
+              <View style={s.inline}>
+                <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={() => setModalOpen(false)}>
+                  <Text style={s.btnGhostTxt}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.btn, { backgroundColor: T.blue }]} onPress={saveSale} disabled={saving}>
+                  <Text style={s.btnTxt}>{saving ? 'Salvando…' : 'Confirmar Venda'}</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ---------- PICKER GENÉRICO ---------- */}
+      <Modal visible={pickerOpen !== null} animationType="fade" transparent>
+        <View style={s.modalBg}>
+          <View style={[s.modalBox, { maxHeight: '70%' }]}>
+            <Text style={s.modalTitle}>
+              {pickerOpen === 'kit' ? 'Kits' : pickerOpen === 'produto' ? 'Produtos' : 'Clientes'}
+            </Text>
+            <FlatList
+              data={
+                pickerOpen === 'kit'
+                  ? kits
+                  : pickerOpen === 'produto'
+                  ? pricing.filter((p) => p.name)
+                  : clients
+              }
+              keyExtractor={(item: any) => item.id || item.supplement_id}
+              renderItem={({ item }: any) => (
+                <TouchableOpacity
+                  style={s.pickerRow}
+                  onPress={() => {
+                    if (pickerOpen === 'kit') pickKit(item);
+                    else if (pickerOpen === 'produto') pickProduct(item);
+                    else {
+                      setSelClient(item);
+                      setPickerOpen(null);
+                      if (selProduct) setPrice(String(clientUnitPrice(selProduct, item.herbalife_discount_level)));
+                    }
+                  }}
+                >
+                  <Text style={s.pickerTxt} numberOfLines={1}>
+                    {item.name}
+                    {pickerOpen === 'kit' ? `  ·  ${brl(item.default_price)}` : ''}
+                    {pickerOpen === 'produto' ? `  ·  ${brl(item.price_venda)}` : ''}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity style={[s.btn, s.btnGhost, { marginTop: 8 }]} onPress={() => setPickerOpen(null)}>
+              <Text style={s.btnGhostTxt}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const s = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '700', color: '#FFF', marginBottom: 16 },
+  cardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  card: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center' },
+  cardLabel: { color: '#999', fontSize: 11, marginBottom: 6 },
+  cardValue: { color: '#FFF', fontSize: 18, fontWeight: '700' },
+  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  counterBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' },
+  counterBtnTxt: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  primaryBtn: { backgroundColor: T.blue, borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 20 },
+  primaryBtnTxt: { color: '#000', fontWeight: '700', fontSize: 16 },
+  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  empty: { color: '#777', fontStyle: 'italic' },
+  saleRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+  saleName: { color: '#FFF', fontWeight: '600' },
+  saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
+  saleCharged: { color: '#FFF', fontWeight: '700' },
+  saleProfit: { color: '#4ADE80', fontSize: 12 },
+  hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
+  modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
+  modalTitle: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 14 },
+  toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#242424', alignItems: 'center' },
+  toggleBtnActive: { backgroundColor: T.blue },
+  toggleTxt: { color: '#AAA', fontWeight: '600', fontSize: 13 },
+  toggleTxtActive: { color: '#000' },
+  selector: { backgroundColor: '#242424', borderRadius: 10, padding: 12, marginBottom: 10 },
+  selectorTxt: { color: '#DDD' },
+  input: { backgroundColor: '#242424', borderRadius: 10, padding: 12, color: '#FFF', marginBottom: 10 },
+  label: { color: '#999', fontSize: 12, marginBottom: 4 },
+  inline: { flexDirection: 'row', marginTop: 4 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: '#555', marginRight: 8 },
+  checkTxt: { color: '#DDD' },
+  btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
+  btnTxt: { color: '#000', fontWeight: '700' },
+  btnGhost: { backgroundColor: '#242424' },
+  btnGhostTxt: { color: '#AAA', fontWeight: '600' },
+  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
+  pickerTxt: { color: '#DDD' },
+});
