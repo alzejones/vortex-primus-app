@@ -40,6 +40,10 @@ interface Kit {
 interface Supplement {
   id: string;
   name: string;
+  herbalife_pricing?: {
+    price_venda: number;
+    doses_per_package: number | null;
+  } | null;
 }
 
 interface KitItem {
@@ -83,7 +87,7 @@ export default function HerbalifeKits() {
           .select('*')
           .or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`)
           .order('name'),
-        supabase.from('supplements').select('id, name').order('name'),
+        supabase.from('supplements').select('id, name, herbalife_pricing(price_venda, doses_per_package)').order('name'),
       ]);
 
       setKits((kitsData as Kit[]) || []);
