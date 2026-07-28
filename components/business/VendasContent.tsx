@@ -313,6 +313,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           items.push({
             supplement_id: item.supplement_id,
             kit_id: selKit.id,
+            kit_name: selKit.name,
             quantity: Number(item.doses_used) * quantity,
             unit_charged: 0,
             unit_cost: trainerUnitCost(p) / doses,
