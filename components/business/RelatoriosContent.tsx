@@ -198,7 +198,9 @@ export default function RelatoriosContent() {
                   <Text style={[s.hCell, { flex: 1 }]}>P.V.T.</Text>
                   <Text style={[s.hCell, { flex: 1.4 }]}>Ganhos</Text>
                 </View>
-                {monthly.map((r) => (
+                {monthly
+                  .filter((r) => r.month_start.slice(0, 7) === new Date().toISOString().slice(0, 7))
+                  .map((r) => (
                   <View key={`tend-${r.month_start}`} style={s.row}>
                     <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>
                       {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
