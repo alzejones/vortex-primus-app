@@ -5,6 +5,7 @@
 // relatórios (v_herbalife_daily/weekly/monthly).
 // ============================================================
 import { router, useFocusEffect } from 'expo-router';
+import { todayBR } from '../../utils/dateBR';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -120,7 +121,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
       setTrainerId(trainer.id);
       setTrainerLevel(trainer.herbalife_discount_level || '50');
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayBR();
 
       const [{ data: daily }, { data: sales }, { data: k }, { data: ki }, { data: pr }, { data: cl }] =
         await Promise.all([

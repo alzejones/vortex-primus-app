@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
+import { todayBR, daysAgoBR } from '../../utils/dateBR';
 import { T } from '../../utils/theme';
 
 const brl = (v: number) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
@@ -46,9 +47,7 @@ export default function RelatoriosContent() {
         .single();
       if (!trainer) return;
 
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - 31);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      const cutoffStr = daysAgoBR(31);
 
       const [{ data: d }, { data: w }, { data: m }] = await Promise.all([
         supabase
@@ -199,7 +198,7 @@ export default function RelatoriosContent() {
                   <Text style={[s.hCell, { flex: 1.4 }]}>Ganhos</Text>
                 </View>
                 {monthly
-                  .filter((r) => r.month_start.slice(0, 7) === new Date().toISOString().slice(0, 7))
+                  .filter((r) => r.month_start.slice(0, 7) === todayBR().slice(0, 7))
                   .map((r) => (
                   <View key={`tend-${r.month_start}`} style={s.row}>
                     <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>
