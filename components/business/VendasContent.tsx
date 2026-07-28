@@ -398,7 +398,10 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={T.blue} />
         }
       >
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => router.push('/herbalife-kits' as any)}>
+            <Text style={{ color: T.blue, fontWeight: '700', fontSize: 13 }}>🧰 Kits</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => (onGoToReports ? onGoToReports() : router.push('/herbalife-relatorios' as any))}>
             <Text style={{ color: T.blue, fontWeight: '700', fontSize: 13 }}>📊 Relatórios</Text>
           </TouchableOpacity>
