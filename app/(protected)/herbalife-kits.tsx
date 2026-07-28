@@ -3,7 +3,7 @@
 // CRUD completo: lista, criar, editar, excluir (com validação de vendas)
 // ============================================================
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +32,7 @@ interface Kit {
   trainer_id: string | null;
   name: string;
   default_price: number;
+  kit_type: 'fechado' | 'doses';
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -62,8 +63,10 @@ export default function HerbalifeKits() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
   const [kitName, setKitName] = useState('');
+  const [kitType, setKitType] = useState<'fechado' | 'doses'>('fechado');
   const [kitPrice, setKitPrice] = useState('');
   const [kitItems, setKitItems] = useState<KitItem[]>([]);
+  const [priceManuallyEdited, setPriceManuallyEdited] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [saving, setSaving] = useState(false);
@@ -106,6 +109,19 @@ export default function HerbalifeKits() {
     }, [load])
   );
 
+  useEffect(() => {
+    if (kitType === 'doses' && !priceManuallyEdited && kitItems.length > 0) {
+      const suggested = calculateSuggestedPrice();
+      setKitPrice(suggested > 0 ? suggested.toFixed(2).replace('.', ',') : '');
+    }
+  }, [kitItems, kitType, priceManuallyEdited]);
+
+  useEffect(() => {
+    if (kitType === 'doses') {
+      setPriceManuallyEdited(false);
+    }
+  }, [kitType]);
+
   async function toggleActive(kit: Kit) {
     try {
       const { error } = await supabase
@@ -120,18 +136,35 @@ export default function HerbalifeKits() {
     }
   }
 
+  function calculateSuggestedPrice(): number {
+    let total = 0;
+    for (const item of kitItems) {
+      const sup = supplements.find((s) => s.id === item.supplement_id);
+      if (!sup?.herbalife_pricing) continue;
+      const priceVenda = Number(sup.herbalife_pricing.price_venda);
+      const dosesPerPkg = sup.herbalife_pricing.doses_per_package || 1;
+      const dosesUsed = parseFloat(item.doses_used.replace(',', '.')) || 0;
+      total += (priceVenda / dosesPerPkg) * dosesUsed;
+    }
+    return total;
+  }
+
   async function openCreateModal() {
     setEditingKit(null);
     setKitName('');
+    setKitType('fechado');
     setKitPrice('');
     setKitItems([]);
+    setPriceManuallyEdited(false);
     setModalOpen(true);
   }
 
   async function openEditModal(kit: Kit) {
     setEditingKit(kit);
     setKitName(kit.name);
+    setKitType(kit.kit_type);
     setKitPrice(String(kit.default_price));
+    setPriceManuallyEdited(false);
 
     const { data: items } = await supabase
       .from('herbalife_kit_items')
@@ -252,7 +285,7 @@ export default function HerbalifeKits() {
       if (editingKit) {
         const { error: updateErr } = await supabase
           .from('herbalife_kits')
-          .update({ name: kitName.trim(), default_price: price, updated_at: new Date().toISOString() })
+          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, updated_at: new Date().toISOString() })
           .eq('id', editingKit.id);
         if (updateErr) throw updateErr;
 
@@ -271,7 +304,7 @@ export default function HerbalifeKits() {
       } else {
         const { data: newKit, error: insertErr } = await supabase
           .from('herbalife_kits')
-          .insert({ trainer_id: trainerId, name: kitName.trim(), default_price: price, active: true })
+          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, active: true })
           .select('id')
           .single();
         if (insertErr) throw insertErr;
@@ -387,6 +420,26 @@ export default function HerbalifeKits() {
                 onChangeText={setKitName}
               />
 
+              <Text style={s.label}>Tipo do Kit</Text>
+              <View style={s.typeSelector}>
+                <TouchableOpacity
+                  style={[s.typeOption, kitType === 'fechado' && s.typeOptionActive]}
+                  onPress={() => setKitType('fechado')}
+                >
+                  <Text style={[s.typeOptionTxt, kitType === 'fechado' && s.typeOptionTxtActive]}>
+                    Fechado
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.typeOption, kitType === 'doses' && s.typeOptionActive]}
+                  onPress={() => setKitType('doses')}
+                >
+                  <Text style={[s.typeOptionTxt, kitType === 'doses' && s.typeOptionTxtActive]}>
+                    Doses
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
               <Text style={s.label}>Preço Padrão (R$)</Text>
               <TextInput
                 style={s.input}
@@ -394,8 +447,24 @@ export default function HerbalifeKits() {
                 placeholderTextColor="#777"
                 keyboardType="numeric"
                 value={kitPrice}
-                onChangeText={setKitPrice}
+                onChangeText={(v) => {
+                  setKitPrice(v);
+                  setPriceManuallyEdited(true);
+                }}
               />
+              {kitType === 'doses' && priceManuallyEdited && kitItems.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const suggested = calculateSuggestedPrice();
+                    setKitPrice(suggested > 0 ? suggested.toFixed(2).replace('.', ',') : '');
+                    setPriceManuallyEdited(false);
+                  }}
+                >
+                  <Text style={s.suggestedPrice}>
+                    💡 Sugestão: R$ {calculateSuggestedPrice().toFixed(2).replace('.', ',')}
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               <Text style={s.label}>Produtos do Kit</Text>
               {kitItems.length === 0 && (
@@ -586,4 +655,38 @@ const s = StyleSheet.create({
   btnGhostTxt: { color: '#AAA', fontWeight: '600' },
   pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
   pickerTxt: { color: '#DDD' },
+  typeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 10,
+  },
+  typeOption: {
+    flex: 1,
+    backgroundColor: '#242424',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#242424',
+  },
+  typeOptionActive: {
+    backgroundColor: T.blue + '22',
+    borderColor: T.blue,
+  },
+  typeOptionTxt: {
+    color: '#AAA',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  typeOptionTxtActive: {
+    color: T.blue,
+    fontWeight: '700',
+  },
+  suggestedPrice: {
+    color: T.blue,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: -6,
+    marginBottom: 8,
+  },
 });
