@@ -12,6 +12,7 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { getWorkingDays, computeTrend } from '../../utils/goalCalculations';
+import { todayBR, daysAgoBR, brasiliaDate } from '../../utils/dateBR';
 
 type Period = 'monthly' | 'weekly' | 'daily';
 
@@ -53,7 +54,7 @@ function computeAdjusted(monthlyGoal: number, actualMonthToDate: number) {
 }
 
 function getDateRange(period: Period): { start: string; end: string } {
-  const now = new Date();
+  const now = brasiliaDate();
   if (period === 'monthly') {
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -65,8 +66,7 @@ function getDateRange(period: Period): { start: string; end: string } {
     const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
     return { start: mon.toISOString().split('T')[0], end: fri.toISOString().split('T')[0] };
   }
-  const today = now.toISOString().split('T')[0];
-  return { start: today, end: today };
+  return { start: todayBR(), end: todayBR() };
 }
 
 function ProgressBar({ value, goal, color }: { value: number; goal: number; color: string }) {
@@ -180,15 +180,13 @@ export default function MetasContent() {
     const { start: ms, end: me } = getDateRange('monthly');
 
     // Ontem
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = daysAgoBR(1);
 
     // Fim da semana passada (última sexta-feira)
-    const now2 = new Date();
+    const now2 = brasiliaDate();
     const dow = now2.getDay(); // 0=Dom
-    const lastFri = new Date(now2);
-    lastFri.setDate(now2.getDate() - (dow === 0 ? 2 : dow === 6 ? 1 : dow + 1));
-    const lastFriStr = lastFri.toISOString().split('T')[0];
+    const daysToLastFri = dow === 0 ? 2 : dow === 6 ? 1 : dow + 1;
+    const lastFriStr = daysAgoBR(daysToLastFri);
 
     const [
       { count: sched }, { count: comp },

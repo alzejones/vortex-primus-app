@@ -4,7 +4,7 @@
 // UTC (usado por padrão em new Date().toISOString()) já está
 // no dia seguinte.
 // ============================================================
-function brasiliaDate(base: Date = new Date()): Date {
+export function brasiliaDate(base: Date = new Date()): Date {
   return new Date(base.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
 }
 
