@@ -161,6 +161,65 @@ export default function HerbalifeKits() {
     setKitItems(kitItems.filter((i) => i.supplement_id !== suppId));
   }
 
+  async function deleteKit(kit: Kit) {
+    try {
+      const { count } = await supabase
+        .from('herbalife_sale_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('kit_id', kit.id);
+
+      if ((count ?? 0) > 0) {
+        const confirmDeactivate = () => {
+          supabase
+            .from('herbalife_kits')
+            .update({ active: false, updated_at: new Date().toISOString() })
+            .eq('id', kit.id)
+            .then(() => load());
+        };
+
+        if (Platform.OS === 'web') {
+          if (
+            window.confirm(
+              `Este kit já foi vendido ${count} vez(es) e não pode ser excluído.\n\nDeseja desativá-lo? Ele deixará de aparecer nas novas vendas.`
+            )
+          ) {
+            confirmDeactivate();
+          }
+        } else {
+          Alert.alert(
+            'Kit já foi vendido',
+            `Este kit já foi vendido ${count} vez(es) e não pode ser excluído.\n\nDeseja desativá-lo? Ele deixará de aparecer nas novas vendas.`,
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Desativar', onPress: confirmDeactivate },
+            ]
+          );
+        }
+        return;
+      }
+
+      const confirmDelete = async () => {
+        await supabase.from('herbalife_kit_items').delete().eq('kit_id', kit.id);
+        await supabase.from('herbalife_kits').delete().eq('id', kit.id);
+        load();
+      };
+
+      if (Platform.OS === 'web') {
+        if (window.confirm(`Excluir "${kit.name}"? Esta ação não pode ser desfeita.`)) {
+          confirmDelete();
+        }
+      } else {
+        Alert.alert('Excluir kit', `Confirma a exclusão de "${kit.name}"?`, [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Excluir', style: 'destructive', onPress: confirmDelete },
+        ]);
+      }
+    } catch (e: any) {
+      console.error(e);
+      notify('Erro', e.message || 'Falha ao excluir o kit.');
+    }
+  }
+
   async function saveKit() {
     if (!trainerId) return;
     if (!kitName.trim()) {
@@ -282,6 +341,9 @@ export default function HerbalifeKits() {
                 <Text style={s.kitPrice}>{brl(Number(kit.default_price))}</Text>
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={s.deleteIconBtn} onPress={() => deleteKit(kit)}>
+                  <Text style={{ fontSize: 16 }}>🗑</Text>
+                </TouchableOpacity>
                 <TouchableOpacity style={s.editIconBtn} onPress={() => openEditModal(kit)}>
                   <Text style={{ fontSize: 16 }}>✏️</Text>
                 </TouchableOpacity>
@@ -467,6 +529,16 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   fabTxt: { color: '#000', fontWeight: '800', fontSize: 16 },
+  deleteIconBtn: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+  },
   editIconBtn: {
     backgroundColor: T.surface,
     width: 36,
