@@ -19,6 +19,7 @@ import {
 import { supabase } from "../../../lib/supabase";
 import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
+import { todayBR } from "../../../utils/dateBR";
 
 interface Appointment {
   id: string;
@@ -94,7 +95,7 @@ export default function ScheduleIndex() {
         .from("appointments")
         .select(`id, client_id, appointment_date, appointment_time, types, status, whatsapp_sent, clients(name, phone)`)
         .eq("trainer_id", trainer.id)
-        .gte("appointment_date", new Date().toISOString().split('T')[0])
+        .gte("appointment_date", todayBR())
         .order("appointment_date", { ascending: true })
         .order("appointment_time", { ascending: true });
 
