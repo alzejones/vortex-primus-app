@@ -9,6 +9,7 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import { todayBR } from '../../utils/dateBR';
 
 export default function Index() {
   const [loading, setLoading] = useState(true);
@@ -100,7 +101,7 @@ export default function Index() {
 
       // Clientes sem avaliação há 30+ dias (ou nunca avaliados)
       const today = new Date();
-      const todayForOverdue = new Date().toISOString().split('T')[0];
+      const todayForOverdue = todayBR();
       const { data: futureAppointments } = await supabase
         .from('appointments')
         .select('client_id')
@@ -136,7 +137,7 @@ export default function Index() {
       });
       setBirthdayClients(birthdayClients);
 
-      const todayISO = new Date().toISOString().split('T')[0];
+      const todayISO = todayBR();
       const { data: agendaData } = await supabase
         .from('appointments')
         .select('id, appointment_date, appointment_time, types, clients(name)')
