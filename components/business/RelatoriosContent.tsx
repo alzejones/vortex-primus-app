@@ -24,8 +24,30 @@ const fmtDate = (d: string) => {
   const [y, m, day] = d.split('-');
   return `${day}/${m}`;
 };
+// Soma/subtrai dias a uma data 'YYYY-MM-DD', em UTC puro (sem depender de fuso local)
+function shiftDate(dateStr: string, delta: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + delta);
+  return dt.toISOString().split('T')[0];
+}
+function fmtDateFull(d: string) {
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
 
-type Tab = 'diario' | 'semanal' | 'mensal';
+type Tab = 'diario' | 'semanal' | 'mensal' | 'por_dia';
+
+interface SaleRow {
+  id: string;
+  client_name_manual: string | null;
+  client_status: string | null;
+  sale_type: string;
+  total_charged: number;
+  total_profit: number;
+  total_pv: number;
+  clients?: { name: string } | null;
+}
 
 export default function RelatoriosContent() {
   const [tab, setTab] = useState<Tab>('diario');
@@ -34,6 +56,13 @@ export default function RelatoriosContent() {
   const [daily, setDaily] = useState<any[]>([]);
   const [weekly, setWeekly] = useState<any[]>([]);
   const [monthly, setMonthly] = useState<any[]>([]);
+  const [trainerId, setTrainerId] = useState<string | null>(null);
+
+  // aba "Por Dia"
+  const [selectedDate, setSelectedDate] = useState<string>(todayBR());
+  const [daySales, setDaySales] = useState<SaleRow[]>([]);
+  const [dayProductLines, setDayProductLines] = useState<Record<string, string[]>>({});
+  const [dayLoading, setDayLoading] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -46,6 +75,7 @@ export default function RelatoriosContent() {
         .eq('user_id', uid)
         .single();
       if (!trainer) return;
+      setTrainerId(trainer.id);
 
       const cutoffStr = daysAgoBR(31);
 
@@ -86,6 +116,46 @@ export default function RelatoriosContent() {
     }, [load])
   );
 
+  const loadDaySales = useCallback(async (tid: string, date: string) => {
+    setDayLoading(true);
+    try {
+      const { data: sales } = await supabase
+        .from('herbalife_sales')
+        .select('id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
+        .eq('trainer_id', tid)
+        .eq('sale_date', date)
+        .order('created_at', { ascending: false });
+      setDaySales((sales as any) || []);
+
+      const saleIds = ((sales as any) || []).map((sRow: any) => sRow.id);
+      if (saleIds.length > 0) {
+        const { data: items } = await supabase
+          .from('herbalife_sale_items')
+          .select('sale_id, kit_id, kit_name, supplement_id, supplements(name)')
+          .in('sale_id', saleIds);
+        const lines: Record<string, string[]> = {};
+        (items || []).forEach((it: any) => {
+          const label = it.kit_id ? it.kit_name : (it.supplements?.name || 'Produto');
+          if (!lines[it.sale_id]) lines[it.sale_id] = [];
+          if (!lines[it.sale_id].includes(label)) lines[it.sale_id].push(label);
+        });
+        setDayProductLines(lines);
+      } else {
+        setDayProductLines({});
+      }
+    } catch (e) {
+      console.error('Erro ao carregar vendas do dia:', e);
+    } finally {
+      setDayLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (tab === 'por_dia' && trainerId) loadDaySales(trainerId, selectedDate);
+    }, [tab, trainerId, selectedDate, loadDaySales])
+  );
+
   if (loading) {
     return (
       <View style={[s.center, { backgroundColor: T.bg }]}>
@@ -98,14 +168,14 @@ export default function RelatoriosContent() {
     <View style={{ flex: 1, backgroundColor: T.bg }}>
       <View style={{ padding: 16, paddingBottom: 0 }}>
         <View style={s.tabs}>
-          {(['diario', 'semanal', 'mensal'] as Tab[]).map((t) => (
+          {(['diario', 'semanal', 'mensal', 'por_dia'] as Tab[]).map((t) => (
             <TouchableOpacity
               key={t}
               style={[s.tabBtn, tab === t && s.tabBtnActive]}
               onPress={() => setTab(t)}
             >
               <Text style={[s.tabTxt, tab === t && s.tabTxtActive]}>
-                {t === 'diario' ? 'Diário' : t === 'semanal' ? 'Semanal' : 'Mensal'}
+                {t === 'diario' ? 'Diário' : t === 'semanal' ? 'Semanal' : t === 'mensal' ? 'Mensal' : 'Por Dia'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -115,7 +185,11 @@ export default function RelatoriosContent() {
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={T.blue} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => {
+            setRefreshing(true);
+            load();
+            if (tab === 'por_dia' && trainerId) loadDaySales(trainerId, selectedDate);
+          }} tintColor={T.blue} />
         }
       >
         {tab === 'diario' && (
@@ -212,6 +286,71 @@ export default function RelatoriosContent() {
             )}
           </>
         )}
+        {tab === 'por_dia' && (
+          <>
+            <View style={s.dateNav}>
+              <TouchableOpacity style={s.dateNavBtn} onPress={() => setSelectedDate((d) => shiftDate(d, -1))}>
+                <Text style={s.dateNavBtnTxt}>◀</Text>
+              </TouchableOpacity>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={s.dateNavLabel}>{fmtDateFull(selectedDate)}</Text>
+                {selectedDate !== todayBR() && (
+                  <TouchableOpacity onPress={() => setSelectedDate(todayBR())}>
+                    <Text style={s.dateNavToday}>Ir para hoje</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity style={s.dateNavBtn} onPress={() => setSelectedDate((d) => shiftDate(d, 1))}>
+                <Text style={s.dateNavBtnTxt}>▶</Text>
+              </TouchableOpacity>
+            </View>
+
+            {dayLoading ? (
+              <ActivityIndicator size="small" color={T.blue} style={{ marginTop: 20 }} />
+            ) : (
+              <>
+                <View style={s.dayCardsRow}>
+                  <View style={s.dayCard}>
+                    <Text style={s.dayCardLabel}>Vendas</Text>
+                    <Text style={s.dayCardValue}>{daySales.length}</Text>
+                  </View>
+                  <View style={s.dayCard}>
+                    <Text style={s.dayCardLabel}>Faturado</Text>
+                    <Text style={s.dayCardValue}>{brl(daySales.reduce((sum, v) => sum + Number(v.total_charged), 0))}</Text>
+                  </View>
+                  <View style={s.dayCard}>
+                    <Text style={s.dayCardLabel}>Lucro</Text>
+                    <Text style={[s.dayCardValue, { color: '#4ADE80' }]}>{brl(daySales.reduce((sum, v) => sum + Number(v.total_profit), 0))}</Text>
+                  </View>
+                </View>
+
+                {daySales.length === 0 && (
+                  <Text style={s.empty}>Nenhuma venda nesse dia.</Text>
+                )}
+                {daySales.map((v) => (
+                  <View key={v.id} style={s.saleRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.saleName}>
+                        {v.clients?.name || v.client_name_manual || 'Cliente'}
+                        {v.client_status ? `  ·  ${v.client_status[0].toUpperCase()}` : ''}
+                      </Text>
+                      {(dayProductLines[v.id] || []).map((line, idx) => (
+                        <Text key={idx} style={s.saleProduct}>{line}</Text>
+                      ))}
+                      <Text style={s.saleMeta}>
+                        {v.sale_type === 'acesso' ? 'Acesso' : 'Produto fechado'} · PV {Number(v.total_pv).toFixed(2)}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={s.saleCharged}>{brl(Number(v.total_charged))}</Text>
+                      <Text style={s.saleProfit}>lucro {brl(Number(v.total_profit))}</Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -236,4 +375,19 @@ const s = StyleSheet.create({
   weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   weekLabel: { color: '#999', fontSize: 13 },
   weekValue: { color: '#FFF', fontWeight: '600', fontSize: 13 },
+  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  dateNavBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center' },
+  dateNavBtnTxt: { color: T.blue, fontSize: 16, fontWeight: '700' },
+  dateNavLabel: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  dateNavToday: { color: T.blue, fontSize: 11, fontWeight: '600', marginTop: 2 },
+  dayCardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  dayCard: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center' },
+  dayCardLabel: { color: '#999', fontSize: 11, marginBottom: 6 },
+  dayCardValue: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  saleRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+  saleName: { color: '#FFF', fontWeight: '600' },
+  saleProduct: { color: '#BBB', fontSize: 12, marginTop: 2 },
+  saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
+  saleCharged: { color: '#FFF', fontWeight: '700' },
+  saleProfit: { color: '#4ADE80', fontSize: 12 },
 });
