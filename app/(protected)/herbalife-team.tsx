@@ -2,6 +2,7 @@
 // herbalife-team.tsx — Painel da Equipe Herbalife
 // Dashboard completo de produtividade dos downlines com ranking,
 // destaques, sparklines e reconhecimento via WhatsApp
+// + Relatórios de negócio (vendas, PV, convites) dos downlines
 // ============================================================
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -63,11 +64,30 @@ interface ProcessedDownline {
   diasSemAvaliar: number | null;
 }
 
+interface BusinessReportRow {
+  trainer_id: string;
+  trainer_name: string;
+  report_date: string;
+  convites: number;
+  entraram: number;
+  novos: number;
+  indicacoes: number;
+  acessos: number;
+  ganhos: number;
+  pv: number;
+}
+
+type Tab = 'produtividade' | 'relatorios';
+
 export default function HerbalifeTeam() {
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>('produtividade');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [downlines, setDownlines] = useState<ProcessedDownline[]>([]);
+  const [businessReports, setBusinessReports] = useState<BusinessReportRow[]>([]);
+  const [businessLoading, setBusinessLoading] = useState(false);
+  const [selectedDownlineId, setSelectedDownlineId] = useState<string | null>(null);
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
@@ -151,9 +171,35 @@ export default function HerbalifeTeam() {
     }
   }
 
+  async function loadBusinessReports() {
+    try {
+      setBusinessLoading(true);
+      const { data, error } = await supabase.rpc('get_downline_business_reports');
+      if (error) throw error;
+      setBusinessReports(data || []);
+    } catch (err) {
+      console.error('Erro ao carregar relatórios:', err);
+      setBusinessReports([]);
+    } finally {
+      setBusinessLoading(false);
+      setRefreshing(false);
+    }
+  }
+
   async function onRefresh() {
     setRefreshing(true);
-    await loadData();
+    if (tab === 'produtividade') {
+      await loadData();
+    } else {
+      await loadBusinessReports();
+    }
+  }
+
+  function handleTabChange(newTab: Tab) {
+    setTab(newTab);
+    if (newTab === 'relatorios' && businessReports.length === 0) {
+      loadBusinessReports();
+    }
   }
 
   function handleWhatsApp(downline: ProcessedDownline) {
@@ -230,320 +276,577 @@ export default function HerbalifeTeam() {
   const trendGrupoAval = computeTrend(metaTotalAval, totalAvalGrupo);
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.blue} />}
-    >
-      <Text style={styles.eyebrow}>EQUIPE HERBALIFE</Text>
-      <Text style={styles.title}>Painel da Equipe</Text>
-      <Text style={styles.subtitle}>
-        {capitalizedMonth} · {downlines.length} {downlines.length === 1 ? 'consultor ativo' : 'consultores ativos'}
-      </Text>
-      <Text style={styles.helperNote}>Previsto = ritmo esperado até hoje · Tendência = fechamento estimado no ritmo atual</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.eyebrow}>EQUIPE HERBALIFE</Text>
+        <Text style={styles.title}>Painel da Equipe</Text>
+        <Text style={styles.subtitle}>
+          {capitalizedMonth} · {downlines.length} {downlines.length === 1 ? 'consultor ativo' : 'consultores ativos'}
+        </Text>
+      </View>
 
-      {downlines.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>👥</Text>
-          <Text style={styles.emptyTitle}>Sua equipe ainda não está conectada</Text>
-          <Text style={styles.emptyText}>
-            Os consultores precisam ativar "Sou Consultor Independente Herbalife" no perfil e informar o seu celular como Presidente.
-          </Text>
-          <TouchableOpacity style={styles.shareBtn} onPress={handleShareApp}>
-            <Text style={styles.shareBtnText}>Compartilhar o Vortex Primus</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <LinearGradient {...GradientPrimary} style={styles.heroCard}>
-            <View style={styles.heroRow}>
-              <Text style={styles.heroLabel}>📅 Agendamentos</Text>
-              <View style={styles.statGrid}>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>META</Text>
-                  <Text style={styles.statValue}>{metaTotalAgend}</Text>
-                </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>PREVISTO</Text>
-                  <Text style={styles.statValue}>
-                    {trendGrupoAgend ? trendGrupoAgend.expected : '—'}
-                  </Text>
-                </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>REALIZADO</Text>
-                  <Text style={styles.statValue}>{totalAgendGrupo}</Text>
-                </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>TENDÊNCIA</Text>
-                  <Text style={[styles.statValue, { color: trendGrupoAgend ? trendGrupoAgend.color : 'rgba(255,255,255,0.5)' }]}>
-                    {trendGrupoAgend ? trendGrupoAgend.projection : '—'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: metaTotalAgend > 0 ? `${Math.min((totalAgendGrupo / metaTotalAgend) * 100, 100)}%` : '0%',
-                      backgroundColor: T.blue,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tabBtn, tab === 'produtividade' && styles.tabBtnActive]}
+          onPress={() => handleTabChange('produtividade')}
+        >
+          <Text style={[styles.tabText, tab === 'produtividade' && styles.tabTextActive]}>Produtividade</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tabBtn, tab === 'relatorios' && styles.tabBtnActive]}
+          onPress={() => handleTabChange('relatorios')}
+        >
+          <Text style={[styles.tabText, tab === 'relatorios' && styles.tabTextActive]}>Relatórios</Text>
+        </TouchableOpacity>
+      </View>
 
-            <View style={[styles.heroRow, { marginTop: 16 }]}>
-              <Text style={styles.heroLabel}>✅ Avaliações</Text>
-              <View style={styles.statGrid}>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>META</Text>
-                  <Text style={styles.statValue}>{metaTotalAval}</Text>
-                </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>PREVISTO</Text>
-                  <Text style={styles.statValue}>
-                    {trendGrupoAval ? trendGrupoAval.expected : '—'}
-                  </Text>
-                </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>REALIZADO</Text>
-                  <Text style={styles.statValue}>{totalAvalGrupo}</Text>
-                </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statCaption}>TENDÊNCIA</Text>
-                  <Text style={[styles.statValue, { color: trendGrupoAval ? trendGrupoAval.color : 'rgba(255,255,255,0.5)' }]}>
-                    {trendGrupoAval ? trendGrupoAval.projection : '—'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: metaTotalAval > 0 ? `${Math.min((totalAvalGrupo / metaTotalAval) * 100, 100)}%` : '0%',
-                      backgroundColor: T.green,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.blue} />}
+      >
+        {tab === 'produtividade' ? (
+          <>
+            <Text style={styles.helperNote}>Previsto = ritmo esperado até hoje · Tendência = fechamento estimado no ritmo atual</Text>
 
-            <View style={styles.heroDivider} />
-
-            <Text style={styles.heroExecLabel}>Execução do Grupo</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
-              <Text style={styles.heroExecValue}>{execucaoGrupo}%</Text>
-              <View
-                style={[
-                  styles.heroChip,
-                  { backgroundColor: deltaTotalGrupo >= 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' },
-                ]}
-              >
-                <Text style={{ color: deltaTotalGrupo >= 0 ? T.green : T.red, fontSize: 12, fontWeight: '800' }}>
-                  {deltaTotalGrupo >= 0 ? '▲' : '▼'} {Math.abs(deltaTotalGrupo)} vs mês anterior
+            {downlines.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyIcon}>👥</Text>
+                <Text style={styles.emptyTitle}>Sua equipe ainda não está conectada</Text>
+                <Text style={styles.emptyText}>
+                  Os consultores precisam ativar "Sou Consultor Independente Herbalife" no perfil e informar o seu celular como Presidente.
                 </Text>
+                <TouchableOpacity style={styles.shareBtn} onPress={handleShareApp}>
+                  <Text style={styles.shareBtnText}>Compartilhar o Vortex Primus</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          </LinearGradient>
-
-          {showDestaques && (
-            <View style={styles.destaquesContainer}>
-              <Text style={styles.destaquesTitle}>Destaques do Mês</Text>
-              <View style={styles.destaquesRow}>
-                {destaqueMes && (
-                  <View style={styles.destaqueCard}>
-                    <Text style={styles.destaqueIcon}>🏆</Text>
-                    <Text style={styles.destaqueLabel}>Destaque do Mês</Text>
-                    <Text style={styles.destaqueValue}>
-                      {destaqueMes.name.split(' ')[0]} · {Math.round((destaqueMes.execucao || 0) * 100)}%
-                    </Text>
-                  </View>
-                )}
-                {maiorEvolucao && maiorEvolucao.deltaMoM > 0 && (
-                  <View style={styles.destaqueCard}>
-                    <Text style={styles.destaqueIcon}>🚀</Text>
-                    <Text style={styles.destaqueLabel}>Maior Evolução</Text>
-                    <Text style={styles.destaqueValue}>
-                      {maiorEvolucao.name.split(' ')[0]} · +{maiorEvolucao.deltaMoM}
-                    </Text>
-                  </View>
-                )}
-                {precisaApoio && (
-                  <View style={[styles.destaqueCard, { borderColor: 'rgba(245,158,11,0.3)' }]}>
-                    <Text style={styles.destaqueIcon}>🤝</Text>
-                    <Text style={styles.destaqueLabel}>Precisa de Apoio</Text>
-                    <Text style={styles.destaqueValue}>
-                      {precisaApoio.name.split(' ')[0]} · {Math.round((precisaApoio.execucao || 0) * 100)}%
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
-
-          <Text style={styles.rankingTitle}>Ranking da Equipe</Text>
-
-          {downlines.map((downline, idx) => {
-            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
-            const initials = downline.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
-
-            let atividadeLabel = '';
-            let atividadeColor = T.t3;
-            if (downline.diasSemAvaliar === null) {
-              atividadeLabel = 'Sem avaliações';
-              atividadeColor = T.t3;
-            } else if (downline.diasSemAvaliar <= 7) {
-              atividadeLabel = 'Ativo';
-              atividadeColor = T.green;
-            } else if (downline.diasSemAvaliar <= 30) {
-              atividadeLabel = `Há ${downline.diasSemAvaliar} dias`;
-              atividadeColor = T.orange;
-            } else {
-              atividadeLabel = `Inativo há ${downline.diasSemAvaliar} dias`;
-              atividadeColor = T.red;
-            }
-
-            const statusChip = downline.trendAgend || downline.trendAval
-              ? (downline.trendAgend || downline.trendAval)
-              : null;
-
-            return (
-              <View key={downline.id} style={styles.rankCard}>
-                <View style={styles.rankHeader}>
-                  <Text style={styles.rankMedal}>{medal}</Text>
-                  <View style={styles.rankAvatar}>
-                    <Text style={styles.rankAvatarText}>{initials}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rankName}>{downline.name}</Text>
-                    {statusChip ? (
-                      <View style={[styles.statusChip, { backgroundColor: statusChip.color + '22' }]}>
-                        <Text style={{ color: statusChip.color, fontSize: 11, fontWeight: '800' }}>
-                          {statusChip.label}
+            ) : (
+              <>
+                <LinearGradient {...GradientPrimary} style={styles.heroCard}>
+                  <View style={styles.heroRow}>
+                    <Text style={styles.heroLabel}>📅 Agendamentos</Text>
+                    <View style={styles.statGrid}>
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>META</Text>
+                        <Text style={styles.statValue}>{metaTotalAgend}</Text>
+                      </View>
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>PREVISTO</Text>
+                        <Text style={styles.statValue}>
+                          {trendGrupoAgend ? trendGrupoAgend.expected : '—'}
                         </Text>
                       </View>
-                    ) : (
-                      <View style={[styles.statusChip, { backgroundColor: 'rgba(100,116,139,0.15)' }]}>
-                        <Text style={{ color: T.t3, fontSize: 11, fontWeight: '800' }}>Sem meta definida</Text>
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>REALIZADO</Text>
+                        <Text style={styles.statValue}>{totalAgendGrupo}</Text>
                       </View>
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.metricsRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.miniStatCaption}>📅 AGENDAMENTOS</Text>
-                    <View style={styles.miniStatGrid}>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Meta</Text>
-                        <Text style={styles.miniStatNum}>{downline.metaAgendamentos}</Text>
-                      </View>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Previsto</Text>
-                        <Text style={styles.miniStatNum}>
-                          {downline.trendAgend ? downline.trendAgend.expected : '—'}
-                        </Text>
-                      </View>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Feito</Text>
-                        <Text style={styles.miniStatNum}>{downline.agendamentosMes}</Text>
-                      </View>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Tendência</Text>
-                        <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : T.t3 }]}>
-                          {downline.trendAgend ? downline.trendAgend.projection : '—'}
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>TENDÊNCIA</Text>
+                        <Text style={[styles.statValue, { color: trendGrupoAgend ? trendGrupoAgend.color : 'rgba(255,255,255,0.5)' }]}>
+                          {trendGrupoAgend ? trendGrupoAgend.projection : '—'}
                         </Text>
                       </View>
                     </View>
-                    <View style={styles.miniProgressBar}>
+                    <View style={styles.progressBar}>
                       <View
                         style={[
-                          styles.miniProgressFill,
+                          styles.progressFill,
                           {
-                            width: downline.metaAgendamentos > 0
-                              ? `${Math.min((downline.agendamentosMes / downline.metaAgendamentos) * 100, 100)}%`
-                              : '0%',
+                            width: metaTotalAgend > 0 ? `${Math.min((totalAgendGrupo / metaTotalAgend) * 100, 100)}%` : '0%',
                             backgroundColor: T.blue,
                           },
                         ]}
                       />
                     </View>
                   </View>
-                  <View style={{ width: 16 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.miniStatCaption}>✅ AVALIAÇÕES</Text>
-                    <View style={styles.miniStatGrid}>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Meta</Text>
-                        <Text style={styles.miniStatNum}>{downline.metaAvaliacoes}</Text>
+
+                  <View style={[styles.heroRow, { marginTop: 16 }]}>
+                    <Text style={styles.heroLabel}>✅ Avaliações</Text>
+                    <View style={styles.statGrid}>
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>META</Text>
+                        <Text style={styles.statValue}>{metaTotalAval}</Text>
                       </View>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Previsto</Text>
-                        <Text style={styles.miniStatNum}>
-                          {downline.trendAval ? downline.trendAval.expected : '—'}
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>PREVISTO</Text>
+                        <Text style={styles.statValue}>
+                          {trendGrupoAval ? trendGrupoAval.expected : '—'}
                         </Text>
                       </View>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Feito</Text>
-                        <Text style={styles.miniStatNum}>{downline.avaliacoesMes}</Text>
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>REALIZADO</Text>
+                        <Text style={styles.statValue}>{totalAvalGrupo}</Text>
                       </View>
-                      <View style={styles.miniStatCol}>
-                        <Text style={styles.miniStatLabel}>Tendência</Text>
-                        <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : T.t3 }]}>
-                          {downline.trendAval ? downline.trendAval.projection : '—'}
+                      <View style={styles.statCol}>
+                        <Text style={styles.statCaption}>TENDÊNCIA</Text>
+                        <Text style={[styles.statValue, { color: trendGrupoAval ? trendGrupoAval.color : 'rgba(255,255,255,0.5)' }]}>
+                          {trendGrupoAval ? trendGrupoAval.projection : '—'}
                         </Text>
                       </View>
                     </View>
-                    <View style={styles.miniProgressBar}>
+                    <View style={styles.progressBar}>
                       <View
                         style={[
-                          styles.miniProgressFill,
+                          styles.progressFill,
                           {
-                            width: downline.metaAvaliacoes > 0
-                              ? `${Math.min((downline.avaliacoesMes / downline.metaAvaliacoes) * 100, 100)}%`
-                              : '0%',
+                            width: metaTotalAval > 0 ? `${Math.min((totalAvalGrupo / metaTotalAval) * 100, 100)}%` : '0%',
                             backgroundColor: T.green,
                           },
                         ]}
                       />
                     </View>
                   </View>
-                </View>
 
-                <View style={styles.sparklineRow}>
-                  <TeamSparkline data={downline.avaliacoesSerie} color={T.green} />
-                  <Text style={styles.sparklineLabel}>últimos 6 meses</Text>
-                </View>
+                  <View style={styles.heroDivider} />
 
-                <View style={styles.rankFooter}>
-                  <Text style={styles.footerText}>👥 {downline.totalAlunos} alunos</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <View style={[styles.atividadeBolinha, { backgroundColor: atividadeColor }]} />
-                    <Text style={[styles.footerText, { color: atividadeColor }]}>{atividadeLabel}</Text>
+                  <Text style={styles.heroExecLabel}>Execução do Grupo</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 8 }}>
+                    <Text style={styles.heroExecValue}>{execucaoGrupo}%</Text>
+                    <View
+                      style={[
+                        styles.heroChip,
+                        { backgroundColor: deltaTotalGrupo >= 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' },
+                      ]}
+                    >
+                      <Text style={{ color: deltaTotalGrupo >= 0 ? T.green : T.red, fontSize: 12, fontWeight: '800' }}>
+                        {deltaTotalGrupo >= 0 ? '▲' : '▼'} {Math.abs(deltaTotalGrupo)} vs mês anterior
+                      </Text>
+                    </View>
                   </View>
-                </View>
+                </LinearGradient>
 
-                {downline.phone && (
-                  <TouchableOpacity style={styles.whatsappBtn} onPress={() => handleWhatsApp(downline)}>
-                    <Text style={styles.whatsappBtnText}>👏 Reconhecer</Text>
-                  </TouchableOpacity>
+                {showDestaques && (
+                  <View style={styles.destaquesContainer}>
+                    <Text style={styles.destaquesTitle}>Destaques do Mês</Text>
+                    <View style={styles.destaquesRow}>
+                      {destaqueMes && (
+                        <View style={styles.destaqueCard}>
+                          <Text style={styles.destaqueIcon}>🏆</Text>
+                          <Text style={styles.destaqueLabel}>Destaque do Mês</Text>
+                          <Text style={styles.destaqueValue}>
+                            {destaqueMes.name.split(' ')[0]} · {Math.round((destaqueMes.execucao || 0) * 100)}%
+                          </Text>
+                        </View>
+                      )}
+                      {maiorEvolucao && maiorEvolucao.deltaMoM > 0 && (
+                        <View style={styles.destaqueCard}>
+                          <Text style={styles.destaqueIcon}>🚀</Text>
+                          <Text style={styles.destaqueLabel}>Maior Evolução</Text>
+                          <Text style={styles.destaqueValue}>
+                            {maiorEvolucao.name.split(' ')[0]} · +{maiorEvolucao.deltaMoM}
+                          </Text>
+                        </View>
+                      )}
+                      {precisaApoio && (
+                        <View style={[styles.destaqueCard, { borderColor: 'rgba(245,158,11,0.3)' }]}>
+                          <Text style={styles.destaqueIcon}>🤝</Text>
+                          <Text style={styles.destaqueLabel}>Precisa de Apoio</Text>
+                          <Text style={styles.destaqueValue}>
+                            {precisaApoio.name.split(' ')[0]} · {Math.round((precisaApoio.execucao || 0) * 100)}%
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
                 )}
-              </View>
-            );
-          })}
-        </>
-      )}
-    </ScrollView>
+
+                <Text style={styles.rankingTitle}>Ranking da Equipe</Text>
+
+                {downlines.map((downline, idx) => {
+                  const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                  const initials = downline.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
+
+                  let atividadeLabel = '';
+                  let atividadeColor = T.t3;
+                  if (downline.diasSemAvaliar === null) {
+                    atividadeLabel = 'Sem avaliações';
+                    atividadeColor = T.t3;
+                  } else if (downline.diasSemAvaliar <= 7) {
+                    atividadeLabel = 'Ativo';
+                    atividadeColor = T.green;
+                  } else if (downline.diasSemAvaliar <= 30) {
+                    atividadeLabel = `Há ${downline.diasSemAvaliar} dias`;
+                    atividadeColor = T.orange;
+                  } else {
+                    atividadeLabel = `Inativo há ${downline.diasSemAvaliar} dias`;
+                    atividadeColor = T.red;
+                  }
+
+                  const statusChip = downline.trendAgend || downline.trendAval
+                    ? (downline.trendAgend || downline.trendAval)
+                    : null;
+
+                  return (
+                    <View key={downline.id} style={styles.rankCard}>
+                      <View style={styles.rankHeader}>
+                        <Text style={styles.rankMedal}>{medal}</Text>
+                        <View style={styles.rankAvatar}>
+                          <Text style={styles.rankAvatarText}>{initials}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.rankName}>{downline.name}</Text>
+                          {statusChip ? (
+                            <View style={[styles.statusChip, { backgroundColor: statusChip.color + '22' }]}>
+                              <Text style={{ color: statusChip.color, fontSize: 11, fontWeight: '800' }}>
+                                {statusChip.label}
+                              </Text>
+                            </View>
+                          ) : (
+                            <View style={[styles.statusChip, { backgroundColor: 'rgba(100,116,139,0.15)' }]}>
+                              <Text style={{ color: T.t3, fontSize: 11, fontWeight: '800' }}>Sem meta definida</Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+
+                      <View style={styles.metricsRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.miniStatCaption}>📅 AGENDAMENTOS</Text>
+                          <View style={styles.miniStatGrid}>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Meta</Text>
+                              <Text style={styles.miniStatNum}>{downline.metaAgendamentos}</Text>
+                            </View>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Previsto</Text>
+                              <Text style={styles.miniStatNum}>
+                                {downline.trendAgend ? downline.trendAgend.expected : '—'}
+                              </Text>
+                            </View>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Feito</Text>
+                              <Text style={styles.miniStatNum}>{downline.agendamentosMes}</Text>
+                            </View>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Tendência</Text>
+                              <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : T.t3 }]}>
+                                {downline.trendAgend ? downline.trendAgend.projection : '—'}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.miniProgressBar}>
+                            <View
+                              style={[
+                                styles.miniProgressFill,
+                                {
+                                  width: downline.metaAgendamentos > 0
+                                    ? `${Math.min((downline.agendamentosMes / downline.metaAgendamentos) * 100, 100)}%`
+                                    : '0%',
+                                  backgroundColor: T.blue,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                        <View style={{ width: 16 }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.miniStatCaption}>✅ AVALIAÇÕES</Text>
+                          <View style={styles.miniStatGrid}>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Meta</Text>
+                              <Text style={styles.miniStatNum}>{downline.metaAvaliacoes}</Text>
+                            </View>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Previsto</Text>
+                              <Text style={styles.miniStatNum}>
+                                {downline.trendAval ? downline.trendAval.expected : '—'}
+                              </Text>
+                            </View>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Feito</Text>
+                              <Text style={styles.miniStatNum}>{downline.avaliacoesMes}</Text>
+                            </View>
+                            <View style={styles.miniStatCol}>
+                              <Text style={styles.miniStatLabel}>Tendência</Text>
+                              <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : T.t3 }]}>
+                                {downline.trendAval ? downline.trendAval.projection : '—'}
+                              </Text>
+                            </View>
+                          </View>
+                          <View style={styles.miniProgressBar}>
+                            <View
+                              style={[
+                                styles.miniProgressFill,
+                                {
+                                  width: downline.metaAvaliacoes > 0
+                                    ? `${Math.min((downline.avaliacoesMes / downline.metaAvaliacoes) * 100, 100)}%`
+                                    : '0%',
+                                  backgroundColor: T.green,
+                                },
+                              ]}
+                            />
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={styles.sparklineRow}>
+                        <TeamSparkline data={downline.avaliacoesSerie} color={T.green} />
+                        <Text style={styles.sparklineLabel}>últimos 6 meses</Text>
+                      </View>
+
+                      <View style={styles.rankFooter}>
+                        <Text style={styles.footerText}>👥 {downline.totalAlunos} alunos</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View style={[styles.atividadeBolinha, { backgroundColor: atividadeColor }]} />
+                          <Text style={[styles.footerText, { color: atividadeColor }]}>{atividadeLabel}</Text>
+                        </View>
+                      </View>
+
+                      {downline.phone && (
+                        <TouchableOpacity style={styles.whatsappBtn} onPress={() => handleWhatsApp(downline)}>
+                          <Text style={styles.whatsappBtnText}>👏 Reconhecer</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </>
+            )}
+          </>
+        ) : (
+          <RelatoriosTab
+            businessReports={businessReports}
+            businessLoading={businessLoading}
+            downlines={downlines}
+            selectedDownlineId={selectedDownlineId}
+            setSelectedDownlineId={setSelectedDownlineId}
+          />
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
+function RelatoriosTab({
+  businessReports,
+  businessLoading,
+  downlines,
+  selectedDownlineId,
+  setSelectedDownlineId,
+}: {
+  businessReports: BusinessReportRow[];
+  businessLoading: boolean;
+  downlines: ProcessedDownline[];
+  selectedDownlineId: string | null;
+  setSelectedDownlineId: (id: string | null) => void;
+}) {
+  const brl = (v: number) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
+  const fmtDate = (d: string) => {
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}`;
+  };
+
+  if (businessLoading) {
+    return (
+      <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={T.blue} />
+      </View>
+    );
+  }
+
+  if (businessReports.length === 0) {
+    return (
+      <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+        <Text style={{ fontSize: 16, color: T.t2 }}>Nenhum dado de relatório disponível</Text>
+      </View>
+    );
+  }
+
+  const filteredReports = selectedDownlineId
+    ? businessReports.filter((r) => r.trainer_id === selectedDownlineId)
+    : businessReports;
+
+  const dailyGrouped = filteredReports.reduce((acc, row) => {
+    const existing = acc.find((g) => g.report_date === row.report_date);
+    if (existing) {
+      existing.convites += row.convites;
+      existing.entraram += row.entraram;
+      existing.novos += row.novos;
+      existing.indicacoes += row.indicacoes;
+      existing.acessos += row.acessos;
+      existing.ganhos += row.ganhos;
+      existing.pv += row.pv;
+    } else {
+      acc.push({ ...row });
+    }
+    return acc;
+  }, [] as BusinessReportRow[]);
+
+  dailyGrouped.sort((a, b) => b.report_date.localeCompare(a.report_date));
+
+  const weeklyGrouped: { [week: string]: BusinessReportRow } = {};
+  filteredReports.forEach((row) => {
+    const date = new Date(row.report_date);
+    const startOfWeek = new Date(date);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    const weekKey = startOfWeek.toISOString().split('T')[0];
+
+    if (!weeklyGrouped[weekKey]) {
+      weeklyGrouped[weekKey] = {
+        trainer_id: '',
+        trainer_name: '',
+        report_date: weekKey,
+        convites: 0,
+        entraram: 0,
+        novos: 0,
+        indicacoes: 0,
+        acessos: 0,
+        ganhos: 0,
+        pv: 0,
+      };
+    }
+    weeklyGrouped[weekKey].convites += row.convites;
+    weeklyGrouped[weekKey].entraram += row.entraram;
+    weeklyGrouped[weekKey].novos += row.novos;
+    weeklyGrouped[weekKey].indicacoes += row.indicacoes;
+    weeklyGrouped[weekKey].acessos += row.acessos;
+    weeklyGrouped[weekKey].ganhos += row.ganhos;
+    weeklyGrouped[weekKey].pv += row.pv;
+  });
+
+  const weeklyArray = Object.values(weeklyGrouped).sort((a, b) => b.report_date.localeCompare(a.report_date));
+
+  const monthlyGrouped: { [month: string]: BusinessReportRow } = {};
+  filteredReports.forEach((row) => {
+    const monthKey = row.report_date.slice(0, 7);
+    if (!monthlyGrouped[monthKey]) {
+      monthlyGrouped[monthKey] = {
+        trainer_id: '',
+        trainer_name: '',
+        report_date: monthKey,
+        convites: 0,
+        entraram: 0,
+        novos: 0,
+        indicacoes: 0,
+        acessos: 0,
+        ganhos: 0,
+        pv: 0,
+      };
+    }
+    monthlyGrouped[monthKey].convites += row.convites;
+    monthlyGrouped[monthKey].entraram += row.entraram;
+    monthlyGrouped[monthKey].novos += row.novos;
+    monthlyGrouped[monthKey].indicacoes += row.indicacoes;
+    monthlyGrouped[monthKey].acessos += row.acessos;
+    monthlyGrouped[monthKey].ganhos += row.ganhos;
+    monthlyGrouped[monthKey].pv += row.pv;
+  });
+
+  const monthlyArray = Object.values(monthlyGrouped).sort((a, b) => b.report_date.localeCompare(a.report_date));
+
+  const [viewMode, setViewMode] = React.useState<'diario' | 'semanal' | 'mensal'>('diario');
+
+  const displayData = viewMode === 'diario' ? dailyGrouped.slice(0, 31) : viewMode === 'semanal' ? weeklyArray.slice(0, 12) : monthlyArray.slice(0, 12);
+
+  return (
+    <View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            style={[styles.filterBtn, selectedDownlineId === null && styles.filterBtnActive]}
+            onPress={() => setSelectedDownlineId(null)}
+          >
+            <Text style={[styles.filterBtnText, selectedDownlineId === null && styles.filterBtnTextActive]}>Todos</Text>
+          </TouchableOpacity>
+          {downlines.map((d) => (
+            <TouchableOpacity
+              key={d.id}
+              style={[styles.filterBtn, selectedDownlineId === d.id && styles.filterBtnActive]}
+              onPress={() => setSelectedDownlineId(d.id)}
+            >
+              <Text style={[styles.filterBtnText, selectedDownlineId === d.id && styles.filterBtnTextActive]}>
+                {d.name.split(' ')[0]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+        <TouchableOpacity
+          style={[styles.viewModeBtn, viewMode === 'diario' && styles.viewModeBtnActive]}
+          onPress={() => setViewMode('diario')}
+        >
+          <Text style={[styles.viewModeBtnText, viewMode === 'diario' && styles.viewModeBtnTextActive]}>Diário</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewModeBtn, viewMode === 'semanal' && styles.viewModeBtnActive]}
+          onPress={() => setViewMode('semanal')}
+        >
+          <Text style={[styles.viewModeBtnText, viewMode === 'semanal' && styles.viewModeBtnTextActive]}>Semanal</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.viewModeBtn, viewMode === 'mensal' && styles.viewModeBtnActive]}
+          onPress={() => setViewMode('mensal')}
+        >
+          <Text style={[styles.viewModeBtnText, viewMode === 'mensal' && styles.viewModeBtnTextActive]}>Mensal</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.reportTable}>
+        <View style={styles.reportHeaderRow}>
+          <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Data</Text>
+          <Text style={styles.reportHeaderCell}>Conv</Text>
+          <Text style={styles.reportHeaderCell}>Entr</Text>
+          <Text style={styles.reportHeaderCell}>Nov</Text>
+          <Text style={styles.reportHeaderCell}>Ind</Text>
+          <Text style={styles.reportHeaderCell}>Ace</Text>
+          <Text style={[styles.reportHeaderCell, { flex: 1.2 }]}>Ganhos</Text>
+          <Text style={[styles.reportHeaderCell, { flex: 0.9 }]}>PV</Text>
+        </View>
+        {displayData.map((row, idx) => (
+          <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
+            <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+              {viewMode === 'mensal' ? `${row.report_date.slice(5, 7)}/${row.report_date.slice(2, 4)}` : fmtDate(row.report_date)}
+            </Text>
+            <Text style={styles.reportCell}>{row.convites}</Text>
+            <Text style={styles.reportCell}>{row.entraram}</Text>
+            <Text style={styles.reportCell}>{row.novos}</Text>
+            <Text style={styles.reportCell}>{row.indicacoes}</Text>
+            <Text style={styles.reportCell}>{row.acessos}</Text>
+            <Text style={[styles.reportCell, { flex: 1.2, color: T.green }]}>{brl(row.ganhos)}</Text>
+            <Text style={[styles.reportCell, { flex: 0.9 }]}>{Number(row.pv).toFixed(2)}</Text>
+          </View>
+        ))}
+        {displayData.length === 0 && (
+          <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados</Text>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: T.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg },
+  header: { paddingHorizontal: 20, paddingTop: 20 },
+  scrollView: { flex: 1 },
   content: { padding: 20, paddingBottom: 60, maxWidth: 900, alignSelf: 'center', width: '100%' },
+
+  tabsContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginTop: 12, marginBottom: 16 },
+  tabBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: T.card, alignItems: 'center', borderWidth: 1, borderColor: T.border },
+  tabBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
+  tabText: { fontSize: 14, fontWeight: '700', color: T.t2 },
+  tabTextActive: { color: '#fff' },
+
+  filterBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
+  filterBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
+  filterBtnText: { fontSize: 12, fontWeight: '700', color: T.t2 },
+  filterBtnTextActive: { color: '#fff' },
+
+  viewModeBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: T.card, alignItems: 'center', borderWidth: 1, borderColor: T.border },
+  viewModeBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
+  viewModeBtnText: { fontSize: 13, fontWeight: '700', color: T.t2 },
+  viewModeBtnTextActive: { color: '#fff' },
+
+  reportTable: { backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border },
+  reportHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: T.border },
+  reportHeaderCell: { flex: 0.7, fontSize: 10, fontWeight: '800', color: T.t3, textTransform: 'uppercase' },
+  reportRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.surface },
+  reportCell: { flex: 0.7, fontSize: 12, color: T.t2, fontWeight: '600' },
 
   eyebrow: { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 4 },
   title: { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 4 },
