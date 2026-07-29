@@ -1,7 +1,9 @@
 // ============================================================
-// business-goals.tsx — Evolução de Negócio do Treinador
-// Metas mensais editáveis. Semanal e diário calculados dinamicamente
-// redistribuindo déficit pelos dias úteis (seg-sex) restantes.
+// MetasContent.tsx — Evolução de Negócio do Treinador
+// Metas mensais editáveis, genéricas por goal_type.
+// Semanal e diário calculados dinamicamente redistribuindo
+// déficit pelos dias úteis (seg-sex) restantes.
+// Sub-abas: Atendimento (Agendamentos/Avaliações) | Comercial (5 métricas novas)
 // ============================================================
 import { useCallback, useState } from 'react';
 import {
@@ -15,15 +17,47 @@ import { getWorkingDays, computeTrend } from '../../utils/goalCalculations';
 import { todayBR, daysAgoBR, brasiliaDate } from '../../utils/dateBR';
 
 type Period = 'monthly' | 'weekly' | 'daily';
+type Category = 'atendimento' | 'comercial';
 
-interface Goals {
-  monthly_scheduled_goal: number;
-  monthly_completed_goal: number;
+type GoalType =
+  | 'agendamentos' | 'avaliacoes'
+  | 'apresentacoes_kit' | 'kit_acesso_vendido' | 'novos_clientes'
+  | 'clientes_repetidores' | 'lucro_mensal';
+
+interface GoalTypeConfig {
+  type: GoalType;
+  label: string;
+  icon: string;
+  color: string;
+  category: Category;
+  isCurrency?: boolean;
 }
 
-interface Actuals {
-  scheduled: number;
-  completed: number;
+const GOAL_CONFIG: GoalTypeConfig[] = [
+  { type: 'agendamentos',         label: 'Agendamentos',              icon: '📅', color: '#3b82f6', category: 'atendimento' },
+  { type: 'avaliacoes',           label: 'Avaliações Realizadas',      icon: '✅', color: '#22c55e', category: 'atendimento' },
+  { type: 'apresentacoes_kit',    label: 'Apresentações Kit Acesso',   icon: '🎤', color: '#a855f7', category: 'comercial'   },
+  { type: 'kit_acesso_vendido',   label: 'Kit Acesso Vendidos',        icon: '📦', color: '#06b6d4', category: 'comercial'   },
+  { type: 'novos_clientes',       label: 'Novos Clientes',             icon: '🆕', color: '#f59e0b', category: 'comercial'   },
+  { type: 'clientes_repetidores', label: 'Clientes Repetidores',       icon: '🔁', color: '#ec4899', category: 'comercial'   },
+  { type: 'lucro_mensal',         label: 'Lucro Mensal',               icon: '💵', color: '#10b981', category: 'comercial', isCurrency: true },
+];
+
+const ALL_TYPES = GOAL_CONFIG.map((g) => g.type);
+
+type NumMap = Record<GoalType, number>;
+
+function emptyMap(): NumMap {
+  const m = {} as NumMap;
+  ALL_TYPES.forEach((t) => { m[t] = 0; });
+  return m;
+}
+
+function formatValue(value: number, isCurrency?: boolean): string {
+  if (isCurrency) {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  }
+  return String(Math.round(value));
 }
 
 // Retorna meta ajustada diária e semanal com base no déficit redistribuído
@@ -69,13 +103,57 @@ function getDateRange(period: Period): { start: string; end: string } {
   return { start: todayBR(), end: todayBR() };
 }
 
-function ProgressBar({ value, goal, color }: { value: number; goal: number; color: string }) {
+// Busca o "realizado" de um goal_type num intervalo de datas [start, end] (inclusive).
+// Cada tipo sabe qual tabela/coluna consultar e se é COUNT ou SUM.
+async function fetchActual(goalType: GoalType, tid: string, start: string, end: string): Promise<number> {
+  switch (goalType) {
+    case 'agendamentos': {
+      const { count } = await supabase.from('appointments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00').lte('created_at', end + 'T23:59:59');
+      return count || 0;
+    }
+    case 'avaliacoes': {
+      const { count } = await supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('assessment_date', start).lte('assessment_date', end);
+      return count || 0;
+    }
+    case 'apresentacoes_kit': {
+      const { data } = await supabase.from('herbalife_kit_presentations').select('count')
+        .eq('trainer_id', tid).gte('presentation_date', start).lte('presentation_date', end);
+      return (data || []).reduce((sum: number, row: any) => sum + (row.count || 0), 0);
+    }
+    case 'kit_acesso_vendido': {
+      const { count } = await supabase.from('herbalife_sales').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('sale_type', 'acesso')
+        .gte('sale_date', start).lte('sale_date', end);
+      return count || 0;
+    }
+    case 'novos_clientes': {
+      const { count } = await supabase.from('clients').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00').lte('created_at', end + 'T23:59:59');
+      return count || 0;
+    }
+    case 'clientes_repetidores': {
+      const { count } = await supabase.from('herbalife_sales').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('client_status', 'repetidor')
+        .gte('sale_date', start).lte('sale_date', end);
+      return count || 0;
+    }
+    case 'lucro_mensal': {
+      const { data } = await supabase.from('herbalife_sales').select('total_profit')
+        .eq('trainer_id', tid).gte('sale_date', start).lte('sale_date', end);
+      return (data || []).reduce((sum: number, row: any) => sum + (Number(row.total_profit) || 0), 0);
+    }
+  }
+}
+
+function ProgressBar({ value, goal, color, isCurrency }: { value: number; goal: number; color: string; isCurrency?: boolean }) {
   const pct = goal > 0 ? Math.min((value / goal) * 100, 100) : 0;
   return (
     <View style={{ marginTop: 6 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
         <Text style={{ color: T.t2, fontSize: 12 }}>
-          {value} <Text style={{ color: T.t3 }}>de {goal}</Text>
+          {formatValue(value, isCurrency)} <Text style={{ color: T.t3 }}>de {formatValue(goal, isCurrency)}</Text>
         </Text>
         <Text style={{ color, fontSize: 12, fontWeight: '800' }}>{Math.round(pct)}%</Text>
       </View>
@@ -87,10 +165,10 @@ function ProgressBar({ value, goal, color }: { value: number; goal: number; colo
 }
 
 function MetricCard({
-  label, icon, value, goal, color, onEdit, isComputed, trend,
+  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency,
 }: {
   label: string; icon: string; value: number; goal: number;
-  color: string; onEdit?: () => void; isComputed?: boolean;
+  color: string; onEdit?: () => void; isComputed?: boolean; isCurrency?: boolean;
   trend?: { projection: number; pct: number; color: string; label: string } | null;
 }) {
   return (
@@ -110,7 +188,7 @@ function MetricCard({
           </View>
         ) : null}
       </View>
-      <ProgressBar value={value} goal={goal} color={color} />
+      <ProgressBar value={value} goal={goal} color={color} isCurrency={isCurrency} />
       {trend && (
         <View style={{
           flexDirection: 'row', justifyContent: 'space-between',
@@ -129,7 +207,7 @@ function MetricCard({
               paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99,
             }}>
               <Text style={{ fontSize: 11, fontWeight: '900', color: trend.color }}>
-                {trend.projection}
+                {formatValue(trend.projection, isCurrency)}
               </Text>
             </View>
           </View>
@@ -141,14 +219,17 @@ function MetricCard({
 
 export default function MetasContent() {
   const [loading, setLoading]     = useState(true);
+  const [category, setCategory]   = useState<Category>('atendimento');
   const [period, setPeriod]       = useState<Period>('monthly');
   const [trainerId, setTrainerId] = useState<string | null>(null);
-  const [goals, setGoals]         = useState<Goals>({ monthly_scheduled_goal: 0, monthly_completed_goal: 0 });
-  const [actuals, setActuals]     = useState<Actuals>({ scheduled: 0, completed: 0 });
-  const [monthActuals, setMonthActuals] = useState<Actuals>({ scheduled: 0, completed: 0 });
-  const [baseBeforeToday, setBaseBeforeToday]   = useState<Actuals>({ scheduled: 0, completed: 0 });
-  const [baseBeforeWeek,  setBaseBeforeWeek]    = useState<Actuals>({ scheduled: 0, completed: 0 });
-  const [editingField, setEditingField] = useState<keyof Goals | null>(null);
+
+  const [goals, setGoals]                     = useState<NumMap>(emptyMap());
+  const [actuals, setActuals]                 = useState<NumMap>(emptyMap());
+  const [monthActuals, setMonthActuals]       = useState<NumMap>(emptyMap());
+  const [baseBeforeToday, setBaseBeforeToday] = useState<NumMap>(emptyMap());
+  const [baseBeforeWeek, setBaseBeforeWeek]   = useState<NumMap>(emptyMap());
+
+  const [editingField, setEditingField] = useState<GoalType | null>(null);
   const [editValue, setEditValue] = useState('');
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
@@ -162,13 +243,11 @@ export default function MetasContent() {
       setTrainerId(trainer.id);
 
       const { data: goalsData } = await supabase
-        .from('trainer_goals').select('*').eq('trainer_id', trainer.id).maybeSingle();
-      if (goalsData) {
-        setGoals({
-          monthly_scheduled_goal: goalsData.monthly_scheduled_goal || 0,
-          monthly_completed_goal:  goalsData.monthly_completed_goal  || 0,
-        });
-      }
+        .from('trainer_goals').select('goal_type, monthly_goal').eq('trainer_id', trainer.id);
+      const g = emptyMap();
+      (goalsData || []).forEach((row: any) => { g[row.goal_type as GoalType] = Number(row.monthly_goal) || 0; });
+      setGoals(g);
+
       await loadActuals(trainer.id, period);
     } finally {
       setLoading(false);
@@ -178,8 +257,6 @@ export default function MetasContent() {
   async function loadActuals(tid: string, p: Period) {
     const { start, end }         = getDateRange(p);
     const { start: ms, end: me } = getDateRange('monthly');
-
-    // Ontem
     const yesterdayStr = daysAgoBR(1);
 
     // Fim da semana passada (última sexta-feira)
@@ -188,34 +265,24 @@ export default function MetasContent() {
     const daysToLastFri = dow === 0 ? 2 : dow === 6 ? 1 : dow + 1;
     const lastFriStr = daysAgoBR(daysToLastFri);
 
-    const [
-      { count: sched }, { count: comp },
-      { count: schedM }, { count: compM },
-      { count: schedY }, { count: compY },
-      { count: schedW }, { count: compW },
-    ] = await Promise.all([
-      supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00').lte('created_at', end + 'T23:59:59'),
-      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('assessment_date', start).lte('assessment_date', end),
-      supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('created_at', ms + 'T00:00:00').lte('created_at', me + 'T23:59:59'),
-      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', me),
-      supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('created_at', ms + 'T00:00:00').lte('created_at', yesterdayStr + 'T23:59:59'),
-      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', yesterdayStr),
-      supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('created_at', ms + 'T00:00:00').lte('created_at', lastFriStr + 'T23:59:59'),
-      supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('assessment_date', ms).lte('assessment_date', lastFriStr),
-    ]);
+    const results = await Promise.all(ALL_TYPES.map(async (t) => {
+      const [cur, month, beforeToday, beforeWeek] = await Promise.all([
+        fetchActual(t, tid, start, end),
+        fetchActual(t, tid, ms, me),
+        fetchActual(t, tid, ms, yesterdayStr),
+        fetchActual(t, tid, ms, lastFriStr),
+      ]);
+      return { t, cur, month, beforeToday, beforeWeek };
+    }));
 
-    setActuals({ scheduled: sched || 0, completed: comp || 0 });
-    setMonthActuals({ scheduled: schedM || 0, completed: compM || 0 });
-    setBaseBeforeToday({ scheduled: schedY || 0, completed: compY || 0 });
-    setBaseBeforeWeek({ scheduled: schedW || 0, completed: compW || 0 });
+    const nActuals = emptyMap(), nMonth = emptyMap(), nToday = emptyMap(), nWeek = emptyMap();
+    results.forEach(({ t, cur, month, beforeToday, beforeWeek }) => {
+      nActuals[t] = cur; nMonth[t] = month; nToday[t] = beforeToday; nWeek[t] = beforeWeek;
+    });
+    setActuals(nActuals);
+    setMonthActuals(nMonth);
+    setBaseBeforeToday(nToday);
+    setBaseBeforeWeek(nWeek);
   }
 
   async function changePeriod(p: Period) {
@@ -223,46 +290,16 @@ export default function MetasContent() {
     if (trainerId) await loadActuals(trainerId, p);
   }
 
-  async function saveGoal(field: keyof Goals, value: number) {
+  async function saveGoal(type: GoalType, value: number) {
     if (!trainerId) return;
-    const updated = { ...goals, [field]: value };
     await supabase.from('trainer_goals')
       .upsert(
-        { trainer_id: trainerId, ...updated },
-        { onConflict: 'trainer_id' }
+        { trainer_id: trainerId, goal_type: type, monthly_goal: value },
+        { onConflict: 'trainer_id,goal_type' }
       );
-    setGoals(updated);
+    setGoals({ ...goals, [type]: value });
     setEditingField(null);
   }
-
-  // Base correta por período:
-  // - diário: feitos até ontem
-  // - semanal: feitos até fim da semana passada
-  // - mensal: feitos no mês inteiro (para exibição)
-  const baseSchedForCalc = period === 'daily' ? baseBeforeToday.scheduled
-    : period === 'weekly' ? baseBeforeWeek.scheduled
-    : monthActuals.scheduled;
-  const baseCompForCalc  = period === 'daily' ? baseBeforeToday.completed
-    : period === 'weekly' ? baseBeforeWeek.completed
-    : monthActuals.completed;
-
-  const adjSched = computeAdjusted(goals.monthly_scheduled_goal, baseSchedForCalc);
-  const adjComp  = computeAdjusted(goals.monthly_completed_goal,  baseCompForCalc);
-
-  const trendSched = period === 'monthly'
-    ? computeTrend(goals.monthly_scheduled_goal, monthActuals.scheduled)
-    : null;
-  const trendComp  = period === 'monthly'
-    ? computeTrend(goals.monthly_completed_goal, monthActuals.completed)
-    : null;
-
-  const schedGoal = period === 'monthly' ? goals.monthly_scheduled_goal
-    : period === 'weekly'  ? adjSched.weeklyGoal
-    : adjSched.dailyGoal;
-
-  const compGoal  = period === 'monthly' ? goals.monthly_completed_goal
-    : period === 'weekly'  ? adjComp.weeklyGoal
-    : adjComp.dailyGoal;
 
   const periodLabels: Record<Period, string> = { monthly: 'Mensal', weekly: 'Semanal', daily: 'Diário' };
   const isComputed = period !== 'monthly';
@@ -273,8 +310,28 @@ export default function MetasContent() {
     </View>
   );
 
+  const visibleGoals = GOAL_CONFIG.filter((g) => g.category === category);
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={styles.container}>
+      {/* Seletor de categoria */}
+      <View style={styles.periodRow}>
+        {([
+          { key: 'atendimento' as Category, label: '🏋️ Atendimento' },
+          { key: 'comercial' as Category,   label: '💼 Comercial' },
+        ]).map((c) => (
+          <TouchableOpacity
+            key={c.key}
+            style={[styles.periodBtn, category === c.key && styles.periodBtnActive]}
+            onPress={() => setCategory(c.key)}
+          >
+            <Text style={[styles.periodLabel, category === c.key && styles.periodLabelActive]}>
+              {c.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {/* Seletor de período */}
       <View style={styles.periodRow}>
         {(['monthly', 'weekly', 'daily'] as Period[]).map((p) => (
@@ -291,7 +348,7 @@ export default function MetasContent() {
       </View>
 
       {/* Nota de meta ajustada */}
-      {isComputed && (goals.monthly_scheduled_goal > 0 || goals.monthly_completed_goal > 0) && (
+      {isComputed && visibleGoals.some((g) => goals[g.type] > 0) && (
         <View style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderRadius: 10, padding: 10, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: T.blue }}>
           <Text style={{ fontSize: 12, color: T.t2, lineHeight: 18 }}>
             📊 Metas {periodLabels[period].toLowerCase()}s calculadas automaticamente redistribuindo o déficit nos dias úteis restantes do mês.
@@ -299,51 +356,62 @@ export default function MetasContent() {
         </View>
       )}
 
-      <MetricCard
-        label="Agendamentos" icon="📅"
-        value={actuals.scheduled} goal={schedGoal}
-        color="#3b82f6"
-        isComputed={isComputed}
-        trend={trendSched}
-        onEdit={() => { setEditingField('monthly_scheduled_goal'); setEditValue(String(goals.monthly_scheduled_goal)); }}
-      />
-      <MetricCard
-        label="Avaliações Realizadas" icon="✅"
-        value={actuals.completed} goal={compGoal}
-        color="#22c55e"
-        isComputed={isComputed}
-        trend={trendComp}
-        onEdit={() => { setEditingField('monthly_completed_goal'); setEditValue(String(goals.monthly_completed_goal)); }}
-      />
+      {visibleGoals.map((cfg) => {
+        const baseForCalc = period === 'daily' ? baseBeforeToday[cfg.type]
+          : period === 'weekly' ? baseBeforeWeek[cfg.type]
+          : monthActuals[cfg.type];
 
-      {/* Resumo numérico */}
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Resumo {periodLabels[period]}</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{actuals.scheduled}</Text>
-            <Text style={styles.summaryLabel}>Agendados</Text>
-          </View>
-          <View style={[styles.summaryItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: T.border }]}>
-            <Text style={[styles.summaryValue, { color: '#22c55e' }]}>{actuals.completed}</Text>
-            <Text style={styles.summaryLabel}>Realizados</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryValue, { color: '#f59e0b' }]}>
-              {actuals.scheduled > 0
-                ? Math.round((actuals.completed / actuals.scheduled) * 100)
-                : 0}%
-            </Text>
-            <Text style={styles.summaryLabel}>Taxa Execução</Text>
+        const adj = computeAdjusted(goals[cfg.type], baseForCalc);
+        const trend = period === 'monthly' ? computeTrend(goals[cfg.type], monthActuals[cfg.type]) : null;
+
+        const cardGoal = period === 'monthly' ? goals[cfg.type]
+          : period === 'weekly' ? adj.weeklyGoal
+          : adj.dailyGoal;
+
+        return (
+          <MetricCard
+            key={cfg.type}
+            label={cfg.label} icon={cfg.icon}
+            value={actuals[cfg.type]} goal={cardGoal}
+            color={cfg.color}
+            isComputed={isComputed}
+            isCurrency={cfg.isCurrency}
+            trend={trend}
+            onEdit={() => { setEditingField(cfg.type); setEditValue(String(goals[cfg.type])); }}
+          />
+        );
+      })}
+
+      {/* Resumo numérico — só faz sentido pra Atendimento (mesma métrica: contagem) */}
+      {category === 'atendimento' && (
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Resumo {periodLabels[period]}</Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>{Math.round(actuals.agendamentos)}</Text>
+              <Text style={styles.summaryLabel}>Agendados</Text>
+            </View>
+            <View style={[styles.summaryItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: T.border }]}>
+              <Text style={[styles.summaryValue, { color: '#22c55e' }]}>{Math.round(actuals.avaliacoes)}</Text>
+              <Text style={styles.summaryLabel}>Realizados</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={[styles.summaryValue, { color: '#f59e0b' }]}>
+                {actuals.agendamentos > 0
+                  ? Math.round((actuals.avaliacoes / actuals.agendamentos) * 100)
+                  : 0}%
+              </Text>
+              <Text style={styles.summaryLabel}>Taxa Execução</Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* Edição de meta mensal */}
       {editingField && (
         <View style={styles.editCard}>
           <Text style={styles.editTitle}>
-            {editingField === 'monthly_scheduled_goal' ? '📅 Meta Mensal — Agendamentos' : '✅ Meta Mensal — Avaliações'}
+            {GOAL_CONFIG.find((g) => g.type === editingField)?.icon} Meta Mensal — {GOAL_CONFIG.find((g) => g.type === editingField)?.label}
           </Text>
           <Text style={{ fontSize: 12, color: T.t3, marginBottom: 12 }}>
             As metas semanal e diária serão recalculadas automaticamente.
@@ -352,15 +420,19 @@ export default function MetasContent() {
             style={styles.editInput}
             value={editValue}
             onChangeText={setEditValue}
-            keyboardType="number-pad"
+            keyboardType={GOAL_CONFIG.find((g) => g.type === editingField)?.isCurrency ? 'decimal-pad' : 'number-pad'}
             autoFocus
-            placeholder="Ex: 100"
+            placeholder={GOAL_CONFIG.find((g) => g.type === editingField)?.isCurrency ? 'Ex: 3000.00' : 'Ex: 100'}
             placeholderTextColor={T.t3}
           />
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
             <TouchableOpacity
               style={[styles.editActionBtn, { backgroundColor: T.blue }]}
-              onPress={() => saveGoal(editingField, parseInt(editValue) || 0)}
+              onPress={() => {
+                const isCurrency = GOAL_CONFIG.find((g) => g.type === editingField)?.isCurrency;
+                const parsed = isCurrency ? parseFloat(editValue.replace(',', '.')) : parseInt(editValue, 10);
+                saveGoal(editingField, Number.isFinite(parsed) ? parsed : 0);
+              }}
             >
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Salvar</Text>
             </TouchableOpacity>
@@ -381,7 +453,7 @@ const styles = StyleSheet.create({
   container:         { padding: 20, paddingBottom: 40 },
   pageLabel:         { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 4 },
   pageTitle:         { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 24 },
-  periodRow:         { flexDirection: 'row', backgroundColor: T.card, borderRadius: 12, padding: 4, marginBottom: 24, gap: 4 },
+  periodRow:         { flexDirection: 'row', backgroundColor: T.card, borderRadius: 12, padding: 4, marginBottom: 12, gap: 4 },
   periodBtn:         { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
   periodBtnActive:   { backgroundColor: T.blue },
   periodLabel:       { fontSize: 13, fontWeight: '700', color: T.t2 },
