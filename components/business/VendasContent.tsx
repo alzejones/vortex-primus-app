@@ -86,6 +86,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [acessosHoje, setAcessosHoje] = useState(0);
   const [ganhosHoje, setGanhosHoje] = useState(0);
   const [vendasHoje, setVendasHoje] = useState<SaleRow[]>([]);
+  const [saleProductLines, setSaleProductLines] = useState<Record<string, string[]>>({});
 
   // catálogo
   const [kits, setKits] = useState<Kit[]>([]);
@@ -155,6 +156,27 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
       setAcessosHoje(daily?.acessos ?? 0);
       setGanhosHoje(Number(daily?.ganhos ?? 0));
       setVendasHoje((sales as any) || []);
+
+      // Descrição de produto(s) por venda: agrupa por kit (1 linha por kit,
+      // mesmo que o kit tenha várias linhas em herbalife_sale_items) ou por
+      // produto avulso (1 linha por produto distinto).
+      const saleIds = ((sales as any) || []).map((sRow: any) => sRow.id);
+      if (saleIds.length > 0) {
+        const { data: items } = await supabase
+          .from('herbalife_sale_items')
+          .select('sale_id, kit_id, kit_name, supplement_id, supplements(name)')
+          .in('sale_id', saleIds);
+        const lines: Record<string, string[]> = {};
+        (items || []).forEach((it: any) => {
+          const label = it.kit_id ? it.kit_name : (it.supplements?.name || 'Produto');
+          if (!lines[it.sale_id]) lines[it.sale_id] = [];
+          if (!lines[it.sale_id].includes(label)) lines[it.sale_id].push(label);
+        });
+        setSaleProductLines(lines);
+      } else {
+        setSaleProductLines({});
+      }
+
       setKits((k as any) || []);
       setKitItems((ki as any) || []);
       setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
@@ -446,6 +468,9 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 {v.clients?.name || v.client_name_manual || 'Cliente'}
                 {v.client_status ? `  ·  ${v.client_status[0].toUpperCase()}` : ''}
               </Text>
+              {(saleProductLines[v.id] || []).map((line, idx) => (
+                <Text key={idx} style={s.saleProduct}>{line}</Text>
+              ))}
               <Text style={s.saleMeta}>
                 {v.sale_type === 'acesso' ? 'Acesso' : 'Produto fechado'} · PV {Number(v.total_pv).toFixed(2)}
               </Text>
@@ -611,6 +636,7 @@ const s = StyleSheet.create({
   empty: { color: '#777', fontStyle: 'italic' },
   saleRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
   saleName: { color: '#FFF', fontWeight: '600' },
+  saleProduct: { color: '#BBB', fontSize: 12, marginTop: 2 },
   saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
   saleCharged: { color: '#FFF', fontWeight: '700' },
   saleProfit: { color: '#4ADE80', fontSize: 12 },
