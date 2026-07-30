@@ -300,6 +300,16 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     setModalOpen(true);
   }
 
+  // Atalho: tocar num nome em "Apresentações Kit Acesso de hoje" já abre a
+  // Nova Venda com nome/celular/vínculo preenchidos — mesmo efeito de
+  // selecionar pelo picker de dentro do modal, só que em 1 toque.
+  function sellToProspect(p: { id: string; prospect_name: string; prospect_phone: string | null }) {
+    openNewSale();
+    setManualName(p.prospect_name);
+    setManualPhone(p.prospect_phone ? maskPhone(p.prospect_phone) : '');
+    setSelectedProspectId(p.id);
+  }
+
   function pickKit(k: Kit) {
     setSelKit(k);
     setPrice(String(k.default_price));
@@ -605,7 +615,12 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           <Text style={s.empty}>Nenhuma apresentação lançada hoje.</Text>
         )}
         {presentacoesLista.map((p) => (
-          <TouchableOpacity key={p.id} style={s.presRow} onLongPress={() => deletePresentation(p.id)}>
+          <TouchableOpacity
+            key={p.id}
+            style={s.presRow}
+            onPress={() => sellToProspect(p)}
+            onLongPress={() => deletePresentation(p.id)}
+          >
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#A855F7', marginRight: 10 }} />
             <View style={{ flex: 1 }}>
               <Text style={s.saleName}>{p.prospect_name}</Text>
@@ -614,7 +629,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           </TouchableOpacity>
         ))}
         {presentacoesLista.length > 0 && (
-          <Text style={s.hint}>Segure numa apresentação para excluir.</Text>
+          <Text style={s.hint}>Toque para vender · segure para excluir.</Text>
         )}
       </ScrollView>
 
