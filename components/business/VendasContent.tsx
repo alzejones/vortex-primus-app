@@ -87,6 +87,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [ganhosHoje, setGanhosHoje] = useState(0);
   const [vendasHoje, setVendasHoje] = useState<SaleRow[]>([]);
   const [saleProductLines, setSaleProductLines] = useState<Record<string, string[]>>({});
+  const [apresentacoesHoje, setApresentacoesHoje] = useState(0);
+  const [presentacoesLista, setPresentacoesLista] = useState<{ id: string; prospect_name: string; prospect_phone: string | null }[]>([]);
 
   // catálogo
   const [kits, setKits] = useState<Kit[]>([]);
@@ -108,6 +110,12 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // modal nova apresentação (Kit Acesso)
+  const [presModalOpen, setPresModalOpen] = useState(false);
+  const [presName, setPresName] = useState('');
+  const [presPhone, setPresPhone] = useState('');
+  const [presSaving, setPresSaving] = useState(false);
+
   const load = useCallback(async () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -124,7 +132,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
       const today = todayBR();
 
-      const [{ data: daily }, { data: sales }, { data: k }, { data: ki }, { data: pr }, { data: cl }] =
+      const [{ data: daily }, { data: sales }, { data: k }, { data: ki }, { data: pr }, { data: cl }, { data: pres }] =
         await Promise.all([
           supabase
             .from('v_herbalife_daily')
@@ -150,12 +158,20 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .eq('trainer_id', trainer.id)
             .eq('is_active', true)
             .order('name'),
+          supabase
+            .from('herbalife_kit_presentations')
+            .select('id, prospect_name, prospect_phone')
+            .eq('trainer_id', trainer.id)
+            .eq('presentation_date', today)
+            .order('created_at', { ascending: false }),
         ]);
 
       setConvites(daily?.convites ?? 0);
       setAcessosHoje(daily?.acessos ?? 0);
       setGanhosHoje(Number(daily?.ganhos ?? 0));
       setVendasHoje((sales as any) || []);
+      setPresentacoesLista((pres as any) || []);
+      setApresentacoesHoje((pres || []).length);
 
       // Descrição de produto(s) por venda: agrupa por kit (1 linha por kit,
       // mesmo que o kit tenha várias linhas em herbalife_sale_items) ou por
@@ -389,6 +405,51 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     }
   }
 
+  function openNewPresentation() {
+    setPresName('');
+    setPresPhone('');
+    setPresModalOpen(true);
+  }
+
+  async function savePresentation() {
+    if (!trainerId) return;
+    if (!presName.trim()) {
+      notify('Atenção', 'Informe o nome do prospecto.');
+      return;
+    }
+    setPresSaving(true);
+    try {
+      const { error } = await supabase.from('herbalife_kit_presentations').insert({
+        trainer_id: trainerId,
+        prospect_name: presName.trim(),
+        prospect_phone: presPhone.trim() || null,
+      });
+      if (error) throw error;
+      setPresModalOpen(false);
+      load();
+    } catch (e: any) {
+      console.error(e);
+      notify('Erro', e.message || 'Falha ao salvar a apresentação.');
+    } finally {
+      setPresSaving(false);
+    }
+  }
+
+  async function deletePresentation(id: string) {
+    const doDelete = async () => {
+      await supabase.from('herbalife_kit_presentations').delete().eq('id', id);
+      load();
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Excluir esta apresentação?')) doDelete();
+    } else {
+      Alert.alert('Excluir apresentação', 'Confirma a exclusão?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  }
+
   async function deleteSale(id: string) {
     const doDelete = async () => {
       await supabase.from('herbalife_sales').delete().eq('id', id);
@@ -453,9 +514,21 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           </View>
         </View>
 
-        <TouchableOpacity style={s.primaryBtn} onPress={openNewSale}>
-          <Text style={s.primaryBtnTxt}>+ Nova Venda</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
+          <View style={[s.card, { flex: 1 }]}>
+            <Text style={s.cardLabel}>Apresentações Kit Acesso hoje</Text>
+            <Text style={[s.cardValue, { color: '#A855F7' }]}>{apresentacoesHoje}</Text>
+          </View>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+          <TouchableOpacity style={[s.primaryBtn, { flex: 1, marginBottom: 0 }]} onPress={openNewSale}>
+            <Text style={s.primaryBtnTxt}>+ Nova Venda</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.primaryBtn, { flex: 1, marginBottom: 0, backgroundColor: '#A855F7' }]} onPress={openNewPresentation}>
+            <Text style={s.primaryBtnTxt}>+ Apresentação</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={s.sectionTitle}>Vendas de hoje</Text>
         {vendasHoje.length === 0 && (
@@ -483,6 +556,23 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         ))}
         {vendasHoje.length > 0 && (
           <Text style={s.hint}>Segure numa venda para excluir.</Text>
+        )}
+
+        <Text style={[s.sectionTitle, { marginTop: 24 }]}>Apresentações Kit Acesso de hoje</Text>
+        {presentacoesLista.length === 0 && (
+          <Text style={s.empty}>Nenhuma apresentação lançada hoje.</Text>
+        )}
+        {presentacoesLista.map((p) => (
+          <TouchableOpacity key={p.id} style={s.presRow} onLongPress={() => deletePresentation(p.id)}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#A855F7', marginRight: 10 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.saleName}>{p.prospect_name}</Text>
+              {p.prospect_phone && <Text style={s.saleMeta}>{p.prospect_phone}</Text>}
+            </View>
+          </TouchableOpacity>
+        ))}
+        {presentacoesLista.length > 0 && (
+          <Text style={s.hint}>Segure numa apresentação para excluir.</Text>
         )}
       </ScrollView>
 
@@ -563,6 +653,48 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         </View>
       </Modal>
 
+      {/* ---------- MODAL NOVA APRESENTAÇÃO (Kit Acesso) ---------- */}
+      <Modal visible={presModalOpen} animationType="slide" transparent>
+        <View style={s.modalBg}>
+          <View style={s.modalBox}>
+            <Text style={s.modalTitle}>Nova Apresentação — Kit Acesso</Text>
+
+            <Text style={s.label}>Nome</Text>
+            <TextInput
+              style={s.input}
+              placeholder="Nome do prospecto"
+              placeholderTextColor="#777"
+              value={presName}
+              onChangeText={setPresName}
+              autoFocus
+            />
+
+            <Text style={s.label}>Celular (opcional)</Text>
+            <TextInput
+              style={s.input}
+              placeholder="(00) 00000-0000"
+              placeholderTextColor="#777"
+              value={presPhone}
+              onChangeText={setPresPhone}
+              keyboardType="phone-pad"
+            />
+
+            <View style={s.inline}>
+              <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={() => setPresModalOpen(false)}>
+                <Text style={s.btnGhostTxt}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, { backgroundColor: '#A855F7' }]}
+                onPress={savePresentation}
+                disabled={presSaving}
+              >
+                <Text style={s.btnTxt}>{presSaving ? 'Salvando…' : 'Salvar Apresentação'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* ---------- PICKER GENÉRICO ---------- */}
       <Modal visible={pickerOpen !== null} animationType="fade" transparent>
         <View style={s.modalBg}>
@@ -635,6 +767,7 @@ const s = StyleSheet.create({
   sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
   empty: { color: '#777', fontStyle: 'italic' },
   saleRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+  presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
   saleName: { color: '#FFF', fontWeight: '600' },
   saleProduct: { color: '#BBB', fontSize: 12, marginTop: 2 },
   saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
