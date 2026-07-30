@@ -77,6 +77,28 @@ interface BusinessReportRow {
   pv: number;
 }
 
+interface WeeklyReportRow {
+  trainer_id: string;
+  trainer_name: string;
+  week_start: string;
+  week_end: string;
+  dias_com_dados: number;
+  acessos_media: number;
+  ganho_semanal: number;
+  estimado_mensal: number;
+}
+
+interface MonthlyReportRow {
+  trainer_id: string;
+  trainer_name: string;
+  month_start: string;
+  acessos_media: number;
+  pvt: number;
+  ganhos: number;
+  tendencia_pvt: number;
+  tendencia_ganhos: number;
+}
+
 type Tab = 'produtividade' | 'relatorios';
 
 export default function HerbalifeTeam() {
@@ -86,6 +108,8 @@ export default function HerbalifeTeam() {
   const [refreshing, setRefreshing] = useState(false);
   const [downlines, setDownlines] = useState<ProcessedDownline[]>([]);
   const [businessReports, setBusinessReports] = useState<BusinessReportRow[]>([]);
+  const [weeklyReports, setWeeklyReports] = useState<WeeklyReportRow[]>([]);
+  const [monthlyReports, setMonthlyReports] = useState<MonthlyReportRow[]>([]);
   const [businessLoading, setBusinessLoading] = useState(false);
   const [selectedDownlineId, setSelectedDownlineId] = useState<string | null>(null);
 
@@ -174,12 +198,22 @@ export default function HerbalifeTeam() {
   async function loadBusinessReports() {
     try {
       setBusinessLoading(true);
-      const { data, error } = await supabase.rpc('get_downline_business_reports');
-      if (error) throw error;
-      setBusinessReports(data || []);
+      const [daily, weekly, monthly] = await Promise.all([
+        supabase.rpc('get_downline_business_reports'),
+        supabase.rpc('get_downline_weekly_report'),
+        supabase.rpc('get_downline_monthly_report'),
+      ]);
+      if (daily.error) throw daily.error;
+      if (weekly.error) throw weekly.error;
+      if (monthly.error) throw monthly.error;
+      setBusinessReports(daily.data || []);
+      setWeeklyReports(weekly.data || []);
+      setMonthlyReports(monthly.data || []);
     } catch (err) {
       console.error('Erro ao carregar relatórios:', err);
       setBusinessReports([]);
+      setWeeklyReports([]);
+      setMonthlyReports([]);
     } finally {
       setBusinessLoading(false);
       setRefreshing(false);
@@ -607,6 +641,8 @@ export default function HerbalifeTeam() {
         ) : (
           <RelatoriosTab
             businessReports={businessReports}
+            weeklyReports={weeklyReports}
+            monthlyReports={monthlyReports}
             businessLoading={businessLoading}
             downlines={downlines}
             selectedDownlineId={selectedDownlineId}
@@ -620,12 +656,16 @@ export default function HerbalifeTeam() {
 
 function RelatoriosTab({
   businessReports,
+  weeklyReports,
+  monthlyReports,
   businessLoading,
   downlines,
   selectedDownlineId,
   setSelectedDownlineId,
 }: {
   businessReports: BusinessReportRow[];
+  weeklyReports: WeeklyReportRow[];
+  monthlyReports: MonthlyReportRow[];
   businessLoading: boolean;
   downlines: ProcessedDownline[];
   selectedDownlineId: string | null;
@@ -636,6 +676,11 @@ function RelatoriosTab({
     const [y, m, day] = d.split('-');
     return `${day}/${m}`;
   };
+
+  // Hook sempre no topo, antes de qualquer retorno condicional (Rules of Hooks) —
+  // antes ficava declarado depois dos "if (loading) return", o que quebrava a
+  // ordem dos hooks entre renders.
+  const [viewMode, setViewMode] = React.useState<'diario' | 'semanal' | 'mensal'>('diario');
 
   if (businessLoading) {
     return (
@@ -675,71 +720,18 @@ function RelatoriosTab({
 
   dailyGrouped.sort((a, b) => b.report_date.localeCompare(a.report_date));
 
-  const weeklyGrouped: { [week: string]: BusinessReportRow } = {};
-  filteredReports.forEach((row) => {
-    const date = new Date(row.report_date);
-    const startOfWeek = new Date(date);
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    const weekKey = startOfWeek.toISOString().split('T')[0];
+  // Semanal e Mensal agora vêm prontos do banco (get_downline_weekly_report /
+  // get_downline_monthly_report) — mesma fórmula exata que o downline vê no
+  // próprio login (v_herbalife_weekly/monthly). Nada é somado no cliente aqui.
+  const filteredWeekly = (selectedDownlineId
+    ? weeklyReports.filter((r) => r.trainer_id === selectedDownlineId)
+    : weeklyReports
+  ).slice().sort((a, b) => b.week_start.localeCompare(a.week_start));
 
-    if (!weeklyGrouped[weekKey]) {
-      weeklyGrouped[weekKey] = {
-        trainer_id: '',
-        trainer_name: '',
-        report_date: weekKey,
-        convites: 0,
-        entraram: 0,
-        novos: 0,
-        indicacoes: 0,
-        acessos: 0,
-        ganhos: 0,
-        pv: 0,
-      };
-    }
-    weeklyGrouped[weekKey].convites += row.convites;
-    weeklyGrouped[weekKey].entraram += row.entraram;
-    weeklyGrouped[weekKey].novos += row.novos;
-    weeklyGrouped[weekKey].indicacoes += row.indicacoes;
-    weeklyGrouped[weekKey].acessos += row.acessos;
-    weeklyGrouped[weekKey].ganhos += row.ganhos;
-    weeklyGrouped[weekKey].pv += row.pv;
-  });
-
-  const weeklyArray = Object.values(weeklyGrouped).sort((a, b) => b.report_date.localeCompare(a.report_date));
-
-  const monthlyGrouped: { [month: string]: BusinessReportRow } = {};
-  filteredReports.forEach((row) => {
-    const monthKey = row.report_date.slice(0, 7);
-    if (!monthlyGrouped[monthKey]) {
-      monthlyGrouped[monthKey] = {
-        trainer_id: '',
-        trainer_name: '',
-        report_date: monthKey,
-        convites: 0,
-        entraram: 0,
-        novos: 0,
-        indicacoes: 0,
-        acessos: 0,
-        ganhos: 0,
-        pv: 0,
-      };
-    }
-    monthlyGrouped[monthKey].convites += row.convites;
-    monthlyGrouped[monthKey].entraram += row.entraram;
-    monthlyGrouped[monthKey].novos += row.novos;
-    monthlyGrouped[monthKey].indicacoes += row.indicacoes;
-    monthlyGrouped[monthKey].acessos += row.acessos;
-    monthlyGrouped[monthKey].ganhos += row.ganhos;
-    monthlyGrouped[monthKey].pv += row.pv;
-  });
-
-  const monthlyArray = Object.values(monthlyGrouped).sort((a, b) => b.report_date.localeCompare(a.report_date));
-
-  const [viewMode, setViewMode] = React.useState<'diario' | 'semanal' | 'mensal'>('diario');
-
-  const displayData = viewMode === 'diario' ? dailyGrouped.slice(0, 31) : viewMode === 'semanal' ? weeklyArray.slice(0, 12) : monthlyArray.slice(0, 12);
+  const filteredMonthly = (selectedDownlineId
+    ? monthlyReports.filter((r) => r.trainer_id === selectedDownlineId)
+    : monthlyReports
+  ).slice().sort((a, b) => b.month_start.localeCompare(a.month_start));
 
   return (
     <View>
@@ -786,35 +778,128 @@ function RelatoriosTab({
         </TouchableOpacity>
       </View>
 
-      <View style={styles.reportTable}>
-        <View style={styles.reportHeaderRow}>
-          <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Data</Text>
-          <Text style={styles.reportHeaderCell}>Conv</Text>
-          <Text style={styles.reportHeaderCell}>Entr</Text>
-          <Text style={styles.reportHeaderCell}>Nov</Text>
-          <Text style={styles.reportHeaderCell}>Ind</Text>
-          <Text style={styles.reportHeaderCell}>Ace</Text>
-          <Text style={[styles.reportHeaderCell, { flex: 1.2 }]}>Ganhos</Text>
-          <Text style={[styles.reportHeaderCell, { flex: 0.9 }]}>PV</Text>
-        </View>
-        {displayData.map((row, idx) => (
-          <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
-            <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
-              {viewMode === 'mensal' ? `${row.report_date.slice(5, 7)}/${row.report_date.slice(2, 4)}` : fmtDate(row.report_date)}
-            </Text>
-            <Text style={styles.reportCell}>{row.convites}</Text>
-            <Text style={styles.reportCell}>{row.entraram}</Text>
-            <Text style={styles.reportCell}>{row.novos}</Text>
-            <Text style={styles.reportCell}>{row.indicacoes}</Text>
-            <Text style={styles.reportCell}>{row.acessos}</Text>
-            <Text style={[styles.reportCell, { flex: 1.2, color: T.green }]}>{brl(row.ganhos)}</Text>
-            <Text style={[styles.reportCell, { flex: 0.9 }]}>{Number(row.pv).toFixed(2)}</Text>
+      {viewMode === 'diario' && (
+        <View style={styles.reportTable}>
+          <View style={styles.reportHeaderRow}>
+            <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Data</Text>
+            <Text style={styles.reportHeaderCell}>Conv</Text>
+            <Text style={styles.reportHeaderCell}>Entr</Text>
+            <Text style={styles.reportHeaderCell}>Nov</Text>
+            <Text style={styles.reportHeaderCell}>Ind</Text>
+            <Text style={styles.reportHeaderCell}>Ace</Text>
+            <Text style={[styles.reportHeaderCell, { flex: 1.2 }]}>Ganhos</Text>
+            <Text style={[styles.reportHeaderCell, { flex: 0.9 }]}>PV</Text>
           </View>
-        ))}
-        {displayData.length === 0 && (
-          <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados</Text>
-        )}
-      </View>
+          {dailyGrouped.slice(0, 31).map((row, idx) => (
+            <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
+              <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>{fmtDate(row.report_date)}</Text>
+              <Text style={styles.reportCell}>{row.convites}</Text>
+              <Text style={styles.reportCell}>{row.entraram}</Text>
+              <Text style={styles.reportCell}>{row.novos}</Text>
+              <Text style={styles.reportCell}>{row.indicacoes}</Text>
+              <Text style={styles.reportCell}>{row.acessos}</Text>
+              <Text style={[styles.reportCell, { flex: 1.2, color: T.green }]}>{brl(row.ganhos)}</Text>
+              <Text style={[styles.reportCell, { flex: 0.9 }]}>{Number(row.pv).toFixed(2)}</Text>
+            </View>
+          ))}
+          {dailyGrouped.length === 0 && (
+            <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados</Text>
+          )}
+        </View>
+      )}
+
+      {/* Semanal — mesmo layout de card que o downline vê no próprio login
+          (título da semana + Acessos média/dia + Ganho semanal + Estimado mensal),
+          vindo pronto de get_downline_weekly_report. */}
+      {viewMode === 'semanal' && (
+        <>
+          {filteredWeekly.length === 0 && (
+            <Text style={{ color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: 12 }}>Sem dados semanais.</Text>
+          )}
+          {filteredWeekly.slice(0, 12).map((r, idx) => (
+            <View key={`${r.trainer_id}-${r.week_start}-${idx}`} style={styles.weekCard}>
+              <Text style={styles.weekTitle}>
+                {fmtDate(r.week_start)} a {fmtDate(r.week_end)}
+                {selectedDownlineId === null && (
+                  <Text style={{ color: T.t3, fontWeight: '600' }}> · {r.trainer_name}</Text>
+                )}
+              </Text>
+              <View style={styles.weekLine}>
+                <Text style={styles.weekLabel}>Acessos (média/dia)</Text>
+                <Text style={styles.weekValue}>{Number(r.acessos_media).toFixed(1)}</Text>
+              </View>
+              <View style={styles.weekLine}>
+                <Text style={styles.weekLabel}>Ganho semanal</Text>
+                <Text style={[styles.weekValue, { color: T.green }]}>{brl(r.ganho_semanal)}</Text>
+              </View>
+              <View style={styles.weekLine}>
+                <Text style={styles.weekLabel}>Estimado mensal</Text>
+                <Text style={[styles.weekValue, { color: T.blue }]}>{brl(r.estimado_mensal)}</Text>
+              </View>
+            </View>
+          ))}
+        </>
+      )}
+
+      {/* Mensal — mesma tabela + seção de Tendências que o downline vê no
+          próprio login, vindo pronto de get_downline_monthly_report. */}
+      {viewMode === 'mensal' && (
+        <>
+          <View style={styles.reportHeaderRow}>
+            <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Mês</Text>
+            {selectedDownlineId === null && (
+              <Text style={[styles.reportHeaderCell, { flex: 1.3 }]}>Consultor</Text>
+            )}
+            <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Acessos</Text>
+            <Text style={[styles.reportHeaderCell, { flex: 1 }]}>P.V.T.</Text>
+            <Text style={[styles.reportHeaderCell, { flex: 1.4 }]}>Ganhos</Text>
+          </View>
+          {filteredMonthly.slice(0, 12).map((r, idx) => (
+            <View key={`${r.trainer_id}-${r.month_start}-${idx}`} style={styles.reportRow}>
+              <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+                {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
+              </Text>
+              {selectedDownlineId === null && (
+                <Text style={[styles.reportCell, { flex: 1.3 }]} numberOfLines={1}>{r.trainer_name}</Text>
+              )}
+              <Text style={[styles.reportCell, { flex: 1 }]}>{Number(r.acessos_media).toFixed(1)}</Text>
+              <Text style={[styles.reportCell, { flex: 1 }]}>{Number(r.pvt).toFixed(2)}</Text>
+              <Text style={[styles.reportCell, { flex: 1.4, color: T.green }]}>{brl(r.ganhos)}</Text>
+            </View>
+          ))}
+          {filteredMonthly.length === 0 && (
+            <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados mensais.</Text>
+          )}
+
+          {filteredMonthly.length > 0 && (
+            <>
+              <Text style={{ color: T.t1, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 }}>— Tendências —</Text>
+              <View style={styles.reportHeaderRow}>
+                <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Mês</Text>
+                {selectedDownlineId === null && (
+                  <Text style={[styles.reportHeaderCell, { flex: 1.3 }]}>Consultor</Text>
+                )}
+                <Text style={[styles.reportHeaderCell, { flex: 1 }]}>P.V.T.</Text>
+                <Text style={[styles.reportHeaderCell, { flex: 1.4 }]}>Ganhos</Text>
+              </View>
+              {filteredMonthly
+                .filter((r) => r.month_start.slice(0, 7) === new Date().toISOString().slice(0, 7))
+                .map((r, idx) => (
+                  <View key={`tend-${r.trainer_id}-${r.month_start}-${idx}`} style={styles.reportRow}>
+                    <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+                      {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
+                    </Text>
+                    {selectedDownlineId === null && (
+                      <Text style={[styles.reportCell, { flex: 1.3 }]} numberOfLines={1}>{r.trainer_name}</Text>
+                    )}
+                    <Text style={[styles.reportCell, { flex: 1 }]}>{Number(r.tendencia_pvt).toFixed(2)}</Text>
+                    <Text style={[styles.reportCell, { flex: 1.4, color: T.blue }]}>{brl(r.tendencia_ganhos)}</Text>
+                  </View>
+                ))}
+            </>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -843,6 +928,11 @@ const styles = StyleSheet.create({
   viewModeBtnTextActive: { color: '#fff' },
 
   reportTable: { backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border },
+  weekCard: { backgroundColor: T.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: T.border },
+  weekTitle: { color: T.t1, fontWeight: '700', marginBottom: 8 },
+  weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  weekLabel: { color: T.t2, fontSize: 13 },
+  weekValue: { color: T.t1, fontWeight: '600', fontSize: 13 },
   reportHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: T.border },
   reportHeaderCell: { flex: 0.7, fontSize: 10, fontWeight: '800', color: T.t3, textTransform: 'uppercase' },
   reportRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.surface },
