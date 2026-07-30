@@ -123,8 +123,9 @@ async function fetchActual(goalType: GoalType, tid: string, start: string, end: 
       return count || 0;
     }
     case 'apresentacoes_kit': {
-      const { count } = await supabase.from('herbalife_kit_presentations').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('presentation_date', start).lte('presentation_date', end);
+      const { count } = await supabase.from('herbalife_prospects').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('source', 'apresentacao')
+        .gte('contact_date', start).lte('contact_date', end);
       return count || 0;
     }
     case 'kit_acesso_vendido': {

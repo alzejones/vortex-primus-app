@@ -32,6 +32,17 @@ function notify(title: string, msg: string) {
 const brl = (v: number) =>
   `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
 
+// Máscara de celular BR: formata enquanto digita e também na exibição
+// (cobre números já salvos sem máscara, como nos testes iniciais).
+// Alterna 4/5 dígitos no corpo conforme o tamanho (fixo vs celular).
+function maskPhone(raw: string): string {
+  const digits = (raw || '').replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 // ---------- tipos ----------
 interface Kit {
   id: string;
@@ -105,8 +116,10 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [price, setPrice] = useState('');
   const [selClient, setSelClient] = useState<ClientRow | null>(null);
   const [manualName, setManualName] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null);
   const [isIndicacao, setIsIndicacao] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | null>(null);
+  const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | 'apresentacao' | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -159,10 +172,11 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .eq('is_active', true)
             .order('name'),
           supabase
-            .from('herbalife_kit_presentations')
+            .from('herbalife_prospects')
             .select('id, prospect_name, prospect_phone')
             .eq('trainer_id', trainer.id)
-            .eq('presentation_date', today)
+            .eq('source', 'apresentacao')
+            .eq('contact_date', today)
             .order('created_at', { ascending: false }),
         ]);
 
@@ -280,6 +294,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     setPrice('');
     setSelClient(null);
     setManualName('');
+    setManualPhone('');
+    setSelectedProspectId(null);
     setIsIndicacao(false);
     setModalOpen(true);
   }
@@ -296,7 +312,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     setPickerOpen(null);
   }
 
-  function openPicker(type: 'kit' | 'produto' | 'cliente') {
+  function openPicker(type: 'kit' | 'produto' | 'cliente' | 'apresentacao') {
     setPickerSearch('');
     setPickerOpen(type);
   }
@@ -395,6 +411,31 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         .insert(items.map((i) => ({ ...i, sale_id: sale.id })));
       if (itemsErr) throw itemsErr;
 
+      // Cliente avulso (não cadastrado): garante que nome+celular não se percam.
+      // Se veio de uma apresentação já lançada hoje, marca ela como convertida.
+      // Se foi digitado na hora, cria um novo prospecto já convertido.
+      if (!selClient && manualName.trim()) {
+        const phone = manualPhone.trim() || null;
+        if (selectedProspectId) {
+          await supabase.from('herbalife_prospects').update({
+            converted: true,
+            converted_sale_id: sale.id,
+            converted_at: new Date().toISOString(),
+            ...(phone ? { prospect_phone: phone } : {}),
+          }).eq('id', selectedProspectId);
+        } else {
+          await supabase.from('herbalife_prospects').insert({
+            trainer_id: trainerId,
+            prospect_name: manualName.trim(),
+            prospect_phone: phone,
+            source: 'venda_avulsa',
+            converted: true,
+            converted_sale_id: sale.id,
+            converted_at: new Date().toISOString(),
+          });
+        }
+      }
+
       setModalOpen(false);
       load();
     } catch (e: any) {
@@ -419,10 +460,11 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     }
     setPresSaving(true);
     try {
-      const { error } = await supabase.from('herbalife_kit_presentations').insert({
+      const { error } = await supabase.from('herbalife_prospects').insert({
         trainer_id: trainerId,
         prospect_name: presName.trim(),
         prospect_phone: presPhone.trim() || null,
+        source: 'apresentacao',
       });
       if (error) throw error;
       setPresModalOpen(false);
@@ -437,7 +479,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
   async function deletePresentation(id: string) {
     const doDelete = async () => {
-      await supabase.from('herbalife_kit_presentations').delete().eq('id', id);
+      await supabase.from('herbalife_prospects').delete().eq('id', id);
       load();
     };
     if (Platform.OS === 'web') {
@@ -567,7 +609,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#A855F7', marginRight: 10 }} />
             <View style={{ flex: 1 }}>
               <Text style={s.saleName}>{p.prospect_name}</Text>
-              {p.prospect_phone && <Text style={s.saleMeta}>{p.prospect_phone}</Text>}
+              {p.prospect_phone && <Text style={s.saleMeta}>{maskPhone(p.prospect_phone)}</Text>}
             </View>
           </TouchableOpacity>
         ))}
@@ -615,13 +657,31 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 </Text>
               </TouchableOpacity>
               {!selClient && (
-                <TextInput
-                  style={s.input}
-                  placeholder="Ou nome do cliente avulso"
-                  placeholderTextColor="#777"
-                  value={manualName}
-                  onChangeText={setManualName}
-                />
+                <>
+                  <TextInput
+                    style={s.input}
+                    placeholder="Ou nome do cliente avulso"
+                    placeholderTextColor="#777"
+                    value={manualName}
+                    onChangeText={(t) => { setManualName(t); setSelectedProspectId(null); }}
+                  />
+                  <TextInput
+                    style={s.input}
+                    placeholder="Celular do cliente avulso (opcional)"
+                    placeholderTextColor="#777"
+                    value={manualPhone}
+                    onChangeText={(t) => setManualPhone(maskPhone(t))}
+                    keyboardType="phone-pad"
+                    maxLength={16}
+                  />
+                </>
+              )}
+              {!selClient && presentacoesLista.length > 0 && (
+                <TouchableOpacity style={s.selector} onPress={() => openPicker('apresentacao')}>
+                  <Text style={[s.selectorTxt, { color: '#A855F7' }]}>
+                    🎤 Selecionar de "Apresentações Kit Acesso de hoje"…
+                  </Text>
+                </TouchableOpacity>
               )}
 
               <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
@@ -675,8 +735,9 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
               placeholder="(00) 00000-0000"
               placeholderTextColor="#777"
               value={presPhone}
-              onChangeText={setPresPhone}
+              onChangeText={(t) => setPresPhone(maskPhone(t))}
               keyboardType="phone-pad"
+              maxLength={16}
             />
 
             <View style={s.inline}>
@@ -700,7 +761,10 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         <View style={s.modalBg}>
           <View style={[s.modalBox, { maxHeight: '70%' }]}>
             <Text style={s.modalTitle}>
-              {pickerOpen === 'kit' ? 'Kits' : pickerOpen === 'produto' ? 'Produtos' : 'Clientes'}
+              {pickerOpen === 'kit' ? 'Kits'
+                : pickerOpen === 'produto' ? 'Produtos'
+                : pickerOpen === 'apresentacao' ? 'Apresentações de hoje'
+                : 'Clientes'}
             </Text>
             <TextInput
               style={s.input}
@@ -716,9 +780,11 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                   ? kits
                   : pickerOpen === 'produto'
                   ? pricing.filter((p) => p.name)
+                  : pickerOpen === 'apresentacao'
+                  ? presentacoesLista
                   : clients
               ).filter((item: any) =>
-                (item.name || '').toLowerCase().includes(pickerSearch.trim().toLowerCase())
+                (item.name || item.prospect_name || '').toLowerCase().includes(pickerSearch.trim().toLowerCase())
               )}
               keyExtractor={(item: any) => item.id || item.supplement_id}
               renderItem={({ item }: any) => (
@@ -727,17 +793,25 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                   onPress={() => {
                     if (pickerOpen === 'kit') pickKit(item);
                     else if (pickerOpen === 'produto') pickProduct(item);
-                    else {
+                    else if (pickerOpen === 'apresentacao') {
+                      setManualName(item.prospect_name);
+                      setManualPhone(item.prospect_phone ? maskPhone(item.prospect_phone) : '');
+                      setSelectedProspectId(item.id);
+                      setSelClient(null);
+                      setPickerOpen(null);
+                    } else {
                       setSelClient(item);
+                      setSelectedProspectId(null);
                       setPickerOpen(null);
                       if (selProduct) setPrice(String(clientUnitPrice(selProduct, item.herbalife_discount_level)));
                     }
                   }}
                 >
                   <Text style={s.pickerTxt} numberOfLines={1}>
-                    {item.name}
+                    {pickerOpen === 'apresentacao' ? item.prospect_name : item.name}
                     {pickerOpen === 'kit' ? `  ·  ${brl(item.default_price)}` : ''}
                     {pickerOpen === 'produto' ? `  ·  ${brl(item.price_venda)}` : ''}
+                    {pickerOpen === 'apresentacao' && item.prospect_phone ? `  ·  ${maskPhone(item.prospect_phone)}` : ''}
                   </Text>
                 </TouchableOpacity>
               )}
