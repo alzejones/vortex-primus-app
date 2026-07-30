@@ -74,15 +74,20 @@ function computeAdjusted(monthlyGoal: number, actualMonthToDate: number) {
     ? Math.ceil(remaining / workingDaysRemaining)
     : remaining;
 
-  // Semana corrente: seg a sex (ou fim do mês, o que vier antes)
+  // Semana corrente: só os dias úteis que REALMENTE restam — de hoje/amanhã
+  // (respeitando o corte das 22h) até sexta-feira (ou fim do mês, o que vier antes).
+  // Nunca conta dias já passados da semana.
   const dow = now.getDay();
   const weekMon = new Date(now);
   weekMon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
   const weekFri = new Date(weekMon);
   weekFri.setDate(weekMon.getDate() + 4);
   const effectiveWeekEnd = weekFri <= monthEnd ? weekFri : monthEnd;
-  const workingDaysThisWeek = getWorkingDays(weekMon, effectiveWeekEnd);
-  const weeklyGoal = dailyGoal * workingDaysThisWeek;
+  const weekRemainingStart = startDay > weekMon ? startDay : weekMon;
+  const workingDaysRemainingInWeek = weekRemainingStart <= effectiveWeekEnd
+    ? getWorkingDays(weekRemainingStart, effectiveWeekEnd)
+    : 0;
+  const weeklyGoal = dailyGoal * workingDaysRemainingInWeek;
 
   return { dailyGoal, weeklyGoal };
 }
@@ -227,7 +232,6 @@ export default function MetasContent() {
   const [actuals, setActuals]                 = useState<NumMap>(emptyMap());
   const [monthActuals, setMonthActuals]       = useState<NumMap>(emptyMap());
   const [baseBeforeToday, setBaseBeforeToday] = useState<NumMap>(emptyMap());
-  const [baseBeforeWeek, setBaseBeforeWeek]   = useState<NumMap>(emptyMap());
 
   const [editingField, setEditingField] = useState<GoalType | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -259,30 +263,22 @@ export default function MetasContent() {
     const { start: ms, end: me } = getDateRange('monthly');
     const yesterdayStr = daysAgoBR(1);
 
-    // Fim da semana passada (última sexta-feira)
-    const now2 = brasiliaDate();
-    const dow = now2.getDay(); // 0=Dom
-    const daysToLastFri = dow === 0 ? 2 : dow === 6 ? 1 : dow + 1;
-    const lastFriStr = daysAgoBR(daysToLastFri);
-
     const results = await Promise.all(ALL_TYPES.map(async (t) => {
-      const [cur, month, beforeToday, beforeWeek] = await Promise.all([
+      const [cur, month, beforeToday] = await Promise.all([
         fetchActual(t, tid, start, end),
         fetchActual(t, tid, ms, me),
         fetchActual(t, tid, ms, yesterdayStr),
-        fetchActual(t, tid, ms, lastFriStr),
       ]);
-      return { t, cur, month, beforeToday, beforeWeek };
+      return { t, cur, month, beforeToday };
     }));
 
-    const nActuals = emptyMap(), nMonth = emptyMap(), nToday = emptyMap(), nWeek = emptyMap();
-    results.forEach(({ t, cur, month, beforeToday, beforeWeek }) => {
-      nActuals[t] = cur; nMonth[t] = month; nToday[t] = beforeToday; nWeek[t] = beforeWeek;
+    const nActuals = emptyMap(), nMonth = emptyMap(), nToday = emptyMap();
+    results.forEach(({ t, cur, month, beforeToday }) => {
+      nActuals[t] = cur; nMonth[t] = month; nToday[t] = beforeToday;
     });
     setActuals(nActuals);
     setMonthActuals(nMonth);
     setBaseBeforeToday(nToday);
-    setBaseBeforeWeek(nWeek);
   }
 
   async function changePeriod(p: Period) {
@@ -357,9 +353,10 @@ export default function MetasContent() {
       )}
 
       {visibleGoals.map((cfg) => {
-        const baseForCalc = period === 'daily' ? baseBeforeToday[cfg.type]
-          : period === 'weekly' ? baseBeforeWeek[cfg.type]
-          : monthActuals[cfg.type];
+        // Diário e Semanal usam o mesmo ritmo-base ("realizado até ontem"),
+        // já que a meta semanal agora é derivada do ritmo diário — não faz
+        // sentido as duas abas mostrarem ritmos diferentes pra mesma métrica.
+        const baseForCalc = period === 'monthly' ? monthActuals[cfg.type] : baseBeforeToday[cfg.type];
 
         const adj = computeAdjusted(goals[cfg.type], baseForCalc);
         const trend = period === 'monthly' ? computeTrend(goals[cfg.type], monthActuals[cfg.type]) : null;
