@@ -114,7 +114,7 @@ async function fetchActual(goalType: GoalType, tid: string, start: string, end: 
   switch (goalType) {
     case 'agendamentos': {
       const { count } = await supabase.from('appointments').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00').lte('created_at', end + 'T23:59:59');
+        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00-03:00').lte('created_at', end + 'T23:59:59-03:00');
       return count || 0;
     }
     case 'avaliacoes': {
@@ -136,7 +136,7 @@ async function fetchActual(goalType: GoalType, tid: string, start: string, end: 
     }
     case 'novos_clientes': {
       const { count } = await supabase.from('clients').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00').lte('created_at', end + 'T23:59:59');
+        .eq('trainer_id', tid).gte('created_at', start + 'T00:00:00-03:00').lte('created_at', end + 'T23:59:59-03:00');
       return count || 0;
     }
     case 'clientes_repetidores': {
