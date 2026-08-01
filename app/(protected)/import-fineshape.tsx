@@ -6,6 +6,7 @@ import Papa from "papaparse";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +21,17 @@ type ParsedFile = {
   fileName: string;
   rows: any[];
 };
+
+async function readFileContent(uri: string): Promise<string> {
+  // Na web (build Vercel), expo-file-system não lê o arquivo — o uri é um
+  // blob: gerado pelo navegador, então usamos fetch(). No app nativo
+  // (iOS/Android), usamos a API legada do expo-file-system.
+  if (Platform.OS === "web") {
+    const res = await fetch(uri);
+    return await res.text();
+  }
+  return await FileSystem.readAsStringAsync(uri);
+}
 
 export default function ImportFineshape() {
   const router = useRouter();
@@ -40,7 +52,7 @@ export default function ImportFineshape() {
       if (picked.canceled || !picked.assets?.[0]) return;
 
       const asset = picked.assets[0];
-      const content = await FileSystem.readAsStringAsync(asset.uri);
+      const content = await readFileContent(asset.uri);
 
       const parsed = Papa.parse(content, {
         header: true,
