@@ -90,7 +90,19 @@ export default function ImportFineshape() {
           assessments: assessmentsFile.rows,
         },
       });
-      if (error) throw error;
+      if (error) {
+        // supabase-js só expõe uma mensagem genérica em "error.message" quando a
+        // Edge Function retorna status != 2xx. O corpo real (com a causa
+        // específica) vem em error.context, que é o Response cru.
+        let detail = error.message;
+        try {
+          const body = await error.context?.json?.();
+          if (body?.error) detail = body.error;
+        } catch {
+          // mantém a mensagem genérica se não der pra ler o corpo
+        }
+        throw new Error(detail);
+      }
       if (data?.error) throw new Error(data.error);
       setResult(data);
     } catch (error: any) {
