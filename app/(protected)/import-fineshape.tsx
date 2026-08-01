@@ -170,6 +170,11 @@ export default function ImportFineshape() {
             👥 Clientes: {result.clientes.criados} criados · {result.clientes.ja_existiam} já existiam
             {result.clientes.invalidos > 0 ? ` · ${result.clientes.invalidos} inválidos` : ""}
           </Text>
+          {result.clientes.duplicados_no_arquivo > 0 && (
+            <Text style={styles.resultLine}>
+              🔁 {result.clientes.duplicados_no_arquivo} linhas duplicadas no arquivo (mesma pessoa repetida) — ignoradas
+            </Text>
+          )}
           <Text style={styles.resultLine}>
             📋 Avaliações: {result.avaliacoes.importadas} importadas · {result.avaliacoes.ja_importadas_antes} já importadas antes
           </Text>
