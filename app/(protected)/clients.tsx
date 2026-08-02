@@ -1,12 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Dimensions,
   FlatList,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -32,6 +33,7 @@ export default function Clients() {
   const { session } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   async function loadTrainer() {
     if (!session?.user?.id) return;
@@ -55,7 +57,7 @@ export default function Clients() {
       .from("clients")
       .select("*")
       .eq("trainer_id", currentTrainerId)
-      .order("created_at", { ascending: false });
+      .order("name", { ascending: true });
 
     if (error) {
       Alert.alert("Erro ao carregar clientes", error.message);
@@ -95,6 +97,16 @@ export default function Clients() {
     }
   }, [trainerId]);
 
+  // Normaliza string: remove diacríticos + lowercase — busca insensível a acento
+  const normalize = (str: string) =>
+    (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  const filteredClients = useMemo(() => {
+    const q = normalize(searchQuery);
+    if (!q) return clients;
+    return clients.filter((c: any) => normalize(c.name).includes(q));
+  }, [clients, searchQuery]);
+
   return (
     <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
@@ -109,8 +121,20 @@ export default function Clients() {
             </LinearGradient>
           </TouchableOpacity>
 
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar por nome..."
+              placeholderTextColor={T.t3}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
           <FlatList
-            data={clients}
+            data={filteredClients}
             keyExtractor={(item: any) => item.id}
             showsVerticalScrollIndicator={true}
             contentContainerStyle={{ paddingBottom: 40 }}
@@ -122,8 +146,8 @@ export default function Clients() {
                   }
                 >
                   <Text style={styles.name}>{item.name}</Text>
-                  {item.email ? (
-                    <Text style={styles.email}>{item.email}</Text>
+                  {item.phone ? (
+                    <Text style={styles.phone}>{item.phone}</Text>
                   ) : null}
                 </TouchableOpacity>
 
@@ -144,8 +168,17 @@ export default function Clients() {
             )}
             ListEmptyComponent={
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>Nenhum aluno cadastrado.</Text>
-                <Text style={styles.emptySubText}>Toque em "+ Novo Cliente" para começar.</Text>
+                {searchQuery.trim().length > 0 ? (
+                  <>
+                    <Text style={styles.emptyText}>Nenhum aluno encontrado.</Text>
+                    <Text style={styles.emptySubText}>Tente buscar por outro nome.</Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={styles.emptyText}>Nenhum aluno cadastrado.</Text>
+                    <Text style={styles.emptySubText}>Toque em "+ Novo Cliente" para começar.</Text>
+                  </>
+                )}
               </View>
             }
           />
@@ -167,6 +200,18 @@ const styles = StyleSheet.create({
   },
   newButtonText: { color: T.white, fontWeight: "800", fontSize: 15 },
 
+  searchContainer: { marginBottom: 16 },
+  searchInput: {
+    backgroundColor: T.card,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: T.t1,
+  },
+
   card: {
     backgroundColor: T.card,
     padding: 16,
@@ -176,7 +221,7 @@ const styles = StyleSheet.create({
     borderColor: T.border,
   },
   name: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  email: { fontSize: 13, color: T.t3, marginBottom: 8 },
+  phone: { fontSize: 13, color: T.t3, marginBottom: 8 },
 
   actions: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   linkEdit: { fontWeight: "700", color: T.blue, fontSize: 13 },
