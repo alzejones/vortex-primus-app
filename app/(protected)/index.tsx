@@ -123,11 +123,12 @@ export default function Index() {
       });
       setOverdueClients(overdueClients);
 
-      // Aniversariantes do mês atual
+      // Aniversariantes do mês atual (exclui quem já foi parabenizado este ano)
       const currentMonth = today.getMonth() + 1; // 1-12
-      const currentDay = today.getDate();
+      const currentYear = today.getFullYear();
       const birthdayClients = clientsWithViews.filter((c: any) => {
         if (!c.birth_date) return false;
+        if (c.last_congratulated_year === currentYear) return false;
         const [, month, day] = c.birth_date.split('-').map(Number);
         return month === currentMonth;
       }).sort((a: any, b: any) => {
@@ -175,6 +176,19 @@ export default function Index() {
       console.log('Erro ao carregar dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCongratulate(clientId: string) {
+    const currentYear = new Date().getFullYear();
+    // Otimista: some da tela na hora
+    setBirthdayClients(prev => prev.filter((c: any) => c.id !== clientId));
+    const { error } = await supabase
+      .from('clients')
+      .update({ last_congratulated_year: currentYear })
+      .eq('id', clientId);
+    if (error) {
+      console.log('Erro ao marcar parabéns:', error);
     }
   }
 
@@ -248,6 +262,7 @@ export default function Index() {
       formatDateBR={formatDateBR}
       overdueClients={overdueClients}
       birthdayClients={birthdayClients}
+      onCongratulate={handleCongratulate}
       goalsWidget={goalsWidget}
     />
   );

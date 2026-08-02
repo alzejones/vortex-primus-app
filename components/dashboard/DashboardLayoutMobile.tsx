@@ -47,6 +47,7 @@ export interface DashboardLayoutProps {
   formatDateBR: (iso: string) => string;
   overdueClients: Client[];
   birthdayClients: Client[];
+  onCongratulate: (clientId: string) => void;
   goalsWidget?: {
     scheduledGoal: number; scheduledActual: number;
     completedGoal: number; completedActual: number;
@@ -61,9 +62,10 @@ export default function DashboardLayoutMobile({
   scheduleSearchQuery, onScheduleSearchChange, scheduleFilteredClients,
   refreshing, onRefresh,
   getInitials, formatDateBR,
-  overdueClients, birthdayClients, goalsWidget,
+  overdueClients, birthdayClients, onCongratulate, goalsWidget,
 }: DashboardLayoutProps) {
   const [overdueModalVisible, setOverdueModalVisible] = useState(false);
+  const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
 
   const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
@@ -244,33 +246,50 @@ export default function DashboardLayoutMobile({
               {new Date().toLocaleDateString('pt-BR', { month: 'long' })}
             </Text>
           </View>
-          {birthdayClients.map((client) => {
+          {birthdayClients.slice(0, 3).map((client) => {
             const isToday = isBirthdayToday(client.birth_date);
             const day = getDayOfMonth(client.birth_date);
             return (
-              <TouchableOpacity
+              <View
                 key={client.id}
                 style={[styles.birthdayRow, isToday && styles.birthdayRowToday]}
-                onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
-                activeOpacity={0.75}
               >
-                <View style={[styles.birthdayDayBox, isToday && styles.birthdayDayBoxToday]}>
-                  <Text style={[styles.birthdayDayText, isToday && styles.birthdayDayTextToday]}>
-                    {String(day).padStart(2, '0')}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.birthdayName, isToday && styles.birthdayNameToday]}>
-                    {client.name}
-                  </Text>
-                  {isToday && (
-                    <Text style={styles.birthdayTodayBadge}>🎉 Hoje!</Text>
-                  )}
-                </View>
-                {isToday && <Text style={{ fontSize: 20 }}>🎂</Text>}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                  onPress={() => router.push(`/(protected)/client-details?id=${client.id}` as any)}
+                  activeOpacity={0.75}
+                >
+                  <View style={[styles.birthdayDayBox, isToday && styles.birthdayDayBoxToday]}>
+                    <Text style={[styles.birthdayDayText, isToday && styles.birthdayDayTextToday]}>
+                      {String(day).padStart(2, '0')}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.birthdayName, isToday && styles.birthdayNameToday]}>
+                      {client.name}
+                    </Text>
+                    {isToday && (
+                      <Text style={styles.birthdayTodayBadge}>🎉 Hoje!</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => onCongratulate(client.id)}
+                  activeOpacity={0.75}
+                  style={styles.alertScheduleBtn}
+                >
+                  <Text style={{ fontSize: 18 }}>🎉</Text>
+                </TouchableOpacity>
+              </View>
             );
           })}
+          {birthdayClients.length > 3 && (
+            <TouchableOpacity onPress={() => setBirthdayModalVisible(true)}>
+              <Text style={[styles.alertMore, { color: T.blue, textDecorationLine: 'underline' }]}>
+                +{birthdayClients.length - 3} mais — ver todos
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -591,6 +610,61 @@ export default function DashboardLayoutMobile({
                   </TouchableOpacity>
                 </TouchableOpacity>
               )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={birthdayModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setBirthdayModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: T.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
+                🎂 Aniversariantes ({birthdayClients.length})
+              </Text>
+              <TouchableOpacity onPress={() => setBirthdayModalVisible(false)}>
+                <Text style={{ fontSize: 22, color: T.t3 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={birthdayClients}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ padding: 16 }}
+              renderItem={({ item }) => {
+                const isToday = isBirthdayToday(item.birth_date);
+                const day = getDayOfMonth(item.birth_date);
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: T.border }}>
+                    <TouchableOpacity
+                      style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                      onPress={() => {
+                        setBirthdayModalVisible(false);
+                        router.push(`/(protected)/client-details?id=${item.id}` as any);
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(59,130,246,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                        <Text style={{ color: T.blue, fontWeight: '800', fontSize: 13 }}>{String(day).padStart(2, '0')}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: T.t1 }}>{item.name}</Text>
+                        {isToday && <Text style={{ fontSize: 12, color: T.blue, marginTop: 2 }}>🎉 Hoje!</Text>}
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => onCongratulate(item.id)}
+                      style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.15)', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <Text style={{ fontSize: 18 }}>🎉</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }}
             />
           </View>
         </View>
