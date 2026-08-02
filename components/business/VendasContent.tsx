@@ -715,6 +715,10 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 </View>
               </View>
 
+              <Text style={s.totalPreview}>
+                Total: {brl((parseFloat((price || '0').replace(',', '.')) || 0) * (parseInt(qty) || 1))}
+              </Text>
+
               <View style={s.inline}>
                 <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={() => setModalOpen(false)}>
                   <Text style={s.btnGhostTxt}>Cancelar</Text>
@@ -863,6 +867,7 @@ const s = StyleSheet.create({
   saleCharged: { color: '#FFF', fontWeight: '700' },
   saleProfit: { color: '#4ADE80', fontSize: 12 },
   hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
   modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
   modalTitle: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 14 },
