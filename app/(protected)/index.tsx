@@ -11,6 +11,44 @@ import { T } from '../../utils/theme';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { todayBR } from '../../utils/dateBR';
 
+// Supabase/PostgREST limita a 1000 linhas por chamada por padrão.
+// Contas com mais de 1000 alunos ativos perdiam dados silenciosamente no Dashboard.
+// Busca em blocos de 1000 até esgotar os resultados.
+async function fetchAllActiveClients(trainerId: string) {
+  const pageSize = 1000;
+  let from = 0;
+  let allData: any[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('clients')
+      .select(`
+        *,
+        physical_assessments (
+          id,
+          assessment_date,
+          anthropometry:anthropometry!anthropometry_assessment_id_fkey (view_count)
+        )
+      `)
+      .eq('trainer_id', trainerId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.log('Erro ao buscar clientes (paginação):', error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+
+    allData = allData.concat(data);
+    if (data.length < pageSize) break; // última página
+    from += pageSize;
+  }
+
+  return allData;
+}
+
 export default function Index() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,19 +100,7 @@ export default function Index() {
         setPlanStatus('Inativo');
       }
 
-      const { data: clientList } = await supabase
-        .from('clients')
-        .select(`
-          *,
-          physical_assessments (
-            id,
-            assessment_date,
-            anthropometry:anthropometry!anthropometry_assessment_id_fkey (view_count)
-          )
-        `)
-        .eq('trainer_id', trainer.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      const clientList = await fetchAllActiveClients(trainer.id);
 
       const clientsWithViews = (clientList || []).map((client: any) => {
         let totalViews = 0;
