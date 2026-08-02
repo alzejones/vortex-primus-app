@@ -34,6 +34,7 @@ interface Kit {
   default_price: number;
   kit_type: 'fechado' | 'doses';
   active: boolean;
+  is_redemption_only: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -65,6 +66,7 @@ export default function HerbalifeKits() {
   const [kitName, setKitName] = useState('');
   const [kitType, setKitType] = useState<'fechado' | 'doses'>('fechado');
   const [kitPrice, setKitPrice] = useState('');
+  const [isRedemptionOnly, setIsRedemptionOnly] = useState(false);
   const [kitItems, setKitItems] = useState<KitItem[]>([]);
   const [priceManuallyEdited, setPriceManuallyEdited] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
@@ -154,6 +156,7 @@ export default function HerbalifeKits() {
     setKitName('');
     setKitType('fechado');
     setKitPrice('');
+    setIsRedemptionOnly(false);
     setKitItems([]);
     setPriceManuallyEdited(false);
     setModalOpen(true);
@@ -164,6 +167,7 @@ export default function HerbalifeKits() {
     setKitName(kit.name);
     setKitType(kit.kit_type);
     setKitPrice(String(kit.default_price));
+    setIsRedemptionOnly(kit.is_redemption_only);
     setPriceManuallyEdited(false);
 
     const { data: items } = await supabase
@@ -264,8 +268,12 @@ export default function HerbalifeKits() {
       return;
     }
     const price = parseFloat(kitPrice.replace(',', '.'));
-    if (isNaN(price) || price <= 0) {
+    if (isNaN(price) || price < 0) {
       notify('Atenção', 'Informe um preço válido.');
+      return;
+    }
+    if (isRedemptionOnly && price > 0) {
+      notify('Atenção', 'Kit de resgate deve ter preço zero.');
       return;
     }
     if (kitItems.length === 0) {
@@ -285,7 +293,7 @@ export default function HerbalifeKits() {
       if (editingKit) {
         const { error: updateErr } = await supabase
           .from('herbalife_kits')
-          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, updated_at: new Date().toISOString() })
+          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, updated_at: new Date().toISOString() })
           .eq('id', editingKit.id);
         if (updateErr) throw updateErr;
 
@@ -304,7 +312,7 @@ export default function HerbalifeKits() {
       } else {
         const { data: newKit, error: insertErr } = await supabase
           .from('herbalife_kits')
-          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, active: true })
+          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, active: true })
           .select('id')
           .single();
         if (insertErr) throw insertErr;
@@ -440,13 +448,23 @@ export default function HerbalifeKits() {
                 </TouchableOpacity>
               </View>
 
+              <TouchableOpacity style={s.checkRowBox} onPress={() => {
+                const newVal = !isRedemptionOnly;
+                setIsRedemptionOnly(newVal);
+                if (newVal) setKitPrice('0');
+              }}>
+                <View style={[s.checkbox, isRedemptionOnly && { backgroundColor: T.blue }]} />
+                <Text style={s.checkTxt}>Kit de Resgate (sem cobrança)</Text>
+              </TouchableOpacity>
+
               <Text style={s.label}>Preço Padrão (R$)</Text>
               <TextInput
-                style={s.input}
+                style={[s.input, isRedemptionOnly && s.inputDisabled]}
                 placeholder="Ex: 547,00"
                 placeholderTextColor="#777"
                 keyboardType="numeric"
                 value={kitPrice}
+                editable={!isRedemptionOnly}
                 onChangeText={(v) => {
                   setKitPrice(v);
                   setPriceManuallyEdited(true);
@@ -688,5 +706,26 @@ const s = StyleSheet.create({
     fontWeight: '600',
     marginTop: -6,
     marginBottom: 8,
+  },
+  checkRowBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#555',
+    marginRight: 8,
+  },
+  checkTxt: {
+    color: '#DDD',
+    fontSize: 13,
+  },
+  inputDisabled: {
+    opacity: 0.5,
   },
 });

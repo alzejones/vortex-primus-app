@@ -48,6 +48,7 @@ interface Kit {
   id: string;
   name: string;
   default_price: number;
+  is_redemption_only: boolean;
 }
 interface KitItem {
   kit_id: string;
@@ -159,7 +160,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .eq('trainer_id', trainer.id)
             .eq('sale_date', today)
             .order('created_at', { ascending: false }),
-          supabase.from('herbalife_kits').select('id, name, default_price').eq('active', true).order('name'),
+          supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only').eq('active', true).order('name'),
           supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
           supabase
             .from('herbalife_pricing')
@@ -366,23 +367,40 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
       const items: any[] = [];
 
       if (saleType === 'acesso' && selKit) {
-        const { cost, pv } = kitCost(selKit);
-        totalCharged = chargedUnit * quantity;
-        totalCost = cost * quantity;
-        totalPv = pv * quantity;
-        for (const item of kitItems.filter((i) => i.kit_id === selKit.id)) {
-          const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
-          if (!p) continue;
-          const doses = p.doses_per_package || 1;
-          items.push({
-            supplement_id: item.supplement_id,
-            kit_id: selKit.id,
-            kit_name: selKit.name,
-            quantity: Number(item.doses_used) * quantity,
-            unit_charged: 0,
-            unit_cost: trainerUnitCost(p) / doses,
-            pv: (Number(p.pv) / doses) * Number(item.doses_used),
-          });
+        if (selKit.is_redemption_only) {
+          totalCharged = 0;
+          totalCost = 0;
+          totalPv = 0;
+          for (const item of kitItems.filter((i) => i.kit_id === selKit.id)) {
+            items.push({
+              supplement_id: item.supplement_id,
+              kit_id: selKit.id,
+              kit_name: selKit.name,
+              quantity: Number(item.doses_used) * quantity,
+              unit_charged: 0,
+              unit_cost: 0,
+              pv: 0,
+            });
+          }
+        } else {
+          const { cost, pv } = kitCost(selKit);
+          totalCharged = chargedUnit * quantity;
+          totalCost = cost * quantity;
+          totalPv = pv * quantity;
+          for (const item of kitItems.filter((i) => i.kit_id === selKit.id)) {
+            const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+            if (!p) continue;
+            const doses = p.doses_per_package || 1;
+            items.push({
+              supplement_id: item.supplement_id,
+              kit_id: selKit.id,
+              kit_name: selKit.name,
+              quantity: Number(item.doses_used) * quantity,
+              unit_charged: 0,
+              unit_cost: trainerUnitCost(p) / doses,
+              pv: (Number(p.pv) / doses) * Number(item.doses_used),
+            });
+          }
         }
       } else if (selProduct) {
         const cost = trainerUnitCost(selProduct);
