@@ -332,7 +332,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     if (!trainerId) return;
     const chargedUnit = parseFloat(price.replace(',', '.'));
     const quantity = parseInt(qty) || 1;
-    if (isNaN(chargedUnit) || chargedUnit <= 0) {
+    const isRedemption = saleType === 'acesso' && selKit?.is_redemption_only === true;
+    if (isNaN(chargedUnit) || (chargedUnit <= 0 && !isRedemption)) {
       notify('Atenção', 'Informe um valor válido.');
       return;
     }
