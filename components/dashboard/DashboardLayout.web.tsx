@@ -157,6 +157,19 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
     </View>
   );
 
+  // Formata celular/telefone BR: 11 dígitos -> (99) 99999-9999, 10 dígitos -> (99) 9999-9999
+  const formatPhoneBR = (phone: string) => {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 11) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    }
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return phone; // formato não reconhecido — mostra como veio, sem quebrar a tela
+  };
+
   // ─── Linha de aluno na tabela ─────────────────────────────────
   const ClientRow = ({ item }: { item: any }) => (
     <TouchableOpacity
@@ -169,7 +182,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       </View>
       <View style={styles.clientInfo}>
         <Text style={styles.clientName}>{item.name}</Text>
-        <Text style={styles.clientEmail}>📲 {item.phone || 'Sem WhatsApp'}</Text>
+        <Text style={styles.clientEmail}>📲 {item.phone ? formatPhoneBR(item.phone) : 'Sem WhatsApp'}</Text>
       </View>
               <View style={styles.clientActions}>
                 <TouchableOpacity

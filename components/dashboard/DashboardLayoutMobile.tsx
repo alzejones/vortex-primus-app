@@ -84,6 +84,20 @@ export default function DashboardLayoutMobile({
     return day === currentDay;
   };
 
+  // Formata celular/telefone BR: 11 dígitos -> (99) 99999-9999, 10 dígitos -> (99) 9999-9999
+  const formatPhoneBR = (phone: string) => {
+    if (!phone) return '';
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 11) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    }
+    if (digits.length === 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return phone; // formato não reconhecido — mostra como veio, sem quebrar a tela
+  };
+
+
   // Abre o WhatsApp do aluno com a mensagem de aniversário pronta e marca como parabenizado
   const handleCongratulate = (client: Client) => {
     const phoneDigits = (client.phone || '').replace(/\D/g, '');
@@ -413,7 +427,7 @@ export default function DashboardLayoutMobile({
                       </View>
                       <View>
                         <Text style={styles.clientName}>{item.name}</Text>
-                        <Text style={styles.clientSubText}>📲 {item.phone || 'Sem WhatsApp'}</Text>
+                        <Text style={styles.clientSubText}>📲 {item.phone ? formatPhoneBR(item.phone) : 'Sem WhatsApp'}</Text>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -482,7 +496,7 @@ export default function DashboardLayoutMobile({
                     </View>
                     <View>
                       <Text style={styles.clientName}>{item.name}</Text>
-                      <Text style={styles.clientSubText}>📲 {item.phone || 'Sem WhatsApp'}</Text>
+                      <Text style={styles.clientSubText}>📲 {item.phone ? formatPhoneBR(item.phone) : 'Sem WhatsApp'}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
