@@ -32,7 +32,7 @@ async function fetchAllActiveClients(trainerId: string) {
       `)
       .eq('trainer_id', trainerId)
       .eq('is_active', true)
-      .order('created_at', { ascending: false })
+      .order('name', { ascending: true })
       .range(from, from + pageSize - 1);
 
     if (error) {
