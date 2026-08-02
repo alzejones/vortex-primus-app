@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  FlatList, Modal, Platform, RefreshControl,
+  Alert, FlatList, Linking, Modal, Platform, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput,
   TouchableOpacity, View,
 } from 'react-native';
@@ -82,6 +82,31 @@ export default function DashboardLayoutMobile({
     if (!birth_date) return false;
     const [, , day] = birth_date.split('-').map(Number);
     return day === currentDay;
+  };
+
+  // Abre o WhatsApp do aluno com a mensagem de aniversário pronta e marca como parabenizado
+  const handleCongratulate = (client: Client) => {
+    const phoneDigits = (client.phone || '').replace(/\D/g, '');
+    if (!phoneDigits) {
+      Alert.alert(
+        'Sem celular cadastrado',
+        `${client.name} não tem celular cadastrado. Deseja marcar como parabenizado mesmo assim?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Marcar mesmo assim', onPress: () => onCongratulate(client.id) },
+        ]
+      );
+      return;
+    }
+    const firstName = (client.name || '').split(' ')[0];
+    const message = `Oi ${firstName}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳`;
+    const url = `https://wa.me/55${phoneDigits}?text=${encodeURIComponent(message)}`;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
+    } else {
+      Linking.openURL(url);
+    }
+    onCongratulate(client.id);
   };
 
   const renderHeader = () => (
@@ -274,11 +299,11 @@ export default function DashboardLayoutMobile({
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => onCongratulate(client.id)}
+                  onPress={() => handleCongratulate(client)}
                   activeOpacity={0.75}
                   style={styles.alertScheduleBtn}
                 >
-                  <Text style={{ fontSize: 18 }}>🎉</Text>
+                  <Text style={{ fontSize: 18 }}>💬</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -657,10 +682,10 @@ export default function DashboardLayoutMobile({
                       </View>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => onCongratulate(item.id)}
+                      onPress={() => handleCongratulate(item)}
                       style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: 'rgba(59,130,246,0.15)', alignItems: 'center', justifyContent: 'center' }}
                     >
-                      <Text style={{ fontSize: 18 }}>🎉</Text>
+                      <Text style={{ fontSize: 18 }}>💬</Text>
                     </TouchableOpacity>
                   </View>
                 );
