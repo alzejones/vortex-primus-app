@@ -170,20 +170,27 @@ export default function PublicAssessmentView() {
 
   async function loadPublicData() {
     try {
-      const { data: clientData, error: clientError } = await supabase.from("clients").select("name, gender, birth_date").eq("id", clientId).single();
-      if (clientError || !clientData) throw new Error("Acesso indisponível.");
-      setClient(clientData);
+      const { data, error } = await supabase.rpc('get_public_client_evolution', { p_client_id: clientId });
+      if (error || !data) throw new Error("Acesso indisponível.");
 
-      const { data: historyData, error: historyError } = await supabase.from("physical_assessments").select(`id, date, scale_protocol, anthropometry!anthropometry_assessment_id_fkey (*)`).eq("client_id", clientId).order("date", { ascending: false });
-      if (historyError || !historyData || historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
+      setClient(data.client);
 
-      setAssessments(historyData);
-      const assessmentWithData = historyData.find(
+      const historyData = data.assessments || [];
+      if (historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
+
+      const formattedAssessments = historyData.map((a: any) => ({
+        id: a.id,
+        date: a.date || a.assessment_date,
+        scale_protocol: a.anthropometry?.scale_protocol || 'omron',
+        anthropometry: a.anthropometry ? [a.anthropometry] : []
+      }));
+
+      setAssessments(formattedAssessments);
+      const assessmentWithData = formattedAssessments.find(
         (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
-      ) || historyData[0];
+      ) || formattedAssessments[0];
       setCurrentAssessment(assessmentWithData);
 
-      // Incrementa view_count na antropometria da avaliação atual
       const anthroId = assessmentWithData?.anthropometry?.[0]?.id;
       const currentCount = assessmentWithData?.anthropometry?.[0]?.view_count || 0;
       if (anthroId) {
@@ -193,13 +200,13 @@ export default function PublicAssessmentView() {
           .eq('id', anthroId);
       }
 
-      const currentIdx = historyData.findIndex((a: any) => a.id === assessmentWithData.id);
-      const prevWithData = historyData.slice(currentIdx + 1).find(
+      const currentIdx = formattedAssessments.findIndex((a: any) => a.id === assessmentWithData.id);
+      const prevWithData = formattedAssessments.slice(currentIdx + 1).find(
         (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
-      ) || historyData[currentIdx + 1] || null;
-      const firstWithData = [...historyData].reverse().find(
+      ) || formattedAssessments[currentIdx + 1] || null;
+      const firstWithData = [...formattedAssessments].reverse().find(
         (a: any) => a.anthropometry && a.anthropometry.length > 0 && a.anthropometry[0]?.weight != null
-      ) || historyData[historyData.length - 1];
+      ) || formattedAssessments[formattedAssessments.length - 1];
 
       setPrevAssessment(prevWithData);
       setFirstAssessment(firstWithData);
