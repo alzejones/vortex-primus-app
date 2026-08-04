@@ -7,9 +7,12 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
+  KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTutorial } from '../../contexts/TutorialContext';
 import { tutorialScripts } from './tutorialScripts';
 import { tutorialAudioMap } from './tutorialAudioMap';
@@ -23,6 +26,7 @@ interface TutorialOverlayProps {
 
 export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {} }) => {
   const { currentTour, currentStep, nextStep, prevStep, closeTour } = useTutorial();
+  const insets = useSafeAreaInsets();
   const [spotlight, setSpotlight] = useState<{
     x: number;
     y: number;
@@ -30,11 +34,28 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
     height: number;
   } | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const script = currentTour ? tutorialScripts[currentTour] : null;
   const step = script?.[currentStep];
   const isLastStep = script ? currentStep === script.length - 1 : false;
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardHeight(0)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (step?.targetRef && targetRefs[step.targetRef]?.current) {
@@ -111,6 +132,15 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
 
   if (!currentTour || !step) return null;
 
+  const balloonBottomPadding = Math.max(insets.bottom + 16, 16);
+  const balloonStyle = spotlight 
+    ? { top: spotlight.y + spotlight.height + 24 } 
+    : { 
+        bottom: keyboardHeight > 0 
+          ? keyboardHeight + balloonBottomPadding 
+          : balloonBottomPadding 
+      };
+
   return (
     <Modal
       visible={!!currentTour}
@@ -118,7 +148,10 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
       animationType="fade"
       onRequestClose={closeTour}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.overlay}
+      >
         {spotlight && (
           <View
             style={[
@@ -133,7 +166,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
           />
         )}
 
-        <View style={[styles.balloon, spotlight ? { top: spotlight.y + spotlight.height + 24 } : styles.balloonCenter]}>
+        <View style={[styles.balloon, balloonStyle]}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
               <Ionicons name="rocket" size={24} color={T.blue} />
@@ -143,7 +176,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
           <Text style={styles.title}>{step.title}</Text>
           <Text style={styles.text}>{step.text}</Text>
 
-          <View style={styles.controls}>
+          <View style={[styles.controls, { paddingBottom: balloonBottomPadding }]}>
             <TouchableOpacity onPress={handleMuteToggle} style={styles.muteButton}>
               <Ionicons
                 name={isMuted ? 'volume-mute' : 'volume-high'}
@@ -183,7 +216,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             ))}
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -217,9 +250,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-  },
-  balloonCenter: {
-    top: SCREEN_HEIGHT / 3,
   },
   avatarContainer: {
     alignItems: 'center',
@@ -258,7 +288,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   muteButton: {
     padding: 8,
