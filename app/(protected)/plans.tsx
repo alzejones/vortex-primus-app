@@ -92,7 +92,8 @@ export default function PlansScreen() {
         body: {
           priceId: selectedPlan.stripe_price_id,
           email: session?.user?.email,
-          name: session?.user?.user_metadata?.name || 'Treinador Vortex'
+          name: session?.user?.user_metadata?.name || 'Treinador Vortex',
+          trainerId: trainerId
         }
       });
 

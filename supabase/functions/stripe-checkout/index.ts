@@ -17,9 +17,10 @@ serve(async (req) => {
   }
 
   try {
-    const { priceId, email, name } = await req.json()
+    const { priceId, email, name, trainerId } = await req.json()
 
     if (!priceId) throw new Error("ID do Preço do Stripe é obrigatório")
+    if (!trainerId) throw new Error("ID do Treinador é obrigatório")
 
     // 1. Cria ou recupera o cliente
     const customer = await stripe.customers.create({
@@ -33,6 +34,7 @@ serve(async (req) => {
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
       mode: 'subscription',
+      client_reference_id: trainerId,
       // Links para onde o Stripe vai devolver o usuário após pagar ou cancelar
       success_url: 'https://vortex-primus.vercel.app/(protected)', 
       cancel_url: 'https://vortex-primus.vercel.app/upgrade',

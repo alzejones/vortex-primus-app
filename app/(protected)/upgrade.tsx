@@ -37,6 +37,7 @@ export default function UpgradeScreen() {
 
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  const [trainerId, setTrainerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
@@ -56,6 +57,7 @@ export default function UpgradeScreen() {
         .single();
 
       if (!trainer) return;
+      setTrainerId(trainer.id);
       if (trainer.plan_id) setCurrentPlanId(trainer.plan_id);
 
       const { data: plansData, error } = await supabase
@@ -80,6 +82,10 @@ export default function UpgradeScreen() {
         throw new Error("Este plano ainda não está configurado no banco de dados.");
       }
 
+      if (!trainerId) {
+        throw new Error("ID do treinador não encontrado. Faça login novamente.");
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error("Sessão inválida. Faça login novamente.");
 
@@ -87,7 +93,8 @@ export default function UpgradeScreen() {
         body: {
           priceId: plan.stripe_price_id,
           email: session.user.email,
-          name: session.user.user_metadata?.name || 'Treinador Vortex'
+          name: session.user.user_metadata?.name || 'Treinador Vortex',
+          trainerId: trainerId
         }
       });
 
