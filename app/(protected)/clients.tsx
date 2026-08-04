@@ -35,6 +35,8 @@ export default function Clients() {
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [totalClients, setTotalClients] = useState<number>(0);
+  const [sortField, setSortField] = useState<'name' | 'data_cadastro_efetiva'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   async function loadTrainer() {
     if (!session?.user?.id) return;
@@ -74,10 +76,11 @@ export default function Clients() {
 
     while (hasMore) {
       const { data, error } = await supabase
-        .from("clients")
+        .from("v_clients_alunos")
         .select("*")
         .eq("trainer_id", currentTrainerId)
-        .order("name", { ascending: true })
+        .order(sortField, { ascending: sortDirection === 'asc' })
+        .order('id', { ascending: true })
         .range(offset, offset + batchSize - 1);
 
       if (error) {
@@ -123,7 +126,7 @@ export default function Clients() {
     if (trainerId) {
       fetchClients(trainerId);
     }
-  }, [trainerId]);
+  }, [trainerId, sortField, sortDirection]);
 
   // Formata celular/telefone BR: 11 dígitos -> (99) 99999-9999, 10 dígitos -> (99) 9999-9999
   const formatPhoneBR = (phone: string) => {
@@ -166,6 +169,49 @@ export default function Clients() {
             <Text style={styles.totalText}>
               Total de Clientes: <Text style={styles.totalCount}>{totalClients}</Text>
             </Text>
+          </View>
+
+          <View style={styles.sortContainer}>
+            <View style={styles.sortRow}>
+              <TouchableOpacity
+                style={[styles.sortButton, sortField === 'name' && styles.sortButtonActive]}
+                onPress={() => setSortField('name')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.sortButtonText, sortField === 'name' && styles.sortButtonTextActive]}>
+                  Alfabética
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sortButton, sortField === 'data_cadastro_efetiva' && styles.sortButtonActive]}
+                onPress={() => setSortField('data_cadastro_efetiva')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.sortButtonText, sortField === 'data_cadastro_efetiva' && styles.sortButtonTextActive]}>
+                  Cadastro
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.sortRow}>
+              <TouchableOpacity
+                style={[styles.sortButton, sortDirection === 'asc' && styles.sortButtonActive]}
+                onPress={() => setSortDirection('asc')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.sortButtonText, sortDirection === 'asc' && styles.sortButtonTextActive]}>
+                  ↑ Asc
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sortButton, sortDirection === 'desc' && styles.sortButtonActive]}
+                onPress={() => setSortDirection('desc')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.sortButtonText, sortDirection === 'desc' && styles.sortButtonTextActive]}>
+                  ↓ Desc
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.searchContainer}>
@@ -260,6 +306,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: T.t1,
     fontWeight: "800",
+  },
+
+  sortContainer: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  sortRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  sortButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: T.surfaceAlt,
+    borderWidth: 1,
+    borderColor: T.border,
+    alignItems: "center",
+  },
+  sortButtonActive: {
+    backgroundColor: T.blue,
+    borderColor: T.blue,
+  },
+  sortButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: T.t2,
+  },
+  sortButtonTextActive: {
+    color: T.white,
   },
 
   searchContainer: { marginBottom: 16 },

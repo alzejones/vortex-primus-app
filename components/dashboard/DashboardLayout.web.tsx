@@ -50,6 +50,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
     refreshing, onRefresh,
     getInitials, formatDateBR,
     overdueClients, birthdayClients, goalsWidget,
+    sortField, sortDirection, onSortFieldChange, onSortDirectionChange,
   } = props;
 
   const pathname = usePathname();
@@ -512,13 +513,55 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                 Meus Alunos
                 <Text style={styles.sectionCount}> ({filteredClients.length})</Text>
               </Text>
-              <TextInput
-                style={styles.columnSearch}
-                placeholder="Buscar Aluno..."
-                placeholderTextColor={T.t3}
-                value={searchQuery}
-                onChangeText={onSearchChange}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={styles.sortCompact}>
+                  <TouchableOpacity
+                    style={[styles.sortBtnCompact, sortField === 'name' && styles.sortBtnCompactActive]}
+                    onPress={() => onSortFieldChange('name')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.sortBtnCompactText, sortField === 'name' && styles.sortBtnCompactTextActive]}>
+                      Alfab.
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.sortBtnCompact, sortField === 'data_cadastro_efetiva' && styles.sortBtnCompactActive]}
+                    onPress={() => onSortFieldChange('data_cadastro_efetiva')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.sortBtnCompactText, sortField === 'data_cadastro_efetiva' && styles.sortBtnCompactTextActive]}>
+                      Cadastro
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.sortCompact}>
+                  <TouchableOpacity
+                    style={[styles.sortBtnCompact, sortDirection === 'asc' && styles.sortBtnCompactActive]}
+                    onPress={() => onSortDirectionChange('asc')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.sortBtnCompactText, sortDirection === 'asc' && styles.sortBtnCompactTextActive]}>
+                      \u2191
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.sortBtnCompact, sortDirection === 'desc' && styles.sortBtnCompactActive]}
+                    onPress={() => onSortDirectionChange('desc')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.sortBtnCompactText, sortDirection === 'desc' && styles.sortBtnCompactTextActive]}>
+                      \u2193
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={styles.columnSearch}
+                  placeholder="Buscar Aluno..."
+                  placeholderTextColor={T.t3}
+                  value={searchQuery}
+                  onChangeText={onSearchChange}
+                />
+              </View>
             </View>
 
             {/* Cabeçalho da tabela */}
@@ -745,6 +788,33 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: T.white },
   sectionCount: { color: T.t3, fontWeight: '500' },
+
+  // ─── Ordenação compacta ───────────────────────────────────────
+  sortCompact: {
+    flexDirection: 'row',
+    backgroundColor: T.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: T.border,
+    overflow: 'hidden',
+  },
+  sortBtnCompact: {
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: 'transparent',
+  },
+  sortBtnCompactActive: {
+    backgroundColor: T.blue,
+  },
+  sortBtnCompactText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: T.t2,
+  },
+  sortBtnCompactTextActive: {
+    color: T.white,
+  },
+
   columnSearch: {
     backgroundColor: T.surface,
     borderWidth: 1,

@@ -10,11 +10,16 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { todayBR } from '../../utils/dateBR';
+import { getEffectiveRegistrationDate } from '../../utils/clientSort';
 
 // Supabase/PostgREST limita a 1000 linhas por chamada por padrão.
 // Contas com mais de 1000 alunos ativos perdiam dados silenciosamente no Dashboard.
 // Busca em blocos de 1000 até esgotar os resultados.
-async function fetchAllActiveClients(trainerId: string) {
+async function fetchAllActiveClients(
+  trainerId: string,
+  sortField: 'name' | 'data_cadastro_efetiva',
+  sortDirection: 'asc' | 'desc'
+) {
   const pageSize = 1000;
   let from = 0;
   let allData: any[] = [];
@@ -27,12 +32,14 @@ async function fetchAllActiveClients(trainerId: string) {
         physical_assessments (
           id,
           assessment_date,
+          import_source,
           anthropometry:anthropometry!anthropometry_assessment_id_fkey (view_count)
         )
       `)
       .eq('trainer_id', trainerId)
       .eq('is_active', true)
-      .order('name', { ascending: true })
+      .order(sortField === 'name' ? 'name' : 'created_at', { ascending: sortDirection === 'asc' })
+      .order('id', { ascending: true })
       .range(from, from + pageSize - 1);
 
     if (error) {
@@ -67,11 +74,13 @@ export default function Index() {
     scheduledGoal: number; scheduledActual: number;
     completedGoal: number; completedActual: number;
   } | null>(null);
+  const [sortField, setSortField] = useState<'name' | 'data_cadastro_efetiva'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useFocusEffect(
     useCallback(() => {
       loadDashboardData();
-    }, [])
+    }, [sortField, sortDirection])
   );
 
   async function loadDashboardData() {
@@ -100,7 +109,7 @@ export default function Index() {
         setPlanStatus('Inativo');
       }
 
-      const clientList = await fetchAllActiveClients(trainer.id);
+      const clientList = await fetchAllActiveClients(trainer.id, sortField, sortDirection);
 
       const clientsWithViews = (clientList || []).map((client: any) => {
         let totalViews = 0;
@@ -246,16 +255,40 @@ export default function Index() {
 
   // useMemo: referência estável → FlatList não re-monta → teclado não cai
   const filteredClients = useMemo(() => {
+    let result = clients;
     const q = normalize(searchQuery);
-    if (!q) return clients;
-    return clients.filter(c => normalize(c.name ?? '').includes(q));
-  }, [clients, searchQuery, normalize]);
+    if (q) {
+      result = result.filter(c => normalize(c.name ?? '').includes(q));
+    }
+    if (sortField === 'data_cadastro_efetiva') {
+      result = [...result].sort((a, b) => {
+        const dateA = getEffectiveRegistrationDate(a);
+        const dateB = getEffectiveRegistrationDate(b);
+        const cmp = dateA.localeCompare(dateB);
+        if (cmp !== 0) return sortDirection === 'asc' ? cmp : -cmp;
+        return a.id.localeCompare(b.id);
+      });
+    }
+    return result;
+  }, [clients, searchQuery, normalize, sortField, sortDirection]);
 
   const scheduleFilteredClients = useMemo(() => {
+    let result = clients;
     const q = normalize(scheduleSearchQuery);
-    if (!q) return clients;
-    return clients.filter(c => normalize(c.name ?? '').includes(q));
-  }, [clients, scheduleSearchQuery, normalize]);
+    if (q) {
+      result = result.filter(c => normalize(c.name ?? '').includes(q));
+    }
+    if (sortField === 'data_cadastro_efetiva') {
+      result = [...result].sort((a, b) => {
+        const dateA = getEffectiveRegistrationDate(a);
+        const dateB = getEffectiveRegistrationDate(b);
+        const cmp = dateA.localeCompare(dateB);
+        if (cmp !== 0) return sortDirection === 'asc' ? cmp : -cmp;
+        return a.id.localeCompare(b.id);
+      });
+    }
+    return result;
+  }, [clients, scheduleSearchQuery, normalize, sortField, sortDirection]);
 
   if (loading) {
     return (
@@ -290,6 +323,10 @@ export default function Index() {
       birthdayClients={birthdayClients}
       onCongratulate={handleCongratulate}
       goalsWidget={goalsWidget}
+      sortField={sortField}
+      sortDirection={sortDirection}
+      onSortFieldChange={setSortField}
+      onSortDirectionChange={setSortDirection}
     />
   );
 }

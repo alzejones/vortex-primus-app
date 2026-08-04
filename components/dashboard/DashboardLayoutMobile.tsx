@@ -52,6 +52,10 @@ export interface DashboardLayoutProps {
     scheduledGoal: number; scheduledActual: number;
     completedGoal: number; completedActual: number;
   } | null;
+  sortField: 'name' | 'data_cadastro_efetiva';
+  sortDirection: 'asc' | 'desc';
+  onSortFieldChange: (field: 'name' | 'data_cadastro_efetiva') => void;
+  onSortDirectionChange: (direction: 'asc' | 'desc') => void;
 }
 
 export default function DashboardLayoutMobile({
@@ -63,6 +67,7 @@ export default function DashboardLayoutMobile({
   refreshing, onRefresh,
   getInitials, formatDateBR,
   overdueClients, birthdayClients, onCongratulate, goalsWidget,
+  sortField, sortDirection, onSortFieldChange, onSortDirectionChange,
 }: DashboardLayoutProps) {
   const [overdueModalVisible, setOverdueModalVisible] = useState(false);
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
@@ -373,6 +378,49 @@ export default function DashboardLayoutMobile({
             onChangeText={onSearchChange}
             autoCorrect={false}
           />
+        </View>
+      </View>
+
+      <View style={styles.sortContainer}>
+        <View style={styles.sortRow}>
+          <TouchableOpacity
+            style={[styles.sortButton, sortField === 'name' && styles.sortButtonActive]}
+            onPress={() => onSortFieldChange('name')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.sortButtonText, sortField === 'name' && styles.sortButtonTextActive]}>
+              Alfabética
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortButton, sortField === 'data_cadastro_efetiva' && styles.sortButtonActive]}
+            onPress={() => onSortFieldChange('data_cadastro_efetiva')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.sortButtonText, sortField === 'data_cadastro_efetiva' && styles.sortButtonTextActive]}>
+              Cadastro
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.sortRow}>
+          <TouchableOpacity
+            style={[styles.sortButton, sortDirection === 'asc' && styles.sortButtonActive]}
+            onPress={() => onSortDirectionChange('asc')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.sortButtonText, sortDirection === 'asc' && styles.sortButtonTextActive]}>
+              ↑ Asc
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortButton, sortDirection === 'desc' && styles.sortButtonActive]}
+            onPress={() => onSortDirectionChange('desc')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.sortButtonText, sortDirection === 'desc' && styles.sortButtonTextActive]}>
+              ↓ Desc
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -759,10 +807,37 @@ const styles = StyleSheet.create({
   buttonText: { color: T.white, fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
 
   // ─── Busca ──────────────────────────────────────────────────────
-  searchContainer: { marginBottom: 24 },
+  searchContainer: { marginBottom: 16 },
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 14, paddingHorizontal: 16, height: 54, borderWidth: 1, borderColor: T.border },
   searchIcon: { fontSize: 16, marginRight: 10, opacity: 0.6 },
   searchInput: { flex: 1, fontSize: 16, color: T.white, height: '100%' },
+
+  // ─── Ordenação ──────────────────────────────────────────────────
+  sortContainer: { marginBottom: 24, gap: 8 },
+  sortRow: { flexDirection: 'row', gap: 8 },
+  sortButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: T.surfaceAlt,
+    borderWidth: 1,
+    borderColor: T.border,
+    alignItems: 'center',
+  },
+  sortButtonActive: {
+    backgroundColor: T.blue,
+    borderColor: T.blue,
+  },
+  sortButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.t2,
+  },
+  sortButtonTextActive: {
+    color: T.white,
+  },
+
   sectionTitle: { fontSize: 20, fontWeight: '800', color: T.t1, marginBottom: 16, letterSpacing: -0.5 },
 
   // ─── Cards de aluno ─────────────────────────────────────────────
