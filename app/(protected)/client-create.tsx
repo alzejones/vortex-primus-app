@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -22,6 +22,8 @@ import {
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton";
+import { TutorialOverlay } from "../../components/tutorial/TutorialOverlay";
 
 export default function ClientCreate() {
   const router = useRouter();
@@ -49,6 +51,12 @@ export default function ClientCreate() {
     activity_level: "" as ActivityLevel | "",
     food_restrictions: "",
   });
+
+  const nome_completoRef = useRef(null);
+  const email_telefoneRef = useRef(null);
+  const dados_pessoaisRef = useRef(null);
+  const objetivo_atividadeRef = useRef(null);
+  const observacoesRef = useRef(null);
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -218,7 +226,7 @@ export default function ClientCreate() {
           </View>
         )}
 
-        <View style={styles.inputGroup}>
+        <View style={styles.inputGroup} ref={nome_completoRef}>
           <Text style={styles.label}>Nome Completo *</Text>
           <TextInput
             placeholder="Ex: João da Silva"
@@ -229,7 +237,7 @@ export default function ClientCreate() {
           />
         </View>
 
-        <View style={styles.inputGroup}>
+        <View style={styles.inputGroup} ref={email_telefoneRef}>
           <Text style={styles.label}>E-mail</Text>
           <TextInput
             placeholder="Ex: joao@email.com"
@@ -255,7 +263,7 @@ export default function ClientCreate() {
           />
         </View>
 
-        <View style={styles.row}>
+        <View style={styles.row} ref={dados_pessoaisRef}>
           <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
             <Text style={styles.label}>
               Data Nasc. {calculatedAge ? <Text style={styles.ageText}>({calculatedAge})</Text> : null}
@@ -296,7 +304,7 @@ export default function ClientCreate() {
           />
         </View>
 
-        <View style={styles.inputGroup}>
+        <View style={styles.inputGroup} ref={observacoesRef}>
           <Text style={styles.label}>Observações</Text>
           <TextInput
             placeholder="Condições médicas, objetivos, etc..."
@@ -310,7 +318,7 @@ export default function ClientCreate() {
           />
         </View>
 
-        <View style={styles.inputGroup}>
+        <View style={styles.inputGroup} ref={objetivo_atividadeRef}>
           <Text style={styles.label}>Objetivo</Text>
           {(Object.keys(OBJECTIVE_LABELS) as Objective[]).map((key) => (
             <TouchableOpacity
@@ -364,6 +372,17 @@ export default function ClientCreate() {
         </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
+
+        <TutorialOverlay
+          targetRefs={{
+            nome_completo: nome_completoRef,
+            email_telefone: email_telefoneRef,
+            dados_pessoais: dados_pessoaisRef,
+            objetivo_atividade: objetivo_atividadeRef,
+            observacoes: observacoesRef,
+          }}
+        />
+        <TutorialHelpButton screenId="novo_cliente" />
       </View>
     </View>
   );

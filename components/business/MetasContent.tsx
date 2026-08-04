@@ -5,7 +5,7 @@
 // déficit pelos dias úteis (seg-sex) restantes.
 // Sub-abas: Atendimento (Agendamentos/Avaliações) | Comercial (5 métricas novas)
 // ============================================================
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import {
   ActivityIndicator, ScrollView, StyleSheet, Text,
   TextInput, TouchableOpacity, View,
@@ -15,6 +15,8 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { getWorkingDays, computeTrend } from '../../utils/goalCalculations';
 import { todayBR, daysAgoBR, brasiliaDate } from '../../utils/dateBR';
+import { TutorialHelpButton } from '../tutorial/TutorialHelpButton';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 
 type Period = 'monthly' | 'weekly' | 'daily';
 type Category = 'atendimento' | 'comercial';
@@ -237,6 +239,10 @@ export default function MetasContent() {
   const [editingField, setEditingField] = useState<GoalType | null>(null);
   const [editValue, setEditValue] = useState('');
 
+  const aba_atendimentoRef = useRef(null);
+  const aba_comercialRef = useRef(null);
+  const botao_editar_metaRef = useRef(null);
+
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
   async function loadData() {
@@ -310,7 +316,8 @@ export default function MetasContent() {
   const visibleGoals = GOAL_CONFIG.filter((g) => g.category === category);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: T.bg }} contentContainerStyle={styles.container}>
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
       {/* Seletor de categoria */}
       <View style={styles.periodRow}>
         {([
@@ -319,6 +326,7 @@ export default function MetasContent() {
         ]).map((c) => (
           <TouchableOpacity
             key={c.key}
+            ref={c.key === 'atendimento' ? aba_atendimentoRef : aba_comercialRef}
             style={[styles.periodBtn, category === c.key && styles.periodBtnActive]}
             onPress={() => setCategory(c.key)}
           >
@@ -443,7 +451,17 @@ export default function MetasContent() {
           </View>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+
+      <TutorialOverlay
+        targetRefs={{
+          aba_atendimento: aba_atendimentoRef,
+          aba_comercial: aba_comercialRef,
+          botao_editar_meta: botao_editar_metaRef,
+        }}
+      />
+      <TutorialHelpButton screenId="metas" />
+    </View>
   );
 }
 

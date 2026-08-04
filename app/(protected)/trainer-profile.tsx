@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import TrainerScalesManager from "../../components/TrainerScalesManager";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTutorial } from "../../contexts/TutorialContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
@@ -22,6 +23,7 @@ import { T } from "../../utils/theme";
 export default function TrainerProfile() {
   const router = useRouter();
   const { signOut, signingOut, debugMessages } = useAuth();
+  const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -337,6 +339,24 @@ export default function TrainerProfile() {
               </View>
             </>
           )}
+        </View>
+
+        {/* Card Assistente de Ajuda */}
+        <View style={styles.formCard}>
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.switchLabel}>🤖 Assistente de Ajuda</Text>
+              <Text style={{ fontSize: 12, color: T.t3, marginTop: 4 }}>
+                Mostra um assistente com dicas em cada tela. Você pode desligar quando quiser.
+              </Text>
+            </View>
+            <Switch
+              value={tutorialEnabled}
+              onValueChange={toggleTutorialEnabled}
+              trackColor={{ false: T.border, true: T.blue }}
+              thumbColor={tutorialEnabled ? T.white : T.t3}
+            />
+          </View>
         </View>
 
         {/* Botão Minha Equipe Herbalife */}

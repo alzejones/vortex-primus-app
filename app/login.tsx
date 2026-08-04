@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Image,
   KeyboardAvoidingView,
@@ -17,6 +17,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { T, Typography } from "../utils/theme";
 import { GradientPrimary } from "../utils/gradients";
+import { TutorialHelpButton } from "../components/tutorial/TutorialHelpButton";
+import { TutorialOverlay } from "../components/tutorial/TutorialOverlay";
 
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
@@ -60,6 +62,9 @@ export default function Login() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+
+  const emailRef = useRef(null);
+  const senhaRef = useRef(null);
 
   const handleTyping = (
     text: string,
@@ -309,7 +314,7 @@ export default function Login() {
               </View>
 
               {/* E-mail */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputGroup} ref={emailRef}>
                 <Text style={styles.label}>E-mail</Text>
                 <TextInput
                   style={styles.input}
@@ -323,7 +328,7 @@ export default function Login() {
               </View>
 
               {/* Senha */}
-              <View style={styles.inputGroup}>
+              <View style={styles.inputGroup} ref={senhaRef}>
                 <View style={styles.row}>
                   <Text style={styles.label}>Senha</Text>
                   <TouchableOpacity onPress={handleRequestPasswordReset}>
@@ -428,6 +433,9 @@ export default function Login() {
           )}
         </View>
       </ScrollView>
+
+      <TutorialOverlay targetRefs={{ email: emailRef, senha: senhaRef }} />
+      <TutorialHelpButton screenId="login" />
     </KeyboardAvoidingView>
   );
 }
