@@ -34,6 +34,7 @@ export default function Clients() {
   const [clients, setClients] = useState<any[]>([]);
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [totalClients, setTotalClients] = useState<number>(0);
 
   async function loadTrainer() {
     if (!session?.user?.id) return;
@@ -53,17 +54,44 @@ export default function Clients() {
   }
 
   async function fetchClients(currentTrainerId: string) {
-    const { data, error } = await supabase
+    // Fetch total count
+    const { count, error: countError } = await supabase
       .from("clients")
-      .select("*")
-      .eq("trainer_id", currentTrainerId)
-      .order("name", { ascending: true });
+      .select("*", { count: "exact", head: true })
+      .eq("trainer_id", currentTrainerId);
 
-    if (error) {
-      Alert.alert("Erro ao carregar clientes", error.message);
+    if (countError) {
+      Alert.alert("Erro ao carregar total de clientes", countError.message);
     } else {
-      setClients(data || []);
+      setTotalClients(count || 0);
     }
+
+    // Fetch all clients in batches of 1000 until no more rows
+    const allClients: any[] = [];
+    let offset = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("trainer_id", currentTrainerId)
+        .order("name", { ascending: true })
+        .range(offset, offset + batchSize - 1);
+
+      if (error) {
+        Alert.alert("Erro ao carregar clientes", error.message);
+        hasMore = false;
+      } else {
+        const batch = data || [];
+        allClients.push(...batch);
+        hasMore = batch.length === batchSize;
+        offset += batchSize;
+      }
+    }
+
+    setClients(allClients);
   }
 
   async function handleDelete(id: string) {
@@ -133,6 +161,12 @@ export default function Clients() {
               <Text style={styles.newButtonText}>+ Novo Cliente</Text>
             </LinearGradient>
           </TouchableOpacity>
+
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalText}>
+              Total de Clientes: <Text style={styles.totalCount}>{totalClients}</Text>
+            </Text>
+          </View>
 
           <View style={styles.searchContainer}>
             <TextInput
@@ -212,6 +246,21 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   newButtonText: { color: T.white, fontWeight: "800", fontSize: 15 },
+
+  totalContainer: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  totalText: {
+    fontSize: 14,
+    color: T.t2,
+    fontWeight: "600",
+  },
+  totalCount: {
+    fontSize: 16,
+    color: T.t1,
+    fontWeight: "800",
+  },
 
   searchContainer: { marginBottom: 16 },
   searchInput: {
