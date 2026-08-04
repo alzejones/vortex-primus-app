@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTutorial } from '../../contexts/TutorialContext';
 import { tutorialScripts } from './tutorialScripts';
 import { tutorialAudioMap } from './tutorialAudioMap';
-import * as T from '../../utils/theme';
+import { T } from '../../utils/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -136,7 +136,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
         <View style={[styles.balloon, spotlight ? { top: spotlight.y + spotlight.height + 24 } : styles.balloonCenter]}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Ionicons name="rocket" size={24} color={T.colors.primary} />
+              <Ionicons name="rocket" size={24} color={T.blue} />
             </View>
           </View>
 
@@ -148,7 +148,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
               <Ionicons
                 name={isMuted ? 'volume-mute' : 'volume-high'}
                 size={20}
-                color={T.colors.text}
+                color={T.t1}
               />
             </TouchableOpacity>
 
@@ -167,7 +167,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             </View>
 
             <TouchableOpacity onPress={closeTour} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={T.colors.text} />
+              <Ionicons name="close" size={24} color={T.t1} />
             </TouchableOpacity>
           </View>
 
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: T.colors.primary,
-    shadowColor: T.colors.primary,
+    borderColor: T.blue,
+    shadowColor: T.blue,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 12,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: T.colors.card,
+    backgroundColor: T.card,
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
@@ -229,12 +229,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: T.colors.bg,
+    backgroundColor: T.bg,
     borderWidth: 2,
-    borderColor: T.colors.primary,
+    borderColor: T.blue,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: T.colors.primary,
+    shadowColor: T.blue,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
@@ -243,13 +243,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: T.colors.text,
+    color: T.t1,
     marginBottom: 8,
     textAlign: 'center',
   },
   text: {
     fontSize: 16,
-    color: T.colors.textMuted,
+    color: T.t2,
     lineHeight: 24,
     marginBottom: 20,
     textAlign: 'center',
@@ -271,15 +271,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: T.colors.bg,
+    backgroundColor: T.bg,
   },
   navButtonPrimary: {
-    backgroundColor: T.colors.primary,
+    backgroundColor: T.blue,
   },
   navButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: T.colors.text,
+    color: T.t1,
   },
   navButtonTextPrimary: {
     color: '#FFF',
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: T.colors.border,
+    backgroundColor: T.border,
   },
   progressDotActive: {
-    backgroundColor: T.colors.primary,
+    backgroundColor: T.blue,
     width: 24,
   },
 });

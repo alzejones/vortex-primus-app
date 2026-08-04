@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTutorial } from '../../contexts/TutorialContext';
-import * as T from '../../utils/theme';
+import { T } from '../../utils/theme';
 
 interface TutorialHelpButtonProps {
   screenId: string;
@@ -34,10 +34,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: T.colors.primary,
+    backgroundColor: T.blue,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: T.colors.primary,
+    shadowColor: T.blue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
