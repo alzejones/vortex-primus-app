@@ -12,6 +12,7 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { useTutorial } from '../../contexts/TutorialContext';
 import { tutorialScripts } from './tutorialScripts';
+import { tutorialAudioMap } from './tutorialAudioMap';
 import * as T from '../../utils/theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -68,8 +69,14 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
           await soundRef.current.unloadAsync();
         }
 
+        const audioSource = tutorialAudioMap[step.audioFile];
+        if (!audioSource) {
+          console.error(`Áudio não encontrado: ${step.audioFile}`);
+          return;
+        }
+
         const { sound } = await Audio.Sound.createAsync(
-          require(`../../assets/tutorial-audio/${step.audioFile}`),
+          audioSource,
           { shouldPlay: true }
         );
         soundRef.current = sound;
