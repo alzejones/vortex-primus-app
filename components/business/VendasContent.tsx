@@ -95,6 +95,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
   // resumo do dia
   const [convites, setConvites] = useState(0);
+  const [convitesInput, setConvitesInput] = useState('');
   const [acessosHoje, setAcessosHoje] = useState(0);
   const [ganhosHoje, setGanhosHoje] = useState(0);
   const [vendasHoje, setVendasHoje] = useState<SaleRow[]>([]);
@@ -126,6 +127,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
   // modal nova apresentação (Kit Acesso)
   const [presModalOpen, setPresModalOpen] = useState(false);
+  const [presMode, setPresMode] = useState<'existing' | 'avulso'>('existing');
+  const [presSelectedClient, setPresSelectedClient] = useState<ClientRow | null>(null);
   const [presName, setPresName] = useState('');
   const [presPhone, setPresPhone] = useState('');
   const [presSaving, setPresSaving] = useState(false);
@@ -181,7 +184,9 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .order('created_at', { ascending: false }),
         ]);
 
-      setConvites(daily?.convites ?? 0);
+      const convitesVal = daily?.convites ?? 0;
+      setConvites(convitesVal);
+      setConvitesInput(String(convitesVal));
       setAcessosHoje(daily?.acessos ?? 0);
       setGanhosHoje(Number(daily?.ganhos ?? 0));
       setVendasHoje((sales as any) || []);
@@ -244,11 +249,11 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   );
 
   // ---------- convites ----------
-  async function bumpInvites(delta: number) {
+  async function setDailyInvites(count: number) {
     if (!trainerId) return;
-    const { data, error } = await supabase.rpc('increment_daily_invites', {
+    const { data, error } = await supabase.rpc('set_daily_invites', {
       p_trainer_id: trainerId,
-      p_delta: delta,
+      p_count: count,
     });
     if (!error) setConvites(data ?? 0);
   }
@@ -476,6 +481,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   }
 
   function openNewPresentation() {
+    setPresMode('existing');
+    setPresSelectedClient(null);
     setPresName('');
     setPresPhone('');
     setPresModalOpen(true);
@@ -483,18 +490,35 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
   async function savePresentation() {
     if (!trainerId) return;
-    if (!presName.trim()) {
+    if (presMode === 'existing' && !presSelectedClient) {
+      notify('Atenção', 'Selecione um cliente.');
+      return;
+    }
+    if (presMode === 'avulso' && !presName.trim()) {
       notify('Atenção', 'Informe o nome do prospecto.');
       return;
     }
     setPresSaving(true);
     try {
-      const { error } = await supabase.from('herbalife_prospects').insert({
+      const payload: any = {
         trainer_id: trainerId,
-        prospect_name: presName.trim(),
-        prospect_phone: presPhone.trim() || null,
         source: 'apresentacao',
-      });
+      };
+      if (presMode === 'existing' && presSelectedClient) {
+        payload.client_id = presSelectedClient.id;
+        payload.prospect_name = presSelectedClient.name;
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('phone')
+          .eq('id', presSelectedClient.id)
+          .single();
+        payload.prospect_phone = clientData?.phone || null;
+      } else {
+        payload.client_id = null;
+        payload.prospect_name = presName.trim();
+        payload.prospect_phone = presPhone.trim() || null;
+      }
+      const { error } = await supabase.from('herbalife_prospects').insert(payload);
       if (error) throw error;
       setPresModalOpen(false);
       load();
@@ -565,15 +589,18 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         <View style={s.cardsRow}>
           <View style={s.card}>
             <Text style={s.cardLabel}>Convites</Text>
-            <View style={s.counterRow}>
-              <TouchableOpacity style={s.counterBtn} onPress={() => bumpInvites(-1)}>
-                <Text style={s.counterBtnTxt}>−</Text>
-              </TouchableOpacity>
-              <Text style={s.cardValue}>{convites}</Text>
-              <TouchableOpacity style={[s.counterBtn, { backgroundColor: T.blue }]} onPress={() => bumpInvites(1)}>
-                <Text style={[s.counterBtnTxt, { color: '#000' }]}>+</Text>
-              </TouchableOpacity>
-            </View>
+            <TextInput
+              style={s.convitesInput}
+              keyboardType="number-pad"
+              value={convitesInput}
+              onChangeText={(t) => {
+                const num = parseInt(t) || 0;
+                if (num >= 0) {
+                  setConvitesInput(t);
+                  setDailyInvites(num);
+                }
+              }}
+            />
           </View>
           <View style={s.card}>
             <Text style={s.cardLabel}>Acessos hoje</Text>
@@ -757,26 +784,62 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           <View style={s.modalBox}>
             <Text style={s.modalTitle}>Nova Apresentação — Kit Acesso</Text>
 
-            <Text style={s.label}>Nome</Text>
-            <TextInput
-              style={s.input}
-              placeholder="Nome do prospecto"
-              placeholderTextColor="#777"
-              value={presName}
-              onChangeText={setPresName}
-              autoFocus
-            />
+            <View style={s.toggleRow}>
+              {(['existing', 'avulso'] as const).map((m) => (
+                <TouchableOpacity
+                  key={m}
+                  style={[s.toggleBtn, presMode === m && s.toggleBtnActive]}
+                  onPress={() => {
+                    setPresMode(m);
+                    setPresSelectedClient(null);
+                    setPresName('');
+                    setPresPhone('');
+                  }}
+                >
+                  <Text style={[s.toggleTxt, presMode === m && s.toggleTxtActive]}>
+                    {m === 'existing' ? 'Cliente Existente' : 'Avulso'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-            <Text style={s.label}>Celular (opcional)</Text>
-            <TextInput
-              style={s.input}
-              placeholder="(00) 00000-0000"
-              placeholderTextColor="#777"
-              value={presPhone}
-              onChangeText={(t) => setPresPhone(maskPhone(t))}
-              keyboardType="phone-pad"
-              maxLength={16}
-            />
+            {presMode === 'existing' ? (
+              <>
+                <TouchableOpacity style={s.selector} onPress={() => openPicker('cliente')}>
+                  <Text style={s.selectorTxt}>
+                    {presSelectedClient ? presSelectedClient.name : 'Selecionar cliente…'}
+                  </Text>
+                </TouchableOpacity>
+                {presSelectedClient && (
+                  <View style={{ backgroundColor: '#1A1A1A', borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                    <Text style={{ color: '#999', fontSize: 11 }}>Nome e celular serão copiados do cadastro</Text>
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={s.label}>Nome</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="Nome do prospecto"
+                  placeholderTextColor="#777"
+                  value={presName}
+                  onChangeText={setPresName}
+                  autoFocus
+                />
+
+                <Text style={s.label}>Celular (opcional)</Text>
+                <TextInput
+                  style={s.input}
+                  placeholder="(00) 00000-0000"
+                  placeholderTextColor="#777"
+                  value={presPhone}
+                  onChangeText={(t) => setPresPhone(maskPhone(t))}
+                  keyboardType="phone-pad"
+                  maxLength={16}
+                />
+              </>
+            )}
 
             <View style={s.inline}>
               <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={() => setPresModalOpen(false)}>
@@ -838,10 +901,15 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                       setSelClient(null);
                       setPickerOpen(null);
                     } else {
-                      setSelClient(item);
-                      setSelectedProspectId(null);
-                      setPickerOpen(null);
-                      if (selProduct) setPrice(String(clientUnitPrice(selProduct, item.herbalife_discount_level)));
+                      if (presModalOpen) {
+                        setPresSelectedClient(item);
+                        setPickerOpen(null);
+                      } else {
+                        setSelClient(item);
+                        setSelectedProspectId(null);
+                        setPickerOpen(null);
+                        if (selProduct) setPrice(String(clientUnitPrice(selProduct, item.herbalife_discount_level)));
+                      }
                     }
                   }}
                 >
@@ -871,9 +939,7 @@ const s = StyleSheet.create({
   card: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center' },
   cardLabel: { color: '#999', fontSize: 11, marginBottom: 6 },
   cardValue: { color: '#FFF', fontSize: 18, fontWeight: '700' },
-  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  counterBtn: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' },
-  counterBtnTxt: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  convitesInput: { backgroundColor: '#242424', borderRadius: 8, padding: 8, color: '#FFF', fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   primaryBtn: { backgroundColor: T.blue, borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 20 },
   primaryBtnTxt: { color: '#000', fontWeight: '700', fontSize: 16 },
   sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
