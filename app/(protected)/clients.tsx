@@ -227,6 +227,7 @@ export default function Clients() {
           </View>
 
           <FlatList
+            style={{ flex: 1 }}
             data={filteredClients}
             keyExtractor={(item: any) => item.id}
             showsVerticalScrollIndicator={true}
