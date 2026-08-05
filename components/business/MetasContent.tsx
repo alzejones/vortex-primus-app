@@ -15,8 +15,6 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { getWorkingDays, computeTrend } from '../../utils/goalCalculations';
 import { todayBR, daysAgoBR, brasiliaDate } from '../../utils/dateBR';
-import { TutorialHelpButton } from '../tutorial/TutorialHelpButton';
-import { TutorialOverlay } from '../tutorial/TutorialOverlay';
 
 type Period = 'monthly' | 'weekly' | 'daily';
 type Category = 'atendimento' | 'comercial';
@@ -452,15 +450,6 @@ export default function MetasContent() {
         </View>
       )}
       </ScrollView>
-
-      <TutorialOverlay
-        targetRefs={{
-          aba_atendimento: aba_atendimentoRef,
-          aba_comercial: aba_comercialRef,
-          botao_editar_meta: botao_editar_metaRef,
-        }}
-      />
-      <TutorialHelpButton screenId="metas" />
     </View>
   );
 }

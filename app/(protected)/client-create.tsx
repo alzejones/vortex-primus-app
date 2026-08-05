@@ -22,8 +22,6 @@ import {
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
-import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton";
-import { TutorialOverlay } from "../../components/tutorial/TutorialOverlay";
 
 export default function ClientCreate() {
   const router = useRouter();
@@ -372,17 +370,6 @@ export default function ClientCreate() {
         </TouchableOpacity>
           </ScrollView>
         </KeyboardAvoidingView>
-
-        <TutorialOverlay
-          targetRefs={{
-            nome_completo: nome_completoRef,
-            email_telefone: email_telefoneRef,
-            dados_pessoais: dados_pessoaisRef,
-            objetivo_atividade: objetivo_atividadeRef,
-            observacoes: observacoesRef,
-          }}
-        />
-        <TutorialHelpButton screenId="novo_cliente" />
       </View>
     </View>
   );
