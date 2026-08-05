@@ -9,6 +9,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Keyboard,
+  ScrollView,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,19 +43,30 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
   const isLastStep = script ? currentStep === script.length - 1 : false;
 
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      (e) => setKeyboardHeight(e.endCoordinates.height)
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => setKeyboardHeight(0)
-    );
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.visualViewport) {
+        const handleResize = () => {
+          const keyboardOffset = window.innerHeight - window.visualViewport!.height;
+          setKeyboardHeight(keyboardOffset > 0 ? keyboardOffset : 0);
+        };
+        window.visualViewport.addEventListener('resize', handleResize);
+        return () => window.visualViewport!.removeEventListener('resize', handleResize);
+      }
+    } else {
+      const keyboardDidShowListener = Keyboard.addListener(
+        'keyboardDidShow',
+        (e) => setKeyboardHeight(e.endCoordinates.height)
+      );
+      const keyboardDidHideListener = Keyboard.addListener(
+        'keyboardDidHide',
+        () => setKeyboardHeight(0)
+      );
 
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
+      return () => {
+        keyboardDidShowListener.remove();
+        keyboardDidHideListener.remove();
+      };
+    }
   }, []);
 
   useEffect(() => {
@@ -173,8 +185,14 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             </View>
           </View>
 
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={styles.text}>{step.text}</Text>
+          <ScrollView 
+            style={styles.contentScroll}
+            contentContainerStyle={styles.contentScrollInner}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.title}>{step.title}</Text>
+            <Text style={styles.text}>{step.text}</Text>
+          </ScrollView>
 
           <View style={[styles.controls, { paddingBottom: balloonBottomPadding }]}>
             <TouchableOpacity onPress={handleMuteToggle} style={styles.muteButton}>
@@ -242,6 +260,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
+    maxHeight: Platform.OS === 'web' ? '70vh' : SCREEN_HEIGHT * 0.7,
     backgroundColor: T.card,
     borderRadius: 16,
     padding: 20,
@@ -250,6 +269,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  contentScroll: {
+    maxHeight: Platform.OS === 'web' ? '40vh' : SCREEN_HEIGHT * 0.4,
+  },
+  contentScrollInner: {
+    paddingBottom: 8,
   },
   avatarContainer: {
     alignItems: 'center',
