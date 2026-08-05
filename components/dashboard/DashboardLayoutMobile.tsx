@@ -461,6 +461,7 @@ export default function DashboardLayoutMobile({
 
             {/* Lista de resultados separada do campo de busca */}
             <FlatList
+              style={{ flex: 1 }}
               data={filteredClients}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
@@ -528,6 +529,7 @@ export default function DashboardLayoutMobile({
         ) : (
           /* MODO NORMAL: FlatList original com header completo */
           <FlatList
+            style={{ flex: 1 }}
             data={filteredClients}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={renderHeader}
@@ -619,6 +621,7 @@ export default function DashboardLayoutMobile({
               />
             </View>
             <FlatList
+              style={{ flex: 1 }}
               data={scheduleFilteredClients}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
@@ -669,6 +672,7 @@ export default function DashboardLayoutMobile({
               </TouchableOpacity>
             </View>
             <FlatList
+              style={{ flex: 1 }}
               data={overdueClients}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ padding: 16 }}
@@ -726,6 +730,7 @@ export default function DashboardLayoutMobile({
               </TouchableOpacity>
             </View>
             <FlatList
+              style={{ flex: 1 }}
               data={birthdayClients}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ padding: 16 }}
