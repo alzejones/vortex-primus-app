@@ -46,11 +46,19 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
     if (Platform.OS === 'web') {
       if (typeof window !== 'undefined' && window.visualViewport) {
         const handleResize = () => {
-          const keyboardOffset = window.innerHeight - window.visualViewport!.height;
-          setKeyboardHeight(keyboardOffset > 0 ? keyboardOffset : 0);
+          const vv = window.visualViewport;
+          if (!vv) return;
+          const bottomInset = window.innerHeight - (vv.height + vv.offsetTop);
+          const newKeyboardHeight = Math.max(bottomInset, 0);
+          setKeyboardHeight(newKeyboardHeight);
+          console.log('keyboardHeight:', newKeyboardHeight);
         };
         window.visualViewport.addEventListener('resize', handleResize);
-        return () => window.visualViewport!.removeEventListener('resize', handleResize);
+        window.visualViewport.addEventListener('scroll', handleResize);
+        return () => {
+          window.visualViewport!.removeEventListener('resize', handleResize);
+          window.visualViewport!.removeEventListener('scroll', handleResize);
+        };
       }
     } else {
       const keyboardDidShowListener = Keyboard.addListener(
