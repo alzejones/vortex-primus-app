@@ -7,8 +7,6 @@ import {
   StyleSheet,
   Dimensions,
   Platform,
-  KeyboardAvoidingView,
-  Keyboard,
   ScrollView,
 } from 'react-native';
 import { Audio } from 'expo-av';
@@ -18,8 +16,6 @@ import { useTutorial } from '../../contexts/TutorialContext';
 import { tutorialScripts } from './tutorialScripts';
 import { tutorialAudioMap } from './tutorialAudioMap';
 import { T } from '../../utils/theme';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface TutorialOverlayProps {
   targetRefs?: Record<string, React.RefObject<any>>;
@@ -34,8 +30,10 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
     width: number;
     height: number;
   } | null>(null);
+  const [windowHeight, setWindowHeight] = useState(
+    Platform.OS === 'web' ? window.innerHeight : Dimensions.get('window').height
+  );
   const [isMuted, setIsMuted] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const soundRef = useRef<Audio.Sound | null>(null);
 
   const script = currentTour ? tutorialScripts[currentTour] : null;
@@ -43,37 +41,21 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
   const isLastStep = script ? currentStep === script.length - 1 : false;
 
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.visualViewport) {
-        const handleResize = () => {
-          const vv = window.visualViewport;
-          if (!vv) return;
-          const bottomInset = window.innerHeight - (vv.height + vv.offsetTop);
-          const newKeyboardHeight = Math.max(bottomInset, 0);
-          setKeyboardHeight(newKeyboardHeight);
-          console.log('keyboardHeight:', newKeyboardHeight);
-        };
-        window.visualViewport.addEventListener('resize', handleResize);
-        window.visualViewport.addEventListener('scroll', handleResize);
-        return () => {
-          window.visualViewport!.removeEventListener('resize', handleResize);
-          window.visualViewport!.removeEventListener('scroll', handleResize);
-        };
+    const handleResize = () => {
+      if (Platform.OS === 'web') {
+        setWindowHeight(window.innerHeight);
+      } else {
+        const { height } = Dimensions.get('window');
+        setWindowHeight(height);
       }
-    } else {
-      const keyboardDidShowListener = Keyboard.addListener(
-        'keyboardDidShow',
-        (e) => setKeyboardHeight(e.endCoordinates.height)
-      );
-      const keyboardDidHideListener = Keyboard.addListener(
-        'keyboardDidHide',
-        () => setKeyboardHeight(0)
-      );
+    };
 
-      return () => {
-        keyboardDidShowListener.remove();
-        keyboardDidHideListener.remove();
-      };
+    if (Platform.OS === 'web') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    } else {
+      const subscription = Dimensions.addEventListener('change', handleResize);
+      return () => subscription?.remove();
     }
   }, []);
 
@@ -152,14 +134,28 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
 
   if (!currentTour || !step) return null;
 
-  const balloonBottomPadding = Math.max(insets.bottom + 16, 16);
-  const balloonStyle = spotlight 
-    ? { top: spotlight.y + spotlight.height + 24 } 
-    : { 
-        bottom: keyboardHeight > 0 
-          ? keyboardHeight + balloonBottomPadding 
-          : balloonBottomPadding 
+  const maxBalloonBottom = windowHeight * 0.6;
+  
+  let balloonStyle: { top?: number; bottom?: number } = { 
+    top: insets.top + 16 
+  };
+
+  if (spotlight) {
+    const midScreen = windowHeight / 2;
+    const spotlightMid = spotlight.y + (spotlight.height / 2);
+    
+    if (spotlightMid > midScreen) {
+      const calculatedBottom = windowHeight - spotlight.y + 16;
+      balloonStyle = { 
+        bottom: Math.min(calculatedBottom, windowHeight - maxBalloonBottom) 
       };
+    } else {
+      const calculatedTop = spotlight.y + spotlight.height + 16;
+      balloonStyle = { 
+        top: Math.max(calculatedTop, insets.top + 16) 
+      };
+    }
+  }
 
   return (
     <Modal
@@ -168,10 +164,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
       animationType="fade"
       onRequestClose={closeTour}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
+      <View style={styles.overlay}>
         {spotlight && (
           <View
             style={[
@@ -187,10 +180,11 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
         )}
 
         <View style={[styles.balloon, balloonStyle]}>
-          <View style={styles.avatarContainer}>
+          <View style={styles.header}>
             <View style={styles.avatar}>
-              <Ionicons name="rocket" size={24} color={T.blue} />
+              <Ionicons name="rocket" size={20} color={T.blue} />
             </View>
+            <Text style={styles.title}>{step.title}</Text>
           </View>
 
           <ScrollView 
@@ -198,12 +192,11 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             contentContainerStyle={styles.contentScrollInner}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>{step.title}</Text>
             <Text style={styles.text}>{step.text}</Text>
           </ScrollView>
 
-          <View style={[styles.controls, { paddingBottom: balloonBottomPadding }]}>
-            <TouchableOpacity onPress={handleMuteToggle} style={styles.muteButton}>
+          <View style={styles.controls}>
+            <TouchableOpacity onPress={handleMuteToggle} style={styles.iconButton}>
               <Ionicons
                 name={isMuted ? 'volume-mute' : 'volume-high'}
                 size={20}
@@ -214,19 +207,19 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             <View style={styles.navigation}>
               {currentStep > 0 && (
                 <TouchableOpacity onPress={prevStep} style={styles.navButton}>
-                  <Text style={styles.navButtonText}>Anterior</Text>
+                  <Text style={styles.navButtonText}>Ant.</Text>
                 </TouchableOpacity>
               )}
 
               <TouchableOpacity onPress={handleNext} style={[styles.navButton, styles.navButtonPrimary]}>
                 <Text style={[styles.navButtonText, styles.navButtonTextPrimary]}>
-                  {isLastStep ? 'Concluir' : 'Próximo'}
+                  {isLastStep ? 'OK' : 'Próx.'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={closeTour} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={T.t1} />
+            <TouchableOpacity onPress={closeTour} style={styles.iconButton}>
+              <Ionicons name="close" size={20} color={T.t1} />
             </TouchableOpacity>
           </View>
 
@@ -242,7 +235,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             ))}
           </View>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -268,71 +261,69 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    maxHeight: Platform.OS === 'web' ? '70vh' : SCREEN_HEIGHT * 0.7,
     backgroundColor: T.card,
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
-  contentScroll: {
-    maxHeight: Platform.OS === 'web' ? '40vh' : SCREEN_HEIGHT * 0.4,
-  },
-  contentScrollInner: {
-    paddingBottom: 8,
-  },
-  avatarContainer: {
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     marginBottom: 12,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: T.bg,
     borderWidth: 2,
     borderColor: T.blue,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: T.blue,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
   },
   title: {
-    fontSize: 20,
+    flex: 1,
+    fontSize: 16,
     fontWeight: '700',
     color: T.t1,
-    marginBottom: 8,
-    textAlign: 'center',
+  },
+  contentScroll: {
+    maxHeight: 200,
+  },
+  contentScrollInner: {
+    paddingBottom: 4,
   },
   text: {
-    fontSize: 16,
+    fontSize: 14,
     color: T.t2,
-    lineHeight: 24,
-    marginBottom: 20,
-    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 12,
   },
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  muteButton: {
+  iconButton: {
     padding: 8,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navigation: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   navButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 8,
     backgroundColor: T.bg,
   },
@@ -346,9 +337,6 @@ const styles = StyleSheet.create({
   },
   navButtonTextPrimary: {
     color: '#FFF',
-  },
-  closeButton: {
-    padding: 8,
   },
   progressContainer: {
     flexDirection: 'row',
