@@ -7,6 +7,7 @@ import {
   ScrollView, StyleSheet, Text, TextInput,
   TouchableOpacity, View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 
@@ -69,6 +70,7 @@ export default function DashboardLayoutMobile({
   overdueClients, birthdayClients, onCongratulate, goalsWidget,
   sortField, sortDirection, onSortFieldChange, onSortDirectionChange,
 }: DashboardLayoutProps) {
+  const insets = useSafeAreaInsets();
   const [overdueModalVisible, setOverdueModalVisible] = useState(false);
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
 
@@ -462,6 +464,7 @@ export default function DashboardLayoutMobile({
             {/* Lista de resultados separada do campo de busca */}
             <FlatList
               style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 64 + insets.bottom + 16 }}
               data={filteredClients}
               keyExtractor={(item) => item.id}
               keyboardShouldPersistTaps="handled"
@@ -530,6 +533,7 @@ export default function DashboardLayoutMobile({
           /* MODO NORMAL: FlatList original com header completo */
           <FlatList
             style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 64 + insets.bottom + 16 }}
             data={filteredClients}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={renderHeader}

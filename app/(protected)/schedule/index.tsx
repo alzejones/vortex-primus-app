@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../../../lib/supabase";
 import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
@@ -37,6 +38,7 @@ interface Appointment {
 
 export default function ScheduleIndex() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   useEffect(() => {
@@ -249,7 +251,7 @@ export default function ScheduleIndex() {
             data={scheduleFilteredClients}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 64 + insets.bottom + 16 }}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.modalClientItem}
@@ -359,7 +361,7 @@ export default function ScheduleIndex() {
         <FlatList
           data={groupedData}
           keyExtractor={(item) => item.title}
-          contentContainerStyle={[styles.listContent, { paddingBottom: isDesktop ? 60 : 100 }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 64 + insets.bottom + 16 }]}
           showsVerticalScrollIndicator={true}
           renderItem={({ item }) => (
             <View style={{ marginBottom: 24 }}>

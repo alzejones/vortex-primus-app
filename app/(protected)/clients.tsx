@@ -11,12 +11,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
 
 export default function Clients() {
+  const insets = useSafeAreaInsets();
   // ─── Responsividade ───────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
     () => Dimensions.get('window').width || 375
@@ -231,7 +233,7 @@ export default function Clients() {
             data={filteredClients}
             keyExtractor={(item: any) => item.id}
             showsVerticalScrollIndicator={true}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={{ paddingBottom: 64 + insets.bottom + 16 }}
             renderItem={({ item }: any) => (
               <View style={styles.card}>
                 <TouchableOpacity
