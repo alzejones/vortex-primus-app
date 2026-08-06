@@ -22,6 +22,8 @@ import {
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { TutorialOverlay } from "../../components/tutorial/TutorialOverlay";
+import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton";
 
 export default function ClientCreate() {
   const router = useRouter();
@@ -182,8 +184,19 @@ export default function ClientCreate() {
     }
   };
 
+  const targetRefs = {
+    nome_completo: nome_completoRef,
+    email_telefone: email_telefoneRef,
+    dados_pessoais: dados_pessoaisRef,
+    objetivo_atividade: objetivo_atividadeRef,
+    observacoes: observacoesRef,
+  };
+
   return (
     <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <TutorialOverlay targetRefs={targetRefs} />
+      <TutorialHelpButton screenId="novo_cliente" />
+      
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
