@@ -15,6 +15,8 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { getWorkingDays, computeTrend } from '../../utils/goalCalculations';
 import { todayBR, daysAgoBR, brasiliaDate } from '../../utils/dateBR';
+import { TutorialOverlay } from '../tutorial/TutorialOverlay';
+import { TutorialHelpButton } from '../tutorial/TutorialHelpButton';
 
 type Period = 'monthly' | 'weekly' | 'daily';
 type Category = 'atendimento' | 'comercial';
@@ -171,11 +173,12 @@ function ProgressBar({ value, goal, color, isCurrency }: { value: number; goal: 
 }
 
 function MetricCard({
-  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency,
+  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency, editBtnRef,
 }: {
   label: string; icon: string; value: number; goal: number;
   color: string; onEdit?: () => void; isComputed?: boolean; isCurrency?: boolean;
   trend?: { projection: number; pct: number; color: string; label: string } | null;
+  editBtnRef?: any;
 }) {
   return (
     <View style={[styles.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
@@ -185,7 +188,7 @@ function MetricCard({
           <Text style={{ color: T.t1, fontSize: 14, fontWeight: '700' }}>{label}</Text>
         </View>
         {onEdit && !isComputed ? (
-          <TouchableOpacity onPress={onEdit} style={styles.editBtn}>
+          <TouchableOpacity ref={editBtnRef} onPress={onEdit} style={styles.editBtn}>
             <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>✏️ Meta</Text>
           </TouchableOpacity>
         ) : isComputed ? (
@@ -313,8 +316,17 @@ export default function MetasContent() {
 
   const visibleGoals = GOAL_CONFIG.filter((g) => g.category === category);
 
+  const targetRefs = {
+    aba_atendimento: aba_atendimentoRef,
+    aba_comercial: aba_comercialRef,
+    botao_editar_meta: botao_editar_metaRef,
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
+      <TutorialOverlay targetRefs={targetRefs} />
+      <TutorialHelpButton screenId="metas" />
+      
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
       {/* Seletor de categoria */}
       <View style={styles.periodRow}>
@@ -359,7 +371,7 @@ export default function MetasContent() {
         </View>
       )}
 
-      {visibleGoals.map((cfg) => {
+      {visibleGoals.map((cfg, index) => {
         // Diário e Semanal usam o mesmo ritmo-base ("realizado até ontem"),
         // já que a meta semanal agora é derivada do ritmo diário — não faz
         // sentido as duas abas mostrarem ritmos diferentes pra mesma métrica.
@@ -382,6 +394,7 @@ export default function MetasContent() {
             isCurrency={cfg.isCurrency}
             trend={trend}
             onEdit={() => { setEditingField(cfg.type); setEditValue(String(goals[cfg.type])); }}
+            editBtnRef={index === 0 ? botao_editar_metaRef : undefined}
           />
         );
       })}
