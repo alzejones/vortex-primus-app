@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
   button: {
     position: Platform.OS === 'web' ? 'fixed' : 'absolute',
     bottom: 24,
-    right: 24,
+    left: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
