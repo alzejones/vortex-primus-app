@@ -17,6 +17,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabase";
 import { T, Typography } from "../utils/theme";
 import { GradientPrimary } from "../utils/gradients";
+import { TutorialOverlay } from "../components/tutorial/TutorialOverlay";
+import { TutorialHelpButton } from "../components/tutorial/TutorialHelpButton";
 
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
@@ -219,11 +221,19 @@ export default function Login() {
   const isSuccess =
     message.includes("sucesso") || message.includes("enviado");
 
+  const targetRefs = {
+    email: emailRef,
+    senha: senhaRef,
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <TutorialOverlay targetRefs={targetRefs} />
+      <TutorialHelpButton screenId="login" />
+
       {/* Glow radial simulado */}
       <View
         style={[

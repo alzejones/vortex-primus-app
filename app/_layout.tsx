@@ -3,6 +3,7 @@ import { View } from "react-native";
 import StripeWrapper from "../components/StripeWrapper";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
+import { TutorialProvider } from "../contexts/TutorialContext";
 import { T } from "../utils/theme";
 
 export default function RootLayout() {
@@ -12,9 +13,11 @@ export default function RootLayout() {
     <StripeWrapper publishableKey={stripeKey}>
       <ThemeProvider>
         <AuthProvider>
-          <View style={{ flex: 1, backgroundColor: T.bg }}>
-            <Slot />
-          </View>
+          <TutorialProvider>
+            <View style={{ flex: 1, backgroundColor: T.bg }}>
+              <Slot />
+            </View>
+          </TutorialProvider>
         </AuthProvider>
       </ThemeProvider>
     </StripeWrapper>
