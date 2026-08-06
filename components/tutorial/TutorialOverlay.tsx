@@ -164,19 +164,70 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
       animationType="fade"
       onRequestClose={closeTour}
     >
-      <View style={styles.overlay}>
-        {spotlight && (
-          <View
-            style={[
-              styles.spotlight,
-              {
-                left: spotlight.x - 8,
+      <View style={{ flex: 1 }}>
+        {spotlight ? (
+          <>
+            {/* Recorte: 4 retângulos escuros ao redor do spotlight */}
+            {/* Topo */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: spotlight.y - 8,
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              }}
+            />
+            {/* Base */}
+            <View
+              style={{
+                position: 'absolute',
+                top: spotlight.y + spotlight.height + 8,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              }}
+            />
+            {/* Esquerda */}
+            <View
+              style={{
+                position: 'absolute',
                 top: spotlight.y - 8,
-                width: spotlight.width + 16,
                 height: spotlight.height + 16,
-              },
-            ]}
-          />
+                left: 0,
+                width: spotlight.x - 8,
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              }}
+            />
+            {/* Direita */}
+            <View
+              style={{
+                position: 'absolute',
+                top: spotlight.y - 8,
+                height: spotlight.height + 16,
+                left: spotlight.x + spotlight.width + 8,
+                right: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              }}
+            />
+            {/* Borda azul com glow ao redor do spotlight */}
+            <View
+              style={[
+                styles.spotlight,
+                {
+                  left: spotlight.x - 8,
+                  top: spotlight.y - 8,
+                  width: spotlight.width + 16,
+                  height: spotlight.height + 16,
+                },
+              ]}
+            />
+          </>
+        ) : (
+          /* Sem spotlight: overlay único cobrindo tudo */
+          <View style={styles.overlay} />
         )}
 
         <View style={[styles.balloon, balloonStyle]}>
@@ -247,7 +298,6 @@ const styles = StyleSheet.create({
   },
   spotlight: {
     position: 'absolute',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     borderWidth: 2,
     borderColor: T.blue,
