@@ -365,7 +365,11 @@ export default function TrainerProfile() {
         <View style={styles.configSection}>
           <Text style={styles.configSectionTitle}>Configurações</Text>
           
-          <View style={styles.formCard}>
+          <TouchableOpacity 
+            activeOpacity={1}
+            onPress={() => console.log('[TESTE] card tocado')}
+            style={styles.formCard}
+          >
             <View style={styles.switchRow}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={styles.switchLabel}>🤖 Assistente de Ajuda</Text>
@@ -378,7 +382,7 @@ export default function TrainerProfile() {
                 thumbColor={tutorialEnabled ? T.white : T.t3}
               />
             </View>
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.configButton}

@@ -90,16 +90,25 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const toggleTutorialEnabled = async () => {
-    if (!trainer?.id) return;
+    console.log('[TUTORIAL] toggleTutorialEnabled chamado. trainer?.id:', trainer?.id, 'tutorialEnabled atual:', tutorialEnabled);
+    
+    if (!trainer?.id) {
+      console.error('[TUTORIAL] BLOCKED: trainer?.id é undefined');
+      return;
+    }
 
     const newValue = !tutorialEnabled;
+    console.log('[TUTORIAL] Tentando atualizar para:', newValue);
     
     const { error } = await supabase
       .from('trainers')
       .update({ tutorial_enabled: newValue })
       .eq('id', trainer.id);
 
-    if (!error) {
+    if (error) {
+      console.error('[TUTORIAL] Erro ao atualizar no Supabase:', error);
+    } else {
+      console.log('[TUTORIAL] Supabase atualizado com sucesso. Setando estado local para:', newValue);
       setTutorialEnabled(newValue);
     }
   };
