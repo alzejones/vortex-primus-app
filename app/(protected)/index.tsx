@@ -191,8 +191,10 @@ export default function Index() {
       const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
       const [goalsData, { count: schedCount }, { count: compCount }] = await Promise.all([
-        supabase.from('trainer_goals').select('monthly_scheduled_goal, monthly_completed_goal')
-          .eq('trainer_id', trainer.id).maybeSingle(),
+        supabase.from('trainer_goals')
+          .select('goal_type, monthly_goal')
+          .eq('trainer_id', trainer.id)
+          .in('goal_type', ['agendamentos', 'avaliacoes']),
         supabase.from('appointments').select('*', { count: 'exact', head: true })
           .eq('trainer_id', trainer.id).gte('appointment_date', monthStart).lte('appointment_date', monthEnd),
         supabase.from('physical_assessments').select('*', { count: 'exact', head: true })
@@ -200,10 +202,13 @@ export default function Index() {
       ]);
 
       if (goalsData.data) {
+        const scheduled = goalsData.data.find(g => g.goal_type === 'agendamentos');
+        const completed = goalsData.data.find(g => g.goal_type === 'avaliacoes');
+        
         setGoalsWidget({
-          scheduledGoal:  goalsData.data.monthly_scheduled_goal || 0,
+          scheduledGoal: scheduled?.monthly_goal || 0,
           scheduledActual: schedCount || 0,
-          completedGoal:  goalsData.data.monthly_completed_goal || 0,
+          completedGoal: completed?.monthly_goal || 0,
           completedActual: compCount || 0,
         });
       }
