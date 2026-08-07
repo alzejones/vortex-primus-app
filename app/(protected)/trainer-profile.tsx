@@ -22,9 +22,11 @@ import { T } from "../../utils/theme";
 
 export default function TrainerProfile() {
   const router = useRouter();
-  const { signOut, signingOut, debugMessages } = useAuth();
+  const { signOut, signingOut, debugMessages, trainer } = useAuth();
   const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
   const [loading, setLoading] = useState(true);
+  
+  console.log('[DEBUG trainer-profile] trainer do AuthContext:', trainer);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
 
