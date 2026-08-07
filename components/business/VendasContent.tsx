@@ -77,6 +77,7 @@ interface ClientRow {
 }
 interface SaleRow {
   id: string;
+  client_id: string | null;
   client_name_manual: string | null;
   client_status: string | null;
   sale_type: string;
@@ -124,6 +125,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | 'apresentacao' | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [actionSale, setActionSale] = useState<SaleRow | null>(null);
 
   // modal nova apresentação (Kit Acesso)
   const [presModalOpen, setPresModalOpen] = useState(false);
@@ -159,7 +162,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .maybeSingle(),
           supabase
             .from('herbalife_sales')
-            .select('id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
+            .select('id, client_id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
             .eq('trainer_id', trainer.id)
             .eq('sale_date', today)
             .order('created_at', { ascending: false }),
@@ -293,6 +296,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   }
 
   function openNewSale() {
+    setEditingSaleId(null);
     setSaleType('acesso');
     setSelKit(null);
     setSelProduct(null);
@@ -423,51 +427,77 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         });
       }
 
-      const { data: sale, error } = await supabase
-        .from('herbalife_sales')
-        .insert({
-          trainer_id: trainerId,
-          client_id: selClient?.id ?? null,
-          client_name_manual: selClient ? null : manualName.trim(),
-          client_status: status,
-          sale_type: saleType,
-          origin: 'manual',
-          total_charged: totalCharged,
-          total_cost: Number(totalCost.toFixed(2)),
-          total_pv: Number(totalPv.toFixed(2)),
-        })
-        .select('id')
-        .single();
-      if (error) throw error;
-
-      const { error: itemsErr } = await supabase
-        .from('herbalife_sale_items')
-        .insert(items.map((i) => ({ ...i, sale_id: sale.id })));
-      if (itemsErr) throw itemsErr;
-
-      // Cliente avulso (não cadastrado): garante que nome+celular não se percam.
-      // Se veio de uma apresentação já lançada hoje, marca ela como convertida.
-      // Se foi digitado na hora, cria um novo prospecto já convertido.
-      if (!selClient && manualName.trim()) {
-        const phone = manualPhone.trim() || null;
-        if (selectedProspectId) {
-          await supabase.from('herbalife_prospects').update({
-            converted: true,
-            converted_sale_id: sale.id,
-            converted_at: new Date().toISOString(),
-            ...(phone ? { prospect_phone: phone } : {}),
-          }).eq('id', selectedProspectId);
-        } else {
-          await supabase.from('herbalife_prospects').insert({
+      if (editingSaleId === null) {
+        const { data: sale, error } = await supabase
+          .from('herbalife_sales')
+          .insert({
             trainer_id: trainerId,
-            prospect_name: manualName.trim(),
-            prospect_phone: phone,
-            source: 'venda_avulsa',
-            converted: true,
-            converted_sale_id: sale.id,
-            converted_at: new Date().toISOString(),
-          });
+            client_id: selClient?.id ?? null,
+            client_name_manual: selClient ? null : manualName.trim(),
+            client_status: status,
+            sale_type: saleType,
+            origin: 'manual',
+            total_charged: totalCharged,
+            total_cost: Number(totalCost.toFixed(2)),
+            total_pv: Number(totalPv.toFixed(2)),
+          })
+          .select('id')
+          .single();
+        if (error) throw error;
+
+        const { error: itemsErr } = await supabase
+          .from('herbalife_sale_items')
+          .insert(items.map((i) => ({ ...i, sale_id: sale.id })));
+        if (itemsErr) throw itemsErr;
+
+        // Cliente avulso (não cadastrado): garante que nome+celular não se percam.
+        // Se veio de uma apresentação já lançada hoje, marca ela como convertida.
+        // Se foi digitado na hora, cria um novo prospecto já convertido.
+        if (!selClient && manualName.trim()) {
+          const phone = manualPhone.trim() || null;
+          if (selectedProspectId) {
+            await supabase.from('herbalife_prospects').update({
+              converted: true,
+              converted_sale_id: sale.id,
+              converted_at: new Date().toISOString(),
+              ...(phone ? { prospect_phone: phone } : {}),
+            }).eq('id', selectedProspectId);
+          } else {
+            await supabase.from('herbalife_prospects').insert({
+              trainer_id: trainerId,
+              prospect_name: manualName.trim(),
+              prospect_phone: phone,
+              source: 'venda_avulsa',
+              converted: true,
+              converted_sale_id: sale.id,
+              converted_at: new Date().toISOString(),
+            });
+          }
         }
+      } else {
+        const { error: updateErr } = await supabase
+          .from('herbalife_sales')
+          .update({
+            client_id: selClient?.id ?? null,
+            client_name_manual: selClient ? null : manualName.trim(),
+            client_status: status,
+            sale_type: saleType,
+            total_charged: totalCharged,
+            total_cost: Number(totalCost.toFixed(2)),
+            total_pv: Number(totalPv.toFixed(2)),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingSaleId);
+        if (updateErr) throw updateErr;
+
+        await supabase.from('herbalife_sale_items').delete().eq('sale_id', editingSaleId);
+        
+        const { error: itemsErr } = await supabase
+          .from('herbalife_sale_items')
+          .insert(items.map((i) => ({ ...i, sale_id: editingSaleId })));
+        if (itemsErr) throw itemsErr;
+        
+        setEditingSaleId(null);
       }
 
       setModalOpen(false);
@@ -542,6 +572,70 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Excluir', style: 'destructive', onPress: doDelete },
       ]);
+    }
+  }
+
+  async function openEditSale(sale: SaleRow) {
+    try {
+      const { data: items } = await supabase
+        .from('herbalife_sale_items')
+        .select('*')
+        .eq('sale_id', sale.id);
+      
+      if (!items || items.length === 0) return;
+
+      if (sale.sale_type === 'acesso') {
+        const firstItem = items[0];
+        const kit = kits.find((k) => k.id === firstItem.kit_id);
+        if (!kit) return;
+        
+        const kitItem = kitItems.find(
+          (ki) => ki.kit_id === firstItem.kit_id && ki.supplement_id === firstItem.supplement_id
+        );
+        const dosesUsed = kitItem?.doses_used || 1;
+        const originalQty = Math.round(firstItem.quantity / dosesUsed);
+        const unitPrice = originalQty > 0 ? sale.total_charged / originalQty : sale.total_charged;
+        
+        setSaleType('acesso');
+        setSelKit(kit);
+        setSelProduct(null);
+        setQty(String(originalQty));
+        setPrice(String(unitPrice));
+      } else {
+        const firstItem = items[0];
+        const product = pricing.find((p) => p.supplement_id === firstItem.supplement_id);
+        if (!product) return;
+        
+        setSaleType('produto_fechado');
+        setSelProduct(product);
+        setSelKit(null);
+        setQty(String(firstItem.quantity));
+        setPrice(String(firstItem.unit_charged));
+      }
+
+      if (sale.client_id) {
+        const client = clients.find((c) => c.id === sale.client_id);
+        if (client) {
+          setSelClient(client);
+          setManualName('');
+          setManualPhone('');
+        } else {
+          setSelClient(null);
+          setManualName(sale.client_name_manual || '');
+          setManualPhone('');
+        }
+      } else {
+        setSelClient(null);
+        setManualName(sale.client_name_manual || '');
+        setManualPhone('');
+      }
+
+      setIsIndicacao(sale.client_status === 'indicacao');
+      setEditingSaleId(sale.id);
+      setActionSale(null);
+      setModalOpen(true);
+    } catch (e) {
+      console.error('Erro ao carregar venda para edição:', e);
     }
   }
 
@@ -633,7 +727,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           <Text style={s.empty}>Nenhuma venda lançada hoje.</Text>
         )}
         {vendasHoje.map((v) => (
-          <TouchableOpacity key={v.id} style={s.saleRow} onLongPress={() => deleteSale(v.id)}>
+          <TouchableOpacity key={v.id} style={s.saleRow} onLongPress={() => setActionSale(v)}>
             <View style={{ flex: 1 }}>
               <Text style={s.saleName}>
                 {v.clients?.name || v.client_name_manual || 'Cliente'}
@@ -653,7 +747,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           </TouchableOpacity>
         ))}
         {vendasHoje.length > 0 && (
-          <Text style={s.hint}>Segure numa venda para excluir.</Text>
+          <Text style={s.hint}>Segure numa venda para editar ou excluir.</Text>
         )}
 
         <Text style={[s.sectionTitle, { marginTop: 24 }]}>Apresentações Kit Acesso de hoje</Text>
@@ -684,7 +778,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         <View style={s.modalBg}>
           <View style={s.modalBox}>
             <ScrollView>
-              <Text style={s.modalTitle}>Nova Venda</Text>
+              <Text style={s.modalTitle}>{editingSaleId ? 'Editar Venda' : 'Nova Venda'}</Text>
 
               <View style={s.toggleRow}>
                 {(['acesso', 'produto_fechado'] as const).map((t) => (
@@ -770,7 +864,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                   <Text style={s.btnGhostTxt}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[s.btn, { backgroundColor: T.blue }]} onPress={saveSale} disabled={saving}>
-                  <Text style={s.btnTxt}>{saving ? 'Salvando…' : 'Confirmar Venda'}</Text>
+                  <Text style={s.btnTxt}>{saving ? 'Salvando…' : (editingSaleId ? 'Salvar Alterações' : 'Confirmar Venda')}</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -928,6 +1022,44 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           </View>
         </View>
       </Modal>
+
+      {/* ---------- MODAL AÇÕES DA VENDA ---------- */}
+      <Modal visible={actionSale !== null} animationType="fade" transparent>
+        <View style={s.modalBg}>
+          <View style={s.modalBox}>
+            <Text style={s.modalTitle}>Ações da venda</Text>
+            <Text style={{ color: '#DDD', marginBottom: 16 }}>
+              {actionSale?.clients?.name || actionSale?.client_name_manual || 'Cliente'}
+            </Text>
+            
+            <TouchableOpacity
+              style={[s.actionBtn, { backgroundColor: T.blue }]}
+              onPress={() => actionSale && openEditSale(actionSale)}
+            >
+              <Text style={s.actionBtnTxt}>✏️ Alterar</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[s.actionBtn, { backgroundColor: '#EF4444' }]}
+              onPress={() => {
+                if (actionSale) {
+                  deleteSale(actionSale.id);
+                  setActionSale(null);
+                }
+              }}
+            >
+              <Text style={s.actionBtnTxt}>🗑️ Excluir</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[s.actionBtn, s.btnGhost]}
+              onPress={() => setActionSale(null)}
+            >
+              <Text style={s.btnGhostTxt}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -975,4 +1107,6 @@ const s = StyleSheet.create({
   btnGhostTxt: { color: '#AAA', fontWeight: '600' },
   pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
   pickerTxt: { color: '#DDD' },
+  actionBtn: { padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 10 },
+  actionBtnTxt: { color: '#FFF', fontWeight: '700', fontSize: 15 },
 });
