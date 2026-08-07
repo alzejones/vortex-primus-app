@@ -22,11 +22,9 @@ import { T } from "../../utils/theme";
 
 export default function TrainerProfile() {
   const router = useRouter();
-  const { signOut, signingOut, debugMessages, trainer } = useAuth();
+  const { signOut, signingOut, debugMessages } = useAuth();
   const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
   const [loading, setLoading] = useState(true);
-  
-  console.log('[DEBUG trainer-profile] trainer do AuthContext:', trainer);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
 
@@ -367,11 +365,7 @@ export default function TrainerProfile() {
         <View style={styles.configSection}>
           <Text style={styles.configSectionTitle}>Configurações</Text>
           
-          <TouchableOpacity 
-            activeOpacity={1}
-            onPress={() => console.log('[TESTE] card tocado')}
-            style={styles.formCard}
-          >
+          <View style={styles.formCard}>
             <View style={styles.switchRow}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={styles.switchLabel}>🤖 Assistente de Ajuda</Text>
@@ -379,12 +373,12 @@ export default function TrainerProfile() {
               </View>
               <Switch
                 value={tutorialEnabled}
-                onValueChange={toggleTutorialEnabled}
+                onValueChange={() => toggleTutorialEnabled(trainerId || undefined)}
                 trackColor={{ false: T.border, true: T.green }}
                 thumbColor={tutorialEnabled ? T.white : T.t3}
               />
             </View>
-          </TouchableOpacity>
+          </View>
 
           <TouchableOpacity 
             style={styles.configButton}

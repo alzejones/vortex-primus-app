@@ -19,7 +19,7 @@ interface TutorialContextType {
   nextStep: () => void;
   prevStep: () => void;
   closeTour: () => void;
-  toggleTutorialEnabled: () => Promise<void>;
+  toggleTutorialEnabled: (overrideTrainerId?: string) => Promise<void>;
 }
 
 const TutorialContext = createContext<TutorialContextType>({
@@ -31,7 +31,7 @@ const TutorialContext = createContext<TutorialContextType>({
   nextStep: () => {},
   prevStep: () => {},
   closeTour: () => {},
-  toggleTutorialEnabled: async () => {},
+  toggleTutorialEnabled: async (overrideTrainerId?: string) => {},
 });
 
 export const useTutorial = () => useContext(TutorialContext);
@@ -89,26 +89,21 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCurrentStep(0);
   };
 
-  const toggleTutorialEnabled = async () => {
-    console.log('[TUTORIAL] toggleTutorialEnabled chamado. trainer?.id:', trainer?.id, 'tutorialEnabled atual:', tutorialEnabled);
+  const toggleTutorialEnabled = async (overrideTrainerId?: string) => {
+    const effectiveTrainerId = overrideTrainerId || trainer?.id;
     
-    if (!trainer?.id) {
-      console.error('[TUTORIAL] BLOCKED: trainer?.id é undefined');
+    if (!effectiveTrainerId) {
       return;
     }
 
     const newValue = !tutorialEnabled;
-    console.log('[TUTORIAL] Tentando atualizar para:', newValue);
     
     const { error } = await supabase
       .from('trainers')
       .update({ tutorial_enabled: newValue })
-      .eq('id', trainer.id);
+      .eq('id', effectiveTrainerId);
 
-    if (error) {
-      console.error('[TUTORIAL] Erro ao atualizar no Supabase:', error);
-    } else {
-      console.log('[TUTORIAL] Supabase atualizado com sucesso. Setando estado local para:', newValue);
+    if (!error) {
       setTutorialEnabled(newValue);
     }
   };
