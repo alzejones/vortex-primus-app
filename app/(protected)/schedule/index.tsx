@@ -132,9 +132,9 @@ export default function ScheduleIndex() {
     const timeFormatted = appt.appointment_time.substring(0,5);
 
     let typeText = "";
-    if (appt.types.includes('composition') && appt.types.includes('conditioning')) typeText = "Avaliação Composição Corporal e Avaliação Física";
-    else if (appt.types.includes('composition')) typeText = "Avaliação Composição Corporal";
-    else typeText = "Avaliação Física";
+    if (appt.types.includes('Comp.Corporal') && appt.types.includes('Condicionamento')) typeText = "Comp. Corporal e Condicionamento";
+    else if (appt.types.includes('Comp.Corporal')) typeText = "Comp. Corporal";
+    else typeText = "Condicionamento";
 
     const firstName = appt.clients?.name?.split(' ')[0] || 'Aluno';
     const cleanPhone = appt.clients?.phone ? appt.clients.phone.replace(/\D/g, '') : '';
@@ -392,7 +392,7 @@ export default function ScheduleIndex() {
                     <Text style={styles.clientName}>{appt.clients?.name}</Text>
                     {appt.types.map(t => (
                       <View key={t} style={styles.badge}>
-                        <Text style={styles.badgeText}>{t === 'Comp.Corporal' ? '⚖️ Corporal' : '🏃 Físico'}</Text>
+                        <Text style={styles.badgeText}>{t === 'Comp.Corporal' ? '⚖️ Comp. Corporal' : '🏃 Condicionamento'}</Text>
                       </View>
                     ))}
                   </View>

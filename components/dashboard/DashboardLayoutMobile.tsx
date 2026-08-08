@@ -22,7 +22,7 @@ export interface Appointment {
   id: string;
   appointment_date: string;
   appointment_time: string;
-  types: string;
+  types: string[];
   clients: { name: string } | null;
 }
 
@@ -57,6 +57,11 @@ export interface DashboardLayoutProps {
   sortDirection: 'asc' | 'desc';
   onSortFieldChange: (field: 'name' | 'data_cadastro_efetiva') => void;
   onSortDirectionChange: (direction: 'asc' | 'desc') => void;
+}
+
+function formatApptTypes(types: string[]): string {
+  const formatted = types.map(t => t === 'Comp.Corporal' ? 'Comp. Corporal' : 'Condicionamento');
+  return formatted.join(' e ');
 }
 
 export default function DashboardLayoutMobile({
@@ -223,7 +228,7 @@ export default function DashboardLayoutMobile({
               </View>
               <View style={styles.agendaInfo}>
                 <Text style={styles.agendaClientName}>{(apt.clients as any)?.name || 'Aluno'}</Text>
-                <Text style={styles.agendaTypes}>{apt.types}</Text>
+                <Text style={styles.agendaTypes}>{formatApptTypes(apt.types)}</Text>
               </View>
             </View>
           ))

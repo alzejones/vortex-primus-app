@@ -123,7 +123,7 @@ export default function NewAppointment() {
               activeOpacity={0.7}
             >
               <Text style={styles.cardEmoji}>⚖️</Text>
-              <Text style={[styles.cardTitle, selectedTypes.includes("Comp.Corporal") && styles.cardTitleActive]}>Corporal</Text>
+              <Text style={[styles.cardTitle, selectedTypes.includes("Comp.Corporal") && styles.cardTitleActive]}>Comp. Corporal</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -132,7 +132,7 @@ export default function NewAppointment() {
               activeOpacity={0.7}
             >
               <Text style={styles.cardEmoji}>🏃</Text>
-              <Text style={[styles.cardTitle, selectedTypes.includes("Condicionamento") && styles.cardTitleActive]}>Física (Cross)</Text>
+              <Text style={[styles.cardTitle, selectedTypes.includes("Condicionamento") && styles.cardTitleActive]}>Condicionamento</Text>
             </TouchableOpacity>
           </View>
         </View>
