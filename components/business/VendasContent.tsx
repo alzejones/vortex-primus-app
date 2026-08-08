@@ -164,7 +164,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             const kitKey = `${it.sale_id}_${it.kit_id}`;
             if (!kitProcessed.has(kitKey)) {
               kitProcessed.add(kitKey);
-              const dosesUsed = (kitItems.find(ki => ki.kit_id === it.kit_id && ki.supplement_id === it.supplement_id)?.doses_used) || 1;
+              const dosesUsed = ((ki as any) || []).find((kitItem: any) => kitItem.kit_id === it.kit_id && kitItem.supplement_id === it.supplement_id)?.doses_used || 1;
               const kitQty = Math.round(it.quantity / dosesUsed);
               const label = `${it.kit_name}  ·  Qtd ${kitQty}`;
               lines[it.sale_id].push(label);
