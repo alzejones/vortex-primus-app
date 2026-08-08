@@ -105,12 +105,26 @@ export default function RelatoriosContent() {
           .from('herbalife_pricing')
           .select('*, supplements(name)')
           .order('sku'),
-        supabase
-          .from('clients')
-          .select('id, name, herbalife_discount_level')
-          .eq('trainer_id', trainer.id)
-          .eq('is_active', true)
-          .order('name'),
+        (async () => {
+          let allClients: any[] = [];
+          let page = 0;
+          const pageSize = 1000;
+          while (true) {
+            const { data: clientsPage } = await supabase
+              .from('clients')
+              .select('id, name, herbalife_discount_level')
+              .eq('trainer_id', trainer.id)
+              .eq('is_active', true)
+              .order('name')
+              .order('id')
+              .range(page * pageSize, (page + 1) * pageSize - 1);
+            if (!clientsPage || clientsPage.length === 0) break;
+            allClients = allClients.concat(clientsPage);
+            if (clientsPage.length < pageSize) break;
+            page++;
+          }
+          return { data: allClients };
+        })(),
       ]);
       setDaily(d || []);
       setWeekly(w || []);

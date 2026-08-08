@@ -106,12 +106,26 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .from('herbalife_pricing')
             .select('*, supplements(name)')
             .order('sku'),
-          supabase
-            .from('clients')
-            .select('id, name, herbalife_discount_level')
-            .eq('trainer_id', trainer.id)
-            .eq('is_active', true)
-            .order('name'),
+          (async () => {
+            let allClients: any[] = [];
+            let page = 0;
+            const pageSize = 1000;
+            while (true) {
+              const { data: clientsPage } = await supabase
+                .from('clients')
+                .select('id, name, herbalife_discount_level')
+                .eq('trainer_id', trainer.id)
+                .eq('is_active', true)
+                .order('name')
+                .order('id')
+                .range(page * pageSize, (page + 1) * pageSize - 1);
+              if (!clientsPage || clientsPage.length === 0) break;
+              allClients = allClients.concat(clientsPage);
+              if (clientsPage.length < pageSize) break;
+              page++;
+            }
+            return { data: allClients };
+          })(),
           supabase
             .from('herbalife_prospects')
             .select('id, prospect_name, prospect_phone')
@@ -178,6 +192,24 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
       load();
     }, [load])
   );
+
+  // ---------- helpers ----------
+  function notify(title: string, msg: string) {
+    if (Platform.OS === 'web') {
+      alert(`${title}\n\n${msg}`);
+    } else {
+      Alert.alert(title, msg);
+    }
+  }
+
+  function openPicker(type: 'cliente') {
+    // Implementação simplificada: usa Alert/prompt para web ou native
+    // (assumindo que há seleção de cliente diretamente no modal)
+    // Esta função pode ser expandida para abrir um modal de seleção
+    if (Platform.OS === 'web') {
+      alert('Seleção de cliente não implementada para web. Use o campo de busca.');
+    }
+  }
 
   // ---------- convites ----------
   async function setDailyInvites(count: number) {
@@ -533,4 +565,13 @@ const s = StyleSheet.create({
   toggleBtnActive: { backgroundColor: T.blue },
   toggleTxt: { color: '#AAA', fontWeight: '600', fontSize: 13 },
   toggleTxtActive: { color: '#000' },
+  selector: { backgroundColor: '#242424', borderRadius: 10, padding: 14, marginBottom: 12 },
+  selectorTxt: { color: '#FFF', fontSize: 15 },
+  label: { color: '#999', fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
+  input: { backgroundColor: '#242424', borderRadius: 10, padding: 14, color: '#FFF', fontSize: 15, marginBottom: 12 },
+  inline: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
+  btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#444' },
+  btnTxt: { color: '#FFF', fontWeight: '700', fontSize: 15 },
+  btnGhostTxt: { color: '#AAA', fontWeight: '700', fontSize: 15 },
 });
