@@ -132,15 +132,15 @@ export default function ScheduleIndex() {
     const timeFormatted = appt.appointment_time.substring(0,5);
 
     let typeText = "";
-    if (appt.types.includes('composition') && appt.types.includes('conditioning')) typeText = "Composição Corporal e Testes Físicos";
-    else if (appt.types.includes('composition')) typeText = "Avaliação de Composição Corporal";
-    else typeText = "Testes Físicos (Cross)";
+    if (appt.types.includes('composition') && appt.types.includes('conditioning')) typeText = "Avaliação Composição Corporal e Avaliação Física";
+    else if (appt.types.includes('composition')) typeText = "Avaliação Composição Corporal";
+    else typeText = "Avaliação Física";
 
     const firstName = appt.clients?.name?.split(' ')[0] || 'Aluno';
     const cleanPhone = appt.clients?.phone ? appt.clients.phone.replace(/\D/g, '') : '';
     const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
 
-    const message = `Olá, *${firstName}*! Passando para confirmar nossa avaliação no Vortex Primus.\n\n🗓 *Data:* ${dateFormatted}\n⏰ *Hora:* ${timeFormatted}\n🎯 *Foco:* ${typeText}\n\n⚠️ *IMPORTANTE:* Você deve estar 1 hora em jejum de comida e bebida, inclusive água. E 1 hora sem a prática de atividade física.\n\nPor favor, confirme se está tudo certo para este horário! Nos vemos no box 💪`;
+    const message = `Olá, *${firstName}*! Passando para confirmar nossa avaliação no Vortex Primus.\n\n🗓 *Data:* ${dateFormatted}\n⏰ *Hora:* ${timeFormatted}\n🎯 *Foco:* ${typeText}\n\n⚠️ *IMPORTANTE:* Você deve estar 1 hora em jejum de comida e bebida, inclusive água. E 1 hora sem a prática de atividade física.\n\nPor favor, confirme se está tudo certo para este horário! Nos vemos em breve no dia e horário acima 💪`;
 
     try {
       if (cleanPhone) {
