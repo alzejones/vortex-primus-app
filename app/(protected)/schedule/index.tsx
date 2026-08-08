@@ -90,8 +90,24 @@ export default function ScheduleIndex() {
       const { data: trainer } = await supabase.from("trainers").select("id").eq("user_id", user.id).single();
       if (!trainer) return;
 
-      const { data: clientsData } = await supabase.from('clients').select('id, name').eq('trainer_id', trainer.id).eq('is_active', true).order('name');
-      if(clientsData) setClients(clientsData);
+      let allClients: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: clientsPage } = await supabase
+          .from('clients')
+          .select('id, name')
+          .eq('trainer_id', trainer.id)
+          .eq('is_active', true)
+          .order('name')
+          .order('id')
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (!clientsPage || clientsPage.length === 0) break;
+        allClients = allClients.concat(clientsPage);
+        if (clientsPage.length < pageSize) break;
+        page++;
+      }
+      setClients(allClients);
 
       const { data, error } = await supabase
         .from("appointments")
