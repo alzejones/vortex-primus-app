@@ -10,6 +10,7 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Modal,
   Platform,
   RefreshControl,
@@ -69,6 +70,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [presName, setPresName] = useState('');
   const [presPhone, setPresPhone] = useState('');
   const [presSaving, setPresSaving] = useState(false);
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -203,12 +206,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   }
 
   function openPicker(type: 'cliente') {
-    // Implementação simplificada: usa Alert/prompt para web ou native
-    // (assumindo que há seleção de cliente diretamente no modal)
-    // Esta função pode ser expandida para abrir um modal de seleção
-    if (Platform.OS === 'web') {
-      alert('Seleção de cliente não implementada para web. Use o campo de busca.');
-    }
+    setPickerSearch('');
+    setClientPickerOpen(true);
   }
 
   // ---------- convites ----------
@@ -532,6 +531,51 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           setActionSale(null);
         }}
       />
+
+      {/* ---------- MODAL PICKER DE CLIENTE ---------- */}
+      <Modal visible={clientPickerOpen} animationType="fade" transparent>
+        <View style={s.modalBg}>
+          <View style={[s.modalBox, { maxHeight: '70%' }]}>
+            <Text style={s.modalTitle}>Clientes</Text>
+            <TextInput
+              style={s.input}
+              placeholder="Buscar por nome…"
+              placeholderTextColor="#777"
+              value={pickerSearch}
+              onChangeText={setPickerSearch}
+              autoFocus
+            />
+            <FlatList
+              data={clients.filter((c) =>
+                c.name.toLowerCase().includes(pickerSearch.trim().toLowerCase())
+              )}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={s.pickerRow}
+                  onPress={() => {
+                    setPresSelectedClient(item);
+                    setClientPickerOpen(false);
+                  }}
+                >
+                  <Text style={s.pickerTxt} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              style={[s.btn, s.btnGhost, { marginTop: 8 }]}
+              onPress={() => {
+                setPickerSearch('');
+                setClientPickerOpen(false);
+              }}
+            >
+              <Text style={s.btnGhostTxt}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -574,4 +618,6 @@ const s = StyleSheet.create({
   btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#444' },
   btnTxt: { color: '#FFF', fontWeight: '700', fontSize: 15 },
   btnGhostTxt: { color: '#AAA', fontWeight: '700', fontSize: 15 },
+  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
+  pickerTxt: { color: '#DDD' },
 });
