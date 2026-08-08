@@ -541,7 +541,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.sortBtnCompactText, sortDirection === 'asc' && styles.sortBtnCompactTextActive]}>
-                      \u2191
+                      ↑ Asc
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -550,7 +550,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.sortBtnCompactText, sortDirection === 'desc' && styles.sortBtnCompactTextActive]}>
-                      \u2193
+                      ↓ Desc
                     </Text>
                   </TouchableOpacity>
                 </View>
