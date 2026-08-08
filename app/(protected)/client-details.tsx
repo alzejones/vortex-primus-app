@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   KeyboardAvoidingView,
   Linking,
@@ -423,7 +424,14 @@ export default function ClientDetails() {
                   const waPhone = digits.startsWith('55') ? digits : `55${digits}`;
                   const firstName = name.trim().split(' ')[0] || 'tudo';
                   const msg = `Oi, ${firstName}! Tudo bem?\nAqui é do aplicativo Vortex Primus. 💪`;
-                  Linking.openURL(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`);
+                  const url = `whatsapp://send?phone=${waPhone}&text=${encodeURIComponent(msg)}`;
+                  Linking.canOpenURL(url).then((supported) => {
+                    if (!supported) {
+                      Alert.alert("Erro", "WhatsApp não instalado.");
+                    } else {
+                      return Linking.openURL(url);
+                    }
+                  });
                 }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 2, paddingHorizontal: 8, backgroundColor: 'rgba(37,211,102,0.12)', borderRadius: 8 }}
               >
