@@ -46,7 +46,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   const [vendasHoje, setVendasHoje] = useState<SaleRow[]>([]);
   const [saleProductLines, setSaleProductLines] = useState<Record<string, string[]>>({});
   const [apresentacoesHoje, setApresentacoesHoje] = useState(0);
-  const [presentacoesLista, setPresentacoesLista] = useState<{ id: string; prospect_name: string; prospect_phone: string | null }[]>([]);
+  const [presentacoesLista, setPresentacoesLista] = useState<{ id: string; prospect_name: string; prospect_phone: string | null; converted: boolean }[]>([]);
 
   // catálogo
   const [kits, setKits] = useState<Kit[]>([]);
@@ -131,7 +131,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           })(),
           supabase
             .from('herbalife_prospects')
-            .select('id, prospect_name, prospect_phone')
+            .select('id, prospect_name, prospect_phone, converted')
             .eq('trainer_id', trainer.id)
             .eq('source', 'apresentacao')
             .eq('contact_date', today)
@@ -419,11 +419,14 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         {presentacoesLista.map((p) => (
           <TouchableOpacity
             key={p.id}
-            style={s.presRow}
+            style={[
+              s.presRow,
+              p.converted && { backgroundColor: 'rgba(74, 222, 128, 0.12)' }
+            ]}
             onPress={() => sellToProspect(p)}
             onLongPress={() => deletePresentation(p.id)}
           >
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#A855F7', marginRight: 10 }} />
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.converted ? '#4ADE80' : '#A855F7', marginRight: 10 }} />
             <View style={{ flex: 1 }}>
               <Text style={s.saleName}>{p.prospect_name}</Text>
               {p.prospect_phone && <Text style={s.saleMeta}>{maskPhone(p.prospect_phone)}</Text>}
@@ -599,7 +602,7 @@ const s = StyleSheet.create({
   card: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center' },
   cardLabel: { color: '#999', fontSize: 11, marginBottom: 6 },
   cardValue: { color: '#FFF', fontSize: 18, fontWeight: '700' },
-  convitesInput: { backgroundColor: '#242424', borderRadius: 8, padding: 8, color: '#FFF', fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4 },
+  convitesInput: { backgroundColor: '#242424', borderRadius: 8, padding: 8, color: '#FFF', fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4, alignSelf: 'stretch', width: '100%' },
   primaryBtn: { backgroundColor: T.blue, borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 20 },
   primaryBtnTxt: { color: '#000', fontWeight: '700', fontSize: 16 },
   sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
