@@ -416,6 +416,8 @@ export default function SaleFormModal({
     }
   }
 
+  const isFromPresentation = !!prefillManualEntry?.prospectId && !editingSale;
+
   return (
     <>
       <Modal visible={visible} animationType="slide" transparent>
@@ -455,40 +457,51 @@ export default function SaleFormModal({
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity style={s.selector} onPress={() => openPicker('cliente')}>
-                <Text style={s.selectorTxt}>
-                  {selClient ? selClient.name : 'Cliente cadastrado (opcional)…'}
-                </Text>
-              </TouchableOpacity>
-              {!selClient && (
-                <>
-                  <TextInput
-                    style={s.input}
-                    placeholder="Ou nome do cliente avulso"
-                    placeholderTextColor="#777"
-                    value={manualName}
-                    onChangeText={(t) => {
-                      setManualName(t);
-                      setSelectedProspectId(null);
-                    }}
-                  />
-                  <TextInput
-                    style={s.input}
-                    placeholder="Celular do cliente avulso (opcional)"
-                    placeholderTextColor="#777"
-                    value={manualPhone}
-                    onChangeText={(t) => setManualPhone(maskPhone(t))}
-                    keyboardType="phone-pad"
-                    maxLength={16}
-                  />
-                </>
-              )}
-              {!selClient && presentacoesLista.length > 0 && (
-                <TouchableOpacity style={s.selector} onPress={() => openPicker('apresentacao')}>
-                  <Text style={[s.selectorTxt, { color: '#A855F7' }]}>
-                    🎤 Selecionar de "Apresentações Kit Acesso de hoje"…
+              {isFromPresentation ? (
+                <View style={{ backgroundColor: '#1A1A1A', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                  <Text style={{ color: '#999', fontSize: 11, marginBottom: 4 }}>Vendendo para:</Text>
+                  <Text style={{ color: '#FFF', fontSize: 15 }}>
+                    {manualName}{manualPhone ? ` — ${manualPhone}` : ''}
                   </Text>
-                </TouchableOpacity>
+                </View>
+              ) : (
+                <>
+                  <TouchableOpacity style={s.selector} onPress={() => openPicker('cliente')}>
+                    <Text style={s.selectorTxt}>
+                      {selClient ? selClient.name : 'Cliente cadastrado (opcional)…'}
+                    </Text>
+                  </TouchableOpacity>
+                  {!selClient && (
+                    <>
+                      <TextInput
+                        style={s.input}
+                        placeholder="Ou nome do cliente avulso"
+                        placeholderTextColor="#777"
+                        value={manualName}
+                        onChangeText={(t) => {
+                          setManualName(t);
+                          setSelectedProspectId(null);
+                        }}
+                      />
+                      <TextInput
+                        style={s.input}
+                        placeholder="Celular do cliente avulso (opcional)"
+                        placeholderTextColor="#777"
+                        value={manualPhone}
+                        onChangeText={(t) => setManualPhone(maskPhone(t))}
+                        keyboardType="phone-pad"
+                        maxLength={16}
+                      />
+                    </>
+                  )}
+                  {!selClient && presentacoesLista.length > 0 && (
+                    <TouchableOpacity style={s.selector} onPress={() => openPicker('apresentacao')}>
+                      <Text style={[s.selectorTxt, { color: '#A855F7' }]}>
+                        🎤 Selecionar de "Apresentações Kit Acesso de hoje"…
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
 
               <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
