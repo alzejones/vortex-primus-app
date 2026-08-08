@@ -80,12 +80,13 @@ export default function RelatoriosContent() {
 
       const cutoffStr = daysAgoBR(31);
 
-      const [{ data: d }, { data: w }, { data: m }, { data: k }, { data: ki }, { data: pr }, { data: cl }] = await Promise.all([
+      const [{ data: d }, { data: w }, { data: m }, { data: k }, { data: ki }, { data: pr }, { data: cl }, { data: prospects }] = await Promise.all([
         supabase
           .from('v_herbalife_daily')
           .select('*')
           .eq('trainer_id', trainer.id)
           .gte('report_date', cutoffStr)
+          .lte('report_date', todayBR())
           .order('report_date', { ascending: false }),
         supabase
           .from('v_herbalife_weekly')
@@ -125,8 +126,41 @@ export default function RelatoriosContent() {
           }
           return { data: allClients };
         })(),
+        supabase
+          .from('herbalife_prospects')
+          .select('contact_date')
+          .eq('trainer_id', trainer.id)
+          .eq('source', 'apresentacao')
+          .gte('contact_date', cutoffStr)
+          .lte('contact_date', todayBR()),
       ]);
-      setDaily(d || []);
+      const prospectsMap = new Map<string, number>();
+      (prospects || []).forEach((p: any) => {
+        const count = prospectsMap.get(p.contact_date) || 0;
+        prospectsMap.set(p.contact_date, count + 1);
+      });
+
+      const dailyMap = new Map<string, any>();
+      (d || []).forEach((row) => dailyMap.set(row.report_date, row));
+
+      const dailyWithApresentacoes = [];
+      let current = todayBR();
+      while (current >= cutoffStr) {
+        const existing = dailyMap.get(current);
+        dailyWithApresentacoes.push({
+          report_date: current,
+          convites: existing?.convites || 0,
+          entraram: existing?.entraram || 0,
+          novos: existing?.novos || 0,
+          indicacoes: existing?.indicacoes || 0,
+          acessos: existing?.acessos || 0,
+          ganhos: existing?.ganhos || 0,
+          apresentacoes: prospectsMap.get(current) || 0,
+        });
+        current = shiftDate(current, -1);
+      }
+
+      setDaily(dailyWithApresentacoes);
       setWeekly(w || []);
       setMonthly(m || []);
       setKits((k as any) || []);
@@ -228,7 +262,7 @@ export default function RelatoriosContent() {
             <View style={s.headRow}>
               <Text style={[s.hCell, { flex: 1 }]}>Dia</Text>
               <Text style={s.hCell}>Conv</Text>
-              <Text style={s.hCell}>Entr</Text>
+              <Text style={s.hCell}>Apres</Text>
               <Text style={s.hCell}>Nov</Text>
               <Text style={s.hCell}>Ind</Text>
               <Text style={s.hCell}>Ace</Text>
@@ -238,7 +272,7 @@ export default function RelatoriosContent() {
               <View key={r.report_date} style={s.row}>
                 <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>{fmtDate(r.report_date)}</Text>
                 <Text style={s.cell}>{r.convites}</Text>
-                <Text style={s.cell}>{r.entraram}</Text>
+                <Text style={s.cell}>{r.apresentacoes}</Text>
                 <Text style={s.cell}>{r.novos}</Text>
                 <Text style={s.cell}>{r.indicacoes}</Text>
                 <Text style={s.cell}>{r.acessos}</Text>
