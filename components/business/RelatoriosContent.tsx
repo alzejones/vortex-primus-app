@@ -18,6 +18,9 @@ import {
 import { supabase } from '../../lib/supabase';
 import { todayBR, daysAgoBR } from '../../utils/dateBR';
 import { T } from '../../utils/theme';
+import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow } from './SaleFormModal';
+import SaleActionsModal from './SaleActionsModal';
+import { deleteSaleWithConfirm } from '../../utils/salesActions';
 
 const brl = (v: number) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
 const fmtDate = (d: string) => {
@@ -38,17 +41,6 @@ function fmtDateFull(d: string) {
 
 type Tab = 'diario' | 'semanal' | 'mensal' | 'por_dia';
 
-interface SaleRow {
-  id: string;
-  client_name_manual: string | null;
-  client_status: string | null;
-  sale_type: string;
-  total_charged: number;
-  total_profit: number;
-  total_pv: number;
-  clients?: { name: string } | null;
-}
-
 export default function RelatoriosContent() {
   const [tab, setTab] = useState<Tab>('diario');
   const [loading, setLoading] = useState(true);
@@ -57,12 +49,20 @@ export default function RelatoriosContent() {
   const [weekly, setWeekly] = useState<any[]>([]);
   const [monthly, setMonthly] = useState<any[]>([]);
   const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [trainerLevel, setTrainerLevel] = useState<string>('50');
+  const [kits, setKits] = useState<Kit[]>([]);
+  const [kitItems, setKitItems] = useState<KitItem[]>([]);
+  const [pricing, setPricing] = useState<Pricing[]>([]);
+  const [clients, setClients] = useState<ClientRow[]>([]);
 
   // aba "Por Dia"
   const [selectedDate, setSelectedDate] = useState<string>(todayBR());
   const [daySales, setDaySales] = useState<SaleRow[]>([]);
   const [dayProductLines, setDayProductLines] = useState<Record<string, string[]>>({});
   const [dayLoading, setDayLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
+  const [actionSale, setActionSale] = useState<SaleRow | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -71,15 +71,16 @@ export default function RelatoriosContent() {
       if (!uid) return;
       const { data: trainer } = await supabase
         .from('trainers')
-        .select('id')
+        .select('id, herbalife_discount_level')
         .eq('user_id', uid)
         .single();
       if (!trainer) return;
       setTrainerId(trainer.id);
+      setTrainerLevel(trainer.herbalife_discount_level || '50');
 
       const cutoffStr = daysAgoBR(31);
 
-      const [{ data: d }, { data: w }, { data: m }] = await Promise.all([
+      const [{ data: d }, { data: w }, { data: m }, { data: k }, { data: ki }, { data: pr }, { data: cl }] = await Promise.all([
         supabase
           .from('v_herbalife_daily')
           .select('*')
@@ -98,10 +99,26 @@ export default function RelatoriosContent() {
           .eq('trainer_id', trainer.id)
           .order('month_start', { ascending: false })
           .limit(12),
+        supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only').eq('active', true).order('name'),
+        supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
+        supabase
+          .from('herbalife_pricing')
+          .select('*, supplements(name)')
+          .order('sku'),
+        supabase
+          .from('clients')
+          .select('id, name, herbalife_discount_level')
+          .eq('trainer_id', trainer.id)
+          .eq('is_active', true)
+          .order('name'),
       ]);
       setDaily(d || []);
       setWeekly(w || []);
       setMonthly(m || []);
+      setKits((k as any) || []);
+      setKitItems((ki as any) || []);
+      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
+      setClients((cl as any) || []);
     } catch (e) {
       console.error('Erro relatórios Herbalife:', e);
     } finally {
@@ -121,7 +138,7 @@ export default function RelatoriosContent() {
     try {
       const { data: sales } = await supabase
         .from('herbalife_sales')
-        .select('id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
+        .select('id, client_id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
         .eq('trainer_id', tid)
         .eq('sale_date', date)
         .order('created_at', { ascending: false });
@@ -328,7 +345,7 @@ export default function RelatoriosContent() {
                   <Text style={s.empty}>Nenhuma venda nesse dia.</Text>
                 )}
                 {daySales.map((v) => (
-                  <View key={v.id} style={s.saleRow}>
+                  <TouchableOpacity key={v.id} style={s.saleRow} onLongPress={() => setActionSale(v)}>
                     <View style={{ flex: 1 }}>
                       <Text style={s.saleName}>
                         {v.clients?.name || v.client_name_manual || 'Cliente'}
@@ -345,13 +362,49 @@ export default function RelatoriosContent() {
                       <Text style={s.saleCharged}>{brl(Number(v.total_charged))}</Text>
                       <Text style={s.saleProfit}>lucro {brl(Number(v.total_profit))}</Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
+                {daySales.length > 0 && (
+                  <Text style={s.hint}>Segure numa venda para editar ou excluir.</Text>
+                )}
               </>
             )}
           </>
         )}
       </ScrollView>
+
+      <SaleFormModal
+        visible={modalOpen}
+        editingSale={editingSale}
+        trainerId={trainerId!}
+        trainerLevel={trainerLevel}
+        kits={kits}
+        kitItems={kitItems}
+        pricing={pricing}
+        clients={clients}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => {
+          if (trainerId) loadDaySales(trainerId, selectedDate);
+          load();
+        }}
+      />
+
+      <SaleActionsModal
+        sale={actionSale}
+        onClose={() => setActionSale(null)}
+        onEdit={(sale) => {
+          setEditingSale(sale);
+          setActionSale(null);
+          setModalOpen(true);
+        }}
+        onDelete={(id) => {
+          deleteSaleWithConfirm(id, () => {
+            if (trainerId) loadDaySales(trainerId, selectedDate);
+            load();
+          });
+          setActionSale(null);
+        }}
+      />
     </View>
   );
 }
@@ -390,4 +443,5 @@ const s = StyleSheet.create({
   saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
   saleCharged: { color: '#FFF', fontWeight: '700' },
   saleProfit: { color: '#4ADE80', fontSize: 12 },
+  hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
 });
