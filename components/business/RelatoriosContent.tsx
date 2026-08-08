@@ -8,6 +8,8 @@ import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -64,6 +66,9 @@ export default function RelatoriosContent() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
   const [actionSale, setActionSale] = useState<SaleRow | null>(null);
+  const [prefillManualEntryForModal, setPrefillManualEntryForModal] = useState<
+    { name: string; phone?: string; prospectId?: string } | undefined
+  >(undefined);
 
   const load = useCallback(async () => {
     try {
@@ -231,6 +236,31 @@ export default function RelatoriosContent() {
       if (tab === 'por_dia' && trainerId) loadDaySales(trainerId, selectedDate);
     }, [tab, trainerId, selectedDate, loadDaySales])
   );
+
+  function sellToProspect(p: { id: string; prospect_name: string; prospect_phone: string | null }) {
+    setPrefillManualEntryForModal({
+      name: p.prospect_name,
+      phone: p.prospect_phone || undefined,
+      prospectId: p.id,
+    });
+    setEditingSale(null);
+    setModalOpen(true);
+  }
+
+  async function deletePresentation(id: string) {
+    const doDelete = async () => {
+      await supabase.from('herbalife_prospects').delete().eq('id', id);
+      if (trainerId) loadDaySales(trainerId, selectedDate);
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm('Excluir esta apresentação?')) doDelete();
+    } else {
+      Alert.alert('Excluir apresentação', 'Confirma a exclusão?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Excluir', style: 'destructive', onPress: doDelete },
+      ]);
+    }
+  }
 
   if (loading) {
     return (
@@ -432,20 +462,25 @@ export default function RelatoriosContent() {
                   <Text style={s.empty}>Nenhuma apresentação nesse dia.</Text>
                 )}
                 {dayPresentations.map((p) => (
-                  <View
+                  <TouchableOpacity
                     key={p.id}
                     style={[
                       s.presRow,
                       p.converted && { backgroundColor: 'rgba(74, 222, 128, 0.12)' }
                     ]}
+                    onPress={() => sellToProspect(p)}
+                    onLongPress={() => deletePresentation(p.id)}
                   >
                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.converted ? '#4ADE80' : '#A855F7', marginRight: 10 }} />
                     <View style={{ flex: 1 }}>
                       <Text style={s.saleName}>{p.prospect_name}</Text>
                       {p.prospect_phone && <Text style={s.saleMeta}>{maskPhone(p.prospect_phone)}</Text>}
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
+                {dayPresentations.length > 0 && (
+                  <Text style={s.hint}>Toque para vender · segure para excluir.</Text>
+                )}
               </>
             )}
           </>
@@ -461,7 +496,11 @@ export default function RelatoriosContent() {
         kitItems={kitItems}
         pricing={pricing}
         clients={clients}
-        onClose={() => setModalOpen(false)}
+        prefillManualEntry={prefillManualEntryForModal}
+        onClose={() => {
+          setModalOpen(false);
+          setPrefillManualEntryForModal(undefined);
+        }}
         onSaved={() => {
           if (trainerId) loadDaySales(trainerId, selectedDate);
           load();
