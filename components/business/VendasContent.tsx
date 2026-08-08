@@ -154,13 +154,25 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
       if (saleIds.length > 0) {
         const { data: items } = await supabase
           .from('herbalife_sale_items')
-          .select('sale_id, kit_id, kit_name, supplement_id, supplements(name)')
+          .select('sale_id, kit_id, kit_name, supplement_id, quantity, supplements(name)')
           .in('sale_id', saleIds);
         const lines: Record<string, string[]> = {};
+        const kitProcessed = new Set<string>();
         (items || []).forEach((it: any) => {
-          const label = it.kit_id ? it.kit_name : (it.supplements?.name || 'Produto');
           if (!lines[it.sale_id]) lines[it.sale_id] = [];
-          if (!lines[it.sale_id].includes(label)) lines[it.sale_id].push(label);
+          if (it.kit_id) {
+            const kitKey = `${it.sale_id}_${it.kit_id}`;
+            if (!kitProcessed.has(kitKey)) {
+              kitProcessed.add(kitKey);
+              const dosesUsed = (kitItems.find(ki => ki.kit_id === it.kit_id && ki.supplement_id === it.supplement_id)?.doses_used) || 1;
+              const kitQty = Math.round(it.quantity / dosesUsed);
+              const label = `${it.kit_name}  ·  Qtd ${kitQty}`;
+              lines[it.sale_id].push(label);
+            }
+          } else {
+            const label = `${it.supplements?.name || 'Produto'}  ·  Qtd ${it.quantity}`;
+            if (!lines[it.sale_id].includes(label)) lines[it.sale_id].push(label);
+          }
         });
         setSaleProductLines(lines);
       } else {
