@@ -18,7 +18,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { todayBR, daysAgoBR } from '../../utils/dateBR';
 import { T } from '../../utils/theme';
-import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow } from './SaleFormModal';
+import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow, maskPhone } from './SaleFormModal';
 import SaleActionsModal from './SaleActionsModal';
 import { deleteSaleWithConfirm } from '../../utils/salesActions';
 
@@ -59,6 +59,7 @@ export default function RelatoriosContent() {
   const [selectedDate, setSelectedDate] = useState<string>(todayBR());
   const [daySales, setDaySales] = useState<SaleRow[]>([]);
   const [dayProductLines, setDayProductLines] = useState<Record<string, string[]>>({});
+  const [dayPresentations, setDayPresentations] = useState<{ id: string; prospect_name: string; prospect_phone: string | null; converted: boolean }[]>([]);
   const [dayLoading, setDayLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
@@ -184,13 +185,23 @@ export default function RelatoriosContent() {
   const loadDaySales = useCallback(async (tid: string, date: string) => {
     setDayLoading(true);
     try {
-      const { data: sales } = await supabase
-        .from('herbalife_sales')
-        .select('id, client_id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
-        .eq('trainer_id', tid)
-        .eq('sale_date', date)
-        .order('created_at', { ascending: false });
+      const [{ data: sales }, { data: prospects }] = await Promise.all([
+        supabase
+          .from('herbalife_sales')
+          .select('id, client_id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
+          .eq('trainer_id', tid)
+          .eq('sale_date', date)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('herbalife_prospects')
+          .select('id, prospect_name, prospect_phone, converted')
+          .eq('trainer_id', tid)
+          .eq('source', 'apresentacao')
+          .eq('contact_date', date)
+          .order('created_at', { ascending: false }),
+      ]);
       setDaySales((sales as any) || []);
+      setDayPresentations((prospects as any) || []);
 
       const saleIds = ((sales as any) || []).map((sRow: any) => sRow.id);
       if (saleIds.length > 0) {
@@ -415,6 +426,26 @@ export default function RelatoriosContent() {
                 {daySales.length > 0 && (
                   <Text style={s.hint}>Segure numa venda para editar ou excluir.</Text>
                 )}
+
+                <Text style={[s.sectionTitle, { marginTop: 24 }]}>Apresentações Kit Acesso — {fmtDateFull(selectedDate)}</Text>
+                {dayPresentations.length === 0 && (
+                  <Text style={s.empty}>Nenhuma apresentação nesse dia.</Text>
+                )}
+                {dayPresentations.map((p) => (
+                  <View
+                    key={p.id}
+                    style={[
+                      s.presRow,
+                      p.converted && { backgroundColor: 'rgba(74, 222, 128, 0.12)' }
+                    ]}
+                  >
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.converted ? '#4ADE80' : '#A855F7', marginRight: 10 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.saleName}>{p.prospect_name}</Text>
+                      {p.prospect_phone && <Text style={s.saleMeta}>{maskPhone(p.prospect_phone)}</Text>}
+                    </View>
+                  </View>
+                ))}
               </>
             )}
           </>
@@ -492,4 +523,6 @@ const s = StyleSheet.create({
   saleCharged: { color: '#FFF', fontWeight: '700' },
   saleProfit: { color: '#4ADE80', fontSize: 12 },
   hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
+  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
 });
