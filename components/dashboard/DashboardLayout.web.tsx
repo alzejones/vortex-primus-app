@@ -21,6 +21,7 @@ import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
 import MobileLayout from './DashboardLayoutMobile';
+import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 
 // ─── Itens de navegação da sidebar ───────────────────────────
 const NAV_ITEMS = [
@@ -54,6 +55,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   } = props;
 
   const pathname = usePathname();
+  const licenseStatus = useLicenseStatus();
 
   // ─── Detecção de viewport: mobile browser usa layout mobile ──
   const [screenWidth, setScreenWidth] = useState(() =>
@@ -481,6 +483,29 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           />
         </View>
 
+        {/* Banner Trial */}
+        {licenseStatus.status === 'trial' && !licenseStatus.loading && (() => {
+          const getDaysRemaining = () => {
+            if (!licenseStatus.trial_ends_at) return 0;
+            const now = new Date();
+            const trialEnd = new Date(licenseStatus.trial_ends_at);
+            const diff = trialEnd.getTime() - now.getTime();
+            return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+          };
+          const daysLeft = getDaysRemaining();
+          return (
+            <TouchableOpacity
+              onPress={() => router.push('/(protected)/upgrade')}
+              style={styles.trialBanner}
+            >
+              <Text style={styles.trialBannerText}>
+                ⏰ Trial: {daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
+              </Text>
+              <Text style={styles.trialBannerLink}>Fazer upgrade →</Text>
+            </TouchableOpacity>
+          );
+        })()}
+
         {/* Métricas */}
         <View style={styles.metricsRow}>
           <MetricCard
@@ -648,6 +673,27 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: T.bg,
+  },
+
+  // ─── Trial Banner ──────────────────────────────────────────
+  trialBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trialBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  trialBannerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D97706',
   },
 
   // ─── Sidebar ───────────────────────────────────────────────
