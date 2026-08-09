@@ -128,19 +128,14 @@ export default function DashboardLayoutMobile({
     }
     const firstName = (client.name || '').split(' ')[0];
     const message = `Oi ${firstName}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳`;
-    if (Platform.OS === 'web') {
-      const url = `https://wa.me/55${phoneDigits}?text=${encodeURIComponent(message)}`;
-      window.open(url, '_blank');
-    } else {
-      const url = `whatsapp://send?phone=55${phoneDigits}&text=${encodeURIComponent(message)}`;
-      Linking.canOpenURL(url).then((supported) => {
-        if (!supported) {
-          Alert.alert("Erro", "WhatsApp não instalado.");
-        } else {
-          Linking.openURL(url);
-        }
-      });
-    }
+    const url = `whatsapp://send?phone=55${phoneDigits}&text=${encodeURIComponent(message)}`;
+    Linking.canOpenURL(url).then((supported) => {
+      if (!supported) {
+        Alert.alert("Erro", "WhatsApp não instalado.");
+      } else {
+        Linking.openURL(url);
+      }
+    });
     onCongratulate(client.id);
   };
 
