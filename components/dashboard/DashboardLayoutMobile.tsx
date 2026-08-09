@@ -363,7 +363,9 @@ export default function DashboardLayoutMobile({
 
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>Alunos ativos</Text>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+            Alunos ativos{licenseStatus.status === 'trial' ? ` · ${getDaysRemaining()} dia${getDaysRemaining() !== 1 ? 's' : ''} de trial` : ''}
+          </Text>
           <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>{currentClients}/{maxClients}</Text>
         </View>
         <View style={{ height: 4, backgroundColor: T.border, borderRadius: 99, overflow: 'hidden' }}>
@@ -449,18 +451,6 @@ export default function DashboardLayoutMobile({
     <View style={styles.outerWrapper}>
       <View style={styles.container}>
 
-        {/* BANNER TRIAL */}
-        {licenseStatus.status === 'trial' && !licenseStatus.loading && (
-          <TouchableOpacity
-            onPress={() => router.push('/(protected)/upgrade')}
-            style={styles.trialBanner}
-          >
-            <Text style={styles.trialBannerText}>
-              ⏰ Trial: {getDaysRemaining()} dia{getDaysRemaining() !== 1 ? 's' : ''} restante{getDaysRemaining() !== 1 ? 's' : ''}
-            </Text>
-            <Text style={styles.trialBannerLink}>Fazer upgrade →</Text>
-          </TouchableOpacity>
-        )}
 
         {/* MODO BUSCA: campo fixo no topo + lista de resultados */}
         {isSearching ? (

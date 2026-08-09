@@ -133,8 +133,22 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           <Text style={styles.planChipText}>{planName}</Text>
         </View>
         <View style={styles.planUsageRow}>
-          <Text style={styles.planUsageText}>{currentClients} / {maxClients} alunos</Text>
-          <Text style={styles.planUsagePct}>{Math.round(usagePercentage)}%</Text>
+          <Text style={styles.planUsageText}>
+            {currentClients} / {maxClients} alunos{licenseStatus.status === 'trial' && licenseStatus.trial_ends_at && (() => {
+              const now = new Date();
+              const trialEnd = new Date(licenseStatus.trial_ends_at);
+              const diff = trialEnd.getTime() - now.getTime();
+              const daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+              return ` · ${daysLeft} dia${daysLeft !== 1 ? 's' : ''} de trial`;
+            })()}
+          </Text>
+          {licenseStatus.status === 'trial' ? (
+            <TouchableOpacity onPress={() => router.push('/(protected)/upgrade')}>
+              <Text style={{ fontSize: 10, color: '#60A5FA', fontWeight: '600' }}>Fazer upgrade →</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.planUsagePct}>{Math.round(usagePercentage)}%</Text>
+          )}
         </View>
         <View style={styles.planBarBg}>
           <LinearGradient
@@ -483,28 +497,6 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           />
         </View>
 
-        {/* Banner Trial */}
-        {licenseStatus.status === 'trial' && !licenseStatus.loading && (() => {
-          const getDaysRemaining = () => {
-            if (!licenseStatus.trial_ends_at) return 0;
-            const now = new Date();
-            const trialEnd = new Date(licenseStatus.trial_ends_at);
-            const diff = trialEnd.getTime() - now.getTime();
-            return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-          };
-          const daysLeft = getDaysRemaining();
-          return (
-            <TouchableOpacity
-              onPress={() => router.push('/(protected)/upgrade')}
-              style={styles.trialBanner}
-            >
-              <Text style={styles.trialBannerText}>
-                ⏰ Trial: {daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}
-              </Text>
-              <Text style={styles.trialBannerLink}>Fazer upgrade →</Text>
-            </TouchableOpacity>
-          );
-        })()}
 
         {/* Métricas */}
         <View style={styles.metricsRow}>

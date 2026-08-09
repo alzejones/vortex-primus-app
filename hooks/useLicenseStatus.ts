@@ -31,15 +31,17 @@ export function useLicenseStatus(): LicenseStatusResult {
 
         if (error) throw error;
 
+        const row = Array.isArray(data) ? data[0] : data;
+
         if (!isMounted) return;
 
-        if (data) {
+        if (row) {
           setResult({
-            status: data.status as LicenseStatus,
-            trial_ends_at: data.trial_ends_at,
-            plan_name: data.plan_name,
-            max_clients: data.max_clients,
-            current_clients: data.current_clients,
+            status: row.status as LicenseStatus,
+            trial_ends_at: row.trial_ends_at,
+            plan_name: row.plan_name,
+            max_clients: row.max_clients,
+            current_clients: row.current_clients,
             loading: false,
           });
         } else {
