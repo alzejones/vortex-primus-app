@@ -81,7 +81,7 @@ export default function Login() {
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: "https://vortex-primus.vercel.app/login",
+            redirectTo: `${window.location.origin}/login`,
             queryParams: { prompt: "select_account" },
           },
         });

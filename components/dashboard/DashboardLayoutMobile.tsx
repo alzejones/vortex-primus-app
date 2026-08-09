@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
+import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 
 export interface Client {
   id: string;
@@ -78,6 +79,7 @@ export default function DashboardLayoutMobile({
   const insets = useSafeAreaInsets();
   const [overdueModalVisible, setOverdueModalVisible] = useState(false);
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
+  const licenseStatus = useLicenseStatus();
 
   const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
@@ -126,19 +128,14 @@ export default function DashboardLayoutMobile({
     }
     const firstName = (client.name || '').split(' ')[0];
     const message = `Oi ${firstName}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳`;
-    if (Platform.OS === 'web') {
-      const url = `https://wa.me/55${phoneDigits}?text=${encodeURIComponent(message)}`;
-      window.open(url, '_blank');
-    } else {
-      const url = `whatsapp://send?phone=55${phoneDigits}&text=${encodeURIComponent(message)}`;
-      Linking.canOpenURL(url).then((supported) => {
-        if (!supported) {
-          Alert.alert("Erro", "WhatsApp não instalado.");
-        } else {
-          Linking.openURL(url);
-        }
-      });
-    }
+    const url = `whatsapp://send?phone=55${phoneDigits}&text=${encodeURIComponent(message)}`;
+    Linking.canOpenURL(url).then((supported) => {
+      if (!supported) {
+        Alert.alert("Erro", "WhatsApp não instalado.");
+      } else {
+        Linking.openURL(url);
+      }
+    });
     onCongratulate(client.id);
   };
 
@@ -361,7 +358,9 @@ export default function DashboardLayoutMobile({
 
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>Alunos ativos</Text>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+            Alunos ativos{licenseStatus.status === 'trial' ? ` · ${getDaysRemaining()} dia${getDaysRemaining() !== 1 ? 's' : ''} de trial` : ''}
+          </Text>
           <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>{currentClients}/{maxClients}</Text>
         </View>
         <View style={{ height: 4, backgroundColor: T.border, borderRadius: 99, overflow: 'hidden' }}>
@@ -435,9 +434,18 @@ export default function DashboardLayoutMobile({
     </View>
   );
 
+  const getDaysRemaining = () => {
+    if (!licenseStatus.trial_ends_at) return 0;
+    const now = new Date();
+    const trialEnd = new Date(licenseStatus.trial_ends_at);
+    const diff = trialEnd.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
   return (
     <View style={styles.outerWrapper}>
       <View style={styles.container}>
+
 
         {/* MODO BUSCA: campo fixo no topo + lista de resultados */}
         {isSearching ? (
@@ -791,6 +799,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     backgroundColor: T.bg,
+  },
+
+  // ─── Trial Banner ───────────────────────────────────────────────
+  trialBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trialBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  trialBannerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D97706',
   },
 
   // ─── Header ─────────────────────────────────────────────────────

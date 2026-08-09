@@ -16,6 +16,7 @@ import {
 import TrainerScalesManager from "../../components/TrainerScalesManager";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTutorial } from "../../contexts/TutorialContext";
+import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
@@ -24,6 +25,7 @@ export default function TrainerProfile() {
   const router = useRouter();
   const { signOut, signingOut, debugMessages } = useAuth();
   const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
+  const licenseStatus = useLicenseStatus();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -273,6 +275,17 @@ export default function TrainerProfile() {
             <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>{maxClients}</Text>
             {' alunos ativos'}
           </Text>
+          {licenseStatus.status === 'trial' && licenseStatus.trial_ends_at && (() => {
+            const now = new Date();
+            const trialEnd = new Date(licenseStatus.trial_ends_at);
+            const diff = trialEnd.getTime() - now.getTime();
+            const daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+            return (
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '500', marginBottom: 8 }}>
+                🕐 {daysLeft} dia{daysLeft !== 1 ? 's' : ''} de trial restante{daysLeft !== 1 ? 's' : ''}
+              </Text>
+            );
+          })()}
           <View style={{ height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
             <LinearGradient
               colors={['#10B981', '#34D399']}

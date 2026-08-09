@@ -21,6 +21,7 @@ import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
 import MobileLayout from './DashboardLayoutMobile';
+import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 
 // ─── Itens de navegação da sidebar ───────────────────────────
 const NAV_ITEMS = [
@@ -54,6 +55,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   } = props;
 
   const pathname = usePathname();
+  const licenseStatus = useLicenseStatus();
 
   // ─── Detecção de viewport: mobile browser usa layout mobile ──
   const [screenWidth, setScreenWidth] = useState(() =>
@@ -131,8 +133,22 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           <Text style={styles.planChipText}>{planName}</Text>
         </View>
         <View style={styles.planUsageRow}>
-          <Text style={styles.planUsageText}>{currentClients} / {maxClients} alunos</Text>
-          <Text style={styles.planUsagePct}>{Math.round(usagePercentage)}%</Text>
+          <Text style={styles.planUsageText}>
+            {currentClients} / {maxClients} alunos{licenseStatus.status === 'trial' && licenseStatus.trial_ends_at && (() => {
+              const now = new Date();
+              const trialEnd = new Date(licenseStatus.trial_ends_at);
+              const diff = trialEnd.getTime() - now.getTime();
+              const daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+              return ` · ${daysLeft} dia${daysLeft !== 1 ? 's' : ''} de trial`;
+            })()}
+          </Text>
+          {licenseStatus.status === 'trial' ? (
+            <TouchableOpacity onPress={() => router.push('/(protected)/upgrade')}>
+              <Text style={{ fontSize: 10, color: '#60A5FA', fontWeight: '600' }}>Fazer upgrade →</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.planUsagePct}>{Math.round(usagePercentage)}%</Text>
+          )}
         </View>
         <View style={styles.planBarBg}>
           <LinearGradient
@@ -481,6 +497,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           />
         </View>
 
+
         {/* Métricas */}
         <View style={styles.metricsRow}>
           <MetricCard
@@ -648,6 +665,27 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     backgroundColor: T.bg,
+  },
+
+  // ─── Trial Banner ──────────────────────────────────────────
+  trialBanner: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  trialBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  trialBannerLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D97706',
   },
 
   // ─── Sidebar ───────────────────────────────────────────────

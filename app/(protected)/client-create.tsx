@@ -171,6 +171,16 @@ export default function ClientCreate() {
       console.log("Erro no catch:", error);
       const errorMsg = error.message || "";
 
+      if (errorMsg.includes("LICENSE_TRIAL_EXPIRED")) {
+        router.replace("/license-blocked" as any);
+        return;
+      }
+
+      if (errorMsg.includes("LICENSE_LIMIT_REACHED")) {
+        router.replace("/license-blocked" as any);
+        return;
+      }
+
       if (errorMsg.includes("Limite de clientes") || errorMsg.includes("P0001")) {
         setStatusMsg({
           text: "Você atingiu o limite de alunos do seu plano atual. Faça um upgrade para continuar crescendo!",
