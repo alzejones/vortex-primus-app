@@ -10,6 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
@@ -79,6 +81,7 @@ export default function ClientDiet() {
   const [lastBio, setLastBio] = useState<LastBio | null>(null);
   const [dietResult, setDietResult] = useState<DietCalculationResult | null>(null);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
+  const [generatingAI, setGeneratingAI] = useState(false);
 
 
   useFocusEffect(
@@ -200,12 +203,86 @@ export default function ClientDiet() {
     }
   }
 
-  function handleGenerateAI() {
-    const msg = "🚀 A geração automática de plano alimentar por Inteligência Artificial estará disponível na próxima atualização do Vortex Primus.";
-    if (Platform.OS === "web") {
-      window.alert(`Em breve!\n\n${msg}`);
-    } else {
-      Alert.alert("Em breve!", msg, [{ text: "OK" }]);
+  async function handleGenerateAI() {
+    if (!clientId) return;
+    if (!dietResult) {
+      const msg = "Configure o objetivo e o nível de atividade do aluno e registre uma avaliação física com peso e % de gordura antes de gerar o plano com IA.";
+      if (Platform.OS === "web") window.alert(`Dados incompletos\n\n${msg}`);
+      else Alert.alert("Dados incompletos", msg);
+      return;
+    }
+    setGeneratingAI(true);
+    try {
+      // 1) Gera o plano (cardápio + protocolo Herbalife) via IA
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const { data: plan, error } = await supabase.functions.invoke("generate-diet", {
+        body: { client_id: clientId },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (error) {
+        let msg = "Erro ao gerar plano com IA.";
+        try {
+          const text = await (error as any).context?.text?.();
+          if (text) { const parsed = JSON.parse(text); msg = parsed.error ?? msg; }
+        } catch {}
+        throw new Error(msg);
+      }
+
+      // 2) Renderiza o PDF (plano + suplementação Herbalife, se houver)
+      const pdfRes = await fetch("https://vortex-primus.vercel.app/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(plan),
+      });
+      if (!pdfRes.ok) {
+        let msg = "Erro ao gerar o PDF.";
+        try { const parsed = await pdfRes.json(); msg = parsed.error ?? msg; } catch {}
+        throw new Error(msg);
+      }
+      const blob = await pdfRes.blob();
+      const filename = `plano-alimentar-${(client?.name || "aluno").split(" ")[0].toLowerCase()}.pdf`;
+
+      // 3) Baixa/compartilha o PDF (padrão já usado em AssessmentPhotoGallery.tsx)
+      if (Platform.OS === "web") {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const base64: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const result = reader.result as string;
+            resolve(result.split(",")[1] ?? "");
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        const localUri = `${FileSystem.cacheDirectory}${filename}`;
+        await FileSystem.writeAsStringAsync(localUri, base64, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(localUri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Plano Alimentar",
+          });
+        } else {
+          Alert.alert("PDF gerado", `Arquivo salvo em:\n${localUri}`);
+        }
+      }
+    } catch (err: any) {
+      const msg = err.message || "Erro ao gerar plano com IA.";
+      if (Platform.OS === "web") window.alert(`Erro\n\n${msg}`);
+      else Alert.alert("Erro", msg);
+    } finally {
+      setGeneratingAI(false);
     }
   }
 
@@ -299,8 +376,16 @@ export default function ClientDiet() {
       )}
 
       {/* Botão Gerar com IA */}
-      <TouchableOpacity style={styles.aiBtn} onPress={handleGenerateAI}>
-        <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+      <TouchableOpacity
+        style={[styles.aiBtn, generatingAI && { opacity: 0.6 }]}
+        onPress={handleGenerateAI}
+        disabled={generatingAI}
+      >
+        {generatingAI ? (
+          <ActivityIndicator color="#D4AF37" size="small" />
+        ) : (
+          <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+        )}
       </TouchableOpacity>
 
       {/* Botão Confirmar Venda Herbalife */}
