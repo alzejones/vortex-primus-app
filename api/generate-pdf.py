@@ -468,12 +468,12 @@ def linha_programa(letra, cor, nome, descricao, preco_base, produto_keys, descon
     row = Table([[letra_cel, nome_cel, fotos_cel, preco_cel]],
         colWidths=[1.1*cm, CW-1.1*cm-4.3*cm-4.2*cm, 4.3*cm, 4.2*cm])
     row.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),cor),
-        ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
+        ("TOPPADDING",(0,0),(-1,-1),6),("BOTTOMPADDING",(0,0),(-1,-1),6),
         ("LEFTPADDING",(0,0),(-1,-1),6),("RIGHTPADDING",(0,0),(-1,-1),6),
         ("VALIGN",(0,0),(-1,-1),"MIDDLE")]))
-    return KeepTogether([row, Spacer(1,3*mm)])
+    return KeepTogether([row, Spacer(1,1.5*mm)])
 
-def bloco_catalogo_final(uso_shake, desconto, espaco_nome):
+def bloco_catalogo_final(uso_shake, desconto, espaco_nome, pix_key):
     story = [Paragraph("PROGRAMAS NUTRICIONAIS — ESCOLHA O SEU", ST_CATALOGO_TIT)]
     header_box = Table([story], colWidths=[CW])
     header_box.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),C_CYAN),
@@ -525,25 +525,25 @@ def bloco_catalogo_final(uso_shake, desconto, espaco_nome):
             ("LEFTPADDING",(0,0),(-1,-1),10),("RIGHTPADDING",(0,0),(-1,-1),10)]))
         out += [Spacer(1,1*mm), upsell]
 
-    out.append(Spacer(1,5*mm))
+    out.append(Spacer(1,2.5*mm))
     out.append(HRFlowable(width=CW,thickness=0.5,color=C_BORDER))
-    out.append(Spacer(1,3*mm))
+    out.append(Spacer(1,1.5*mm))
     out.append(Paragraph("PRODUTOS INDIVIDUAIS — MONTE SEU PRÓPRIO PROGRAMA", ST_CT))
-    out.append(Spacer(1,3*mm))
+    out.append(Spacer(1,1.5*mm))
 
     cel_w = CW/3
     grid_rows = []
     linha_atual = []
     for i, key in enumerate(PRODUCT_ORDER):
         p = PRODUCT_CATALOG[key]
-        foto = foto_produto(p["imagem"], 2.6*cm, 2.6*cm)
+        foto = foto_produto(p["imagem"], 2.1*cm, 2.1*cm)
         preco_final = p["preco_base"] * (1-desconto)
         cel = Table([[foto],
                      [Paragraph(p["titulo"], ST_GRID_NOME)],
                      [Paragraph(f"<strike>{preco_str(p['preco_base'])}</strike>", ST_GRID_DE)],
                      [Paragraph(preco_str(preco_final), ST_GRID_POR)]], colWidths=[cel_w-6])
         cel.setStyle(TableStyle([("ALIGN",(0,0),(-1,-1),"CENTER"),
-            ("TOPPADDING",(0,0),(-1,-1),2),("BOTTOMPADDING",(0,0),(-1,-1),2),
+            ("TOPPADDING",(0,0),(-1,-1),1),("BOTTOMPADDING",(0,0),(-1,-1),1),
             ("LEFTPADDING",(0,0),(-1,-1),3),("RIGHTPADDING",(0,0),(-1,-1),3)]))
         linha_atual.append(cel)
         if len(linha_atual) == 3:
@@ -555,30 +555,38 @@ def bloco_catalogo_final(uso_shake, desconto, espaco_nome):
 
     grid = Table(grid_rows, colWidths=[cel_w]*3)
     grid.setStyle(TableStyle([("GRID",(0,0),(-1,-1),0.4,C_BORDER),
-        ("TOPPADDING",(0,0),(-1,-1),6),("BOTTOMPADDING",(0,0),(-1,-1),6),
+        ("TOPPADDING",(0,0),(-1,-1),3),("BOTTOMPADDING",(0,0),(-1,-1),3),
         ("VALIGN",(0,0),(-1,-1),"MIDDLE")]))
     out.append(grid)
-    out.append(Spacer(1,4*mm))
+    out.append(Spacer(1,2*mm))
     out.append(HRFlowable(width=CW,thickness=0.5,color=C_BORDER))
     out.append(Spacer(1,2*mm))
-    out.append(Paragraph("CONDIÇÕES DE PAGAMENTO", ST_CT))
-    out.append(Spacer(1,2*mm))
+
+    pix_valor = pix_key.strip() if pix_key and pix_key.strip() else "Solicite a chave PIX ao seu Coach"
+    cc_texto = 'em até 3x sem juros<br/><font size="7">Solicite o link para pagamento ao seu Coach</font>'
+
+    titulo_pagto = Paragraph("CONDIÇÕES DE PAGAMENTO", ST_CT)
     cond = Table([[Paragraph("PAGAMENTO VIA PIX", S("pixt",fontName="NotoSans-Bold",fontSize=8,textColor=colors.white,alignment=TA_CENTER)),
                    Paragraph("CARTÃO DE CRÉDITO", S("cct",fontName="NotoSans-Bold",fontSize=8,textColor=C_DARK,alignment=TA_CENTER))],
-                  [Paragraph("Chave: Coach Alzejones Dias", S("pixv",fontName="NotoSans-Bold",fontSize=10,textColor=colors.white,alignment=TA_CENTER)),
-                   Paragraph("Até 3x sem juros", S("ccv",fontName="NotoSans-Bold",fontSize=10,textColor=C_DARK,alignment=TA_CENTER))]],
+                  [Paragraph(pix_valor, S("pixv",fontName="NotoSans-Bold",fontSize=10,textColor=colors.white,alignment=TA_CENTER,leading=13)),
+                   Paragraph(cc_texto, S("ccv",fontName="NotoSans-Bold",fontSize=10,textColor=C_DARK,alignment=TA_CENTER,leading=13))]],
                  colWidths=[CW/2,CW/2])
     cond.setStyle(TableStyle([("BACKGROUND",(0,0),(0,-1),C_DAY_HEADER),
         ("BACKGROUND",(1,0),(1,-1),colors.HexColor("#E8EBEF")),
         ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
         ("GRID",(0,0),(-1,-1),0.4,C_BORDER)]))
-    out.append(cond)
+
+    # Título e tabela de pagamento agrupados: sem isso, o ReportLab pode
+    # deixar o título sozinho no fim de uma página e jogar só a tabela
+    # pra próxima (bug real visto em produção em 2026-08).
+    out.append(KeepTogether([titulo_pagto, Spacer(1,2*mm), cond]))
     return out
 
 def gerar_bytes(dados: dict) -> bytes:
     aluno=dados["aluno"];cardapio=dados["cardapio"];nota=dados["nota"]
     lista=dados.get("lista_compras",[]);coach=dados.get("coach")
     espaco_nome=dados.get("espaco_nome") or None
+    pix_key=dados.get("pix_key") or None
     espaco_endereco=dados.get("espaco_endereco") or None
     coach_celular=dados.get("coach_celular") or None
     desconto_percent_raw=dados.get("desconto_percent")
@@ -619,7 +627,7 @@ def gerar_bytes(dados: dict) -> bytes:
             story.append(PageBreak())
             story+=bloco_produto(item["produto"],item.get("motivo_curto",""),idx,len(produtos_inclusos))
         story.append(PageBreak())
-        story+=bloco_catalogo_final(herbalife.get("uso_shake","nenhum"), desconto, espaco_nome)
+        story+=bloco_catalogo_final(herbalife.get("uso_shake","nenhum"), desconto, espaco_nome, pix_key)
 
     doc.build(story,
         onFirstPage=make_on_page(coach, espaco_nome, espaco_endereco, coach_celular),

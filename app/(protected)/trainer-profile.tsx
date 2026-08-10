@@ -36,6 +36,7 @@ export default function TrainerProfile() {
   const [spaceName, setSpaceName] = useState("");
   const [spaceAddress, setSpaceAddress] = useState("");
   const [pdfDiscountPercent, setPdfDiscountPercent] = useState("15");
+  const [pixKey, setPixKey] = useState("");
   const [planName, setPlanName] = useState("Carregando...");
   const [maxClients, setMaxClients] = useState(0);
   const [currentClients, setCurrentClients] = useState(0);
@@ -72,7 +73,7 @@ export default function TrainerProfile() {
 
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
+        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, pix_key, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
         .eq("user_id", user.id)
         .single();
 
@@ -87,6 +88,7 @@ export default function TrainerProfile() {
       setPdfDiscountPercent(
         trainer.pdf_discount_percent != null ? String(trainer.pdf_discount_percent) : "15"
       );
+      setPixKey(trainer.pix_key || "");
       setIsHerbalifeConsultant(trainer.is_herbalife_consultant || false);
       setHerbalifePresidentName(trainer.herbalife_president_name || "");
       setHerbalifePresidentPhone(trainer.herbalife_president_phone || "");
@@ -171,6 +173,7 @@ export default function TrainerProfile() {
         space_name: spaceName.trim() ? spaceName.trim() : null,
         space_address: spaceAddress.trim() ? spaceAddress.trim() : null,
         pdf_discount_percent: pdfDiscountPercent.trim() ? discountValue : 15,
+        pix_key: pixKey.trim() ? pixKey.trim() : null,
       };
 
       if (isHerbalifeConsultant) {
@@ -305,6 +308,19 @@ export default function TrainerProfile() {
               maxLength={5}
             />
             <Text style={styles.helperText}>Usado nos preços da página "Programas Nutricionais" dos planos em PDF (padrão: 15%).</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Código Pix</Text>
+            <TextInput
+              style={styles.input}
+              value={pixKey}
+              onChangeText={(t) => { setPixKey(t); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="CPF/CNPJ, e-mail, celular ou chave aleatória"
+              placeholderTextColor={T.t3}
+              autoCapitalize="none"
+            />
+            <Text style={styles.helperText}>Aparece na seção "Condições de Pagamento" dos planos alimentares em PDF gerados por IA.</Text>
           </View>
 
         </View>
