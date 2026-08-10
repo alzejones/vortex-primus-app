@@ -90,7 +90,12 @@ ST_GRID_DE=S("grde",fontName="NotoSans",fontSize=7.5,leading=9,textColor=colors.
 ST_GRID_POR=S("grpo",fontName="NotoSans-ExtraBold",fontSize=10.5,leading=13,textColor=colors.HexColor("#00D1DF"),alignment=TA_CENTER)
 ST_UPSELL_TX=S("uptx",fontName="NotoSans",fontSize=8.8,leading=12.5,textColor=colors.HexColor("#444444"),alignment=TA_LEFT)
 
-DESCONTO_MYBOX=0.15  # 15% de desconto exclusivo alunos MyBox Irajá
+DESCONTO_MYBOX=0.15  # fallback padrão (15%) se dados.desconto_percent não vier no payload
+
+def pct_str(fracao):
+    v = fracao * 100
+    s = f"{v:.2f}".rstrip("0").rstrip(".") if v != int(v) else f"{int(v)}"
+    return s.replace(".", ",")
 
 # Catálogo fixo de produtos. Specs e benefícios replicam o conteúdo real já
 # usado nos protocolos de suplementação Vortex Primus (confirmado nos PDFs
@@ -205,7 +210,15 @@ PRODUCT_CATALOG = {
 PRODUCT_ORDER = ["shake_nutrev","herbal_concentrate","cr7_drive","whey_3w","creatina_premium","fiber_concentrate"]
 
 
-def make_on_page(coach=None):
+def formatar_celular(digits):
+    d = "".join(ch for ch in (digits or "") if ch.isdigit())
+    if len(d) == 11:
+        return f"({d[0:2]}) {d[2:7]}-{d[7:11]}"
+    if len(d) == 10:
+        return f"({d[0:2]}) {d[2:6]}-{d[6:10]}"
+    return digits or ""
+
+def make_on_page(coach=None, espaco_nome=None, espaco_endereco=None, celular=None):
     def on_page(canvas,doc):
         W,H=A4;canvas.saveState()
         canvas.setFillColor(colors.white);canvas.setStrokeColor(colors.HexColor("#DDE2E6"));canvas.setLineWidth(0.5)
@@ -216,16 +229,19 @@ def make_on_page(coach=None):
         canvas.drawString(1.5*cm+8,ht-hh+0.42*cm,"VORTEX PRIMUS")
         canvas.setFont("NotoSans-Bold",7.5);canvas.setFillColor(colors.HexColor("#DDFBFC"))
         canvas.drawString(1.5*cm+8,ht-hh+0.18*cm,"PLANO ALIMENTAR INTEGRADO")
-        canvas.setFont("NotoSans-Bold",10);canvas.setFillColor(colors.white)
-        canvas.drawRightString(W-1.5*cm-8,ht-hh+0.52*cm,"MYBOX IRAJÁ")
+        if espaco_nome:
+            canvas.setFont("NotoSans-Bold",10);canvas.setFillColor(colors.white)
+            canvas.drawRightString(W-1.5*cm-8,ht-hh+0.52*cm,espaco_nome.upper())
         canvas.setFont("NotoSans-Bold",8);canvas.setFillColor(colors.HexColor("#333333"))
         canvas.drawRightString(W-1.5*cm-8,ht-hh-0.22*cm,"EVOLUÇÃO CONSTANTE DE PERFORMANCE")
         if coach:
             canvas.setFont("NotoSans",7.5);canvas.setFillColor(colors.HexColor("#00D1DF"))
             canvas.drawRightString(W-1.5*cm-8,ht-hh-0.5*cm,f"Coach {coach}")
         canvas.setFont("NotoSans",8);canvas.setFillColor(colors.HexColor("#ADB5BD"))
-        fd=f"Coach {coach}" if coach else "Jardim Irajá, Ribeirão Preto, SP"
-        canvas.drawString(1.5*cm+8,1.5*cm+0.25*cm,f"VORTEX PRIMUS © 2026  |  MyBox Irajá  |  {fd}")
+        partes = [p for p in [espaco_nome, espaco_endereco, formatar_celular(celular) if celular else None] if p]
+        sufixo = " - ".join(partes) if partes else (f"Coach {coach}" if coach else "")
+        rodape = f"VORTEX PRIMUS © 2026  |  {sufixo}" if sufixo else "VORTEX PRIMUS © 2026"
+        canvas.drawString(1.5*cm+8,1.5*cm+0.25*cm,rodape)
         canvas.restoreState()
     return on_page
 
@@ -420,36 +436,52 @@ def bloco_produto(produto_key, motivo_curto, idx, total):
         story += [Spacer(1,4*mm), motivo_box]
     return story
 
-def linha_programa(letra, cor, nome, descricao, preco_base):
-    preco_final = preco_base * (1 - DESCONTO_MYBOX)
-    letra_cel = Table([[Paragraph(letra, ST_PROGRAMA_LETRA)]], colWidths=[1.1*cm], rowHeights=[1.1*cm])
+def linha_programa(letra, cor, nome, descricao, preco_base, produto_keys, desconto, espaco_nome):
+    preco_final = preco_base * (1 - desconto)
+    letra_style = S(f"progl_{letra}", fontName="NotoSans-ExtraBold", fontSize=13, leading=16,
+        textColor=cor, alignment=TA_CENTER)
+    letra_cel = Table([[Paragraph(letra, letra_style)]], colWidths=[1.1*cm], rowHeights=[1.1*cm])
     letra_cel.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.white),
         ("VALIGN",(0,0),(-1,-1),"MIDDLE"),("ALIGN",(0,0),(-1,-1),"CENTER"),
-        ("TEXTCOLOR",(0,0),(-1,-1),cor),("BOX",(0,0),(-1,-1),1.5,colors.white)]))
+        ("BOX",(0,0),(-1,-1),1.5,colors.white)]))
     nome_cel = Table([[Paragraph(nome, ST_PROGRAMA_NOME)],[Paragraph(descricao, ST_PROGRAMA_DESC)]],
-        colWidths=[CW-1.1*cm-4.6*cm])
+        colWidths=[CW-1.1*cm-4.3*cm-4.2*cm])
     nome_cel.setStyle(TableStyle([("TOPPADDING",(0,0),(-1,-1),1),("BOTTOMPADDING",(0,0),(-1,-1),1),
         ("LEFTPADDING",(0,0),(-1,-1),8),("RIGHTPADDING",(0,0),(-1,-1),4),("VALIGN",(0,0),(-1,-1),"MIDDLE")]))
+
+    fotos = [foto_produto(PRODUCT_CATALOG[k]["imagem"], 1.3*cm, 1.3*cm) for k in produto_keys]
+    fotos_inner = Table([fotos], colWidths=[1.4*cm]*len(fotos)) if fotos else Table([[""]], colWidths=[4.3*cm])
+    fotos_inner.setStyle(TableStyle([("ALIGN",(0,0),(-1,-1),"CENTER"),("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+        ("LEFTPADDING",(0,0),(-1,-1),1),("RIGHTPADDING",(0,0),(-1,-1),1)]))
+    fotos_cel = Table([[fotos_inner]], colWidths=[4.3*cm])
+    fotos_cel.setStyle(TableStyle([("ALIGN",(0,0),(-1,-1),"CENTER"),("VALIGN",(0,0),(-1,-1),"MIDDLE"),
+        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
+        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+
     preco_cel = Table([
         [Paragraph(f"<strike>{preco_str(preco_base)}</strike>", ST_PRECO_DE)],
-        [Paragraph("MYBOX IRAJÁ 15%", ST_PRECO_DE)],
-        [Paragraph(preco_str(preco_final), ST_PRECO_POR)]], colWidths=[4.6*cm])
+        [Paragraph(f"{(espaco_nome or 'DESCONTO').upper()} {pct_str(desconto)}%", ST_PRECO_DE)],
+        [Paragraph(preco_str(preco_final), ST_PRECO_POR)]], colWidths=[4.2*cm])
     preco_cel.setStyle(TableStyle([("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
         ("RIGHTPADDING",(0,0),(-1,-1),8),("VALIGN",(0,0),(-1,-1),"MIDDLE")]))
-    row = Table([[letra_cel, nome_cel, preco_cel]], colWidths=[1.1*cm, CW-1.1*cm-4.6*cm, 4.6*cm])
+    row = Table([[letra_cel, nome_cel, fotos_cel, preco_cel]],
+        colWidths=[1.1*cm, CW-1.1*cm-4.3*cm-4.2*cm, 4.3*cm, 4.2*cm])
     row.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),cor),
         ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
         ("LEFTPADDING",(0,0),(-1,-1),6),("RIGHTPADDING",(0,0),(-1,-1),6),
         ("VALIGN",(0,0),(-1,-1),"MIDDLE")]))
     return KeepTogether([row, Spacer(1,3*mm)])
 
-def bloco_catalogo_final(uso_shake):
+def bloco_catalogo_final(uso_shake, desconto, espaco_nome):
     story = [Paragraph("PROGRAMAS NUTRICIONAIS — ESCOLHA O SEU", ST_CATALOGO_TIT)]
     header_box = Table([story], colWidths=[CW])
     header_box.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),C_CYAN),
         ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
         ("LEFTPADDING",(0,0),(-1,-1),10)]))
-    promo = Table([[Paragraph("PROMOÇÃO EXCLUSIVA ALUNOS MYBOX IRAJÁ — 15% DE DESCONTO EM TODOS OS PROGRAMAS",
+    nome_promo = (espaco_nome or "coach").upper()
+    promo_txt = f"PROMOÇÃO EXCLUSIVA ALUNOS {nome_promo} — {pct_str(desconto)}% DE DESCONTO EM TODOS OS PROGRAMAS"
+    promo = Table([[Paragraph(promo_txt,
         S("promo",fontName="NotoSans-Bold",fontSize=8.5,textColor=colors.white,alignment=TA_CENTER))]], colWidths=[CW])
     promo.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#E74C3C")),
         ("TOPPADDING",(0,0),(-1,-1),6),("BOTTOMPADDING",(0,0),(-1,-1),6)]))
@@ -460,29 +492,32 @@ def bloco_catalogo_final(uso_shake):
         shake = PRODUCT_CATALOG["shake_nutrev"]["preco_base"]
         fiber = PRODUCT_CATALOG["fiber_concentrate"]["preco_base"]
         whey  = PRODUCT_CATALOG["whey_3w"]["preco_base"]
-        out.append(linha_programa("A", C_DAY_HEADER, "BÁSICO", "Shake + NutreV", shake))
+        out.append(linha_programa("A", C_DAY_HEADER, "BÁSICO", "Shake + NutreV", shake,
+            ["shake_nutrev"], desconto, espaco_nome))
         out.append(linha_programa("B", colors.HexColor("#2E7D32"), "REDUÇÃO GORDURA VISCERAL",
-            "Shake + NutreV • Fiber Concentrate", shake+fiber))
+            "Shake + NutreV • Fiber Concentrate", shake+fiber, ["shake_nutrev","fiber_concentrate"], desconto, espaco_nome))
         out.append(linha_programa("C", colors.HexColor("#1E88E5"), "+ MÚSCULO",
-            "Shake + NutreV • Whey 3W", shake+whey))
+            "Shake + NutreV • Whey 3W", shake+whey, ["shake_nutrev","whey_3w"], desconto, espaco_nome))
         out.append(linha_programa("D", colors.HexColor("#6A1B9A"), "REDUÇÃO GORDURA VISCERAL + MÚSCULO",
-            "Shake + NutreV • Fiber Concentrate • Whey 3W", shake+fiber+whey))
+            "Shake + NutreV • Fiber Concentrate • Whey 3W", shake+fiber+whey,
+            ["shake_nutrev","fiber_concentrate","whey_3w"], desconto, espaco_nome))
     else:
         cr7 = PRODUCT_CATALOG["cr7_drive"]["preco_base"]
         whey = PRODUCT_CATALOG["whey_3w"]["preco_base"]
         creat = PRODUCT_CATALOG["creatina_premium"]["preco_base"]
         out.append(linha_programa("A", colors.HexColor("#F57C00"), "PERFORMANCE PRÉ-TREINO",
-            "CR7 Drive — pré-treino • energia • eletrólitos", cr7))
+            "CR7 Drive — pré-treino • energia • eletrólitos", cr7, ["cr7_drive"], desconto, espaco_nome))
         out.append(linha_programa("B", colors.HexColor("#1E88E5"), "PERFORMANCE + RECUPERAÇÃO",
-            "CR7 Drive • Whey 3W", cr7+whey))
+            "CR7 Drive • Whey 3W", cr7+whey, ["cr7_drive","whey_3w"], desconto, espaco_nome))
         out.append(linha_programa("C", colors.HexColor("#2E7D32"), "RECOMPOSIÇÃO CORPORAL COMPLETO",
-            "CR7 Drive • Whey 3W • Creatina Premium", cr7+whey+creat))
+            "CR7 Drive • Whey 3W • Creatina Premium", cr7+whey+creat,
+            ["cr7_drive","whey_3w","creatina_premium"], desconto, espaco_nome))
 
-        shake_final = PRODUCT_CATALOG["shake_nutrev"]["preco_base"] * (1-DESCONTO_MYBOX)
+        shake_final = PRODUCT_CATALOG["shake_nutrev"]["preco_base"] * (1-desconto)
         upsell_txt = (f'<b>• Performance + Alta Nutrição:</b> Eleve ainda mais sua performance melhorando mais '
                       f'a qualidade de sua alimentação. Adicione o Shake e o NutreV ao seu programa Performance '
                       f'escolhido e aumente ainda mais seus resultados com a Nutrição Celular Herbalife '
-                      f'(+ {preco_str(shake_final)} com desconto MyBox Irajá).')
+                      f'(+ {preco_str(shake_final)} com desconto {(espaco_nome or "do Coach")}).')
         upsell = Table([[Paragraph(upsell_txt, ST_UPSELL_TX)]], colWidths=[CW])
         upsell.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,-1),colors.HexColor("#F9F0FE")),
             ("BOX",(0,0),(-1,-1),0.75,colors.HexColor("#BF3DFB")),
@@ -502,7 +537,7 @@ def bloco_catalogo_final(uso_shake):
     for i, key in enumerate(PRODUCT_ORDER):
         p = PRODUCT_CATALOG[key]
         foto = foto_produto(p["imagem"], 2.6*cm, 2.6*cm)
-        preco_final = p["preco_base"] * (1-DESCONTO_MYBOX)
+        preco_final = p["preco_base"] * (1-desconto)
         cel = Table([[foto],
                      [Paragraph(p["titulo"], ST_GRID_NOME)],
                      [Paragraph(f"<strike>{preco_str(p['preco_base'])}</strike>", ST_GRID_DE)],
@@ -543,6 +578,14 @@ def bloco_catalogo_final(uso_shake):
 def gerar_bytes(dados: dict) -> bytes:
     aluno=dados["aluno"];cardapio=dados["cardapio"];nota=dados["nota"]
     lista=dados.get("lista_compras",[]);coach=dados.get("coach")
+    espaco_nome=dados.get("espaco_nome") or None
+    espaco_endereco=dados.get("espaco_endereco") or None
+    coach_celular=dados.get("coach_celular") or None
+    desconto_percent_raw=dados.get("desconto_percent")
+    try:
+        desconto=float(desconto_percent_raw)/100 if desconto_percent_raw is not None else DESCONTO_MYBOX
+    except (TypeError, ValueError):
+        desconto=DESCONTO_MYBOX
     primeiro_nome=aluno["nome"].split()[0]
     buf=BytesIO()
     doc=SimpleDocTemplate(buf,pagesize=A4,
@@ -576,9 +619,11 @@ def gerar_bytes(dados: dict) -> bytes:
             story.append(PageBreak())
             story+=bloco_produto(item["produto"],item.get("motivo_curto",""),idx,len(produtos_inclusos))
         story.append(PageBreak())
-        story+=bloco_catalogo_final(herbalife.get("uso_shake","nenhum"))
+        story+=bloco_catalogo_final(herbalife.get("uso_shake","nenhum"), desconto, espaco_nome)
 
-    doc.build(story,onFirstPage=make_on_page(coach),onLaterPages=make_on_page(coach))
+    doc.build(story,
+        onFirstPage=make_on_page(coach, espaco_nome, espaco_endereco, coach_celular),
+        onLaterPages=make_on_page(coach, espaco_nome, espaco_endereco, coach_celular))
     return buf.getvalue()
 
 class handler(BaseHTTPRequestHandler):

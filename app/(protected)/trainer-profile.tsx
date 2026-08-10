@@ -33,6 +33,9 @@ export default function TrainerProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [spaceName, setSpaceName] = useState("");
+  const [spaceAddress, setSpaceAddress] = useState("");
+  const [pdfDiscountPercent, setPdfDiscountPercent] = useState("15");
   const [planName, setPlanName] = useState("Carregando...");
   const [maxClients, setMaxClients] = useState(0);
   const [currentClients, setCurrentClients] = useState(0);
@@ -69,7 +72,7 @@ export default function TrainerProfile() {
 
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select("id, name, email, phone, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
+        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
         .eq("user_id", user.id)
         .single();
 
@@ -79,6 +82,11 @@ export default function TrainerProfile() {
       setName(trainer.name || "");
       setEmail(trainer.email || "");
       setPhone(trainer.phone || "");
+      setSpaceName(trainer.space_name || "");
+      setSpaceAddress(trainer.space_address || "");
+      setPdfDiscountPercent(
+        trainer.pdf_discount_percent != null ? String(trainer.pdf_discount_percent) : "15"
+      );
       setIsHerbalifeConsultant(trainer.is_herbalife_consultant || false);
       setHerbalifePresidentName(trainer.herbalife_president_name || "");
       setHerbalifePresidentPhone(trainer.herbalife_president_phone || "");
@@ -136,6 +144,12 @@ export default function TrainerProfile() {
       return;
     }
 
+    const discountValue = parseFloat(pdfDiscountPercent.replace(",", "."));
+    if (pdfDiscountPercent.trim() && (isNaN(discountValue) || discountValue < 0 || discountValue > 100)) {
+      setStatusMsg({ text: "O percentual de desconto deve ser um número entre 0 e 100.", type: "error" });
+      return;
+    }
+
     if (isHerbalifeConsultant) {
       if (!herbalifePresidentName.trim()) {
         setStatusMsg({ text: "O nome do Presidente não pode estar vazio quando o vínculo Herbalife está ativo.", type: "error" });
@@ -153,7 +167,10 @@ export default function TrainerProfile() {
 
       const updateData: any = {
         name: name.trim(),
-        phone: phone.trim() ? removePhoneMask(phone) : null
+        phone: phone.trim() ? removePhoneMask(phone) : null,
+        space_name: spaceName.trim() ? spaceName.trim() : null,
+        space_address: spaceAddress.trim() ? spaceAddress.trim() : null,
+        pdf_discount_percent: pdfDiscountPercent.trim() ? discountValue : 15,
       };
 
       if (isHerbalifeConsultant) {
@@ -250,6 +267,44 @@ export default function TrainerProfile() {
               maxLength={15}
             />
             <Text style={styles.helperText}>Usado para vincular você como Presidente Herbalife à sua equipe de downlines.</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Nome do Espaço</Text>
+            <TextInput
+              style={styles.input}
+              value={spaceName}
+              onChangeText={(t) => { setSpaceName(t); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="Ex: MyBox Irajá"
+              placeholderTextColor={T.t3}
+            />
+            <Text style={styles.helperText}>Aparece no cabeçalho e rodapé dos planos alimentares em PDF gerados por IA.</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Endereço do Espaço</Text>
+            <TextInput
+              style={styles.input}
+              value={spaceAddress}
+              onChangeText={(t) => { setSpaceAddress(t); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="Ex: Jardim Irajá, Ribeirão Preto, SP"
+              placeholderTextColor={T.t3}
+            />
+            <Text style={styles.helperText}>Aparece no rodapé dos planos alimentares em PDF gerados por IA.</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Percentual de Desconto (%)</Text>
+            <TextInput
+              style={styles.input}
+              value={pdfDiscountPercent}
+              onChangeText={(t) => { setPdfDiscountPercent(t.replace(/[^0-9,.]/g, "")); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="15"
+              placeholderTextColor={T.t3}
+              keyboardType="decimal-pad"
+              maxLength={5}
+            />
+            <Text style={styles.helperText}>Usado nos preços da página "Programas Nutricionais" dos planos em PDF (padrão: 15%).</Text>
           </View>
 
         </View>
