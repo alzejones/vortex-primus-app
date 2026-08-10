@@ -207,6 +207,57 @@ function decidirProtocoloHerbalife(p: {
   }
 }
 
+const PRODUCT_KEYS = ['shake_nutrev', 'whey_3w', 'creatina_premium', 'cr7_drive', 'fiber_concentrate', 'herbal_concentrate'] as const
+type ProductKey = typeof PRODUCT_KEYS[number]
+
+// Fallback usado apenas se a IA não escrever (ou escrever vazio) o motivo de
+// um produto que o código já decidiu incluir. Nunca é usado para decidir
+// SE o produto entra — isso é sempre herbalifeDecision.
+function motivoFallback(produto: ProductKey, nome: string): string {
+  const label: Record<ProductKey, string> = {
+    shake_nutrev:       'Shake F1 + NutreV Herbalife',
+    whey_3w:            'Whey 3W Herbalife',
+    creatina_premium:   'Creatina Premium Herbalife 24',
+    cr7_drive:          'CR7 Drive Herbalife 24 Hours',
+    fiber_concentrate:  'Fiber Concentrate Herbalife',
+    herbal_concentrate: 'Herbal Concentrate Herbalife',
+  }
+  return `${label[produto]} indicado para o protocolo de ${nome}, conforme objetivo e avaliação de composição corporal.`
+}
+
+// Monta o objeto final "herbalife" do JSON de resposta. QUAIS produtos
+// aparecem vem 100% de herbalifeDecision (código) — a IA só contribui com
+// o texto de "motivo_curto" de cada produto já decidido, extraído de
+// plan.herbalife.motivos. Qualquer produto que a IA tenha incluído por
+// conta própria e que não esteja marcado para incluir é descartado aqui.
+function montarHerbalifeOutput(d: HerbalifeDecision, motivosIA: any, nome: string) {
+  const incluido: Record<ProductKey, boolean> = {
+    shake_nutrev:       d.usoShake !== 'nenhum',
+    whey_3w:            d.incluirWhey,
+    creatina_premium:   d.incluirCreatina,
+    cr7_drive:          d.incluirCR7,
+    fiber_concentrate:  d.incluirFiberConcentrate,
+    herbal_concentrate: d.incluirHerbalConcentrate,
+  }
+
+  const motivos = (motivosIA && typeof motivosIA === 'object') ? motivosIA : {}
+
+  const produtos_inclusos = PRODUCT_KEYS
+    .filter((k) => incluido[k])
+    .map((k) => {
+      const texto = typeof motivos[k] === 'string' ? motivos[k].trim() : ''
+      return {
+        produto: k,
+        motivo_curto: texto.length > 0 ? texto : motivoFallback(k, nome),
+      }
+    })
+
+  return {
+    uso_shake: d.usoShake,
+    produtos_inclusos,
+  }
+}
+
 function formatarBlocoDecisaoHerbalife(d: HerbalifeDecision): string {
   const shakeLabel: Record<UsoShake, string> = {
     substituto: 'SUBSTITUTO de refeição (café da manhã E jantar)',
@@ -445,14 +496,37 @@ Retorne APENAS o JSON abaixo, sem texto antes ou depois, sem markdown:
         {"item": "Ovos de galinha", "qtd": "3 dúzias"}
       ]
     }
-  ]
+  ],
+  "herbalife": {
+    "motivos": {
+      "shake_nutrev": "string (2–4 frases, só se o modo do Shake não for NENHUM)",
+      "whey_3w": "string (2–4 frases, só se Whey 3W estiver INCLUIR)",
+      "creatina_premium": "string (2–4 frases, só se Creatina estiver INCLUIR)",
+      "cr7_drive": "string (2–4 frases, só se CR7 Drive estiver INCLUIR)",
+      "fiber_concentrate": "string (2–4 frases, só se Fiber Concentrate estiver INCLUIR)",
+      "herbal_concentrate": "string (2–4 frases, só se Herbal Concentrate estiver INCLUIR)"
+    }
+  }
 }
 
 Os campos "coach" e "aluno" serão fornecidos prontos na mensagem do usuário
 — reutilize-os exatamente como recebidos, sem recalcular. Gere "cardapio"
 (exatamente 7 dias, dia 1 = Segunda-feira, dia 7 = Domingo, exatamente 5
 refeições por dia: Café da Manhã, Lanche da Manhã, Almoço, Café da Tarde,
-Jantar), "nota" e "lista_compras".`
+Jantar), "nota" e "lista_compras".
+
+═══════════════════════════════════════════════
+CAMPO "herbalife.motivos" — REGRAS
+═══════════════════════════════════════════════
+Inclua uma chave em "herbalife.motivos" APENAS para os produtos marcados
+INCLUIR no bloco "Protocolo de Suplementação Herbalife" (e para
+"shake_nutrev" apenas se o modo não for NENHUM). NÃO escreva motivo para
+produtos marcados "NÃO incluir" — omita a chave inteiramente. Cada texto
+deve citar números reais do aluno (peso, %gordura, gordura visceral,
+idade metabólica, massa magra, calorias/macros), no mesmo tom científico e
+nominativo da nota (ex: "Miguel, com gordura visceral nível 12..."),
+seguindo o mesmo raciocínio da seção "POR QUE PARA O [NOME]" já usada nos
+protocolos de suplementação Vortex Primus.`
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -629,6 +703,11 @@ acima.`
       if (!match) throw new Error('Resposta da IA com formato inválido. Tente novamente.')
       plan = JSON.parse(match[0])
     }
+
+    // Sobrescreve o campo herbalife com a decisão de código (fonte da
+    // verdade sobre QUAIS produtos aparecem) — usa da IA apenas o texto
+    // de motivo_curto de cada produto já decidido.
+    plan.herbalife = montarHerbalifeOutput(herbalifeDecision, plan?.herbalife?.motivos, aluno.nome)
 
     return new Response(
       JSON.stringify(plan),
