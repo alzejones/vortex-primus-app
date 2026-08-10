@@ -290,12 +290,11 @@ def bloco_nota(texto,primeiro_nome):
     return [Spacer(1,3*mm),KeepTogether([sep,Spacer(1,3*mm),tit,Spacer(1,3*mm),box])]
 
 def bloco_lista(lista):
-    col_w=(CW-4*mm)/2
     def make_block(cat,itens):
         rows=[[Paragraph(cat,ST_CAT),Paragraph("",ST_CAT)]]
         for item,qtd in itens:
             rows.append([Paragraph(f"◻  {item}",ST_IT),Paragraph(qtd,ST_QT)])
-        t=Table(rows,colWidths=[col_w*0.60,col_w*0.40])
+        t=Table(rows,colWidths=[CW*0.60,CW*0.40])
         t.setStyle(TableStyle([
             ("BACKGROUND",(0,0),(-1,0),C_DAY_HEADER),("SPAN",(0,0),(-1,0)),
             ("TOPPADDING",(0,0),(-1,0),5),("BOTTOMPADDING",(0,0),(-1,0),5),
@@ -306,27 +305,26 @@ def bloco_lista(lista):
             ("VALIGN",(0,0),(-1,-1),"MIDDLE"),
             ("GRID",(0,0),(-1,-1),0.4,colors.HexColor("#DDE2E6"))]))
         return t
-    esq,dir_=[],[]
-    for idx,cat in enumerate(lista):
+    # Coluna única, categorias em sequência — cada bloco é sua própria Table
+    # (paginável linha a linha pelo ReportLab). A estrutura anterior (2
+    # colunas dentro de 1 única linha de tabela externa) não conseguia
+    # quebrar de página quando a lista era mais longa que uma página —
+    # corrigido em 2026-08 após erro real em produção (KeepTogether/Table
+    # de 1 linha não é divisível).
+    blocos=[]
+    for cat in lista:
         blk=make_block(cat["categoria"],[(i["item"],i["qtd"]) for i in cat["itens"]])
-        if idx<3:esq.append(blk);esq.append(Spacer(1,3*mm))
-        else:dir_.append(blk);dir_.append(Spacer(1,3*mm))
-    def col_t(items,cw):
-        t=Table([[i] for i in items],colWidths=[cw])
-        t.setStyle(TableStyle([("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
-            ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
-        return t
-    layout=Table([[col_t(esq,col_w),Spacer(4*mm,1),col_t(dir_,col_w)]],colWidths=[col_w,4*mm,col_w])
-    layout.setStyle(TableStyle([("VALIGN",(0,0),(-1,-1),"TOP"),
-        ("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
-        ("LEFTPADDING",(0,0),(-1,-1),0),("RIGHTPADDING",(0,0),(-1,-1),0)]))
+        blocos.append(blk)
+        blocos.append(Spacer(1,4*mm))
     story=[
         Paragraph("🛒  LISTA DE COMPRAS — SEMANA",ST_CT),
         Spacer(1,1*mm),
         HRFlowable(width=CW,thickness=1.5,color=colors.HexColor("#00D1DF")),
         Spacer(1,2*mm),
         Paragraph("Itens necessários para o plano semanal. Quantidades estimadas para 1 pessoa / 7 dias.",ST_ES),
-        Spacer(1,5*mm),layout,Spacer(1,4*mm),
+        Spacer(1,5*mm),
+        *blocos,
+        Spacer(1,2*mm),
         HRFlowable(width=CW,thickness=0.5,color=colors.HexColor("#DDE2E6")),
         Spacer(1,2*mm),
         Paragraph("<i>* Priorize alimentos frescos e in natura. Verifique o estoque antes de comprar.</i>",
