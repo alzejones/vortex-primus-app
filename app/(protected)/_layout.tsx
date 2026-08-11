@@ -1,6 +1,6 @@
 // ============================================================
 // (protected)/_layout.tsx — Layout do treinador (mobile-only)
-// TabBar inferior absoluta + TRAVA DE TRIAL
+// TabBar inferior absoluta + GATE DE TERMOS + TRAVA DE TRIAL
 // ============================================================
 import { Redirect, Slot, useRouter } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
@@ -10,14 +10,16 @@ import TabBar from '../../components/TabBar';
 import { T } from '../../utils/theme';
 import SupportButton from '../../components/SupportButton';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
+import { useTrainerTermsStatus } from '../../hooks/useTrainerTermsStatus';
 
 export default function ProtectedLayout() {
   const insets = useSafeAreaInsets();
   const { session, loading, role } = useAuth();
   const router = useRouter();
+  const termsStatus = useTrainerTermsStatus();
   const licenseStatus = useLicenseStatus();
 
-  if (loading || licenseStatus.loading) {
+  if (loading || termsStatus.loading || licenseStatus.loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
         <ActivityIndicator size="large" color={T.blue} />
@@ -37,9 +39,14 @@ export default function ProtectedLayout() {
 
   if (role !== 'trainer') return <Redirect href="/login" />;
 
+  // 🔒 GATE DE TERMOS: redireciona para terms-required se precisa aceitar termos
+  if (termsStatus.needsConsent) {
+    return <Redirect href="/terms-required" />;
+  }
+
   // 🔒 TRAVA DE LICENÇA: redireciona para license-blocked se status bloqueante
   if (licenseStatus.status === 'expired' || licenseStatus.status === 'limit_reached' || licenseStatus.status === 'blocked_error') {
-    return <Redirect href="/license-blocked" as any />;
+    return <Redirect href="/license-blocked" />;
   }
 
   // Mobile: TabBar inferior absoluta
