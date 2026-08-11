@@ -387,6 +387,9 @@ export default function ClientDiet() {
           <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
         )}
       </TouchableOpacity>
+      <Text style={{ fontSize: 10, color: "#94a3b8", fontStyle: "italic", textAlign: "center", marginTop: -10, marginBottom: 12 }}>
+        O plano gerado é uma sugestão educacional. Revise e adapte antes de enviar ao aluno.
+      </Text>
 
       {/* Botão Confirmar Venda Herbalife */}
       <TouchableOpacity

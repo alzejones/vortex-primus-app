@@ -2,6 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   ScrollView,
@@ -203,13 +204,25 @@ ${customPrompt}
   }
 
   async function handleCopy() {
-    try {
-      await Clipboard.setStringAsync(buildReport());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch (e) {
-      console.error('AIReportModal: erro ao copiar:', e);
-    }
+    Alert.alert(
+      "Compartilhar dados com IA externa?",
+      "Este relatório contém dados de saúde do aluno. Ao colar em uma ferramenta de IA externa (ChatGPT, Claude, etc.), você estará compartilhando esses dados fora do Vortex. Deseja continuar?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Continuar",
+          onPress: async () => {
+            try {
+              await Clipboard.setStringAsync(buildReport());
+              setCopied(true);
+              setTimeout(() => setCopied(false), 3000);
+            } catch (e) {
+              console.error('AIReportModal: erro ao copiar:', e);
+            }
+          },
+        },
+      ]
+    );
   }
 
   const monoFont = Platform.OS === 'ios' ? 'Courier' : 'monospace';

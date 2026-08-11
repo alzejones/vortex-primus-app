@@ -318,7 +318,7 @@ export default function PublicAssessmentView() {
 
         {/* DIAGNÓSTICO */}
         <View style={styles.diagnosisSection}>
-          <Text style={styles.sectionTitle}>📋 Diagnóstico Desta Avaliação</Text>
+          <Text style={styles.sectionTitle}>📋 Resumo Desta Avaliação</Text>
 
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -327,6 +327,9 @@ export default function PublicAssessmentView() {
                 <Text style={{ fontSize: 14, fontWeight: '900', color: T.t1, marginLeft: 6, textTransform: 'uppercase', flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Composição Corporal</Text>
               </View>
             </View>
+            <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginTop: 8, marginBottom: 10 }}>
+              Resultado informativo de composição corporal. Não constitui diagnóstico médico.
+            </Text>
 
             <View style={styles.diagRow}>
               <Text style={styles.diagLabel}>Peso Corporal</Text>

@@ -483,6 +483,9 @@ export default function ClientDietView() {
           {mealPlan.notes ? (
             <Text style={styles.planNotes}>{mealPlan.notes}</Text>
           ) : null}
+          <Text style={{ fontSize: 10, color: T.t3, fontStyle: "italic", marginBottom: 10 }}>
+            Conteúdo gerado com apoio de IA, com finalidade educacional. Não substitui consulta com nutricionista.
+          </Text>
 
           {allFoods.length > 0 && dietResult && (
             <View style={styles.macroBarsCard}>

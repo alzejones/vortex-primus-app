@@ -248,10 +248,13 @@ export default function AssessmentDetailsModal({
               <MeasurementsEvolutionPanel currentAssessment={selectedAssessment} prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]} firstAssessment={assessments?.[assessments.length - 1]} />
 
               <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 20 }}>
-                <Text style={{ fontSize: 15, fontWeight: '800', color: T.t1, marginBottom: 16, textTransform: 'uppercase' }}>📋 Diagnóstico Desta Avaliação</Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: T.t1, marginBottom: 16, textTransform: 'uppercase' }}>📋 Resumo Desta Avaliação</Text>
                 
                 <View style={{ backgroundColor: T.card, borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: T.border, elevation: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: T.border, paddingBottom: 8 }}><Text style={{ fontSize: 16 }}>📊</Text><Text style={{ fontSize: 14, fontWeight: '800', color: T.t1, marginLeft: 6, textTransform: 'uppercase' }}>Composição Corporal</Text></View>
+                  <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginBottom: 10 }}>
+                    Resultado informativo de composição corporal. Não constitui diagnóstico médico.
+                  </Text>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}><Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
 
@@ -448,10 +451,10 @@ export default function AssessmentDetailsModal({
               <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>As faixas baseiam-se na pesquisa de <Text style={{fontStyle: 'italic'}}>Gallagher et al.</Text>, do <Text style={{fontWeight: 'bold'}}>American Journal of Clinical Nutrition</Text> (2000), cruzando género e faixa etária.</Text>
 
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Gordura Visceral</Text>
-              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Níveis alinhados com as diretrizes médicas para prevenção de síndromes metabólicas.</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Níveis de referência utilizados para apoiar hábitos saudáveis e prevenção de riscos metabólicos.</Text>
 
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Idade Metabólica & Metabolismo Basal</Text>
-              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Cálculo clínico comparativo usando a equação preditiva de gasto energético em repouso ajustada pela massa livre de gordura.</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Estimativa comparativa usando a equação preditiva de gasto energético em repouso ajustada pela massa livre de gordura.</Text>
             </ScrollView>
 
             <TouchableOpacity style={{ backgroundColor: '#0f172a', padding: 14, borderRadius: 10, marginTop: 10, alignItems: 'center' }} onPress={() => setReferencesVisible(false)}>
