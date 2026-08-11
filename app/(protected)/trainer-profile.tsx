@@ -37,6 +37,8 @@ export default function TrainerProfile() {
   const [spaceAddress, setSpaceAddress] = useState("");
   const [pdfDiscountPercent, setPdfDiscountPercent] = useState("15");
   const [pixKey, setPixKey] = useState("");
+  const [professionalCouncil, setProfessionalCouncil] = useState("");
+  const [professionalCouncilNumber, setProfessionalCouncilNumber] = useState("");
   const [planName, setPlanName] = useState("Carregando...");
   const [maxClients, setMaxClients] = useState(0);
   const [currentClients, setCurrentClients] = useState(0);
@@ -73,7 +75,7 @@ export default function TrainerProfile() {
 
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, pix_key, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone")
+        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, pix_key, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone, professional_council, professional_council_number")
         .eq("user_id", user.id)
         .single();
 
@@ -89,6 +91,8 @@ export default function TrainerProfile() {
         trainer.pdf_discount_percent != null ? String(trainer.pdf_discount_percent) : "15"
       );
       setPixKey(trainer.pix_key || "");
+      setProfessionalCouncil(trainer.professional_council || "");
+      setProfessionalCouncilNumber(trainer.professional_council_number || "");
       setIsHerbalifeConsultant(trainer.is_herbalife_consultant || false);
       setHerbalifePresidentName(trainer.herbalife_president_name || "");
       setHerbalifePresidentPhone(trainer.herbalife_president_phone || "");
@@ -174,6 +178,8 @@ export default function TrainerProfile() {
         space_address: spaceAddress.trim() ? spaceAddress.trim() : null,
         pdf_discount_percent: pdfDiscountPercent.trim() ? discountValue : 15,
         pix_key: pixKey.trim() ? pixKey.trim() : null,
+        professional_council: professionalCouncil.trim() ? professionalCouncil.trim() : null,
+        professional_council_number: professionalCouncilNumber.trim() ? professionalCouncilNumber.trim() : null,
       };
 
       if (isHerbalifeConsultant) {
@@ -282,6 +288,25 @@ export default function TrainerProfile() {
               placeholderTextColor={T.t3}
             />
             <Text style={styles.helperText}>Aparece no cabeçalho e rodapé dos planos alimentares em PDF gerados por IA.</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Registro em Conselho de Classe (opcional)</Text>
+            <Text style={styles.helperText}>Se você é nutricionista, educador físico ou médico, pode informar seu registro aqui. Este campo é opcional e não é verificado pelo Vortex.</Text>
+            <TextInput
+              style={styles.input}
+              value={professionalCouncil}
+              onChangeText={(t) => { setProfessionalCouncil(t); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="Ex: CREF, CRN, CFM"
+              placeholderTextColor={T.t3}
+            />
+            <TextInput
+              style={[styles.input, { marginTop: 8 }]}
+              value={professionalCouncilNumber}
+              onChangeText={(t) => { setProfessionalCouncilNumber(t); setStatusMsg({ text: "", type: "" }); }}
+              placeholder="Ex: 012345-G/SP"
+              placeholderTextColor={T.t3}
+            />
           </View>
 
           <View style={styles.inputGroup}>
