@@ -242,6 +242,8 @@ def make_on_page(coach=None, espaco_nome=None, espaco_endereco=None, celular=Non
         sufixo = " - ".join(partes) if partes else (f"Coach {coach}" if coach else "")
         rodape = f"VORTEX PRIMUS © 2026  |  {sufixo}" if sufixo else "VORTEX PRIMUS © 2026"
         canvas.drawString(1.5*cm+8,1.5*cm+0.25*cm,rodape)
+        canvas.setFont("NotoSans",6);canvas.setFillColor(colors.HexColor("#C5C9CE"))
+        canvas.drawString(1.5*cm+8,1.5*cm+0.08*cm,"Material educacional gerado com apoio de IA. Não substitui consulta com nutricionista.")
         canvas.restoreState()
     return on_page
 
@@ -292,7 +294,7 @@ def bloco_dia(dd):
 
 def bloco_nota(texto,primeiro_nome):
     sep=HRFlowable(width=CW,thickness=0.75,color=colors.HexColor("#DDE2E6"),dash=(4,4))
-    tit=Paragraph(f"🧬 DIRECIONAMENTO ESTRATÉGICO E NOTA CIENTÍFICA — EXCLUSIVO PARA {primeiro_nome.upper()}",ST_NT)
+    tit=Paragraph(f"🧬 ORIENTAÇÕES EDUCACIONAIS PARA {primeiro_nome.upper()}",ST_NT)
     ps=texto.strip().split("\n\n")
     rows=[[Paragraph(p.strip(),ST_NB)] for p in ps]+[[Spacer(1,2.5*mm)]]
     inner=Table(rows,colWidths=[CW-1.2*cm],style=TableStyle([
@@ -599,7 +601,7 @@ def gerar_bytes(dados: dict) -> bytes:
     story.append(Paragraph("METAS DE MACRONUTRIENTES DIÁRIAS (AJUSTE DE PRECISÃO)",ST_CT))
     story.append(Spacer(1,1.5*mm));story.append(bloco_macros(aluno));story.append(Spacer(1,5*mm))
     story.append(Paragraph("PLANEJAMENTO NUTRICIONAL DE 7 DIAS",ST_CT));story.append(Spacer(1,2*mm))
-    story.append(Paragraph("*Estratégia Funcional: Cardápio estruturado com alimentos in natura e sólidos. O fracionamento proteico protege a musculatura e ativa o gasto digestivo. O protocolo Herbalife potencializa a termogênese, a hidratação e o controle glicêmico ao longo do dia.",ST_ES))
+    story.append(Paragraph("*Estratégia Funcional: Cardápio estruturado com alimentos in natura e sólidos. O fracionamento proteico apoia a musculatura e o gasto digestivo. O plano de suplementação Herbalife apoia a hidratação e a rotina alimentar ao longo do dia.",ST_ES))
     story.append(Spacer(1,4*mm))
     story.append(bloco_dia(cardapio[0]));story.append(PageBreak())
     story.append(bloco_dia(cardapio[1]));story.append(bloco_dia(cardapio[2]));story.append(PageBreak())
