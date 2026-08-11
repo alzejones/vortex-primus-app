@@ -313,6 +313,9 @@ export default function AssessmentFormModal({
               🪄 Calcular Avaliação à Distância (IA)
             </Text>
           </TouchableOpacity>
+          <Text style={{ fontSize: 10, color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginHorizontal: 4, marginTop: -10, marginBottom: 12 }}>
+            Estimativa por IA — pode ter margem de erro em relação à medição direta.
+          </Text>
 
           <TouchableOpacity style={styles.button} onPress={handleSaveAssessment} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", textAlign: "center", fontWeight: "bold", fontSize: 16 }}>Salvar Avaliação</Text>}

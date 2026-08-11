@@ -817,6 +817,9 @@ export default function ClientAssessments() {
                     🪄 Calcular Avaliação à Distância (IA)
                   </Text>
                 </TouchableOpacity>
+                <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: -10, marginBottom: 12 }}>
+                  Estimativa por IA — pode ter margem de erro em relação à medição direta.
+                </Text>
 
                 <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); }} disabled={saving}>
                   <Text style={{ color: T.white, textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text>
