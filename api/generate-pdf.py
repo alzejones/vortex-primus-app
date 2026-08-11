@@ -361,18 +361,11 @@ def preco_str(v):
 
 def bloco_banner_visceral(aluno, n_produtos):
     gv = aluno.get("gord_visceral", "")
-    if "ALERTA" in gv:
-        bg, border, tag = C_ALERT_BG, C_ALERT_BORDER, "ALERTA"
-    elif "Atenção" in gv:
-        bg, border, tag = C_ATENCAO_BG, C_ATENCAO_BORDER, "ATENÇÃO"
-    else:
-        bg, border, tag = C_OK_BG, C_OK_BORDER, "CONTROLADA"
-    texto = (f"GORDURA VISCERAL {gv} — {tag}: o protocolo de {n_produtos} produto"
-             f"{'s' if n_produtos != 1 else ''} indicado{'s' if n_produtos != 1 else ''} foi "
-             f"estruturado com base no objetivo e na avaliação de composição corporal.")
+    texto = (f"COMPOSIÇÃO CORPORAL: {gv}. As sugestões de suplementação abaixo foram "
+             f"organizadas considerando o objetivo pessoal e a rotina de treino do aluno.")
     box = Table([[Paragraph(texto, ST_ALERT_TX)]], colWidths=[CW])
     box.setStyle(TableStyle([
-        ("BACKGROUND",(0,0),(-1,-1),bg),("BOX",(0,0),(-1,-1),1,border),
+        ("BACKGROUND",(0,0),(-1,-1),C_BG_METRICS),("BOX",(0,0),(-1,-1),1,C_BORDER),
         ("TOPPADDING",(0,0),(-1,-1),8),("BOTTOMPADDING",(0,0),(-1,-1),8),
         ("LEFTPADDING",(0,0),(-1,-1),10),("RIGHTPADDING",(0,0),(-1,-1),10)]))
     return box
@@ -419,7 +412,7 @@ def bloco_produto(produto_key, motivo_curto, idx, total):
 
     motivo_box = None
     if motivo_curto:
-        motivo_titulo = Paragraph("POR QUE ESTE PRODUTO FOI INDICADO", ST_MOTIVO_TIT)
+        motivo_titulo = Paragraph("POR QUE ESSE PRODUTO FOI SUGERIDO PARA VOCÊ", ST_MOTIVO_TIT)
         motivo_txt = Paragraph(motivo_curto, ST_MOTIVO_TX)
         inner = Table([[motivo_titulo],[Spacer(1,1.5*mm)],[motivo_txt]], colWidths=[CW-1*cm])
         inner.setStyle(TableStyle([("TOPPADDING",(0,0),(-1,-1),0),("BOTTOMPADDING",(0,0),(-1,-1),0),
@@ -619,7 +612,7 @@ def gerar_bytes(dados: dict) -> bytes:
     produtos_inclusos=herbalife.get("produtos_inclusos",[]) if herbalife else []
     if produtos_inclusos:
         story.append(PageBreak())
-        story.append(Paragraph("INDICAÇÃO DE SUPLEMENTAÇÃO HERBALIFE",ST_CT))
+        story.append(Paragraph("SUGESTÃO DE SUPLEMENTAÇÃO HERBALIFE",ST_CT))
         story.append(Spacer(1,2*mm))
         story.append(bloco_banner_visceral(aluno,len(produtos_inclusos)))
         story.append(Spacer(1,4*mm))
