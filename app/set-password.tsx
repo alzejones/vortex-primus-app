@@ -49,6 +49,29 @@ export default function SetPassword() {
 
   const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
 
+  // Helper para vincular user_id com retry automático
+  async function linkClientToUser(userId: string, clientId: string): Promise<boolean> {
+    // Primeira tentativa
+    let { error } = await supabase
+      .from('clients')
+      .update({ user_id: userId })
+      .eq('id', clientId)
+      .is('user_id', null);
+
+    // Segunda tentativa se falhar
+    if (error) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const retry = await supabase
+        .from('clients')
+        .update({ user_id: userId })
+        .eq('id', clientId)
+        .is('user_id', null);
+      error = retry.error;
+    }
+
+    return !error;
+  }
+
   useEffect(() => {
     async function setup() {
       // Tenta query params primeiro (fluxo normal)
@@ -83,11 +106,7 @@ export default function SetPassword() {
           const user = data.session.user;
           const clientId = user.user_metadata?.client_id as string | undefined;
           if (clientId && user.user_metadata?.role === 'client') {
-            await supabase
-              .from('clients')
-              .update({ user_id: user.id })
-              .eq('id', clientId)
-              .is('user_id', null);
+            await linkClientToUser(user.id, clientId);
           }
 
           setEmail(user.email ?? '');
@@ -120,11 +139,7 @@ export default function SetPassword() {
       const user = data.session.user;
       const clientId = user.user_metadata?.client_id as string | undefined;
       if (clientId && user.user_metadata?.role === 'client') {
-        await supabase
-          .from('clients')
-          .update({ user_id: user.id })
-          .eq('id', clientId)
-          .is('user_id', null);
+        await linkClientToUser(user.id, clientId);
       }
 
       setEmail(user.email ?? '');
@@ -158,11 +173,28 @@ export default function SetPassword() {
 
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (currentUser?.id) {
-      const { data: clientData } = await supabase
+      let { data: clientData } = await supabase
         .from('clients')
         .select('id')
         .eq('user_id', currentUser.id)
         .maybeSingle();
+
+      // Se não encontrou o cliente vinculado, tenta refazer o vínculo
+      if (!clientData) {
+        const clientId = currentUser.user_metadata?.client_id as string | undefined;
+        if (clientId && currentUser.user_metadata?.role === 'client') {
+          const linked = await linkClientToUser(currentUser.id, clientId);
+          if (linked) {
+            // Busca novamente após vínculo bem-sucedido
+            const retry = await supabase
+              .from('clients')
+              .select('id')
+              .eq('user_id', currentUser.id)
+              .maybeSingle();
+            clientData = retry.data;
+          }
+        }
+      }
 
       if (clientData) {
         setIsSuccess(true);
@@ -171,6 +203,8 @@ export default function SetPassword() {
         setTimeout(() => {
           router.replace("/(client)/diet" as any);
         }, 1200);
+      } else {
+        setMessage("Não foi possível vincular sua conta. Tente novamente ou fale com seu treinador.");
       }
     }
   }
