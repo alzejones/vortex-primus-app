@@ -8,9 +8,10 @@ interface SaleActionsModalProps {
   onClose: () => void;
   onEdit: (sale: SaleRow) => void;
   onDelete: (id: string) => void;
+  onConvertToClient?: (sale: SaleRow) => void;
 }
 
-export default function SaleActionsModal({ sale, onClose, onEdit, onDelete }: SaleActionsModalProps) {
+export default function SaleActionsModal({ sale, onClose, onEdit, onDelete, onConvertToClient }: SaleActionsModalProps) {
   return (
     <Modal visible={sale !== null} animationType="fade" transparent>
       <View style={s.modalBg}>
@@ -19,6 +20,12 @@ export default function SaleActionsModal({ sale, onClose, onEdit, onDelete }: Sa
           <Text style={{ color: '#DDD', marginBottom: 16 }}>
             {sale?.clients?.name || sale?.client_name_manual || 'Cliente'}
           </Text>
+
+          {sale && !sale.client_id && (
+            <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#10B981' }]} onPress={() => sale && onConvertToClient && onConvertToClient(sale)}>
+              <Text style={s.actionBtnTxt}>👤 Transformar em Cliente</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={[s.actionBtn, { backgroundColor: T.blue }]} onPress={() => sale && onEdit(sale)}>
             <Text style={s.actionBtnTxt}>✏️ Alterar</Text>

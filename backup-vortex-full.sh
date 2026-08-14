@@ -99,9 +99,22 @@ PGPASSWORD="$SUPABASE_DB_PASSWORD" psql \
   -c "SELECT proname FROM pg_proc WHERE pronamespace = 'public'::regnamespace ORDER BY proname;" \
   >> "$METADATA_FILE"
 
-echo "[4/4] Limpando backups antigos (mantendo últimos 30 dias)..."
+echo "[4/5] Limpando backups antigos (mantendo últimos 30 dias)..."
 find "$BACKUP_DIR" -name "vortex_backup_*.sql.gz" -mtime +30 -delete
 find "$BACKUP_DIR" -name "vortex_backup_*_metadata.txt" -mtime +30 -delete
+
+echo "[5/5] Enviando para Google Drive (myboxiraja@gmail.com)..."
+if rclone copy "$BACKUP_FILE" gdrive-vortex:Vortex-Backups 2>&1; then
+  echo "✓ Backup (.sql.gz) enviado para Google Drive"
+else
+  echo "⚠ ERRO: Falha ao enviar backup (.sql.gz) para Google Drive - backup local mantido" >&2
+fi
+
+if rclone copy "$METADATA_FILE" gdrive-vortex:Vortex-Backups 2>&1; then
+  echo "✓ Metadados (.txt) enviados para Google Drive"
+else
+  echo "⚠ ERRO: Falha ao enviar metadados (.txt) para Google Drive - backup local mantido" >&2
+fi
 
 echo ""
 echo "=========================================="

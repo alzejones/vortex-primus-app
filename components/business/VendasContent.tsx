@@ -315,6 +315,14 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
     }
   }
 
+  function convertToClient(sale: SaleRow) {
+    setActionSale(null);
+    const nameToUse = sale.client_name_manual || 'Cliente';
+    router.push({
+      pathname: '/client-create' as any,
+      params: { from: 'avulso', sale_id: sale.id, name: nameToUse },
+    });
+  }
 
   if (loading) {
     return (
@@ -545,6 +553,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           deleteSaleWithConfirm(id, load);
           setActionSale(null);
         }}
+        onConvertToClient={convertToClient}
       />
 
       {/* ---------- MODAL PICKER DE CLIENTE ---------- */}

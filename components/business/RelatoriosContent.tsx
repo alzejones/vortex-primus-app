@@ -4,7 +4,7 @@
 // v_herbalife_daily, v_herbalife_weekly, v_herbalife_monthly.
 // Substitui as planilhas manuais: zero digitação.
 // ============================================================
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -260,6 +260,15 @@ export default function RelatoriosContent() {
         { text: 'Excluir', style: 'destructive', onPress: doDelete },
       ]);
     }
+  }
+
+  function convertToClient(sale: SaleRow) {
+    setActionSale(null);
+    const nameToUse = sale.client_name_manual || 'Cliente';
+    router.push({
+      pathname: '/client-create' as any,
+      params: { from: 'avulso', sale_id: sale.id, name: nameToUse },
+    });
   }
 
   if (loading) {
@@ -522,6 +531,7 @@ export default function RelatoriosContent() {
           });
           setActionSale(null);
         }}
+        onConvertToClient={convertToClient}
       />
     </View>
   );

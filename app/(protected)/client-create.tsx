@@ -27,7 +27,7 @@ import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton
 
 export default function ClientCreate() {
   const router = useRouter();
-  const { from } = useLocalSearchParams<{ from?: string }>();
+  const { from, sale_id, name: prefillName } = useLocalSearchParams<{ from?: string; sale_id?: string; name?: string }>();
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   React.useEffect(() => {
@@ -51,6 +51,12 @@ export default function ClientCreate() {
     activity_level: "" as ActivityLevel | "",
     food_restrictions: "",
   });
+
+  React.useEffect(() => {
+    if (from === 'avulso' && prefillName) {
+      setForm((prev) => ({ ...prev, name: prefillName }));
+    }
+  }, []);
 
   const nome_completoRef = useRef(null);
   const email_telefoneRef = useRef(null);
@@ -154,6 +160,23 @@ export default function ClientCreate() {
       const { data: newClient, error } = await supabase.from("clients").insert([payload]).select("id").single();
 
       if (error) throw error;
+
+      if (from === 'avulso' && sale_id && newClient?.id) {
+        const { error: linkError } = await supabase
+          .from('herbalife_sales')
+          .update({ client_id: newClient.id, client_name_manual: null })
+          .eq('id', sale_id);
+
+        if (linkError) {
+          console.log('Erro ao vincular venda avulsa ao novo cliente:', linkError);
+        }
+
+        setStatusMsg({ text: 'Cliente criado e venda vinculada com sucesso!', type: 'success' });
+        setTimeout(() => {
+          router.replace('/(protected)/business-goals' as any);
+        }, 1000);
+        return;
+      }
 
       setStatusMsg({ text: "Cliente adicionado com sucesso!", type: "success" });
 
