@@ -20,7 +20,8 @@ export default function MeasurementsEvolutionPanel({
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const calcInterval = (dateStr1: string, dateStr2: string): string => {
