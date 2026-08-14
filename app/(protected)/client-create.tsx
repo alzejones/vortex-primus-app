@@ -27,7 +27,7 @@ import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton
 
 export default function ClientCreate() {
   const router = useRouter();
-  const { from, sale_id, name: prefillName } = useLocalSearchParams<{ from?: string; sale_id?: string; name?: string }>();
+  const { from, sale_id, name: prefillName, phone: prefillPhone } = useLocalSearchParams<{ from?: string; sale_id?: string; name?: string; phone?: string }>();
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   React.useEffect(() => {
@@ -53,8 +53,13 @@ export default function ClientCreate() {
   });
 
   React.useEffect(() => {
-    if (from === 'avulso' && prefillName) {
-      setForm((prev) => ({ ...prev, name: prefillName }));
+    if (from === 'avulso') {
+      if (prefillName) {
+        setForm((prev) => ({ ...prev, name: prefillName }));
+      }
+      if (prefillPhone) {
+        setForm((prev) => ({ ...prev, phone: prefillPhone }));
+      }
     }
   }, []);
 

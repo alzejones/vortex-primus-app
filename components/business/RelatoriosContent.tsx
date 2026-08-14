@@ -193,7 +193,7 @@ export default function RelatoriosContent() {
       const [{ data: sales }, { data: prospects }] = await Promise.all([
         supabase
           .from('herbalife_sales')
-          .select('id, client_id, client_name_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
+          .select('id, client_id, client_name_manual, client_phone_manual, client_status, sale_type, total_charged, total_profit, total_pv, clients!herbalife_sales_client_id_fkey(name)')
           .eq('trainer_id', tid)
           .eq('sale_date', date)
           .order('created_at', { ascending: false }),
@@ -267,7 +267,7 @@ export default function RelatoriosContent() {
     const nameToUse = sale.client_name_manual || 'Cliente';
     router.push({
       pathname: '/client-create' as any,
-      params: { from: 'avulso', sale_id: sale.id, name: nameToUse },
+      params: { from: 'avulso', sale_id: sale.id, name: nameToUse, phone: sale.client_phone_manual || '' },
     });
   }
 

@@ -67,6 +67,7 @@ export interface SaleRow {
   id: string;
   client_id: string | null;
   client_name_manual: string | null;
+  client_phone_manual: string | null;
   client_status: string | null;
   sale_type: string;
   total_charged: number;
@@ -223,12 +224,12 @@ export default function SaleFormModal({
             } else {
               setSelClient(null);
               setManualName(editingSale.client_name_manual || '');
-              setManualPhone('');
+              setManualPhone(editingSale.client_phone_manual ? maskPhone(editingSale.client_phone_manual) : '');
             }
           } else {
             setSelClient(null);
             setManualName(editingSale.client_name_manual || '');
-            setManualPhone('');
+            setManualPhone(editingSale.client_phone_manual ? maskPhone(editingSale.client_phone_manual) : '');
           }
 
           setIsIndicacao(editingSale.client_status === 'indicacao');
@@ -345,6 +346,7 @@ export default function SaleFormModal({
             trainer_id: trainerId,
             client_id: selClient?.id ?? null,
             client_name_manual: selClient ? null : manualName.trim(),
+            client_phone_manual: selClient ? null : (manualPhone.trim() || null),
             client_status: status,
             sale_type: saleType,
             origin: 'manual',
@@ -388,6 +390,7 @@ export default function SaleFormModal({
           .update({
             client_id: selClient?.id ?? null,
             client_name_manual: selClient ? null : manualName.trim(),
+            client_phone_manual: selClient ? null : (manualPhone.trim() || null),
             client_status: status,
             sale_type: saleType,
             total_charged: totalCharged,
