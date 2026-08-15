@@ -611,6 +611,29 @@ export default function ClientDetails() {
 
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {showQuestionnaire && (
+          <View style={[
+            styles.stickyFooter,
+            { paddingBottom: Platform.OS === 'ios' ? 34 : Platform.OS === 'android' ? 20 : 14 }
+          ]}>
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={async () => {
+                await handleUpdate();
+                if (statusMsg.type === 'success') {
+                  setShowQuestionnaire(false);
+                }
+              }} 
+              disabled={saving} 
+              activeOpacity={0.85}
+            >
+              <LinearGradient {...GradientPrimary} style={styles.saveButtonGradient}>
+                {saving ? <ActivityIndicator color={T.white} /> : <Text style={styles.saveButtonText}>💾 Salvar Questionário</Text>}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* MODAL: seleção de canal do convite */}
@@ -752,4 +775,15 @@ const styles = StyleSheet.create({
   modalOptionSub: { fontSize: 13, color: T.t3, marginTop: 2 },
   modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: T.surface, borderWidth: 1, borderColor: T.border },
   modalCancelText: { fontSize: 15, fontWeight: "700", color: T.t2 },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: T.bg,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+  },
 });

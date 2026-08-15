@@ -579,6 +579,32 @@ export default function ClientCreate() {
         )}
           </ScrollView>
         </KeyboardAvoidingView>
+
+        {showQuestionnaire && (
+          <View style={[
+            styles.stickyFooter,
+            { paddingBottom: Platform.OS === 'ios' ? 34 : Platform.OS === 'android' ? 20 : 14 }
+          ]}>
+            <TouchableOpacity 
+              onPress={async () => {
+                await handleSave();
+                if (statusMsg.type === 'success') {
+                  setShowQuestionnaire(false);
+                }
+              }} 
+              style={styles.button} 
+              disabled={loading} 
+              activeOpacity={0.85}
+            >
+              <LinearGradient {...GradientPrimary} style={styles.buttonGradient}>
+                {loading
+                  ? <ActivityIndicator color={T.white} />
+                  : <Text style={styles.buttonText}>💾 Salvar Questionário</Text>
+                }
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -636,5 +662,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: T.border,
     paddingTop: 20,
+  },
+  stickyFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: T.bg,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+    paddingHorizontal: 20,
+    paddingTop: 14,
   },
 });
