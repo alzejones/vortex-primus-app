@@ -17,7 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { todayBR } from '../../utils/dateBR';
 import { normalizeSearch } from '../../utils/textSearch';
-import { confirmScheduleReassessment } from '../../utils/salesActions';
+import ConfirmModal from '../ui/ConfirmModal';
 
 export function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -128,6 +128,7 @@ export default function SaleFormModal({
   const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | 'apresentacao' | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
+  const [reassessTarget, setReassessTarget] = useState<{id: string; name: string} | null>(null);
 
   function trainerUnitCost(p: Pricing): number {
     const map: Record<string, number> = {
@@ -447,10 +448,7 @@ export default function SaleFormModal({
         onClose();
 
         if (selClient) {
-          const ok = await confirmScheduleReassessment(selClient.name);
-          if (ok) {
-            router.push(`/(protected)/schedule/new?client_id=${selClient.id}&suggested_type=Comp.Corporal` as any);
-          }
+          setReassessTarget({ id: selClient.id, name: selClient.name });
         }
       } else {
         const { error: updateErr } = await supabase
@@ -491,6 +489,20 @@ export default function SaleFormModal({
 
   return (
     <>
+      <ConfirmModal
+        visible={!!reassessTarget}
+        title="Venda registrada!"
+        message={`Deseja agendar a reavaliação de ${reassessTarget?.name} agora?`}
+        confirmLabel="Sim"
+        cancelLabel="Não"
+        onConfirm={() => {
+          const target = reassessTarget;
+          setReassessTarget(null);
+          if (target) router.push(`/(protected)/schedule/new?client_id=${target.id}&suggested_type=Comp.Corporal` as any);
+        }}
+        onCancel={() => setReassessTarget(null)}
+      />
+
       <Modal visible={visible} animationType="slide" transparent>
         <View style={s.modalBg}>
           <View style={s.modalBox}>
