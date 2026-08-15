@@ -306,7 +306,7 @@ export default function ClientCreate() {
             {statusMsg.type === "limit" && (
               <TouchableOpacity
                 style={styles.upgradeBtn}
-                onPress={() => router.push("/(protected)/upgrade" as any)}
+                onPress={() => router.push("/upgrade" as any)}
               >
                 <Text style={styles.upgradeBtnText}>⭐ Conhecer Planos</Text>
               </TouchableOpacity>

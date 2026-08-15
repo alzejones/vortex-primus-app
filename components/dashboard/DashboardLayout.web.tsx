@@ -143,7 +143,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             })()}
           </Text>
           {licenseStatus.status === 'trial' ? (
-            <TouchableOpacity onPress={() => router.push('/(protected)/upgrade')}>
+            <TouchableOpacity onPress={() => router.push('/upgrade')}>
               <Text style={{ fontSize: 10, color: '#60A5FA', fontWeight: '600' }}>Fazer upgrade →</Text>
             </TouchableOpacity>
           ) : (
@@ -157,7 +157,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           />
         </View>
         {usagePercentage >= 80 && (
-          <TouchableOpacity onPress={() => router.push('/(protected)/upgrade' as any)}>
+          <TouchableOpacity onPress={() => router.push('/upgrade' as any)}>
             <Text style={styles.planWarning}>⚠️ Próximo do limite · Upgrade</Text>
           </TouchableOpacity>
         )}

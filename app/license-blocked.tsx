@@ -32,7 +32,7 @@ export default function LicenseBlockedScreen() {
   };
 
   const handleUpgrade = () => {
-    router.push('/(protected)/upgrade');
+    router.push('/upgrade');
   };
 
   if (licenseStatus.loading || isRetrying) {

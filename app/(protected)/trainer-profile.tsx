@@ -393,7 +393,7 @@ export default function TrainerProfile() {
           {maxClients > 0 && (currentClients / maxClients) >= 0.8 && (
             <Text style={{ color: '#FFA500', fontWeight: '600', fontSize: 12, marginTop: 8 }}>⚠️ Você está próximo do limite do plano</Text>
           )}
-          <TouchableOpacity onPress={() => router.push('/(protected)/upgrade' as any)}>
+          <TouchableOpacity onPress={() => router.push('/upgrade' as any)}>
             <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', marginTop: 10, textAlign: 'right' }}>
               Mudar plano →
             </Text>

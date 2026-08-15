@@ -14,9 +14,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../../lib/supabase";
-import { GradientPrimary } from "../../utils/gradients";
-import { T } from "../../utils/theme";
+import { supabase } from "../lib/supabase";
+import { GradientPrimary } from "../utils/gradients";
+import { T } from "../utils/theme";
 
 const PAYMENT_MODE: 'stripe' | 'direct_link' = 'direct_link';
 const SUPPORT_WHATSAPP = '5516992107040';
