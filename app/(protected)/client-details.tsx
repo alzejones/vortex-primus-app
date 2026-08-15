@@ -27,6 +27,7 @@ import {
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { CoachQuestionnaireForm, CoachQuestionnaireData } from "../../components/CoachQuestionnaireForm";
 
 // --- FUNÇÕES DE UTILIDADE ---
 const formatDateInput = (text: string) => {
@@ -83,6 +84,26 @@ export default function ClientDetails() {
   const [inviteEmailSent, setInviteEmailSent] = useState(false);
   const inviteCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [coachQuestionnaire, setCoachQuestionnaire] = useState<CoachQuestionnaireData>({
+    grupo: "",
+    objetivos: [],
+    objetivos_outros: "",
+    peso_bem_estar: "",
+    momento_afastamento: "",
+    tamanho_roupa_feliz: "",
+    partes_corpo_melhorar: "",
+    evento_planejado: "",
+    peca_guarda_roupa: "",
+    maior_desafio_comida: "",
+    como_se_sentiria: "",
+    motivacao_atual: "",
+    escala_prontidao: null,
+    nota_avaliacao_bem_estar: null,
+    indicacoes: [],
+    notas: "",
+  });
+
   useEffect(() => {
     if (clientId) loadClient();
   }, [clientId]);
@@ -116,6 +137,27 @@ export default function ClientDetails() {
         setActivityLevel((data.activity_level as ActivityLevel) || "");
         setFoodRestrictions(data.food_restrictions || "");
         setUserId(data.user_id ?? null);
+        
+        if (data.coach_questionnaire) {
+          setCoachQuestionnaire({
+            grupo: data.coach_questionnaire.grupo || "",
+            objetivos: data.coach_questionnaire.objetivos || [],
+            objetivos_outros: data.coach_questionnaire.objetivos_outros || "",
+            peso_bem_estar: data.coach_questionnaire.peso_bem_estar || "",
+            momento_afastamento: data.coach_questionnaire.momento_afastamento || "",
+            tamanho_roupa_feliz: data.coach_questionnaire.tamanho_roupa_feliz || "",
+            partes_corpo_melhorar: data.coach_questionnaire.partes_corpo_melhorar || "",
+            evento_planejado: data.coach_questionnaire.evento_planejado || "",
+            peca_guarda_roupa: data.coach_questionnaire.peca_guarda_roupa || "",
+            maior_desafio_comida: data.coach_questionnaire.maior_desafio_comida || "",
+            como_se_sentiria: data.coach_questionnaire.como_se_sentiria || "",
+            motivacao_atual: data.coach_questionnaire.motivacao_atual || "",
+            escala_prontidao: data.coach_questionnaire.escala_prontidao ?? null,
+            nota_avaliacao_bem_estar: data.coach_questionnaire.nota_avaliacao_bem_estar ?? null,
+            indicacoes: data.coach_questionnaire.indicacoes || [],
+            notas: data.coach_questionnaire.notas || "",
+          });
+        }
       }
     } catch (error) {
       console.error("Erro ao carregar:", error);
@@ -135,6 +177,23 @@ export default function ClientDetails() {
       setSaving(true);
       setStatusMsg({ text: "", type: "" });
 
+      const isQuestionnaireEmpty = !coachQuestionnaire.grupo && 
+        coachQuestionnaire.objetivos.length === 0 && 
+        !coachQuestionnaire.objetivos_outros &&
+        !coachQuestionnaire.peso_bem_estar &&
+        !coachQuestionnaire.momento_afastamento &&
+        !coachQuestionnaire.tamanho_roupa_feliz &&
+        !coachQuestionnaire.partes_corpo_melhorar &&
+        !coachQuestionnaire.evento_planejado &&
+        !coachQuestionnaire.peca_guarda_roupa &&
+        !coachQuestionnaire.maior_desafio_comida &&
+        !coachQuestionnaire.como_se_sentiria &&
+        !coachQuestionnaire.motivacao_atual &&
+        coachQuestionnaire.escala_prontidao === null &&
+        coachQuestionnaire.nota_avaliacao_bem_estar === null &&
+        coachQuestionnaire.indicacoes.length === 0 &&
+        !coachQuestionnaire.notas;
+
       const { error } = await supabase
         .from("clients")
         .update({
@@ -149,6 +208,7 @@ export default function ClientDetails() {
           objective: objective || null,
           activity_level: activityLevel || null,
           food_restrictions: foodRestrictions.trim() || null,
+          coach_questionnaire: isQuestionnaireEmpty ? null : coachQuestionnaire,
           updated_at: new Date().toISOString(),
         })
         .eq("id", clientId);
@@ -515,6 +575,28 @@ export default function ClientDetails() {
           </LinearGradient>
         </TouchableOpacity>
 
+        <TouchableOpacity 
+          onPress={() => setShowQuestionnaire(!showQuestionnaire)} 
+          style={styles.secondaryButton}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.secondaryButtonText}>
+            📋 {showQuestionnaire ? "Ocultar" : "Usar"} Questionário do Coach
+          </Text>
+        </TouchableOpacity>
+
+        {showQuestionnaire && (
+          <View style={styles.questionnaireContainer}>
+            <CoachQuestionnaireForm
+              value={coachQuestionnaire}
+              onChange={setCoachQuestionnaire}
+              onGoToAssessment={() => {
+                router.push(`/(protected)/client-assessments?id=${clientId}&openForm=true` as any);
+              }}
+            />
+          </View>
+        )}
+
         <TouchableOpacity
           style={[styles.deleteButton, confirmDelete && styles.deleteButtonConfirm]}
           onPress={handleDelete}
@@ -633,6 +715,28 @@ const styles = StyleSheet.create({
   saveButton: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
   saveButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
   saveButtonText: { color: T.white, fontSize: 16, fontWeight: "800" },
+
+  secondaryButton: { 
+    borderRadius: 14, 
+    padding: 16, 
+    marginTop: 12,
+    marginBottom: 12,
+    borderWidth: 2, 
+    borderColor: T.border, 
+    backgroundColor: T.card,
+    alignItems: "center",
+  },
+  secondaryButtonText: { 
+    color: T.t1, 
+    fontWeight: "700", 
+    fontSize: 15 
+  },
+  questionnaireContainer: {
+    marginBottom: 20,
+    borderTopWidth: 2,
+    borderTopColor: T.border,
+    paddingTop: 20,
+  },
 
   deleteButton: { padding: 16, borderRadius: 14, alignItems: "center", borderWidth: 1, borderColor: T.red, backgroundColor: "transparent", width: "100%" },
   deleteButtonConfirm: { backgroundColor: T.red, borderColor: T.red },

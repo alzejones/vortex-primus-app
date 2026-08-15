@@ -24,6 +24,7 @@ import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
 import { TutorialOverlay } from "../../components/tutorial/TutorialOverlay";
 import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton";
+import { CoachQuestionnaireForm, CoachQuestionnaireData } from "../../components/CoachQuestionnaireForm";
 
 export default function ClientCreate() {
   const router = useRouter();
@@ -50,6 +51,26 @@ export default function ClientCreate() {
     objective: "" as Objective | "",
     activity_level: "" as ActivityLevel | "",
     food_restrictions: "",
+  });
+
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [coachQuestionnaire, setCoachQuestionnaire] = useState<CoachQuestionnaireData>({
+    grupo: "",
+    objetivos: [],
+    objetivos_outros: "",
+    peso_bem_estar: "",
+    momento_afastamento: "",
+    tamanho_roupa_feliz: "",
+    partes_corpo_melhorar: "",
+    evento_planejado: "",
+    peca_guarda_roupa: "",
+    maior_desafio_comida: "",
+    como_se_sentiria: "",
+    motivacao_atual: "",
+    escala_prontidao: null,
+    nota_avaliacao_bem_estar: null,
+    indicacoes: [],
+    notas: "",
   });
 
   React.useEffect(() => {
@@ -148,6 +169,23 @@ export default function ClientCreate() {
       let safeGenderDB = safeGenderVal.trim().toUpperCase();
       safeGenderDB = safeGenderDB.length > 0 ? safeGenderDB.charAt(0) : null as any;
 
+      const isQuestionnaireEmpty = !coachQuestionnaire.grupo && 
+        coachQuestionnaire.objetivos.length === 0 && 
+        !coachQuestionnaire.objetivos_outros &&
+        !coachQuestionnaire.peso_bem_estar &&
+        !coachQuestionnaire.momento_afastamento &&
+        !coachQuestionnaire.tamanho_roupa_feliz &&
+        !coachQuestionnaire.partes_corpo_melhorar &&
+        !coachQuestionnaire.evento_planejado &&
+        !coachQuestionnaire.peca_guarda_roupa &&
+        !coachQuestionnaire.maior_desafio_comida &&
+        !coachQuestionnaire.como_se_sentiria &&
+        !coachQuestionnaire.motivacao_atual &&
+        coachQuestionnaire.escala_prontidao === null &&
+        coachQuestionnaire.nota_avaliacao_bem_estar === null &&
+        coachQuestionnaire.indicacoes.length === 0 &&
+        !coachQuestionnaire.notas;
+
       const payload = {
         trainer_id: trainer.id,
         name: safeName.trim(),
@@ -160,6 +198,7 @@ export default function ClientCreate() {
         objective: form.objective || null,
         activity_level: form.activity_level || null,
         food_restrictions: (form.food_restrictions || "").trim() || null,
+        coach_questionnaire: isQuestionnaireEmpty ? null : coachQuestionnaire,
       };
 
       const { data: newClient, error } = await supabase.from("clients").insert([payload]).select("id").single();
@@ -419,6 +458,125 @@ export default function ClientCreate() {
             }
           </LinearGradient>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          onPress={() => setShowQuestionnaire(!showQuestionnaire)} 
+          style={styles.secondaryButton}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.secondaryButtonText}>
+            📋 {showQuestionnaire ? "Ocultar" : "Usar"} Questionário do Coach
+          </Text>
+        </TouchableOpacity>
+
+        {showQuestionnaire && (
+          <View style={styles.questionnaireContainer}>
+            <CoachQuestionnaireForm
+              value={coachQuestionnaire}
+              onChange={setCoachQuestionnaire}
+              onGoToAssessment={async () => {
+                setStatusMsg({ text: "", type: "" });
+
+                const safeName = form.name || "";
+                if (safeName.trim() === "") {
+                  setStatusMsg({ text: "O nome do cliente é obrigatório.", type: "error" });
+                  return;
+                }
+
+                setLoading(true);
+
+                try {
+                  const { data: { user }, error: authError } = await supabase.auth.getUser();
+                  if (authError || !user) {
+                    setStatusMsg({ text: "Sessão expirada. Faça login novamente.", type: "error" });
+                    setLoading(false);
+                    return;
+                  }
+
+                  const { data: trainer, error: trainerError } = await supabase
+                    .from("trainers")
+                    .select("id")
+                    .eq("user_id", user.id)
+                    .single();
+
+                  if (trainerError || !trainer) {
+                    setStatusMsg({ text: "Perfil de treinador não encontrado.", type: "error" });
+                    setLoading(false);
+                    return;
+                  }
+
+                  const formattedDate = parseDateToDB(form.birth_date);
+                  const safeGenderVal = form.gender || "";
+                  let safeGenderDB = safeGenderVal.trim().toUpperCase();
+                  safeGenderDB = safeGenderDB.length > 0 ? safeGenderDB.charAt(0) : null as any;
+
+                  const isQuestionnaireEmpty = !coachQuestionnaire.grupo && 
+                    coachQuestionnaire.objetivos.length === 0 && 
+                    !coachQuestionnaire.objetivos_outros &&
+                    !coachQuestionnaire.peso_bem_estar &&
+                    !coachQuestionnaire.momento_afastamento &&
+                    !coachQuestionnaire.tamanho_roupa_feliz &&
+                    !coachQuestionnaire.partes_corpo_melhorar &&
+                    !coachQuestionnaire.evento_planejado &&
+                    !coachQuestionnaire.peca_guarda_roupa &&
+                    !coachQuestionnaire.maior_desafio_comida &&
+                    !coachQuestionnaire.como_se_sentiria &&
+                    !coachQuestionnaire.motivacao_atual &&
+                    coachQuestionnaire.escala_prontidao === null &&
+                    coachQuestionnaire.nota_avaliacao_bem_estar === null &&
+                    coachQuestionnaire.indicacoes.length === 0 &&
+                    !coachQuestionnaire.notas;
+
+                  const payload = {
+                    trainer_id: trainer.id,
+                    name: safeName.trim(),
+                    email: (form.email || "").trim() || null,
+                    phone: (form.phone || "").trim() || null,
+                    birth_date: formattedDate,
+                    gender: safeGenderDB,
+                    height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
+                    observation: (form.notes || "").trim() || null,
+                    objective: form.objective || null,
+                    activity_level: form.activity_level || null,
+                    food_restrictions: (form.food_restrictions || "").trim() || null,
+                    coach_questionnaire: isQuestionnaireEmpty ? null : coachQuestionnaire,
+                  };
+
+                  const { data: newClient, error } = await supabase.from("clients").insert([payload]).select("id").single();
+
+                  if (error) throw error;
+
+                  router.replace(`/(protected)/client-assessments?id=${newClient.id}&openForm=true` as any);
+
+                } catch (error: any) {
+                  console.log("Erro no catch:", error);
+                  const errorMsg = error.message || "";
+
+                  if (errorMsg.includes("LICENSE_TRIAL_EXPIRED")) {
+                    router.replace("/license-blocked" as any);
+                    return;
+                  }
+
+                  if (errorMsg.includes("LICENSE_LIMIT_REACHED")) {
+                    router.replace("/license-blocked" as any);
+                    return;
+                  }
+
+                  if (errorMsg.includes("Limite de clientes") || errorMsg.includes("P0001")) {
+                    setStatusMsg({
+                      text: "Você atingiu o limite de alunos do seu plano atual. Faça um upgrade para continuar crescendo!",
+                      type: "limit"
+                    });
+                  } else {
+                    setStatusMsg({ text: errorMsg || "Erro inesperado ao guardar.", type: "error" });
+                  }
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+          </View>
+        )}
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
@@ -458,4 +616,25 @@ const styles = StyleSheet.create({
   optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
   optionBtnText: { color: T.t2, fontWeight: "600", fontSize: 14 },
   optionBtnTextActive: { color: T.white },
+
+  secondaryButton: { 
+    borderRadius: 14, 
+    padding: 16, 
+    marginTop: 12, 
+    borderWidth: 2, 
+    borderColor: T.border, 
+    backgroundColor: T.card,
+    alignItems: "center",
+  },
+  secondaryButtonText: { 
+    color: T.t1, 
+    fontWeight: "700", 
+    fontSize: 15 
+  },
+  questionnaireContainer: {
+    marginTop: 20,
+    borderTopWidth: 2,
+    borderTopColor: T.border,
+    paddingTop: 20,
+  },
 });
