@@ -131,10 +131,20 @@ async function fetchActual(goalType: GoalType, tid: string, start: string, end: 
       return count || 0;
     }
     case 'kit_acesso_vendido': {
-      const { count } = await supabase.from('herbalife_sales').select('*', { count: 'exact', head: true })
-        .eq('trainer_id', tid).eq('sale_type', 'acesso')
-        .gte('sale_date', start).lte('sale_date', end);
-      return count || 0;
+      const { data } = await supabase.from('herbalife_sales')
+        .select('id')
+        .eq('trainer_id', tid)
+        .gte('sale_date', start)
+        .lte('sale_date', end);
+      if (!data || data.length === 0) return 0;
+      const saleIds = data.map((s: any) => s.id);
+      const { data: items } = await supabase.from('herbalife_sale_items')
+        .select('sale_id')
+        .in('sale_id', saleIds)
+        .not('kit_id', 'is', null);
+      if (!items || items.length === 0) return 0;
+      const uniqueSalesWithKit = new Set(items.map((i: any) => i.sale_id));
+      return uniqueSalesWithKit.size;
     }
     case 'novos_clientes': {
       const { count } = await supabase.from('clients').select('*', { count: 'exact', head: true })

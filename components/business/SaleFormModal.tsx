@@ -78,6 +78,14 @@ export interface SaleRow {
   clients?: { name: string } | null;
 }
 
+export interface CartItem {
+  itemType: 'kit' | 'produto';
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 interface SaleFormModalProps {
   visible: boolean;
   editingSale: SaleRow | null;
@@ -109,11 +117,7 @@ export default function SaleFormModal({
   onClose,
   onSaved,
 }: SaleFormModalProps) {
-  const [saleType, setSaleType] = useState<'acesso' | 'produto_fechado'>('acesso');
-  const [selKit, setSelKit] = useState<Kit | null>(null);
-  const [selProduct, setSelProduct] = useState<Pricing | null>(null);
-  const [qty, setQty] = useState('1');
-  const [price, setPrice] = useState('');
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [selClient, setSelClient] = useState<ClientRow | null>(null);
   const [manualName, setManualName] = useState('');
   const [manualPhone, setManualPhone] = useState('');
@@ -157,16 +161,58 @@ export default function SaleFormModal({
   }
 
   function pickKit(k: Kit) {
-    setSelKit(k);
-    setPrice(String(k.default_price));
+    const existing = cart.find((item) => item.itemType === 'kit' && item.id === k.id);
+    if (existing) {
+      setCart(cart.map((item) =>
+        item.itemType === 'kit' && item.id === k.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ));
+    } else {
+      setCart([...cart, {
+        itemType: 'kit',
+        id: k.id,
+        name: k.name,
+        quantity: 1,
+        unitPrice: k.default_price,
+      }]);
+    }
     setPickerOpen(null);
   }
 
   function pickProduct(p: Pricing) {
-    setSelProduct(p);
-    const level = selClient?.herbalife_discount_level || 'venda';
-    setPrice(String(clientUnitPrice(p, level)));
+    const existing = cart.find((item) => item.itemType === 'produto' && item.id === p.supplement_id);
+    if (existing) {
+      setCart(cart.map((item) =>
+        item.itemType === 'produto' && item.id === p.supplement_id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
+      ));
+    } else {
+      const level = selClient?.herbalife_discount_level || 'venda';
+      setCart([...cart, {
+        itemType: 'produto',
+        id: p.supplement_id,
+        name: p.name || 'Produto',
+        quantity: 1,
+        unitPrice: clientUnitPrice(p, level),
+      }]);
+    }
     setPickerOpen(null);
+  }
+
+  function removeCartItem(index: number) {
+    setCart(cart.filter((_, i) => i !== index));
+  }
+
+  function updateCartQuantity(index: number, qty: string) {
+    const parsed = parseInt(qty) || 1;
+    setCart(cart.map((item, i) => i === index ? { ...item, quantity: parsed } : item));
+  }
+
+  function updateCartPrice(index: number, price: string) {
+    const parsed = parseFloat(price.replace(',', '.')) || 0;
+    setCart(cart.map((item, i) => i === index ? { ...item, unitPrice: parsed } : item));
   }
 
   function openPicker(type: 'kit' | 'produto' | 'cliente' | 'apresentacao') {
@@ -187,34 +233,45 @@ export default function SaleFormModal({
 
           if (!items || items.length === 0) return;
 
-          if (editingSale.sale_type === 'acesso') {
-            const firstItem = items[0];
-            const kit = kits.find((k) => k.id === firstItem.kit_id);
-            if (!kit) return;
-
-            const kitItem = kitItems.find(
-              (ki) => ki.kit_id === firstItem.kit_id && ki.supplement_id === firstItem.supplement_id
-            );
-            const dosesUsed = kitItem?.doses_used || 1;
-            const originalQty = Math.round(firstItem.quantity / dosesUsed);
-            const unitPrice = originalQty > 0 ? editingSale.total_charged / originalQty : editingSale.total_charged;
-
-            setSaleType('acesso');
-            setSelKit(kit);
-            setSelProduct(null);
-            setQty(String(originalQty));
-            setPrice(String(unitPrice));
-          } else {
-            const firstItem = items[0];
-            const product = pricing.find((p) => p.supplement_id === firstItem.supplement_id);
-            if (!product) return;
-
-            setSaleType('produto_fechado');
-            setSelProduct(product);
-            setSelKit(null);
-            setQty(String(firstItem.quantity));
-            setPrice(String(firstItem.unit_charged));
-          }
+          const cartMap = new Map<string, CartItem>();
+          items.forEach((item: any) => {
+            if (item.kit_id) {
+              const key = `kit_${item.kit_id}`;
+              if (!cartMap.has(key)) {
+                const kit = kits.find((k) => k.id === item.kit_id);
+                if (!kit) return;
+                const qty = item.line_qty != null ? item.line_qty : (() => {
+                  const kitItem = kitItems.find((ki) => ki.kit_id === item.kit_id && ki.supplement_id === item.supplement_id);
+                  const dosesUsed = kitItem?.doses_used || 1;
+                  return Math.round(item.quantity / dosesUsed);
+                })();
+                const unitPrice = item.line_unit_charged != null ? item.line_unit_charged : (editingSale.total_charged / qty);
+                cartMap.set(key, {
+                  itemType: 'kit',
+                  id: item.kit_id,
+                  name: kit.name,
+                  quantity: qty,
+                  unitPrice,
+                });
+              }
+            } else {
+              const key = `produto_${item.supplement_id}`;
+              if (!cartMap.has(key)) {
+                const product = pricing.find((p) => p.supplement_id === item.supplement_id);
+                if (!product) return;
+                const qty = item.line_qty != null ? item.line_qty : item.quantity;
+                const unitPrice = item.line_unit_charged != null ? item.line_unit_charged : item.unit_charged;
+                cartMap.set(key, {
+                  itemType: 'produto',
+                  id: item.supplement_id,
+                  name: product.name || 'Produto',
+                  quantity: qty,
+                  unitPrice,
+                });
+              }
+            }
+          });
+          setCart(Array.from(cartMap.values()));
 
           if (editingSale.client_id) {
             const client = clients.find((c) => c.id === editingSale.client_id);
@@ -239,11 +296,7 @@ export default function SaleFormModal({
         }
       })();
     } else {
-      setSaleType('acesso');
-      setSelKit(null);
-      setSelProduct(null);
-      setQty('1');
-      setPrice('');
+      setCart([]);
       setSelClient(prefillClient || null);
       setManualName(prefillManualEntry?.name || '');
       setManualPhone(prefillManualEntry?.phone ? maskPhone(prefillManualEntry.phone) : '');
@@ -253,19 +306,8 @@ export default function SaleFormModal({
   }, [visible, editingSale, prefillClient, prefillManualEntry]);
 
   async function saveSale() {
-    const chargedUnit = parseFloat(price.replace(',', '.'));
-    const quantity = parseInt(qty) || 1;
-    const isRedemption = saleType === 'acesso' && selKit?.is_redemption_only === true;
-    if (isNaN(chargedUnit) || (chargedUnit <= 0 && !isRedemption)) {
-      notify('Atenção', 'Informe um valor válido.');
-      return;
-    }
-    if (saleType === 'acesso' && !selKit) {
-      notify('Atenção', 'Selecione um kit.');
-      return;
-    }
-    if (saleType === 'produto_fechado' && !selProduct) {
-      notify('Atenção', 'Selecione um produto.');
+    if (cart.length === 0) {
+      notify('Atenção', 'Adicione pelo menos um item ao carrinho.');
       return;
     }
     if (!selClient && !manualName.trim()) {
@@ -289,56 +331,69 @@ export default function SaleFormModal({
       let totalPv = 0;
       const items: any[] = [];
 
-      if (saleType === 'acesso' && selKit) {
-        if (selKit.is_redemption_only) {
-          totalCharged = 0;
-          totalCost = 0;
-          totalPv = 0;
-          for (const item of kitItems.filter((i) => i.kit_id === selKit.id)) {
-            items.push({
-              supplement_id: item.supplement_id,
-              kit_id: selKit.id,
-              kit_name: selKit.name,
-              quantity: Number(item.doses_used) * quantity,
-              unit_charged: 0,
-              unit_cost: 0,
-              pv: 0,
-            });
+      for (const cartItem of cart) {
+        if (cartItem.itemType === 'kit') {
+          const kit = kits.find((k) => k.id === cartItem.id);
+          if (!kit) continue;
+          if (kit.is_redemption_only) {
+            for (const item of kitItems.filter((i) => i.kit_id === kit.id)) {
+              items.push({
+                supplement_id: item.supplement_id,
+                kit_id: kit.id,
+                kit_name: kit.name,
+                quantity: Number(item.doses_used) * cartItem.quantity,
+                unit_charged: 0,
+                unit_cost: 0,
+                pv: 0,
+                line_qty: cartItem.quantity,
+                line_unit_charged: cartItem.unitPrice,
+              });
+            }
+          } else {
+            const { cost, pv } = kitCost(kit);
+            totalCharged += cartItem.unitPrice * cartItem.quantity;
+            totalCost += cost * cartItem.quantity;
+            totalPv += pv * cartItem.quantity;
+            for (const item of kitItems.filter((i) => i.kit_id === kit.id)) {
+              const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+              if (!p) continue;
+              const doses = p.doses_per_package || 1;
+              items.push({
+                supplement_id: item.supplement_id,
+                kit_id: kit.id,
+                kit_name: kit.name,
+                quantity: Number(item.doses_used) * cartItem.quantity,
+                unit_charged: 0,
+                unit_cost: trainerUnitCost(p) / doses,
+                pv: (Number(p.pv) / doses) * Number(item.doses_used),
+                line_qty: cartItem.quantity,
+                line_unit_charged: cartItem.unitPrice,
+              });
+            }
           }
         } else {
-          const { cost, pv } = kitCost(selKit);
-          totalCharged = chargedUnit * quantity;
-          totalCost = cost * quantity;
-          totalPv = pv * quantity;
-          for (const item of kitItems.filter((i) => i.kit_id === selKit.id)) {
-            const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
-            if (!p) continue;
-            const doses = p.doses_per_package || 1;
-            items.push({
-              supplement_id: item.supplement_id,
-              kit_id: selKit.id,
-              kit_name: selKit.name,
-              quantity: Number(item.doses_used) * quantity,
-              unit_charged: 0,
-              unit_cost: trainerUnitCost(p) / doses,
-              pv: (Number(p.pv) / doses) * Number(item.doses_used),
-            });
-          }
+          const product = pricing.find((p) => p.supplement_id === cartItem.id);
+          if (!product) continue;
+          const cost = trainerUnitCost(product);
+          totalCharged += cartItem.unitPrice * cartItem.quantity;
+          totalCost += cost * cartItem.quantity;
+          totalPv += Number(product.pv) * cartItem.quantity;
+          items.push({
+            supplement_id: product.supplement_id,
+            kit_id: null,
+            quantity: cartItem.quantity,
+            unit_charged: cartItem.unitPrice,
+            unit_cost: cost,
+            pv: Number(product.pv),
+            line_qty: cartItem.quantity,
+            line_unit_charged: cartItem.unitPrice,
+          });
         }
-      } else if (selProduct) {
-        const cost = trainerUnitCost(selProduct);
-        totalCharged = chargedUnit * quantity;
-        totalCost = cost * quantity;
-        totalPv = Number(selProduct.pv) * quantity;
-        items.push({
-          supplement_id: selProduct.supplement_id,
-          kit_id: null,
-          quantity,
-          unit_charged: chargedUnit,
-          unit_cost: cost,
-          pv: Number(selProduct.pv),
-        });
       }
+
+      const hasKits = cart.some((item) => item.itemType === 'kit');
+      const hasProdutos = cart.some((item) => item.itemType === 'produto');
+      const saleType = hasKits && hasProdutos ? 'misto' : hasKits ? 'acesso' : 'produto_fechado';
 
       if (editingSale === null) {
         const { data: sale, error } = await supabase
@@ -351,7 +406,7 @@ export default function SaleFormModal({
             client_status: status,
             sale_type: saleType,
             origin: 'manual',
-            total_charged: totalCharged,
+            total_charged: Number(totalCharged.toFixed(2)),
             total_cost: Number(totalCost.toFixed(2)),
             total_pv: Number(totalPv.toFixed(2)),
           })
@@ -394,7 +449,7 @@ export default function SaleFormModal({
             client_phone_manual: selClient ? null : (manualPhone.trim() || null),
             client_status: status,
             sale_type: saleType,
-            total_charged: totalCharged,
+            total_charged: Number(totalCharged.toFixed(2)),
             total_cost: Number(totalCost.toFixed(2)),
             total_pv: Number(totalPv.toFixed(2)),
             updated_at: new Date().toISOString(),
@@ -429,37 +484,6 @@ export default function SaleFormModal({
           <View style={s.modalBox}>
             <ScrollView>
               <Text style={s.modalTitle}>{editingSale ? 'Editar Venda' : 'Nova Venda'}</Text>
-
-              <View style={s.toggleRow}>
-                {(['acesso', 'produto_fechado'] as const).map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[s.toggleBtn, saleType === t && s.toggleBtnActive]}
-                    onPress={() => {
-                      setSaleType(t);
-                      setSelKit(null);
-                      setSelProduct(null);
-                      setPrice('');
-                    }}
-                  >
-                    <Text style={[s.toggleTxt, saleType === t && s.toggleTxtActive]}>
-                      {t === 'acesso' ? 'Acesso (Kit)' : 'Produto Fechado'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {saleType === 'acesso' ? (
-                <TouchableOpacity style={s.selector} onPress={() => openPicker('kit')}>
-                  <Text style={s.selectorTxt}>{selKit ? selKit.name : 'Selecionar kit…'}</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity style={s.selector} onPress={() => openPicker('produto')}>
-                  <Text style={s.selectorTxt} numberOfLines={1}>
-                    {selProduct ? selProduct.name : 'Selecionar produto…'}
-                  </Text>
-                </TouchableOpacity>
-              )}
 
               {isFromPresentation ? (
                 <View style={{ backgroundColor: '#1A1A1A', borderRadius: 8, padding: 12, marginBottom: 12 }}>
@@ -513,20 +537,60 @@ export default function SaleFormModal({
                 <Text style={s.checkTxt}>Veio por indicação</Text>
               </TouchableOpacity>
 
-              <View style={s.inline}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={s.label}>Qtd</Text>
-                  <TextInput style={s.input} keyboardType="numeric" value={qty} onChangeText={setQty} />
-                </View>
-                <View style={{ flex: 2 }}>
-                  <Text style={s.label}>Valor unitário (editável)</Text>
-                  <TextInput style={s.input} keyboardType="numeric" value={price} onChangeText={setPrice} />
-                </View>
+              <View style={s.toggleRow}>
+                <TouchableOpacity style={[s.toggleBtn, { flex: 1 }]} onPress={() => openPicker('kit')}>
+                  <Text style={s.toggleTxt}>+ Kit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[s.toggleBtn, { flex: 1 }]} onPress={() => openPicker('produto')}>
+                  <Text style={s.toggleTxt}>+ Produto</Text>
+                </TouchableOpacity>
               </View>
 
-              <Text style={s.totalPreview}>
-                Total: {brl((parseFloat((price || '0').replace(',', '.')) || 0) * (parseInt(qty) || 1))}
-              </Text>
+              {cart.length === 0 && (
+                <Text style={{ color: '#777', fontSize: 13, textAlign: 'center', marginVertical: 12 }}>
+                  Carrinho vazio. Adicione kits ou produtos acima.
+                </Text>
+              )}
+
+              {cart.map((item, index) => (
+                <View key={index} style={s.cartItem}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.cartItemName}>{item.name}</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.cartLabel}>Qtd</Text>
+                        <TextInput
+                          style={s.cartInput}
+                          keyboardType="numeric"
+                          value={String(item.quantity)}
+                          onChangeText={(t) => updateCartQuantity(index, t)}
+                        />
+                      </View>
+                      <View style={{ flex: 2 }}>
+                        <Text style={s.cartLabel}>Valor unit.</Text>
+                        <TextInput
+                          style={s.cartInput}
+                          keyboardType="numeric"
+                          value={String(item.unitPrice)}
+                          onChangeText={(t) => updateCartPrice(index, t)}
+                        />
+                      </View>
+                    </View>
+                    <Text style={s.cartSubtotal}>
+                      Subtotal: {brl(item.unitPrice * item.quantity)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => removeCartItem(index)} style={s.removeBtn}>
+                    <Text style={s.removeBtnTxt}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {cart.length > 0 && (
+                <Text style={s.totalPreview}>
+                  Total: {brl(cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0))}
+                </Text>
+              )}
 
               <View style={s.inline}>
                 <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={onClose}>
@@ -645,4 +709,11 @@ const s = StyleSheet.create({
   totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
   pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
   pickerTxt: { color: '#DDD' },
+  cartItem: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'flex-start' },
+  cartItemName: { color: '#FFF', fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  cartLabel: { color: '#999', fontSize: 11, marginBottom: 3 },
+  cartInput: { backgroundColor: '#242424', borderRadius: 6, padding: 8, color: '#FFF', fontSize: 13 },
+  cartSubtotal: { color: '#4ADE80', fontSize: 12, fontWeight: '600', marginTop: 4 },
+  removeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FF4444', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  removeBtnTxt: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

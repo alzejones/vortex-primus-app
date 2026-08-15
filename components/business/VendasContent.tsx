@@ -408,7 +408,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 <Text key={idx} style={s.saleProduct}>{line}</Text>
               ))}
               <Text style={s.saleMeta}>
-                {v.sale_type === 'acesso' ? 'Acesso' : 'Produto fechado'} · PV {Number(v.total_pv).toFixed(2)}
+                {v.sale_type === 'acesso' ? 'Acesso' : v.sale_type === 'misto' ? 'Misto' : 'Produto fechado'} · PV {Number(v.total_pv).toFixed(2)}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
