@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,14 @@ import {
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+
+const PAYMENT_MODE: 'stripe' | 'direct_link' = 'direct_link';
+const SUPPORT_WHATSAPP = '5516992107040';
+const DIRECT_PAYMENT_LINKS: Record<string, string> = {
+  'bbd394d2-34d6-44b5-a131-1efd5c02af46': 'https://www.userede.com.br/pagamentos/pt/md50t655',
+  '9958fea0-d6d7-4c2f-acf0-aee92a6bbfb4': 'https://www.userede.com.br/pagamentos/pt/ekl4dc21',
+  'aef822a6-1bec-4f75-bcb7-94b4adab340f': 'https://www.userede.com.br/pagamentos/pt/kk6s96ko'
+};
 
 interface Plan {
   id: string;
@@ -78,36 +87,68 @@ export default function UpgradeScreen() {
   async function processPayment(plan: Plan) {
     setProcessing(true);
     try {
-      if (!plan.stripe_price_id) {
-        throw new Error("Este plano ainda não está configurado no banco de dados.");
-      }
-
-      if (!trainerId) {
-        throw new Error("ID do treinador não encontrado. Faça login novamente.");
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) throw new Error("Sessão inválida. Faça login novamente.");
-
-      const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
-        body: {
-          priceId: plan.stripe_price_id,
-          email: session.user.email,
-          name: session.user.user_metadata?.name || 'Treinador Vortex',
-          trainerId: trainerId
+      if (PAYMENT_MODE === 'stripe') {
+        if (!plan.stripe_price_id) {
+          throw new Error("Este plano ainda não está configurado no banco de dados.");
         }
-      });
 
-      if (backendError || checkoutData?.error) {
-        throw new Error(checkoutData?.error || "Falha na comunicação com o servidor.");
-      }
+        if (!trainerId) {
+          throw new Error("ID do treinador não encontrado. Faça login novamente.");
+        }
 
-      const checkoutUrl = checkoutData.url;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) throw new Error("Sessão inválida. Faça login novamente.");
 
-      if (Platform.OS === 'web') {
-        window.location.href = checkoutUrl;
+        const { data: checkoutData, error: backendError } = await supabase.functions.invoke('stripe-checkout', {
+          body: {
+            priceId: plan.stripe_price_id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || 'Treinador Vortex',
+            trainerId: trainerId
+          }
+        });
+
+        if (backendError || checkoutData?.error) {
+          throw new Error(checkoutData?.error || "Falha na comunicação com o servidor.");
+        }
+
+        const checkoutUrl = checkoutData.url;
+
+        if (Platform.OS === 'web') {
+          window.location.href = checkoutUrl;
+        } else {
+          await WebBrowser.openBrowserAsync(checkoutUrl);
+        }
       } else {
-        await WebBrowser.openBrowserAsync(checkoutUrl);
+        const link = DIRECT_PAYMENT_LINKS[plan.id];
+        if (!link) {
+          throw new Error("Link de pagamento não configurado para este plano.");
+        }
+
+        if (Platform.OS === 'web') {
+          window.open(link, '_blank');
+        } else {
+          await WebBrowser.openBrowserAsync(link);
+        }
+
+        const whatsappMessage = encodeURIComponent(`Olá! Acabei de pagar o plano ${plan.name} do Vortex Primus, segue o comprovante:`);
+        const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP}?text=${whatsappMessage}`;
+
+        if (Platform.OS === 'web') {
+          const userConfirmed = window.confirm("Pagamento aberto! Após concluir, envie o comprovante no WhatsApp para ativarmos seu plano.");
+          if (userConfirmed) {
+            window.open(whatsappUrl, '_blank');
+          }
+        } else {
+          Alert.alert(
+            "Pagamento aberto!",
+            "Após concluir, envie o comprovante no WhatsApp para ativarmos seu plano.",
+            [
+              { text: "Cancelar", style: "cancel" },
+              { text: "Abrir WhatsApp", onPress: () => Linking.openURL(whatsappUrl) }
+            ]
+          );
+        }
       }
 
     } catch (error: any) {
@@ -161,7 +202,7 @@ export default function UpgradeScreen() {
           <Text style={styles.backBtnText}>← Voltar</Text>
         </TouchableOpacity>
         <Text style={styles.title}>🔥 TELA DE UPGRADE</Text>
-        <Text style={styles.subtitle}>Escolha o plano ideal para escalar a sua lucratividade. Ferramentas criadas para que os seus alunos vejam o seu valor real e nunca queiram parar de treinar.</Text>
+        <Text style={styles.subtitle}>Escolha o plano ideal para escalar a sua lucratividade. Ferramentas criadas para que os seus alunos vejam o seu valor real e continuem querendo seus acompanhamento</Text>
       </View>
 
       <View style={styles.cardsContainer}>
