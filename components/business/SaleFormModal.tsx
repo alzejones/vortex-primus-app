@@ -12,10 +12,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { todayBR } from '../../utils/dateBR';
 import { normalizeSearch } from '../../utils/textSearch';
+import { confirmScheduleReassessment } from '../../utils/salesActions';
 
 export function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -440,6 +442,16 @@ export default function SaleFormModal({
             });
           }
         }
+
+        onSaved();
+        onClose();
+
+        if (selClient) {
+          const ok = await confirmScheduleReassessment(selClient.name);
+          if (ok) {
+            router.push(`/(protected)/schedule/new?client_id=${selClient.id}&suggested_type=Comp.Corporal` as any);
+          }
+        }
       } else {
         const { error: updateErr } = await supabase
           .from('herbalife_sales')
@@ -463,10 +475,10 @@ export default function SaleFormModal({
           .from('herbalife_sale_items')
           .insert(items.map((i) => ({ ...i, sale_id: editingSale.id })));
         if (itemsErr) throw itemsErr;
-      }
 
-      onSaved();
-      onClose();
+        onSaved();
+        onClose();
+      }
     } catch (e: any) {
       console.error(e);
       notify('Erro', e.message || 'Falha ao salvar a venda.');

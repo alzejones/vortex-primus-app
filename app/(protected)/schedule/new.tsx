@@ -16,7 +16,7 @@ import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
 
 export default function NewAppointment() {
-  const { client_id } = useLocalSearchParams();
+  const { client_id, suggested_type } = useLocalSearchParams();
   const [clientName, setClientName] = useState("Carregando aluno...");
   const [loading, setLoading] = useState(false);
 
@@ -39,6 +39,10 @@ export default function NewAppointment() {
         if (data) setClientName(data.name);
       };
       loadClient();
+    }
+
+    if (suggested_type && typeof suggested_type === 'string' && !selectedTypes.includes(suggested_type)) {
+      setSelectedTypes([suggested_type]);
     }
 
     const days = [];
