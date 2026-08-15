@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import SupportButton from "../components/SupportButton";
 import { supabase } from "../lib/supabase";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
@@ -190,6 +191,7 @@ export default function UpgradeScreen() {
 
   return (
     <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <SupportButton bottom={24} />
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <ScrollView 
           style={{ flex: 1 }} 

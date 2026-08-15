@@ -2,12 +2,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 import { useLicenseStatus, LicenseStatus } from '../hooks/useLicenseStatus';
 import { GradientPrimary } from '../utils/gradients';
 import { T } from '../utils/theme';
 
 export default function LicenseBlockedScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const [retryKey, setRetryKey] = useState(0);
   const licenseStatus = useLicenseStatus();
   const [isRetrying, setIsRetrying] = useState(false);
@@ -89,6 +91,10 @@ export default function LicenseBlockedScreen() {
             <Text style={styles.buttonText}>{content.buttonText}</Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Sair e entrar com outra conta</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -138,5 +144,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  logoutButton: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: T.t3,
+    fontSize: 14,
   },
 });
