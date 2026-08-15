@@ -11,6 +11,7 @@ import { T } from '../../utils/theme';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { todayBR } from '../../utils/dateBR';
 import { getEffectiveRegistrationDate } from '../../utils/clientSort';
+import { normalizeSearch } from '../../utils/textSearch';
 
 // Supabase/PostgREST limita a 1000 linhas por chamada por padrão.
 // Contas com mais de 1000 alunos ativos perdiam dados silenciosamente no Dashboard.
@@ -251,19 +252,12 @@ export default function Index() {
     return `${d}/${m}`;
   };
 
-  // Normaliza string: remove diacríticos + lowercase — busca insensível a acento
-  const normalize = useCallback(
-    (str: string) =>
-      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(),
-    []
-  );
-
   // useMemo: referência estável → FlatList não re-monta → teclado não cai
   const filteredClients = useMemo(() => {
     let result = clients;
-    const q = normalize(searchQuery);
+    const q = normalizeSearch(searchQuery);
     if (q) {
-      result = result.filter(c => normalize(c.name ?? '').includes(q));
+      result = result.filter(c => normalizeSearch(c.name ?? '').includes(q));
     }
     if (sortField === 'data_cadastro_efetiva') {
       result = [...result].sort((a, b) => {
@@ -275,13 +269,13 @@ export default function Index() {
       });
     }
     return result;
-  }, [clients, searchQuery, normalize, sortField, sortDirection]);
+  }, [clients, searchQuery, sortField, sortDirection]);
 
   const scheduleFilteredClients = useMemo(() => {
     let result = clients;
-    const q = normalize(scheduleSearchQuery);
+    const q = normalizeSearch(scheduleSearchQuery);
     if (q) {
-      result = result.filter(c => normalize(c.name ?? '').includes(q));
+      result = result.filter(c => normalizeSearch(c.name ?? '').includes(q));
     }
     if (sortField === 'data_cadastro_efetiva') {
       result = [...result].sort((a, b) => {
@@ -293,7 +287,7 @@ export default function Index() {
       });
     }
     return result;
-  }, [clients, scheduleSearchQuery, normalize, sortField, sortDirection]);
+  }, [clients, scheduleSearchQuery, sortField, sortDirection]);
 
   if (loading) {
     return (

@@ -26,6 +26,7 @@ import { T } from '../../utils/theme';
 import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow, maskPhone } from './SaleFormModal';
 import SaleActionsModal from './SaleActionsModal';
 import { deleteSaleWithConfirm } from '../../utils/salesActions';
+import { normalizeSearch } from '../../utils/textSearch';
 
 // ---------- helpers ----------
 const brl = (v: number) =>
@@ -571,7 +572,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             />
             <FlatList
               data={clients.filter((c) =>
-                c.name.toLowerCase().includes(pickerSearch.trim().toLowerCase())
+                normalizeSearch(c.name).includes(normalizeSearch(pickerSearch))
               )}
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (

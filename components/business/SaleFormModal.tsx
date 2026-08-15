@@ -15,6 +15,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { todayBR } from '../../utils/dateBR';
+import { normalizeSearch } from '../../utils/textSearch';
 
 export function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -572,7 +573,7 @@ export default function SaleFormModal({
                   ? presentacoesLista
                   : clients
               ).filter((item: any) =>
-                (item.name || item.prospect_name || '').toLowerCase().includes(pickerSearch.trim().toLowerCase())
+                normalizeSearch(item.name || item.prospect_name || '').includes(normalizeSearch(pickerSearch))
               )}
               keyExtractor={(item: any) => item.id || item.supplement_id}
               renderItem={({ item }: any) => (
