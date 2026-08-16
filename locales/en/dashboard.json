@@ -1,1 +1,15 @@
-{}
+{
+  "navHome": "Dashboard",
+  "navClients": "Clients",
+  "navSchedule": "Schedule",
+  "navConfig": "Settings",
+  "logoSubtitle": "PRIMUS",
+  "noPlan": "No Plan",
+  "planActive": "Active",
+  "planInactive": "Inactive",
+  "clientsUsage": "{{current}} / {{max}} clients",
+  "upgradeNow": "Upgrade now →",
+  "nearLimitWarning": "⚠️ Near limit · Upgrade",
+  "trialDays_one": "{{count}} day trial",
+  "trialDays_other": "{{count}} days trial"
+}

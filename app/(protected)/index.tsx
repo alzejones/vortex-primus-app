@@ -101,13 +101,13 @@ export default function Index() {
 
       if (subscription) {
         const planData = subscription.plans as any;
-        setPlanName(planData?.name || 'Sem Plano');
+        setPlanName(planData?.name || '');
         setMaxClients(planData?.max_clients || 0);
-        setPlanStatus(subscription.is_active ? 'Ativo' : 'Inativo');
+        setPlanStatus(subscription.is_active ? 'active' : 'inactive');
       } else {
-        setPlanName('Sem Plano');
+        setPlanName('');
         setMaxClients(0);
-        setPlanStatus('Inativo');
+        setPlanStatus('inactive');
       }
 
       const clientList = await fetchAllActiveClients(trainer.id, sortField, sortDirection);

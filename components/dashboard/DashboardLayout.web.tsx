@@ -6,7 +6,7 @@
 // ============================================================
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   FlatList,
   Modal,
@@ -17,19 +17,12 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
 import MobileLayout from './DashboardLayoutMobile';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
-
-// ─── Itens de navegação da sidebar ───────────────────────────
-const NAV_ITEMS = [
-  { key: 'home',     label: 'Dashboard',  icon: '⊞',  href: '/(protected)'                },
-  { key: 'clients',  label: 'Alunos',     icon: '👥',  href: '/(protected)/clients'        },
-  { key: 'schedule', label: 'Agenda',     icon: '📅',  href: '/(protected)/schedule/'      },
-  { key: 'config',   label: 'Configurações', icon: '⚙️', href: '/(protected)/trainer-profile' },
-] as const;
 
 function isNavActive(key: string, pathname: string): boolean {
   switch (key) {
@@ -54,8 +47,16 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
     sortField, sortDirection, onSortFieldChange, onSortDirectionChange,
   } = props;
 
+  const { t } = useTranslation('dashboard');
   const pathname = usePathname();
   const licenseStatus = useLicenseStatus();
+
+  const NAV_ITEMS = useMemo(() => [
+    { key: 'home',     label: t('navHome'),     icon: '⊞',  href: '/(protected)'                },
+    { key: 'clients',  label: t('navClients'),  icon: '👥',  href: '/(protected)/clients'        },
+    { key: 'schedule', label: t('navSchedule'), icon: '📅',  href: '/(protected)/schedule/'      },
+    { key: 'config',   label: t('navConfig'),   icon: '⚙️', href: '/(protected)/trainer-profile' },
+  ] as const, [t]);
 
   // ─── Detecção de viewport: mobile browser usa layout mobile ──
   const [screenWidth, setScreenWidth] = useState(() =>
@@ -95,7 +96,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         </LinearGradient>
         <View>
           <Text style={styles.logoName}>Vortex</Text>
-          <Text style={styles.logoSub}>PRIMUS</Text>
+          <Text style={styles.logoSub}>{t('logoSubtitle')}</Text>
         </View>
       </View>
 
@@ -129,22 +130,24 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       {/* Plano — discreto no rodapé da sidebar */}
       <View style={styles.sidebarFooter}>
         <View style={styles.planChip}>
-          <View style={[styles.planDot, { backgroundColor: planStatus === 'Ativo' ? '#22C55E' : '#EF4444' }]} />
-          <Text style={styles.planChipText}>{planName}</Text>
+          <View style={[styles.planDot, { backgroundColor: planStatus === 'active' ? '#22C55E' : '#EF4444' }]} />
+          <Text style={styles.planChipText}>
+            {planName || t('noPlan')}
+          </Text>
         </View>
         <View style={styles.planUsageRow}>
           <Text style={styles.planUsageText}>
-            {currentClients} / {maxClients} alunos{licenseStatus.status === 'trial' && licenseStatus.trial_ends_at && (() => {
+            {t('clientsUsage', { current: currentClients, max: maxClients })}{licenseStatus.status === 'trial' && licenseStatus.trial_ends_at && (() => {
               const now = new Date();
               const trialEnd = new Date(licenseStatus.trial_ends_at);
               const diff = trialEnd.getTime() - now.getTime();
               const daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-              return ` · ${daysLeft} dia${daysLeft !== 1 ? 's' : ''} de trial`;
+              return ` · ${t('trialDays', { count: daysLeft })}`;
             })()}
           </Text>
           {licenseStatus.status === 'trial' ? (
             <TouchableOpacity onPress={() => router.push('/upgrade')}>
-              <Text style={{ fontSize: 10, color: '#60A5FA', fontWeight: '600' }}>Fazer upgrade →</Text>
+              <Text style={{ fontSize: 10, color: '#60A5FA', fontWeight: '600' }}>{t('upgradeNow')}</Text>
             </TouchableOpacity>
           ) : (
             <Text style={styles.planUsagePct}>{Math.round(usagePercentage)}%</Text>
@@ -158,7 +161,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         </View>
         {usagePercentage >= 80 && (
           <TouchableOpacity onPress={() => router.push('/upgrade' as any)}>
-            <Text style={styles.planWarning}>⚠️ Próximo do limite · Upgrade</Text>
+            <Text style={styles.planWarning}>{t('nearLimitWarning')}</Text>
           </TouchableOpacity>
         )}
       </View>

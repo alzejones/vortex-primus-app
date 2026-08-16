@@ -1,1 +1,15 @@
-{}
+{
+  "navHome": "Dashboard",
+  "navClients": "Alunos",
+  "navSchedule": "Agenda",
+  "navConfig": "Configurações",
+  "logoSubtitle": "PRIMUS",
+  "noPlan": "Sem Plano",
+  "planActive": "Ativo",
+  "planInactive": "Inativo",
+  "clientsUsage": "{{current}} / {{max}} alunos",
+  "upgradeNow": "Fazer upgrade →",
+  "nearLimitWarning": "⚠️ Próximo do limite · Upgrade",
+  "trialDays_one": "{{count}} dia de trial",
+  "trialDays_other": "{{count}} dias de trial"
+}
