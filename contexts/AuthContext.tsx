@@ -9,6 +9,7 @@ type AuthContextType = {
   session: any;
   loading: boolean;
   role: UserRole;
+  isAdmin: boolean;
   signingOut: boolean;
   debugMessages: string[];
   addDebug: (msg: string) => void;
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   role: null,
+  isAdmin: false,
   signingOut: false,
   debugMessages: [],
   addDebug: () => {},
@@ -52,11 +54,32 @@ async function detectRole(userId: string): Promise<UserRole> {
   return result;
 }
 
+async function detectIsAdmin(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('platform_admins')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Erro ao verificar admin:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (e) {
+    console.error('Exceção ao verificar admin:', e);
+    return false;
+  }
+}
+
 // 🔐 Provider
 export const AuthProvider = ({ children }: any) => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<UserRole>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [debugMessages, setDebugMessages] = useState<string[]>([]);
 
@@ -68,11 +91,16 @@ export const AuthProvider = ({ children }: any) => {
   const refreshRole = async (): Promise<UserRole> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.id) {
-      const detectedRole = await detectRole(user.id);
+      const [detectedRole, detectedAdmin] = await Promise.all([
+        detectRole(user.id),
+        detectIsAdmin(user.id),
+      ]);
       if (detectedRole !== null) {
         setRole(detectedRole);
+        setIsAdmin(detectedAdmin);
         return detectedRole;
       }
+      setIsAdmin(detectedAdmin);
     }
     return null;
   };
@@ -82,7 +110,12 @@ export const AuthProvider = ({ children }: any) => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user?.id) {
-        setRole(await detectRole(session.user.id));
+        const [detectedRole, detectedAdmin] = await Promise.all([
+          detectRole(session.user.id),
+          detectIsAdmin(session.user.id),
+        ]);
+        setRole(detectedRole);
+        setIsAdmin(detectedAdmin);
       }
       setLoading(false);
     }).catch((error) => {
@@ -100,8 +133,12 @@ export const AuthProvider = ({ children }: any) => {
             setSession(session);
             // Detecta role se ainda não foi detectado (ex: após reset de senha)
             if (session?.user?.id) {
-              const detectedRole = await detectRole(session.user.id);
+              const [detectedRole, detectedAdmin] = await Promise.all([
+                detectRole(session.user.id),
+                detectIsAdmin(session.user.id),
+              ]);
               if (detectedRole !== null) setRole(detectedRole);
+              setIsAdmin(detectedAdmin);
             }
             return;
           }
@@ -111,6 +148,7 @@ export const AuthProvider = ({ children }: any) => {
           if (event === "SIGNED_OUT") {
             setSession(null);
             setRole(null);
+            setIsAdmin(false);
             setLoading(false);
             return;
           }
@@ -118,14 +156,19 @@ export const AuthProvider = ({ children }: any) => {
           setSession(session);
           if (session?.user?.id) {
             const currentRole = role; // Capture existing role
-            const detectedRole = await detectRole(session.user.id);
+            const [detectedRole, detectedAdmin] = await Promise.all([
+              detectRole(session.user.id),
+              detectIsAdmin(session.user.id),
+            ]);
             // Only update role if detection succeeded OR session is gone
             if (detectedRole !== null || !session) {
               setRole(detectedRole);
             }
+            setIsAdmin(detectedAdmin);
             // If detectRole returned null but session is valid, keep existing role
           } else {
             setRole(null);
+            setIsAdmin(false);
           }
         } finally {
           setLoading(false);
@@ -165,6 +208,7 @@ export const AuthProvider = ({ children }: any) => {
       // Sempre limpe o estado local e redirecione, independente do erro
       setSession(null); // 2. Limpa a memória do app
       setRole(null);
+      setIsAdmin(false);
       setSigningOut(false);
       addDebug(`5. Estado limpo - user: ${session?.user?.email || 'null'}`);
       
@@ -178,7 +222,7 @@ export const AuthProvider = ({ children }: any) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, loading, role, signingOut, debugMessages, addDebug, signOut, refreshRole }}>
+    <AuthContext.Provider value={{ session, loading, role, isAdmin, signingOut, debugMessages, addDebug, signOut, refreshRole }}>
       {children}
     </AuthContext.Provider>
   );

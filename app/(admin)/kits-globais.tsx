@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
+import { useAuth } from '../../contexts/AuthContext';
 
 function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -55,8 +56,7 @@ interface KitItem {
 }
 
 export default function AdminKitsGlobais() {
-  const [authChecking, setAuthChecking] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin: authIsAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [kits, setKits] = useState<Kit[]>([]);
@@ -74,48 +74,16 @@ export default function AdminKitsGlobais() {
   const [productSearch, setProductSearch] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // ======== VERIFICAÇÃO DE ADMIN ========
+  // ======== VERIFICAÇÃO DE ADMIN (usa AuthContext) ========
   useEffect(() => {
-    async function checkAdmin() {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        const uid = userData?.user?.id;
-        if (!uid) {
-          router.replace('/');
-          return;
-        }
-
-        const { data: adminRecord, error } = await supabase
-          .from('platform_admins')
-          .select('user_id')
-          .eq('user_id', uid)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Erro ao verificar admin:', error);
-          router.replace('/');
-          return;
-        }
-
-        if (!adminRecord) {
-          notify('Acesso Negado', 'Você não tem permissão para acessar esta área.');
-          router.replace('/');
-          return;
-        }
-
-        setIsAdmin(true);
-      } catch (e) {
-        console.error('Erro ao verificar admin:', e);
-        router.replace('/');
-      } finally {
-        setAuthChecking(false);
-      }
+    if (!authIsAdmin) {
+      notify('Acesso Negado', 'Você não tem permissão para acessar esta área.');
+      router.replace('/');
     }
-    checkAdmin();
-  }, []);
+  }, [authIsAdmin]);
 
   const load = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!authIsAdmin) return;
     try {
       const [{ data: kitsData }, { data: supData }] = await Promise.all([
         supabase
@@ -134,13 +102,13 @@ export default function AdminKitsGlobais() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isAdmin]);
+  }, [authIsAdmin]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (authIsAdmin) {
       load();
     }
-  }, [isAdmin, load]);
+  }, [authIsAdmin, load]);
 
   useEffect(() => {
     if (kitType === 'doses' && !priceManuallyEdited && kitItems.length > 0) {
@@ -383,15 +351,7 @@ export default function AdminKitsGlobais() {
     }
   }
 
-  if (authChecking) {
-    return (
-      <View style={[s.center, { backgroundColor: T.bg }]}>
-        <ActivityIndicator size="large" color={T.blue} />
-      </View>
-    );
-  }
-
-  if (!isAdmin) {
+  if (!authIsAdmin) {
     return null;
   }
 
