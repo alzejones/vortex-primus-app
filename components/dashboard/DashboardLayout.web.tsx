@@ -202,62 +202,62 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       </View>
       <View style={styles.clientInfo}>
         <Text style={styles.clientName}>{item.name}</Text>
-        <Text style={styles.clientEmail}>📲 {item.phone ? formatPhoneBR(item.phone) : 'Sem WhatsApp'}</Text>
+        <Text style={styles.clientEmail}>📲 {item.phone ? formatPhoneBR(item.phone) : t('noWhatsapp')}</Text>
       </View>
               <View style={styles.clientActions}>
                 <TouchableOpacity
                   style={styles.clientActionBtn}
                   // @ts-ignore
-                  title="Detalhes do Perfil do Aluno"
+                  title={t('tooltipProfile')}
                   onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}
                 >
                   <Text style={styles.clientActionIcon}>📋</Text>
-                  <Text style={styles.clientActionLabel}>Perfil</Text>
+                  <Text style={styles.clientActionLabel}>{t('actionProfile')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.clientActionBtn}
                   // @ts-ignore
-                  title="Agendar Avaliação"
+                  title={t('tooltipSchedule')}
                   onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}
                 >
                   <Text style={styles.clientActionIcon}>🗓️</Text>
-                  <Text style={styles.clientActionLabel}>Agendar</Text>
+                  <Text style={styles.clientActionLabel}>{t('actionSchedule')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.clientActionBtn}
                   // @ts-ignore
-                  title="Cadastrar Avaliação da Composição Corporal"
+                  title={t('tooltipAssessBody')}
                   onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}
                 >
                   <Text style={styles.clientActionIcon}>🩻</Text>
-                  <Text style={styles.clientActionLabel}>Avaliar</Text>
+                  <Text style={styles.clientActionLabel}>{t('actionAssess')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.clientActionBtn}
                   // @ts-ignore
-                  title="Consultar Avaliação da Composição Corporal"
+                  title={t('tooltipViewBody')}
                   onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}
                 >
                   <Text style={styles.clientActionIcon}>📊</Text>
-                  <Text style={styles.clientActionLabel}>Corporal</Text>
+                  <Text style={styles.clientActionLabel}>{t('actionBody')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.clientActionBtn}
                   // @ts-ignore
-                  title="Cadastrar Teste da Avaliação Física"
+                  title={t('tooltipTest')}
                   onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}
                 >
                   <Text style={styles.clientActionIcon}>🏋️‍♀️</Text>
-                  <Text style={styles.clientActionLabel}>Testar</Text>
+                  <Text style={styles.clientActionLabel}>{t('actionTest')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.clientActionBtn}
                   // @ts-ignore
-                  title="Consultar Avaliações de Condicionamento Físico"
+                  title={t('tooltipViewConditioning')}
                   onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}
                 >
                   <Text style={styles.clientActionIcon}>📈</Text>
-                  <Text style={styles.clientActionLabel}>Condic.</Text>
+                  <Text style={styles.clientActionLabel}>{t('actionConditioning')}</Text>
                 </TouchableOpacity>
               </View>
     </TouchableOpacity>
@@ -488,12 +488,12 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         {/* Cabeçalho da página */}
         <View style={styles.pageHeader}>
           <View>
-            <Text style={styles.pageGreeting}>Visão Geral</Text>
-            <Text style={styles.pageTitle}>Meu Dashboard</Text>
+            <Text style={styles.pageGreeting}>{t('greeting')}</Text>
+            <Text style={styles.pageTitle}>{t('pageTitleMain')}</Text>
           </View>
           <TextInput
             style={styles.topSearch}
-            placeholder="🔍  Buscar aluno..."
+            placeholder={t('searchPlaceholder')}
             placeholderTextColor={T.t3}
             value={searchQuery}
             onChangeText={onSearchChange}
@@ -504,21 +504,21 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         {/* Métricas */}
         <View style={styles.metricsRow}>
           <MetricCard
-            label="Alunos Ativos"
+            label={t('metricActiveClientsLabel')}
             value={currentClients}
-            sub={`de ${maxClients} no plano`}
+            sub={t('metricActiveClientsSub', { max: maxClients })}
             accent={T.blue}
           />
           <MetricCard
-            label="Próximas Sessões"
+            label={t('metricUpcomingLabel')}
             value={upcomingAppointments.length}
-            sub="agendadas"
+            sub={t('metricUpcomingSub')}
             accent="#22C55E"
           />
           <MetricCard
-            label="Total de Alunos"
+            label={t('metricTotalLabel')}
             value={clients.length}
-            sub="cadastrados"
+            sub={t('metricTotalSub')}
             accent="#F59E0B"
           />
         </View>
@@ -530,7 +530,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           <View style={styles.leftColumn}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                Meus Alunos
+                {t('myStudentsTitle')}
                 <Text style={styles.sectionCount}> ({filteredClients.length})</Text>
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -541,7 +541,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.sortBtnCompactText, sortField === 'name' && styles.sortBtnCompactTextActive]}>
-                      Alfab.
+                      {t('sortAlphabetical')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -550,7 +550,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.sortBtnCompactText, sortField === 'data_cadastro_efetiva' && styles.sortBtnCompactTextActive]}>
-                      Cadastro
+                      {t('sortByRegistration')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -561,7 +561,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.sortBtnCompactText, sortDirection === 'asc' && styles.sortBtnCompactTextActive]}>
-                      ↑ Asc
+                      {t('sortAsc')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -570,13 +570,13 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.sortBtnCompactText, sortDirection === 'desc' && styles.sortBtnCompactTextActive]}>
-                      ↓ Desc
+                      {t('sortDesc')}
                     </Text>
                   </TouchableOpacity>
                 </View>
                 <TextInput
                   style={styles.columnSearch}
-                  placeholder="Buscar Aluno..."
+                  placeholder={t('columnSearchPlaceholder')}
                   placeholderTextColor={T.t3}
                   value={searchQuery}
                   onChangeText={onSearchChange}
@@ -586,15 +586,15 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
 
             {/* Cabeçalho da tabela */}
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderText, { flex: 2 }]}>ALUNO</Text>
-              <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'right' }]}>AÇÕES RÁPIDAS</Text>
+              <Text style={[styles.tableHeaderText, { flex: 2 }]}>{t('tableHeaderStudent')}</Text>
+              <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'right' }]}>{t('tableHeaderActions')}</Text>
             </View>
 
             {filteredClients.length === 0 ? (
               <View style={styles.emptyTable}>
                 <Text style={styles.emptyTableIcon}>👥</Text>
-                <Text style={styles.emptyTableTitle}>Nenhum aluno encontrado</Text>
-                <Text style={styles.emptyTableSub}>Adicione seu primeiro aluno para começar</Text>
+                <Text style={styles.emptyTableTitle}>{t('emptyStudentsTitle')}</Text>
+                <Text style={styles.emptyTableSub}>{t('emptyStudentsSub')}</Text>
               </View>
             ) : (
               filteredClients.map((item) => (
