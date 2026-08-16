@@ -119,6 +119,23 @@ Não corrigir sem antes confirmar prioridade e frente dedicada.
 
 ---
 
+## 🌍 Internacionalização estrutural (além de texto — vai precisar de decisão de produto)
+
+### 1. Telefone/WhatsApp assume formato e código do país do Brasil (`+55`) fixo
+- **Onde:** `formatPhoneBR` em `DashboardLayout.web.tsx` e
+  `DashboardLayoutMobile.tsx`, e a URL
+  `whatsapp://send?phone=55${...}` em `handleCongratulate`
+- **O quê:** máscara de telefone (`(99) 99999-9999`) e o prefixo `55` do
+  WhatsApp são fixos para o Brasil, independente do idioma da interface.
+- **Por que importa agora:** com a versão em inglês visando treinadores
+  (e clientes) de outros países, um treinador de fora do Brasil vai ter
+  os números de telefone dos próprios clientes formatados/discados errado.
+- **Prioridade sugerida:** média-alta — não é só tradução de texto, precisa
+  de decisão de produto (campo de país por treinador? detecção automática?
+  campo livre sem máscara?) antes de qualquer código.
+
+---
+
 ## 🌐 Escopo de i18n ainda não coberto (não são bugs, é continuação do trabalho)
 
 - `OBJECTIVE_LABELS` e `ACTIVITY_LABELS` (`utils/dietCalculations.ts`) — usados
