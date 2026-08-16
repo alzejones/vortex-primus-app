@@ -4,6 +4,7 @@ import StripeWrapper from "../components/StripeWrapper";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
 import { TutorialProvider } from "../contexts/TutorialContext";
+import { LanguageProvider } from "../contexts/LanguageContext";
 import { T } from "../utils/theme";
 
 export default function RootLayout() {
@@ -14,9 +15,11 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <TutorialProvider>
-            <View style={{ flex: 1, backgroundColor: T.bg }}>
-              <Slot />
-            </View>
+            <LanguageProvider>
+              <View style={{ flex: 1, backgroundColor: T.bg }}>
+                <Slot />
+              </View>
+            </LanguageProvider>
           </TutorialProvider>
         </AuthProvider>
       </ThemeProvider>
