@@ -8,6 +8,7 @@ import {
   TouchableOpacity, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
@@ -77,6 +78,7 @@ export default function DashboardLayoutMobile({
   sortField, sortDirection, onSortFieldChange, onSortDirectionChange,
 }: DashboardLayoutProps) {
   const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation('dashboard');
   const [overdueModalVisible, setOverdueModalVisible] = useState(false);
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
   const licenseStatus = useLicenseStatus();
@@ -117,21 +119,21 @@ export default function DashboardLayoutMobile({
     const phoneDigits = (client.phone || '').replace(/\D/g, '');
     if (!phoneDigits) {
       Alert.alert(
-        'Sem celular cadastrado',
-        `${client.name} não tem celular cadastrado. Deseja marcar como parabenizado mesmo assim?`,
+        t('noPhoneRegisteredTitle'),
+        t('noPhoneRegisteredMessage', { name: client.name }),
         [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Marcar mesmo assim', onPress: () => onCongratulate(client.id) },
+          { text: t('cancelButton'), style: 'cancel' },
+          { text: t('markAnywayButton'), onPress: () => onCongratulate(client.id) },
         ]
       );
       return;
     }
     const firstName = (client.name || '').split(' ')[0];
-    const message = `Oi ${firstName}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳`;
+    const message = t('birthdayWhatsappMessage', { name: firstName });
     const url = `whatsapp://send?phone=55${phoneDigits}&text=${encodeURIComponent(message)}`;
     Linking.canOpenURL(url).then((supported) => {
       if (!supported) {
-        Alert.alert("Erro", "WhatsApp não instalado.");
+        Alert.alert(t('whatsappErrorTitle'), t('whatsappNotInstalled'));
       } else {
         Linking.openURL(url);
       }
@@ -143,8 +145,8 @@ export default function DashboardLayoutMobile({
     <View style={{ paddingBottom: 15 }}>
       <View style={[styles.headerTopArea, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
         <View>
-          <Text style={styles.greetingText}>Visão Geral</Text>
-          <Text style={styles.title}>Meu Dashboard</Text>
+          <Text style={styles.greetingText}>{t('greeting')}</Text>
+          <Text style={styles.title}>{t('pageTitleMain')}</Text>
         </View>
         <TouchableOpacity
           style={{ width: 48, height: 48, backgroundColor: T.surfaceAlt, borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}
@@ -162,8 +164,8 @@ export default function DashboardLayoutMobile({
           activeOpacity={0.8}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>🎯 Metas do Mês</Text>
-            <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>Ver detalhes →</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>{t('monthlyGoalsTitle')}</Text>
+            <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>{t('viewDetails')}</Text>
           </View>
           {/* Barra agendamentos */}
           {goalsWidget.scheduledGoal > 0 && (() => {
@@ -171,7 +173,7 @@ export default function DashboardLayoutMobile({
             return (
               <View style={{ marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>📅 Agendamentos</Text>
+                  <Text style={{ fontSize: 12, color: T.t2 }}>{t('goalAppointments')}</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6' }}>{goalsWidget.scheduledActual}/{goalsWidget.scheduledGoal} · {pct}%</Text>
                 </View>
                 <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -186,7 +188,7 @@ export default function DashboardLayoutMobile({
             return (
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>✅ Avaliações Feitas</Text>
+                  <Text style={{ fontSize: 12, color: T.t2 }}>{t('goalAssessmentsDone')}</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#22c55e' }}>{goalsWidget.completedActual}/{goalsWidget.completedGoal} · {pct}%</Text>
                 </View>
                 <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -200,9 +202,9 @@ export default function DashboardLayoutMobile({
 
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>
-          <Text style={styles.widgetTitle}>📅 Agendamentos</Text>
+          <Text style={styles.widgetTitle}>{t('goalAppointments')}</Text>
           <TouchableOpacity onPress={() => router.push('/(protected)/schedule/' as any)}>
-            <Text style={styles.widgetLink}>Ver todas →</Text>
+            <Text style={styles.widgetLink}>{t('viewAll')}</Text>
           </TouchableOpacity>
         </View>
         {upcomingAppointments.length === 0 ? (
@@ -212,8 +214,8 @@ export default function DashboardLayoutMobile({
             activeOpacity={0.7}
           >
             <Text style={{ color: T.t2, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
-              Nenhum agendamento.{'\n'}
-              <Text style={{ color: T.blue, fontWeight: '700' }}>Toque para agendar avaliações →</Text>
+              {t('noAppointmentsLine1')}{'\n'}
+              <Text style={{ color: T.blue, fontWeight: '700' }}>{t('noAppointmentsLine2')}</Text>
             </Text>
           </TouchableOpacity>
         ) : (
@@ -224,7 +226,7 @@ export default function DashboardLayoutMobile({
                 <Text style={styles.agendaTimeText}>{apt.appointment_time?.substring(0, 5)}</Text>
               </View>
               <View style={styles.agendaInfo}>
-                <Text style={styles.agendaClientName}>{(apt.clients as any)?.name || 'Aluno'}</Text>
+                <Text style={styles.agendaClientName}>{(apt.clients as any)?.name || t('defaultStudentName')}</Text>
                 <Text style={styles.agendaTypes}>{formatApptTypes(apt.types)}</Text>
               </View>
             </View>
@@ -238,11 +240,11 @@ export default function DashboardLayoutMobile({
           <View style={styles.widgetHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={styles.alertDot} />
-              <Text style={styles.alertWidgetTitle}>Reavaliações Pendentes</Text>
+              <Text style={styles.alertWidgetTitle}>{t('overdueTitle')}</Text>
             </View>
             <Text style={styles.alertCount}>{overdueClients.length}</Text>
           </View>
-          <Text style={styles.alertSubtitle}>Sem avaliação há 30+ dias</Text>
+          <Text style={styles.alertSubtitle}>{t('overdueSubtitle')}</Text>
           {overdueClients.slice(0, 3).map((client) => (
             <View
               key={client.id}
@@ -267,9 +269,9 @@ export default function DashboardLayoutMobile({
                             (new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) /
                               (1000 * 60 * 60 * 24)
                           );
-                          return `Última: ${diff} dias atrás`;
+                          return t('lastAssessment', { count: diff });
                         })()
-                      : 'Nunca avaliado'}
+                      : t('neverAssessed')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -285,7 +287,7 @@ export default function DashboardLayoutMobile({
           {overdueClients.length > 3 && (
             <TouchableOpacity onPress={() => setOverdueModalVisible(true)}>
               <Text style={[styles.alertMore, { color: T.blue, textDecorationLine: 'underline' }]}>
-                +{overdueClients.length - 3} mais — ver todos
+                {t('viewMoreLink', { count: overdueClients.length - 3 })}
               </Text>
             </TouchableOpacity>
           )}
@@ -296,9 +298,9 @@ export default function DashboardLayoutMobile({
       {birthdayClients.length > 0 && (
         <View style={styles.birthdayWidget}>
           <View style={styles.widgetHeader}>
-            <Text style={styles.birthdayWidgetTitle}>🎂 Aniversariantes</Text>
+            <Text style={styles.birthdayWidgetTitle}>{t('birthdaysTitle')}</Text>
             <Text style={styles.birthdayMonth}>
-              {new Date().toLocaleDateString('pt-BR', { month: 'long' })}
+              {new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'pt-BR', { month: 'long' })}
             </Text>
           </View>
           {birthdayClients.slice(0, 3).map((client) => {
@@ -324,7 +326,7 @@ export default function DashboardLayoutMobile({
                       {client.name}
                     </Text>
                     {isToday && (
-                      <Text style={styles.birthdayTodayBadge}>🎉 Hoje!</Text>
+                      <Text style={styles.birthdayTodayBadge}>{t('birthdayToday')}</Text>
                     )}
                   </View>
                 </TouchableOpacity>
@@ -341,7 +343,7 @@ export default function DashboardLayoutMobile({
           {birthdayClients.length > 3 && (
             <TouchableOpacity onPress={() => setBirthdayModalVisible(true)}>
               <Text style={[styles.alertMore, { color: T.blue, textDecorationLine: 'underline' }]}>
-                +{birthdayClients.length - 3} mais — ver todos
+                {t('viewMoreLink', { count: birthdayClients.length - 3 })}
               </Text>
             </TouchableOpacity>
           )}
@@ -351,7 +353,7 @@ export default function DashboardLayoutMobile({
       <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
         <LinearGradient {...GradientPrimary} style={{ padding: 18, alignItems: 'center' }}>
           <TouchableOpacity onPress={() => router.push('/(protected)/client-create' as any)}>
-            <Text style={styles.buttonText}>+ Adicionar Novo Aluno</Text>
+            <Text style={styles.buttonText}>{t('addStudentButton')}</Text>
           </TouchableOpacity>
         </LinearGradient>
       </View>
@@ -359,7 +361,7 @@ export default function DashboardLayoutMobile({
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
           <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
-            Alunos ativos{licenseStatus.status === 'trial' ? ` · ${getDaysRemaining()} dia${getDaysRemaining() !== 1 ? 's' : ''} de trial` : ''}
+            {t('activeStudentsLabel')}{licenseStatus.status === 'trial' ? ` · ${t('trialDays', { count: getDaysRemaining() })}` : ''}
           </Text>
           <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>{currentClients}/{maxClients}</Text>
         </View>
@@ -378,7 +380,7 @@ export default function DashboardLayoutMobile({
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar aluno..."
+            placeholder={t('modalSearchPlaceholder')}
             placeholderTextColor={T.t3}
             value={searchQuery}
             onChangeText={onSearchChange}
@@ -395,7 +397,7 @@ export default function DashboardLayoutMobile({
             activeOpacity={0.7}
           >
             <Text style={[styles.sortButtonText, sortField === 'name' && styles.sortButtonTextActive]}>
-              Alfabética
+              {t('sortAlphabeticalFull')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -404,7 +406,7 @@ export default function DashboardLayoutMobile({
             activeOpacity={0.7}
           >
             <Text style={[styles.sortButtonText, sortField === 'data_cadastro_efetiva' && styles.sortButtonTextActive]}>
-              Cadastro
+              {t('sortByRegistration')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -415,7 +417,7 @@ export default function DashboardLayoutMobile({
             activeOpacity={0.7}
           >
             <Text style={[styles.sortButtonText, sortDirection === 'asc' && styles.sortButtonTextActive]}>
-              ↑ Asc
+              {t('sortAsc')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -424,7 +426,7 @@ export default function DashboardLayoutMobile({
             activeOpacity={0.7}
           >
             <Text style={[styles.sortButtonText, sortDirection === 'desc' && styles.sortButtonTextActive]}>
-              ↓ Desc
+              {t('sortDesc')}
             </Text>
           </TouchableOpacity>
         </View>

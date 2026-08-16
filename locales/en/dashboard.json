@@ -63,5 +63,17 @@
   "birthdayToday": "🎉 Today!",
   "addStudentButton": "+ Add New Student",
   "scheduleModalTitle": "Schedule Session",
-  "modalSearchPlaceholder": "Search student..."
+  "modalSearchPlaceholder": "Search student...",
+  "noAppointmentsLine1": "No appointments.",
+  "noAppointmentsLine2": "Tap to schedule assessments →",
+  "viewMoreLink": "+{{count}} more — view all",
+  "activeStudentsLabel": "Active students",
+  "noPhoneRegisteredTitle": "No phone registered",
+  "noPhoneRegisteredMessage": "{{name}} does not have a phone number registered. Mark as congratulated anyway?",
+  "cancelButton": "Cancel",
+  "markAnywayButton": "Mark anyway",
+  "whatsappErrorTitle": "Error",
+  "whatsappNotInstalled": "WhatsApp not installed.",
+  "sortAlphabeticalFull": "Alphabetical",
+  "birthdayWhatsappMessage": "Hi {{name}}! 🎉🎂 Just wanted to wish you a Happy Birthday! Hope you have an amazing year! 🥳"
 }

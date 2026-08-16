@@ -63,5 +63,17 @@
   "birthdayToday": "🎉 Hoje!",
   "addStudentButton": "+ Adicionar Novo Aluno",
   "scheduleModalTitle": "Agendar Sessão",
-  "modalSearchPlaceholder": "Buscar aluno..."
+  "modalSearchPlaceholder": "Buscar aluno...",
+  "noAppointmentsLine1": "Nenhum agendamento.",
+  "noAppointmentsLine2": "Toque para agendar avaliações →",
+  "viewMoreLink": "+{{count}} mais — ver todos",
+  "activeStudentsLabel": "Alunos ativos",
+  "noPhoneRegisteredTitle": "Sem celular cadastrado",
+  "noPhoneRegisteredMessage": "{{name}} não tem celular cadastrado. Deseja marcar como parabenizado mesmo assim?",
+  "cancelButton": "Cancelar",
+  "markAnywayButton": "Marcar mesmo assim",
+  "whatsappErrorTitle": "Erro",
+  "whatsappNotInstalled": "WhatsApp não instalado.",
+  "sortAlphabeticalFull": "Alfabética",
+  "birthdayWhatsappMessage": "Oi {{name}}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳"
 }
