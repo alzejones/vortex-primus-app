@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -18,6 +19,7 @@ import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
 
 export default function Clients() {
+  const { t } = useTranslation('clients');
   const insets = useSafeAreaInsets();
   // ─── Responsividade ───────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
@@ -50,7 +52,7 @@ export default function Clients() {
       .single();
 
     if (error) {
-      Alert.alert("Erro ao carregar treinador", error.message);
+      Alert.alert(t('loadTrainerErrorTitle'), error.message);
       return;
     }
 
@@ -65,7 +67,7 @@ export default function Clients() {
       .eq("trainer_id", currentTrainerId);
 
     if (countError) {
-      Alert.alert("Erro ao carregar total de clientes", countError.message);
+      Alert.alert(t('loadTotalErrorTitle'), countError.message);
     } else {
       setTotalClients(count || 0);
     }
@@ -86,7 +88,7 @@ export default function Clients() {
         .range(offset, offset + batchSize - 1);
 
       if (error) {
-        Alert.alert("Erro ao carregar clientes", error.message);
+        Alert.alert(t('loadClientsErrorTitle'), error.message);
         hasMore = false;
       } else {
         const batch = data || [];
@@ -100,10 +102,10 @@ export default function Clients() {
   }
 
   async function handleDelete(id: string) {
-    Alert.alert('Excluir aluno', 'Deseja realmente excluir este aluno? Esta ação não pode ser desfeita.', [
-      { text: 'Cancelar', style: 'cancel' },
+    Alert.alert(t('deleteConfirmTitle'), t('deleteConfirmMessage'), [
+      { text: t('cancelButton'), style: 'cancel' },
       {
-        text: 'Excluir',
+        text: t('deleteLink'),
         style: 'destructive',
         onPress: async () => {
           const { data, error } = await supabase.functions.invoke('delete-client', {
@@ -111,7 +113,7 @@ export default function Clients() {
           });
 
           if (error || data?.error) {
-            Alert.alert('Erro ao excluir', data?.error ?? error?.message ?? 'Erro desconhecido');
+            Alert.alert(t('deleteErrorTitle'), data?.error ?? error?.message ?? t('deleteErrorUnknown'));
           } else if (trainerId) {
             fetchClients(trainerId);
           }
@@ -163,13 +165,13 @@ export default function Clients() {
             activeOpacity={0.85}
           >
             <LinearGradient {...GradientPrimary} style={styles.newButtonGradient}>
-              <Text style={styles.newButtonText}>+ Novo Cliente</Text>
+              <Text style={styles.newButtonText}>{t('newClientButton')}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>
-              Total de Clientes: <Text style={styles.totalCount}>{totalClients}</Text>
+              {t('totalClientsLabel')} <Text style={styles.totalCount}>{totalClients}</Text>
             </Text>
           </View>
 
@@ -181,7 +183,7 @@ export default function Clients() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.sortButtonText, sortField === 'name' && styles.sortButtonTextActive]}>
-                  Alfabética
+                  {t('sortAlphabeticalFull')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -190,7 +192,7 @@ export default function Clients() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.sortButtonText, sortField === 'data_cadastro_efetiva' && styles.sortButtonTextActive]}>
-                  Cadastro
+                  {t('sortByRegistration')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -201,7 +203,7 @@ export default function Clients() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.sortButtonText, sortDirection === 'asc' && styles.sortButtonTextActive]}>
-                  ↑ Asc
+                  {t('sortAsc')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -210,7 +212,7 @@ export default function Clients() {
                 activeOpacity={0.7}
               >
                 <Text style={[styles.sortButtonText, sortDirection === 'desc' && styles.sortButtonTextActive]}>
-                  ↓ Desc
+                  {t('sortDesc')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -219,7 +221,7 @@ export default function Clients() {
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Buscar por nome..."
+              placeholder={t('searchByNamePlaceholder')}
               placeholderTextColor={T.t3}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -253,11 +255,11 @@ export default function Clients() {
                       router.push(`/(protected)/client-details?id=${item.id}`)
                     }
                   >
-                    <Text style={styles.linkEdit}>Editar</Text>
+                    <Text style={styles.linkEdit}>{t('editLink')}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                    <Text style={styles.linkDelete}>Excluir</Text>
+                    <Text style={styles.linkDelete}>{t('deleteLink')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -266,13 +268,13 @@ export default function Clients() {
               <View style={styles.emptyState}>
                 {searchQuery.trim().length > 0 ? (
                   <>
-                    <Text style={styles.emptyText}>Nenhum aluno encontrado.</Text>
-                    <Text style={styles.emptySubText}>Tente buscar por outro nome.</Text>
+                    <Text style={styles.emptyText}>{t('emptySearchTitle')}</Text>
+                    <Text style={styles.emptySubText}>{t('emptySearchSub')}</Text>
                   </>
                 ) : (
                   <>
-                    <Text style={styles.emptyText}>Nenhum aluno cadastrado.</Text>
-                    <Text style={styles.emptySubText}>Toque em "+ Novo Cliente" para começar.</Text>
+                    <Text style={styles.emptyText}>{t('emptyListTitle')}</Text>
+                    <Text style={styles.emptySubText}>{t('emptyListSub')}</Text>
                   </>
                 )}
               </View>
