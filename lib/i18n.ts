@@ -79,7 +79,6 @@ i18n
     interpolation: {
       escapeValue: false,
     },
-    compatibilityJSON: 'v3',
   });
 
 getInitialLanguage().then((lang) => {

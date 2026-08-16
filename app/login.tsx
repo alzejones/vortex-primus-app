@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
-import { useLanguage } from "../contexts/LanguageContext";
 import { supabase } from "../lib/supabase";
 import { T, Typography } from "../utils/theme";
 import { GradientPrimary } from "../utils/gradients";
