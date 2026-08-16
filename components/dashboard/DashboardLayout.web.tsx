@@ -47,7 +47,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
     sortField, sortDirection, onSortFieldChange, onSortDirectionChange,
   } = props;
 
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
   const pathname = usePathname();
   const licenseStatus = useLicenseStatus();
 
@@ -269,16 +269,16 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
     return (
     <View style={styles.rightPanel}>
       <View style={styles.panelHeader}>
-        <Text style={styles.panelTitle}>Agendamentos</Text>
+        <Text style={styles.panelTitle}>{t('appointmentsTitle')}</Text>
         <TouchableOpacity onPress={() => router.push('/(protected)/schedule/' as any)}>
-          <Text style={styles.panelLink}>Ver todas →</Text>
+          <Text style={styles.panelLink}>{t('viewAll')}</Text>
         </TouchableOpacity>
       </View>
 
       {upcomingAppointments.length === 0 ? (
         <View style={styles.emptyPanel}>
           <Text style={styles.emptyPanelIcon}>📭</Text>
-          <Text style={styles.emptyPanelText}>Nenhum agendamento.\nToque para agendar avaliações →</Text>
+          <Text style={styles.emptyPanelText}>{t('noAppointments')}</Text>
         </View>
       ) : (
         upcomingAppointments.map((apt) => (
@@ -288,7 +288,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
               <Text style={styles.sessionTime}>{apt.appointment_time?.substring(0, 5)}</Text>
             </View>
             <View style={styles.sessionInfo}>
-              <Text style={styles.sessionClient}>{(apt.clients as any)?.name || 'Aluno'}</Text>
+              <Text style={styles.sessionClient}>{(apt.clients as any)?.name || t('defaultStudentName')}</Text>
               <Text style={styles.sessionType}>{apt.types}</Text>
             </View>
           </View>
@@ -306,9 +306,9 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           borderColor: T.border,
         }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>🎯 Metas do Mês</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>{t('monthlyGoalsTitle')}</Text>
             <TouchableOpacity onPress={() => router.push('/(protected)/business-goals' as any)}>
-              <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>Ver detalhes →</Text>
+              <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>{t('viewDetails')}</Text>
             </TouchableOpacity>
           </View>
           {/* Barra agendamentos */}
@@ -317,7 +317,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             return (
               <View style={{ marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>📅 Agendamentos</Text>
+                  <Text style={{ fontSize: 12, color: T.t2 }}>{t('goalAppointments')}</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6' }}>{goalsWidget.scheduledActual}/{goalsWidget.scheduledGoal} · {pct}%</Text>
                 </View>
                 <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -332,7 +332,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             return (
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>✅ Avaliações Feitas</Text>
+                  <Text style={{ fontSize: 12, color: T.t2 }}>{t('goalAssessmentsDone')}</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#22c55e' }}>{goalsWidget.completedActual}/{goalsWidget.completedGoal} · {pct}%</Text>
                 </View>
                 <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
@@ -357,13 +357,13 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ff6b35' }} />
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ff9a6c' }}>Reavaliações Pendentes</Text>
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#ff9a6c' }}>{t('overdueTitle')}</Text>
             </View>
             <Text style={{ backgroundColor: '#ff6b35', color: '#fff', fontWeight: '900', fontSize: 12, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99, overflow: 'hidden' }}>
               {overdueClients.length}
             </Text>
           </View>
-          <Text style={{ fontSize: 11, color: '#ff9a6c', marginBottom: 12, opacity: 0.7 }}>Sem avaliação há 30+ dias</Text>
+          <Text style={{ fontSize: 11, color: '#ff9a6c', marginBottom: 12, opacity: 0.7 }}>{t('overdueSubtitle')}</Text>
           {overdueClients.slice(0, showAllOverdue ? overdueClients.length : 3).map((client) => (
             <TouchableOpacity
               key={client.id}
@@ -378,8 +378,8 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{client.name}</Text>
                 <Text style={{ fontSize: 11, color: '#ff9a6c', marginTop: 1 }}>
                   {client.lastAssessmentDate
-                    ? `Última: ${Math.floor((new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24))} dias atrás`
-                    : 'Nunca avaliado'}
+                    ? t('lastAssessment', { count: Math.floor((new Date().getTime() - new Date(client.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24)) })
+                    : t('neverAssessed')}
                 </Text>
               </View>
               <TouchableOpacity
@@ -393,14 +393,14 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           {overdueClients.length > 3 && !showAllOverdue && (
             <TouchableOpacity onPress={() => setShowAllOverdue(true)}>
               <Text style={{ fontSize: 11, color: T.blue, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
-                +{overdueClients.length - 3} mais — ver todos ↓
+                {t('overdueMore', { count: overdueClients.length - 3 })}
               </Text>
             </TouchableOpacity>
           )}
           {showAllOverdue && (
             <TouchableOpacity onPress={() => setShowAllOverdue(false)}>
               <Text style={{ fontSize: 11, color: T.t3, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
-                Recolher ↑
+                {t('overdueCollapse')}
               </Text>
             </TouchableOpacity>
           )}
@@ -418,9 +418,9 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           borderColor: '#4fc3f7',
         }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>🎂 Aniversariantes</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#fff' }}>{t('birthdaysTitle')}</Text>
             <Text style={{ fontSize: 11, color: '#4fc3f7', fontWeight: '700', textTransform: 'capitalize' }}>
-              {new Date().toLocaleDateString('pt-BR', { month: 'long' })}
+              {new Date().toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'pt-BR', { month: 'long' })}
             </Text>
           </View>
           {birthdayClients.map((client) => {
@@ -450,7 +450,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                   <Text style={{ fontSize: 13, fontWeight: '700', color: isToday ? '#4fc3f7' : '#fff' }}>
                     {client.name}
                   </Text>
-                  {isToday && <Text style={{ fontSize: 11, color: '#4fc3f7', fontWeight: '600', marginTop: 2 }}>🎉 Hoje!</Text>}
+                  {isToday && <Text style={{ fontSize: 11, color: '#4fc3f7', fontWeight: '600', marginTop: 2 }}>{t('birthdayToday')}</Text>}
                 </View>
                 {isToday && <Text style={{ fontSize: 18 }}>🎂</Text>}
               </TouchableOpacity>
@@ -465,7 +465,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         onPress={() => router.push('/(protected)/client-create' as any)}
       >
         <LinearGradient {...GradientPrimary} style={styles.addClientBtnGradient}>
-          <Text style={styles.addClientBtnText}>+ Adicionar Novo Aluno</Text>
+          <Text style={styles.addClientBtnText}>{t('addStudentButton')}</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -618,14 +618,14 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Agendar Sessão</Text>
+              <Text style={styles.modalTitle}>{t('scheduleModalTitle')}</Text>
               <TouchableOpacity onPress={onCloseScheduleModal}>
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
             <TextInput
               style={styles.modalSearch}
-              placeholder="Buscar aluno..."
+              placeholder={t('modalSearchPlaceholder')}
               placeholderTextColor={T.t3}
               value={scheduleSearchQuery}
               onChangeText={onScheduleSearchChange}
@@ -652,7 +652,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
               style={styles.modalAddClient}
               onPress={() => { onCloseScheduleModal(); router.push('/(protected)/client-create' as any); }}
             >
-              <Text style={styles.modalAddClientText}>+ Adicionar Novo Aluno</Text>
+              <Text style={styles.modalAddClientText}>{t('addStudentButton')}</Text>
             </TouchableOpacity>
           </View>
         </View>
