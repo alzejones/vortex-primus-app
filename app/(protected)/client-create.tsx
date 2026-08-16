@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useMemo, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Dimensions,
@@ -27,6 +28,7 @@ import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton
 import { CoachQuestionnaireForm, CoachQuestionnaireData } from "../../components/CoachQuestionnaireForm";
 
 export default function ClientCreate() {
+  const { t } = useTranslation('clients');
   const router = useRouter();
   const { from, sale_id, name: prefillName, phone: prefillPhone } = useLocalSearchParams<{ from?: string; sale_id?: string; name?: string; phone?: string }>();
 
@@ -120,7 +122,7 @@ export default function ClientCreate() {
       let age = today.getFullYear() - birth.getFullYear();
       const mDiff = today.getMonth() - birth.getMonth();
       if (mDiff < 0 || (mDiff === 0 && today.getDate() < birth.getDate())) age--;
-      return age >= 0 && age < 150 ? `${age} anos` : "";
+      return age >= 0 && age < 150 ? t('ageYears', { count: age }) : "";
     }
     return "";
   }, [form.birth_date]);
@@ -138,7 +140,7 @@ export default function ClientCreate() {
 
     const safeName = form.name || "";
     if (safeName.trim() === "") {
-      setStatusMsg({ text: "O nome do cliente é obrigatório.", type: "error" });
+      setStatusMsg({ text: t('errorNameRequired'), type: "error" });
       return;
     }
 
@@ -147,7 +149,7 @@ export default function ClientCreate() {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
-        setStatusMsg({ text: "Sessão expirada. Faça login novamente.", type: "error" });
+        setStatusMsg({ text: t('errorSessionExpired'), type: "error" });
         setLoading(false);
         return;
       }
@@ -159,7 +161,7 @@ export default function ClientCreate() {
         .single();
 
       if (trainerError || !trainer) {
-        setStatusMsg({ text: "Perfil de treinador não encontrado.", type: "error" });
+        setStatusMsg({ text: t('errorTrainerNotFound'), type: "error" });
         setLoading(false);
         return;
       }
@@ -215,14 +217,14 @@ export default function ClientCreate() {
           console.log('Erro ao vincular venda avulsa ao novo cliente:', linkError);
         }
 
-        setStatusMsg({ text: 'Cliente criado e venda vinculada com sucesso!', type: 'success' });
+        setStatusMsg({ text: t('successClientLinkedToSale'), type: 'success' });
         setTimeout(() => {
           router.replace('/(protected)/business-goals' as any);
         }, 1000);
         return;
       }
 
-      setStatusMsg({ text: "Cliente adicionado com sucesso!", type: "success" });
+      setStatusMsg({ text: t('successClientAdded'), type: "success" });
 
       if (from === "schedule" && newClient?.id) {
         setTimeout(() => {
@@ -250,11 +252,11 @@ export default function ClientCreate() {
 
       if (errorMsg.includes("Limite de clientes") || errorMsg.includes("P0001")) {
         setStatusMsg({
-          text: "Você atingiu o limite de alunos do seu plano atual. Faça um upgrade para continuar crescendo!",
+          text: t('errorPlanLimitReached'),
           type: "limit"
         });
       } else {
-        setStatusMsg({ text: errorMsg || "Erro inesperado ao guardar.", type: "error" });
+        setStatusMsg({ text: errorMsg || t('errorUnexpected'), type: "error" });
       }
     } finally {
       setLoading(false);
@@ -285,7 +287,7 @@ export default function ClientCreate() {
             showsVerticalScrollIndicator={true}
             keyboardShouldPersistTaps="handled"
           >
-        <Text style={styles.pageTitle}>Novo Cliente</Text>
+        <Text style={styles.pageTitle}>{t('pageTitle')}</Text>
 
         {statusMsg.text !== "" && (
           <View style={[
@@ -308,16 +310,16 @@ export default function ClientCreate() {
                 style={styles.upgradeBtn}
                 onPress={() => router.push("/upgrade" as any)}
               >
-                <Text style={styles.upgradeBtnText}>⭐ Conhecer Planos</Text>
+                <Text style={styles.upgradeBtnText}>{t('upgradeButton')}</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
 
         <View style={styles.inputGroup} ref={nome_completoRef}>
-          <Text style={styles.label}>Nome Completo *</Text>
+          <Text style={styles.label}>{t('nameLabel')}</Text>
           <TextInput
-            placeholder="Ex: João da Silva"
+            placeholder={t('namePlaceholder')}
             placeholderTextColor={T.t3}
             value={form.name}
             onChangeText={(v) => handleChange("name", v)}
@@ -326,9 +328,9 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup} ref={email_telefoneRef}>
-          <Text style={styles.label}>E-mail</Text>
+          <Text style={styles.label}>{t('emailLabel')}</Text>
           <TextInput
-            placeholder="Ex: joao@email.com"
+            placeholder={t('emailPlaceholder')}
             placeholderTextColor={T.t3}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -339,7 +341,7 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Telefone</Text>
+          <Text style={styles.label}>{t('phoneLabel')}</Text>
           <TextInput
             placeholder="(00) 00000-0000"
             placeholderTextColor={T.t3}
@@ -354,10 +356,10 @@ export default function ClientCreate() {
         <View style={styles.row} ref={dados_pessoaisRef}>
           <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
             <Text style={styles.label}>
-              Data Nasc. {calculatedAge ? <Text style={styles.ageText}>({calculatedAge})</Text> : null}
+              {t('birthDateLabel')} {calculatedAge ? <Text style={styles.ageText}>({calculatedAge})</Text> : null}
             </Text>
             <TextInput
-              placeholder="DD/MM/AAAA"
+              placeholder={t('birthDatePlaceholder')}
               placeholderTextColor={T.t3}
               keyboardType="numeric"
               value={form.birth_date}
@@ -368,9 +370,9 @@ export default function ClientCreate() {
           </View>
 
           <View style={[styles.inputGroup, { flex: 1 }]}>
-            <Text style={styles.label}>Sexo</Text>
+            <Text style={styles.label}>{t('genderLabel')}</Text>
             <TextInput
-              placeholder="Ex: M ou F"
+              placeholder={t('genderPlaceholder')}
               placeholderTextColor={T.t3}
               value={form.gender}
               onChangeText={(v) => handleChange("gender", v)}
@@ -381,9 +383,9 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Altura (cm)</Text>
+          <Text style={styles.label}>{t('heightLabel')}</Text>
           <TextInput
-            placeholder="Ex: 175"
+            placeholder={t('heightPlaceholder')}
             placeholderTextColor={T.t3}
             keyboardType="numeric"
             value={form.height_cm}
@@ -393,9 +395,9 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup} ref={observacoesRef}>
-          <Text style={styles.label}>Observações</Text>
+          <Text style={styles.label}>{t('notesLabel')}</Text>
           <TextInput
-            placeholder="Condições médicas, objetivos, etc..."
+            placeholder={t('notesPlaceholder')}
             placeholderTextColor={T.t3}
             value={form.notes}
             onChangeText={(v) => handleChange("notes", v)}
@@ -407,7 +409,7 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup} ref={objetivo_atividadeRef}>
-          <Text style={styles.label}>Objetivo</Text>
+          <Text style={styles.label}>{t('objectiveLabel')}</Text>
           {(Object.keys(OBJECTIVE_LABELS) as Objective[]).map((key) => (
             <TouchableOpacity
               key={key}
@@ -422,7 +424,7 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nível de Atividade</Text>
+          <Text style={styles.label}>{t('activityLevelLabel')}</Text>
           {(Object.keys(ACTIVITY_LABELS) as ActivityLevel[]).map((key) => (
             <TouchableOpacity
               key={key}
@@ -437,9 +439,9 @@ export default function ClientCreate() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Restrições Alimentares</Text>
+          <Text style={styles.label}>{t('foodRestrictionsLabel')}</Text>
           <TextInput
-            placeholder="Ex: intolerância à lactose, alergia a amendoim..."
+            placeholder={t('foodRestrictionsPlaceholder')}
             placeholderTextColor={T.t3}
             value={form.food_restrictions}
             onChangeText={(v) => handleChange("food_restrictions", v)}
@@ -454,7 +456,7 @@ export default function ClientCreate() {
           <LinearGradient {...GradientPrimary} style={styles.buttonGradient}>
             {loading
               ? <ActivityIndicator color={T.white} />
-              : <Text style={styles.buttonText}>Salvar Cliente</Text>
+              : <Text style={styles.buttonText}>{t('saveButton')}</Text>
             }
           </LinearGradient>
         </TouchableOpacity>
@@ -465,7 +467,7 @@ export default function ClientCreate() {
           activeOpacity={0.85}
         >
           <Text style={styles.secondaryButtonText}>
-            📋 {showQuestionnaire ? "Ocultar" : "Usar"} Questionário do Coach
+            📋 {showQuestionnaire ? t('hideQuestionnaire') : t('useQuestionnaire')} {t('questionnaireSuffix')}
           </Text>
         </TouchableOpacity>
 
@@ -479,7 +481,7 @@ export default function ClientCreate() {
 
                 const safeName = form.name || "";
                 if (safeName.trim() === "") {
-                  setStatusMsg({ text: "O nome do cliente é obrigatório.", type: "error" });
+                  setStatusMsg({ text: t('errorNameRequired'), type: "error" });
                   return;
                 }
 
@@ -488,7 +490,7 @@ export default function ClientCreate() {
                 try {
                   const { data: { user }, error: authError } = await supabase.auth.getUser();
                   if (authError || !user) {
-                    setStatusMsg({ text: "Sessão expirada. Faça login novamente.", type: "error" });
+                    setStatusMsg({ text: t('errorSessionExpired'), type: "error" });
                     setLoading(false);
                     return;
                   }
@@ -500,7 +502,7 @@ export default function ClientCreate() {
                     .single();
 
                   if (trainerError || !trainer) {
-                    setStatusMsg({ text: "Perfil de treinador não encontrado.", type: "error" });
+                    setStatusMsg({ text: t('errorTrainerNotFound'), type: "error" });
                     setLoading(false);
                     return;
                   }
@@ -564,11 +566,11 @@ export default function ClientCreate() {
 
                   if (errorMsg.includes("Limite de clientes") || errorMsg.includes("P0001")) {
                     setStatusMsg({
-                      text: "Você atingiu o limite de alunos do seu plano atual. Faça um upgrade para continuar crescendo!",
+                      text: t('errorPlanLimitReached'),
                       type: "limit"
                     });
                   } else {
-                    setStatusMsg({ text: errorMsg || "Erro inesperado ao guardar.", type: "error" });
+                    setStatusMsg({ text: errorMsg || t('errorUnexpected'), type: "error" });
                   }
                 } finally {
                   setLoading(false);
@@ -599,7 +601,7 @@ export default function ClientCreate() {
               <LinearGradient {...GradientPrimary} style={styles.buttonGradient}>
                 {loading
                   ? <ActivityIndicator color={T.white} />
-                  : <Text style={styles.buttonText}>💾 Salvar Questionário</Text>
+                  : <Text style={styles.buttonText}>{t('saveQuestionnaireButton')}</Text>
                 }
               </LinearGradient>
             </TouchableOpacity>
