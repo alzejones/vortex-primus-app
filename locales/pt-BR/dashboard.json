@@ -75,5 +75,12 @@
   "whatsappErrorTitle": "Erro",
   "whatsappNotInstalled": "WhatsApp não instalado.",
   "sortAlphabeticalFull": "Alfabética",
-  "birthdayWhatsappMessage": "Oi {{name}}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳"
+  "birthdayWhatsappMessage": "Oi {{name}}! 🎉🎂 Passando aqui pra te desejar um Feliz Aniversário! Que seu ano seja incrível! 🥳",
+  "emptySearchSub": "Tente outro nome",
+  "searchResultsCount_one": "{{count}} aluno encontrado",
+  "searchResultsCount_other": "{{count}} alunos encontrados",
+  "modalCloseButton": "Fechar",
+  "modalFooterAddStudent": "Adicionar Novo Aluno",
+  "overdueModalTitle": "🔴 Reavaliações Pendentes ({{count}})",
+  "birthdayModalTitle": "🎂 Aniversariantes ({{count}})"
 }

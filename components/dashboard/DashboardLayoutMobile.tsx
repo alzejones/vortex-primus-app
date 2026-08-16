@@ -458,7 +458,7 @@ export default function DashboardLayoutMobile({
                 <Text style={styles.searchIcon}>🔍</Text>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar aluno..."
+                  placeholder={t('modalSearchPlaceholder')}
                   placeholderTextColor={T.t3}
                   value={searchQuery}
                   onChangeText={onSearchChange}
@@ -473,7 +473,7 @@ export default function DashboardLayoutMobile({
 
             {/* Contador de resultados */}
             <Text style={[styles.sectionTitle, { marginBottom: 8 }]}>
-              {filteredClients.length} aluno{filteredClients.length !== 1 ? 's' : ''} encontrado{filteredClients.length !== 1 ? 's' : ''}
+              {t('searchResultsCount', { count: filteredClients.length })}
             </Text>
 
             {/* Lista de resultados separada do campo de busca */}
@@ -488,8 +488,8 @@ export default function DashboardLayoutMobile({
               ListEmptyComponent={
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyEmoji}>🔍</Text>
-                  <Text style={styles.emptyTitle}>Nenhum aluno encontrado</Text>
-                  <Text style={styles.emptyText}>Tente outro nome</Text>
+                  <Text style={styles.emptyTitle}>{t('emptyStudentsTitle')}</Text>
+                  <Text style={styles.emptyText}>{t('emptySearchSub')}</Text>
                 </View>
               }
               renderItem={({ item }) => (
@@ -501,7 +501,7 @@ export default function DashboardLayoutMobile({
                       </View>
                       <View>
                         <Text style={styles.clientName}>{item.name}</Text>
-                        <Text style={styles.clientSubText}>📲 {item.phone ? formatPhoneBR(item.phone) : 'Sem WhatsApp'}</Text>
+                        <Text style={styles.clientSubText}>📲 {item.phone ? formatPhoneBR(item.phone) : t('noWhatsapp')}</Text>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -515,27 +515,27 @@ export default function DashboardLayoutMobile({
                 <View style={styles.clientActionsArea}>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                     <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}>
-                      <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>Perfil</Text>
+                      <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>{t('actionProfile')}</Text>
                     </TouchableOpacity>
                     <View style={styles.verticalDivider} />
                     <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-                      <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>Agendar</Text>
+                      <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>{t('actionSchedule')}</Text>
                     </TouchableOpacity>
                     <View style={styles.verticalDivider} />
                     <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
-                      <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>Avaliar</Text>
+                      <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>{t('actionAssess')}</Text>
                     </TouchableOpacity>
                     <View style={styles.verticalDivider} />
                     <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-                      <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>Corporal</Text>
+                      <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>{t('actionBody')}</Text>
                     </TouchableOpacity>
                     <View style={styles.verticalDivider} />
                     <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
-                      <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>Testar</Text>
+                      <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>{t('actionTest')}</Text>
                     </TouchableOpacity>
                     <View style={styles.verticalDivider} />
                     <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}>
-                      <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>Condic.</Text>
+                      <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>{t('actionConditioning')}</Text>
                     </TouchableOpacity>
                   </ScrollView>
                 </View>
@@ -559,8 +559,8 @@ export default function DashboardLayoutMobile({
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyEmoji}>👥</Text>
-                <Text style={styles.emptyTitle}>Nenhum aluno encontrado</Text>
-                <Text style={styles.emptyText}>Adicione seu primeiro aluno para começar</Text>
+                <Text style={styles.emptyTitle}>{t('emptyStudentsTitle')}</Text>
+                <Text style={styles.emptyText}>{t('emptyStudentsSub')}</Text>
               </View>
             }
             renderItem={({ item }) => (
@@ -572,7 +572,7 @@ export default function DashboardLayoutMobile({
                     </View>
                     <View>
                       <Text style={styles.clientName}>{item.name}</Text>
-                      <Text style={styles.clientSubText}>📲 {item.phone ? formatPhoneBR(item.phone) : 'Sem WhatsApp'}</Text>
+                      <Text style={styles.clientSubText}>📲 {item.phone ? formatPhoneBR(item.phone) : t('noWhatsapp')}</Text>
                     </View>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -586,27 +586,27 @@ export default function DashboardLayoutMobile({
               <View style={styles.clientActionsArea}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-details?id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>Perfil</Text>
+                    <Text style={styles.actionEmoji}>📋</Text><Text style={styles.actionLabel}>{t('actionProfile')}</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/schedule/new?client_id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>Agendar</Text>
+                    <Text style={styles.actionEmoji}>🗓️</Text><Text style={styles.actionLabel}>{t('actionSchedule')}</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}&openForm=true` as any)}>
-                    <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>Avaliar</Text>
+                    <Text style={styles.actionEmoji}>🩻</Text><Text style={styles.actionLabel}>{t('actionAssess')}</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/client-assessments?id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>Corporal</Text>
+                    <Text style={styles.actionEmoji}>📊</Text><Text style={styles.actionLabel}>{t('actionBody')}</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning?client_id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>Testar</Text>
+                    <Text style={styles.actionEmoji}>🏋️‍♀️</Text><Text style={styles.actionLabel}>{t('actionTest')}</Text>
                   </TouchableOpacity>
                   <View style={styles.verticalDivider} />
                   <TouchableOpacity style={styles.actionButtonScroll} onPress={() => router.push(`/(protected)/assessments/conditioning-evolution?client_id=${item.id}` as any)}>
-                    <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>Condic.</Text>
+                    <Text style={styles.actionEmoji}>📈</Text><Text style={styles.actionLabel}>{t('actionConditioning')}</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </View>
@@ -626,14 +626,14 @@ export default function DashboardLayoutMobile({
           <View style={{ flex: 1, backgroundColor: T.bg }}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderTop}>
-                <Text style={styles.modalTitle}>Agendar Sessão</Text>
+                <Text style={styles.modalTitle}>{t('scheduleModalTitle')}</Text>
                 <TouchableOpacity onPress={onCloseScheduleModal}>
-                  <Text style={styles.modalCloseBtn}>Fechar</Text>
+                  <Text style={styles.modalCloseBtn}>{t('modalCloseButton')}</Text>
                 </TouchableOpacity>
               </View>
               <TextInput
                 style={styles.modalInput}
-                placeholder="Buscar aluno..."
+                placeholder={t('modalSearchPlaceholder')}
                 placeholderTextColor={T.t3}
                 value={scheduleSearchQuery}
                 onChangeText={onScheduleSearchChange}
@@ -667,7 +667,7 @@ export default function DashboardLayoutMobile({
                 }}
               >
                 <Text style={styles.addClientFooterIcon}>+</Text>
-                <Text style={styles.addClientFooterText}>Adicionar Novo Aluno</Text>
+                <Text style={styles.addClientFooterText}>{t('modalFooterAddStudent')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -684,7 +684,7 @@ export default function DashboardLayoutMobile({
           <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
             <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: T.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
-                🔴 Reavaliações Pendentes ({overdueClients.length})
+                {t('overdueModalTitle', { count: overdueClients.length })}
               </Text>
               <TouchableOpacity onPress={() => setOverdueModalVisible(false)}>
                 <Text style={{ fontSize: 22, color: T.t3 }}>✕</Text>
@@ -711,8 +711,8 @@ export default function DashboardLayoutMobile({
                     <Text style={{ fontSize: 14, fontWeight: '700', color: T.t1 }}>{item.name}</Text>
                     <Text style={{ fontSize: 12, color: '#ff9a6c', marginTop: 2 }}>
                       {item.lastAssessmentDate
-                        ? `Última: ${Math.floor((new Date().getTime() - new Date(item.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24))} dias atrás`
-                        : 'Nunca avaliado'}
+                        ? t('lastAssessment', { count: Math.floor((new Date().getTime() - new Date(item.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24)) })
+                        : t('neverAssessed')}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -742,7 +742,7 @@ export default function DashboardLayoutMobile({
           <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
             <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: T.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
-                🎂 Aniversariantes ({birthdayClients.length})
+                {t('birthdayModalTitle', { count: birthdayClients.length })}
               </Text>
               <TouchableOpacity onPress={() => setBirthdayModalVisible(false)}>
                 <Text style={{ fontSize: 22, color: T.t3 }}>✕</Text>

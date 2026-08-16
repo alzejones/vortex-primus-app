@@ -75,5 +75,12 @@
   "whatsappErrorTitle": "Error",
   "whatsappNotInstalled": "WhatsApp not installed.",
   "sortAlphabeticalFull": "Alphabetical",
-  "birthdayWhatsappMessage": "Hi {{name}}! 🎉🎂 Just wanted to wish you a Happy Birthday! Hope you have an amazing year! 🥳"
+  "birthdayWhatsappMessage": "Hi {{name}}! 🎉🎂 Just wanted to wish you a Happy Birthday! Hope you have an amazing year! 🥳",
+  "emptySearchSub": "Try another name",
+  "searchResultsCount_one": "{{count}} client found",
+  "searchResultsCount_other": "{{count}} clients found",
+  "modalCloseButton": "Close",
+  "modalFooterAddStudent": "Add New Student",
+  "overdueModalTitle": "🔴 Overdue Reassessments ({{count}})",
+  "birthdayModalTitle": "🎂 Birthdays ({{count}})"
 }
