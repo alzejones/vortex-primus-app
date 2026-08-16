@@ -13,7 +13,9 @@ import {
   Dimensions,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
+import { useLanguage } from "../contexts/LanguageContext";
 import { supabase } from "../lib/supabase";
 import { T, Typography } from "../utils/theme";
 import { GradientPrimary } from "../utils/gradients";
@@ -30,6 +32,7 @@ if (Platform.OS !== "web") {
 
 export default function Login() {
   console.log('[DEBUG 4] login.tsx renderizando');
+  const { t } = useTranslation('auth');
   const { session, role } = useAuth();
 
   // ─── Responsividade ───────────────────────────────────────────────
@@ -59,6 +62,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<'error' | 'success'>('error');
   const [isResetting, setIsResetting] = useState(false);
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -71,7 +75,10 @@ export default function Login() {
     setter: React.Dispatch<React.SetStateAction<string>>
   ) => {
     setter(text);
-    if (message) setMessage("");
+    if (message) {
+      setMessage("");
+      setMessageType('error');
+    }
   };
 
   async function handleGoogleLogin() {
@@ -103,14 +110,17 @@ export default function Login() {
       }
     } catch (error: any) {
       setMessage(error.message);
+      setMessageType('error');
     }
   }
 
   async function handleLogin() {
     setMessage("");
+    setMessageType('error');
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password) {
-      setMessage("Preencha e-mail e senha.");
+      setMessage(t('errorFillCredentials'));
+      setMessageType('error');
       return;
     }
     const { error } = await supabase.auth.signInWithPassword({
@@ -120,9 +130,10 @@ export default function Login() {
     if (error) {
       setMessage(
         error.message.toLowerCase().includes("invalid login")
-          ? "E-mail ou senha incorretos."
+          ? t('errorInvalidLogin')
           : error.message
       );
+      setMessageType('error');
       return;
     }
   }
@@ -130,10 +141,12 @@ export default function Login() {
   async function handleSignup() {
     console.log("handleSignup started - email:", email, "password length:", password.length);
     setMessage("");
+    setMessageType('error');
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || password.length < 6) {
       console.log("Setting validation error message");
-      setMessage("E-mail válido e senha com mínimo 6 caracteres são necessários.");
+      setMessage(t('errorSignupValidation'));
+      setMessageType('error');
       return;
     }
 
@@ -149,18 +162,20 @@ export default function Login() {
       const msg = error.message.toLowerCase();
       const friendlyMessage =
         msg.includes("already registered") || msg.includes("already been registered")
-          ? "E-mail já cadastrado. Tente fazer login."
+          ? t('errorEmailAlreadyRegistered')
           : msg.includes("rate limit") || error.status === 429
-          ? "Muitas tentativas. Aguarde alguns minutos e tente novamente."
+          ? t('errorRateLimit')
           : error.message;
       setMessage(friendlyMessage);
+      setMessageType('error');
       return;
     }
 
     // Confirmação de e-mail ATIVA → session é null, usuário precisa confirmar
     if (!data.session) {
       console.log("Setting email confirmation message");
-      setMessage("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+      setMessage(t('successSignupCheckEmail'));
+      setMessageType('success');
       return;
     }
 
@@ -171,29 +186,36 @@ export default function Login() {
 
   async function handleRequestPasswordReset() {
     setMessage("");
+    setMessageType('error');
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      setMessage("Por favor, preencha o seu e-mail no campo abaixo primeiro.");
+      setMessage(t('errorFillEmailFirst'));
+      setMessageType('error');
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
     if (error) {
       setMessage(error.message);
+      setMessageType('error');
       return;
     }
-    setMessage("Código enviado! Verifique o seu e-mail.");
+    setMessage(t('successResetCodeSent'));
+    setMessageType('success');
     setIsResetting(true);
   }
 
   async function handleVerifyAndResetPassword() {
     setMessage("");
+    setMessageType('error');
     const cleanEmail = email.trim().toLowerCase();
     if (!resetCode || !newPassword) {
-      setMessage("Preencha o código e a nova senha.");
+      setMessage(t('errorFillCodeAndPassword'));
+      setMessageType('error');
       return;
     }
     if (newPassword.length < 6) {
-      setMessage("A nova senha deve ter no mínimo 6 caracteres.");
+      setMessage(t('errorPasswordMinLength'));
+      setMessageType('error');
       return;
     }
     const { error } = await supabase.auth.verifyOtp({
@@ -202,7 +224,8 @@ export default function Login() {
       type: "recovery",
     });
     if (error) {
-      setMessage("Código inválido ou expirado.");
+      setMessage(t('errorInvalidResetCode'));
+      setMessageType('error');
       return;
     }
     const { error: updateError } = await supabase.auth.updateUser({
@@ -210,16 +233,17 @@ export default function Login() {
     });
     if (updateError) {
       setMessage(updateError.message);
+      setMessageType('error');
       return;
     }
-    setMessage("Senha atualizada com sucesso! Você já pode fazer login.");
+    setMessage(t('successPasswordUpdated'));
+    setMessageType('success');
     setIsResetting(false);
     setPassword("");
     setResetCode("");
   }
 
-  const isSuccess =
-    message.includes("sucesso") || message.includes("enviado");
+  const isSuccess = messageType === 'success';
 
   const targetRefs = {
     email: emailRef,
@@ -291,7 +315,7 @@ export default function Login() {
           >
             Vortex <Text style={styles.appNameBlue}>Primus</Text>
           </Text>
-          <Text style={styles.appSubtitle}>Performance & Gestão</Text>
+          <Text style={styles.appSubtitle}>{t('appSubtitle')}</Text>
         </View>
 
         {/* Card */}
@@ -310,26 +334,26 @@ export default function Login() {
                   style={styles.googleIcon}
                 />
                 <Text style={styles.googleButtonText}>
-                  Continuar com o Google
+                  {t('googleButton')}
                 </Text>
               </TouchableOpacity>
 
               {/* Divider */}
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>ou</Text>
+                <Text style={styles.dividerText}>{t('divider')}</Text>
                 <View style={styles.dividerLine} />
               </View>
 
               {/* E-mail */}
               <View style={styles.inputGroup} ref={emailRef}>
-                <Text style={styles.label}>E-mail</Text>
+                <Text style={styles.label}>{t('emailLabel')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="seu@email.com"
+                  placeholder={t('emailPlaceholder')}
                   placeholderTextColor={T.t3}
                   value={email}
-                  onChangeText={(t) => handleTyping(t, setEmail)}
+                  onChangeText={(text) => handleTyping(text, setEmail)}
                   autoCapitalize="none"
                   keyboardType="email-address"
                 />
@@ -338,17 +362,17 @@ export default function Login() {
               {/* Senha */}
               <View style={styles.inputGroup} ref={senhaRef}>
                 <View style={styles.row}>
-                  <Text style={styles.label}>Senha</Text>
+                  <Text style={styles.label}>{t('passwordLabel')}</Text>
                   <TouchableOpacity onPress={handleRequestPasswordReset}>
-                    <Text style={styles.forgot}>Esqueceu?</Text>
+                    <Text style={styles.forgot}>{t('forgotPassword')}</Text>
                   </TouchableOpacity>
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="••••••••"
+                  placeholder={t('passwordPlaceholder')}
                   placeholderTextColor={T.t3}
                   value={password}
-                  onChangeText={(t) => handleTyping(t, setPassword)}
+                  onChangeText={(text) => handleTyping(text, setPassword)}
                   secureTextEntry
                   onSubmitEditing={handleLogin}
                 />
@@ -366,7 +390,7 @@ export default function Login() {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                 >
-                  <Text style={styles.primaryBtnText}>Entrar</Text>
+                  <Text style={styles.primaryBtnText}>{t('loginButton')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
 
@@ -376,39 +400,39 @@ export default function Login() {
                 onPress={handleSignup}
               >
                 <Text style={styles.signupText}>
-                  Ainda não tem conta?{" "}
-                  <Text style={styles.signupLink}>Crie agora</Text>
+                  {t('signupPrompt')}{" "}
+                  <Text style={styles.signupLink}>{t('signupLink')}</Text>
                 </Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
-              <Text style={styles.resetTitle}>Redefinir Senha</Text>
+              <Text style={styles.resetTitle}>{t('resetTitle')}</Text>
               <Text style={styles.resetSubtitle}>
-                Enviámos um código de 6 dígitos para o seu e-mail.
+                {t('resetSubtitle')}
               </Text>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Código de Verificação</Text>
+                <Text style={styles.label}>{t('resetCodeLabel')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Ex: 123456"
+                  placeholder={t('resetCodePlaceholder')}
                   placeholderTextColor={T.t3}
                   value={resetCode}
-                  onChangeText={(t) => handleTyping(t, setResetCode)}
+                  onChangeText={(text) => handleTyping(text, setResetCode)}
                   keyboardType="number-pad"
                   maxLength={6}
                 />
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Nova Senha</Text>
+                <Text style={styles.label}>{t('newPasswordLabel')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={t('newPasswordPlaceholder')}
                   placeholderTextColor={T.t3}
                   value={newPassword}
-                  onChangeText={(t) => handleTyping(t, setNewPassword)}
+                  onChangeText={(text) => handleTyping(text, setNewPassword)}
                   secureTextEntry
                   onSubmitEditing={handleVerifyAndResetPassword}
                 />
@@ -426,7 +450,7 @@ export default function Login() {
                   end={{ x: 1, y: 0 }}
                 >
                   <Text style={styles.primaryBtnText}>
-                    Salvar nova senha
+                    {t('saveNewPassword')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -435,7 +459,7 @@ export default function Login() {
                 onPress={() => setIsResetting(false)}
                 style={styles.backBtn}
               >
-                <Text style={styles.backBtnText}>← Voltar para o Login</Text>
+                <Text style={styles.backBtnText}>{t('backToLogin')}</Text>
               </TouchableOpacity>
             </>
           )}
