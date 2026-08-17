@@ -165,6 +165,28 @@ async function fetchActual(goalType: GoalType, tid: string, start: string, end: 
   }
 }
 
+// Busca quantas avaliações do período têm pelo menos 1 selfie postada (label = 'selfie_post').
+async function fetchSelfiesRealizadas(tid: string, start: string, end: string): Promise<number> {
+  const { data: assessments } = await supabase.from('physical_assessments')
+    .select('id')
+    .eq('trainer_id', tid)
+    .gte('assessment_date', start)
+    .lte('assessment_date', end);
+  
+  if (!assessments || assessments.length === 0) return 0;
+  
+  const assessmentIds = assessments.map((a: any) => a.id);
+  const { data: photos } = await supabase.from('assessment_photos')
+    .select('assessment_id')
+    .in('assessment_id', assessmentIds)
+    .eq('label', 'selfie_post');
+  
+  if (!photos || photos.length === 0) return 0;
+  
+  const uniqueAssessments = new Set(photos.map((p: any) => p.assessment_id));
+  return uniqueAssessments.size;
+}
+
 function ProgressBar({ value, goal, color, isCurrency }: { value: number; goal: number; color: string; isCurrency?: boolean }) {
   const pct = goal > 0 ? Math.min((value / goal) * 100, 100) : 0;
   return (
@@ -183,12 +205,13 @@ function ProgressBar({ value, goal, color, isCurrency }: { value: number; goal: 
 }
 
 function MetricCard({
-  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency, editBtnRef,
+  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency, editBtnRef, selfiesData,
 }: {
   label: string; icon: string; value: number; goal: number;
   color: string; onEdit?: () => void; isComputed?: boolean; isCurrency?: boolean;
   trend?: { projection: number; pct: number; color: string; label: string } | null;
   editBtnRef?: any;
+  selfiesData?: { realizadas: number; total: number };
 }) {
   return (
     <View style={[styles.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
@@ -208,6 +231,30 @@ function MetricCard({
         ) : null}
       </View>
       <ProgressBar value={value} goal={goal} color={color} isCurrency={isCurrency} />
+      {selfiesData && selfiesData.total > 0 && (
+        <View style={{
+          flexDirection: 'row', justifyContent: 'space-between',
+          alignItems: 'center', marginTop: 10,
+          paddingTop: 10, borderTopWidth: 1, borderTopColor: T.border,
+        }}>
+          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+            📸 Selfies postadas
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{
+              backgroundColor: (selfiesData.realizadas === selfiesData.total ? '#22c55e' : '#f59e0b') + '22',
+              paddingHorizontal: 7, paddingVertical: 2, borderRadius: 99,
+            }}>
+              <Text style={{
+                fontSize: 11, fontWeight: '900',
+                color: selfiesData.realizadas === selfiesData.total ? '#22c55e' : '#f59e0b'
+              }}>
+                {selfiesData.realizadas} de {selfiesData.total}
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
       {trend && (
         <View style={{
           flexDirection: 'row', justifyContent: 'space-between',
@@ -246,6 +293,7 @@ export default function MetasContent() {
   const [actuals, setActuals]                 = useState<NumMap>(emptyMap());
   const [monthActuals, setMonthActuals]       = useState<NumMap>(emptyMap());
   const [baseBeforeToday, setBaseBeforeToday] = useState<NumMap>(emptyMap());
+  const [selfiesRealizadas, setSelfiesRealizadas] = useState<number>(0);
 
   const [editingField, setEditingField] = useState<GoalType | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -281,14 +329,17 @@ export default function MetasContent() {
     const { start: ms, end: me } = getDateRange('monthly');
     const yesterdayStr = daysAgoBR(1);
 
-    const results = await Promise.all(ALL_TYPES.map(async (t) => {
-      const [cur, month, beforeToday] = await Promise.all([
-        fetchActual(t, tid, start, end),
-        fetchActual(t, tid, ms, me),
-        fetchActual(t, tid, ms, yesterdayStr),
-      ]);
-      return { t, cur, month, beforeToday };
-    }));
+    const [results, selfiesCount] = await Promise.all([
+      Promise.all(ALL_TYPES.map(async (t) => {
+        const [cur, month, beforeToday] = await Promise.all([
+          fetchActual(t, tid, start, end),
+          fetchActual(t, tid, ms, me),
+          fetchActual(t, tid, ms, yesterdayStr),
+        ]);
+        return { t, cur, month, beforeToday };
+      })),
+      fetchSelfiesRealizadas(tid, start, end),
+    ]);
 
     const nActuals = emptyMap(), nMonth = emptyMap(), nToday = emptyMap();
     results.forEach(({ t, cur, month, beforeToday }) => {
@@ -297,6 +348,7 @@ export default function MetasContent() {
     setActuals(nActuals);
     setMonthActuals(nMonth);
     setBaseBeforeToday(nToday);
+    setSelfiesRealizadas(selfiesCount);
   }
 
   async function changePeriod(p: Period) {
@@ -394,6 +446,10 @@ export default function MetasContent() {
           : period === 'weekly' ? adj.weeklyGoal
           : adj.dailyGoal;
 
+        const selfiesData = cfg.type === 'avaliacoes'
+          ? { realizadas: selfiesRealizadas, total: actuals[cfg.type] }
+          : undefined;
+
         return (
           <MetricCard
             key={cfg.type}
@@ -403,6 +459,7 @@ export default function MetasContent() {
             isComputed={isComputed}
             isCurrency={cfg.isCurrency}
             trend={trend}
+            selfiesData={selfiesData}
             onEdit={() => { setEditingField(cfg.type); setEditValue(String(goals[cfg.type])); }}
             editBtnRef={index === 0 ? botao_editar_metaRef : undefined}
           />
