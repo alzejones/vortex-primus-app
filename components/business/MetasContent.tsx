@@ -24,7 +24,8 @@ type Category = 'atendimento' | 'comercial';
 type GoalType =
   | 'agendamentos' | 'avaliacoes'
   | 'apresentacoes_kit' | 'kit_acesso_vendido' | 'novos_clientes'
-  | 'clientes_repetidores' | 'lucro_mensal';
+  | 'clientes_repetidores' | 'lucro_mensal'
+  | 'cliente_premium' | 'embaixador' | 'consultor' | 'supervisor';
 
 interface GoalTypeConfig {
   type: GoalType;
@@ -43,6 +44,10 @@ const GOAL_CONFIG: GoalTypeConfig[] = [
   { type: 'novos_clientes',       label: 'Novos Clientes',             icon: '🆕', color: '#f59e0b', category: 'comercial'   },
   { type: 'clientes_repetidores', label: 'Clientes Repetidores',       icon: '🔁', color: '#ec4899', category: 'comercial'   },
   { type: 'lucro_mensal',         label: 'Lucro Mensal',               icon: '💵', color: '#10b981', category: 'comercial', isCurrency: true },
+  { type: 'cliente_premium',      label: 'Cliente Premium',            icon: '💎', color: '#8b5cf6', category: 'comercial'   },
+  { type: 'embaixador',           label: 'Embaixador',                 icon: '🌟', color: '#f43f5e', category: 'comercial'   },
+  { type: 'consultor',            label: 'Consultor',                  icon: '📈', color: '#0ea5e9', category: 'comercial'   },
+  { type: 'supervisor',           label: 'Supervisor',                 icon: '👑', color: '#eab308', category: 'comercial'   },
 ];
 
 const ALL_TYPES = GOAL_CONFIG.map((g) => g.type);
@@ -161,6 +166,30 @@ async function fetchActual(goalType: GoalType, tid: string, start: string, end: 
       const { data } = await supabase.from('herbalife_sales').select('total_profit')
         .eq('trainer_id', tid).gte('sale_date', start).lte('sale_date', end);
       return (data || []).reduce((sum: number, row: any) => sum + (Number(row.total_profit) || 0), 0);
+    }
+    case 'cliente_premium': {
+      const { count } = await supabase.from('client_status_events').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('new_status', 'Cliente Premium')
+        .gte('changed_at', start + 'T00:00:00-03:00').lte('changed_at', end + 'T23:59:59-03:00');
+      return count || 0;
+    }
+    case 'embaixador': {
+      const { count } = await supabase.from('client_status_events').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('new_status', 'Embaixador')
+        .gte('changed_at', start + 'T00:00:00-03:00').lte('changed_at', end + 'T23:59:59-03:00');
+      return count || 0;
+    }
+    case 'consultor': {
+      const { count } = await supabase.from('client_status_events').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('new_status', 'Consultor')
+        .gte('changed_at', start + 'T00:00:00-03:00').lte('changed_at', end + 'T23:59:59-03:00');
+      return count || 0;
+    }
+    case 'supervisor': {
+      const { count } = await supabase.from('client_status_events').select('*', { count: 'exact', head: true })
+        .eq('trainer_id', tid).eq('new_status', 'Supervisor')
+        .gte('changed_at', start + 'T00:00:00-03:00').lte('changed_at', end + 'T23:59:59-03:00');
+      return count || 0;
     }
   }
 }
