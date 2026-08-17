@@ -60,19 +60,28 @@ export default function AssessmentHistoryCard({
   const formatNum = (val: any) => val != null && val !== "" ? Number(val).toFixed(1) : '--';
 
   const [thumbUrls, setThumbUrls] = useState<string[]>([]);
+  const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function loadThumbs() {
       if (!getSignedUrl || !assessment.assessment_photos?.length) return;
-      // Carrega no máximo 3 thumbnails para não sobrecarregar a lista
-      const photos = assessment.assessment_photos.slice(0, 3);
+      
+      const regularPhotos = assessment.assessment_photos.filter((p: any) => p.label !== 'selfie_post');
+      const selfiePhoto = assessment.assessment_photos.find((p: any) => p.label === 'selfie_post');
+      
+      const photos = regularPhotos.slice(0, 3);
       const urls: string[] = [];
       for (const photo of photos) {
         const url = await getSignedUrl(photo.storage_path);
         if (url) urls.push(url);
       }
       if (!cancelled) setThumbUrls(urls);
+      
+      if (selfiePhoto) {
+        const url = await getSignedUrl(selfiePhoto.storage_path);
+        if (!cancelled) setSelfieUrl(url);
+      }
     }
     loadThumbs();
     return () => { cancelled = true; };
@@ -180,7 +189,7 @@ export default function AssessmentHistoryCard({
           </View>
         </View>
 
-        {/* Linha 2 — miniaturas (só aparece quando há fotos) */}
+        {/* Linha 2 — miniaturas fotos de avaliação (só aparece quando há fotos) */}
         {thumbUrls.length > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 }}>
             <Text style={{ color: '#94a3b8', fontSize: 10, fontWeight: '700', marginRight: 2 }}>📷</Text>
@@ -191,20 +200,35 @@ export default function AssessmentHistoryCard({
                 style={{ width: 44, height: 44, borderRadius: 7, borderWidth: 1, borderColor: '#e2e8f0' }}
               />
             ))}
-            {assessment.assessment_photos.length > 3 && (
-              <View style={{ width: 44, height: 44, borderRadius: 7, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
-                <Text style={{ fontSize: 11, color: '#475569', fontWeight: '800' }}>
-                  +{assessment.assessment_photos.length - 3}
-                </Text>
-              </View>
-            )}
+            {(() => {
+              const regularCount = assessment.assessment_photos.filter((p: any) => p.label !== 'selfie_post').length;
+              return regularCount > 3 && (
+                <View style={{ width: 44, height: 44, borderRadius: 7, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
+                  <Text style={{ fontSize: 11, color: '#475569', fontWeight: '800' }}>
+                    +{regularCount - 3}
+                  </Text>
+                </View>
+              );
+            })()}
           </View>
         )}
         {/* Fallback enquanto as URLs carregam */}
-        {thumbUrls.length === 0 && assessment.assessment_photos?.length > 0 && (
+        {thumbUrls.length === 0 && assessment.assessment_photos?.filter((p: any) => p.label !== 'selfie_post').length > 0 && (
           <Text style={{ color: "#94a3b8", fontSize: 11, fontWeight: "600", marginTop: 8 }}>
-            📷 {assessment.assessment_photos.length} foto(s)
+            📷 {assessment.assessment_photos.filter((p: any) => p.label !== 'selfie_post').length} foto(s)
           </Text>
+        )}
+
+        {/* Linha 3 — miniatura da selfie com cliente (só aparece se houver) */}
+        {selfieUrl && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <Text style={{ color: '#3b82f6', fontSize: 10, fontWeight: '700', marginRight: 2 }}>📸</Text>
+            <Image
+              source={{ uri: selfieUrl }}
+              style={{ width: 44, height: 44, borderRadius: 7, borderWidth: 2, borderColor: '#3b82f6' }}
+            />
+            <Text style={{ color: '#3b82f6', fontSize: 11, fontWeight: '700' }}>Selfie postada</Text>
+          </View>
         )}
 
       </View>
