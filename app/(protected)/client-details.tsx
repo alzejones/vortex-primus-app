@@ -73,6 +73,7 @@ export default function ClientDetails() {
   const [birthDate, setBirthDate] = useState("");
   const [gender, setGender] = useState("");
   const [heightCm, setHeightCm] = useState("");
+  const [clientStatus, setClientStatus] = useState("Cliente");
   const [observation, setObservation] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [objective, setObjective] = useState<Objective | "">("");
@@ -85,6 +86,8 @@ export default function ClientDetails() {
   const inviteCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const CLIENT_STATUS_OPTIONS = ["Cliente", "Cliente Premium", "Embaixador", "Consultor", "Supervisor"];
   const [coachQuestionnaire, setCoachQuestionnaire] = useState<CoachQuestionnaireData>({
     grupo: "",
     objetivos: [],
@@ -131,6 +134,7 @@ export default function ClientDetails() {
         setBirthDate(sqlToDate(data.birth_date));
         setGender(data.gender || "");
         setHeightCm(data.height_cm ? data.height_cm.toString() : "");
+        setClientStatus(data.client_status || "Cliente");
         setObservation(data.observation || "");
         setIsActive(data.is_active ?? true);
         setObjective((data.objective as Objective) || "");
@@ -203,6 +207,7 @@ export default function ClientDetails() {
           birth_date: dateToSql(birthDate),
           gender: gender || null,
           height_cm: heightCm ? parseFloat(heightCm) : null,
+          client_status: clientStatus,
           observation: observation || null,
           is_active: isActive,
           objective: objective || null,
@@ -459,6 +464,20 @@ export default function ClientDetails() {
             </View>
           </View>
 
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Status</Text>
+              <TouchableOpacity
+                style={styles.statusField}
+                onPress={() => setShowStatusModal(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.statusFieldText}>{clientStatus}</Text>
+                <Text style={styles.statusFieldArrow}>▼</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <Text style={styles.label}>Gênero</Text>
           <View style={styles.genderRow}>
             <TouchableOpacity
@@ -636,6 +655,45 @@ export default function ClientDetails() {
         )}
       </View>
 
+      {/* MODAL: seleção de status */}
+      <Modal
+        visible={showStatusModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowStatusModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.statusModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowStatusModal(false)}
+        >
+          <View style={styles.statusModalContent}>
+            {CLIENT_STATUS_OPTIONS.map((status) => (
+              <TouchableOpacity
+                key={status}
+                style={[
+                  styles.modalOption,
+                  clientStatus === status && styles.optionBtnActive
+                ]}
+                onPress={() => {
+                  setClientStatus(status);
+                  setShowStatusModal(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.statusModalOptionText,
+                    clientStatus === status && styles.optionBtnTextActive
+                  ]}
+                >
+                  {status}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* MODAL: seleção de canal do convite */}
       <Modal
         visible={showInviteModal}
@@ -775,6 +833,47 @@ const styles = StyleSheet.create({
   modalOptionSub: { fontSize: 13, color: T.t3, marginTop: 2 },
   modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: T.surface, borderWidth: 1, borderColor: T.border },
   modalCancelText: { fontSize: 15, fontWeight: "700", color: T.t2 },
+
+  statusField: {
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 10,
+    padding: 14,
+    backgroundColor: T.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  statusFieldText: {
+    fontSize: 16,
+    color: T.t1,
+    flex: 1,
+  },
+  statusFieldArrow: {
+    fontSize: 12,
+    color: T.t3,
+  },
+
+  statusModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statusModalContent: {
+    backgroundColor: T.card,
+    borderRadius: 12,
+    padding: 8,
+    width: "80%",
+    maxWidth: 300,
+  },
+  statusModalOptionText: {
+    color: T.t2,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
   stickyFooter: {
     position: 'absolute',
     bottom: 0,
