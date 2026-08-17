@@ -62,7 +62,8 @@ export default function ClientAssessments() {
   const [assessmentForReport, setAssessmentForReport] = useState<any>(null);
 
   const [pendingPhotos, setPendingPhotos] = useState<{ uri: string; label: string }[]>([]);
-  const [pendingSelfie, setPendingSelfie] = useState<{ uri: string } | null>(null);
+  const [pendingSelfie, setPendingSelfie] = useState<{ uri: string; storagePath?: string } | null>(null);
+  const [selfieSignedUrl, setSelfieSignedUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedScale, setSelectedScale] = useState<any>(null);
 
@@ -399,7 +400,11 @@ export default function ClientAssessments() {
 
     const existingSelfie = assessment.assessment_photos?.find((p: any) => p.label === 'selfie_post');
     if (existingSelfie) {
-      setPendingSelfie({ uri: 'existing' });
+      setPendingSelfie({ uri: 'existing', storagePath: existingSelfie.storage_path });
+      getSignedUrl(existingSelfie.storage_path).then(url => setSelfieSignedUrl(url));
+    } else {
+      setPendingSelfie(null);
+      setSelfieSignedUrl(null);
     }
   }
 
@@ -633,6 +638,7 @@ export default function ClientAssessments() {
       setUploadingPhoto(false);
       setPendingPhotos([]);
       setPendingSelfie(null);
+      setSelfieSignedUrl(null);
     }
   }
 
@@ -675,7 +681,7 @@ export default function ClientAssessments() {
     if (editingAnthropometryId) {
       if (editingAssessmentId) {
         await supabase.from("physical_assessments").update({ date: isoDate }).eq("id", editingAssessmentId);
-        if (pendingPhotos.length > 0 && editingAssessmentId) {
+        if ((pendingPhotos.length > 0 || pendingSelfie) && editingAssessmentId) {
           await uploadPhotosForAssessment(editingAssessmentId);
         }
       }
@@ -685,6 +691,7 @@ export default function ClientAssessments() {
       setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "" });
       setPendingPhotos([]);
       setPendingSelfie(null);
+      setSelfieSignedUrl(null);
       await fetchHistory();
       setSaving(false);
       setFormModalVisible(false);
@@ -822,13 +829,13 @@ export default function ClientAssessments() {
                   {/* Botão Post com Cliente */}
                   <TouchableOpacity
                     onPress={handlePickSelfie}
-                    disabled={uploadingPhoto || !!pendingSelfie}
+                    disabled={uploadingPhoto}
                     style={{
                       flexDirection: 'row', alignItems: 'center', gap: 6,
                       backgroundColor: pendingSelfie ? T.blueGlow : T.card,
                       borderWidth: 1, borderColor: pendingSelfie ? T.blue : T.border,
                       borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
-                      opacity: uploadingPhoto || !!pendingSelfie ? 0.6 : 1,
+                      opacity: uploadingPhoto ? 0.6 : 1,
                     }}
                   >
                     <Text style={{ fontSize: 20 }}>📸</Text>
@@ -884,17 +891,16 @@ export default function ClientAssessments() {
                     <Text style={{ fontSize: 12, fontWeight: 'bold', color: T.blue, marginBottom: 6 }}>📸 Selfie com Cliente:</Text>
                     <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
                       <Image
-                        source={{ uri: pendingSelfie.uri === 'existing' ? '' : pendingSelfie.uri }}
+                        source={{ uri: pendingSelfie.uri === 'existing' ? (selfieSignedUrl || '') : pendingSelfie.uri }}
                         style={{
                           width: 96, height: 96, borderRadius: 10,
                           borderWidth: 2, borderColor: T.blue,
-                          backgroundColor: pendingSelfie.uri === 'existing' ? T.blueGlow : T.surface
+                          backgroundColor: T.surface
                         }}
                       />
-                      {pendingSelfie.uri === 'existing' && (
-                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
-                          <Text style={{ fontSize: 32 }}>📸</Text>
-                          <Text style={{ fontSize: 10, color: T.blue, fontWeight: 'bold', marginTop: 4 }}>Já salva</Text>
+                      {pendingSelfie.uri === 'existing' && !selfieSignedUrl && (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: T.blueGlow }}>
+                          <ActivityIndicator size="small" color={T.blue} />
                         </View>
                       )}
                       <TouchableOpacity
