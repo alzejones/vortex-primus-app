@@ -62,6 +62,7 @@ export default function ClientAssessments() {
   const [assessmentForReport, setAssessmentForReport] = useState<any>(null);
 
   const [pendingPhotos, setPendingPhotos] = useState<{ uri: string; label: string }[]>([]);
+  const [pendingSelfie, setPendingSelfie] = useState<{ uri: string } | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedScale, setSelectedScale] = useState<any>(null);
 
@@ -395,6 +396,11 @@ export default function ClientAssessments() {
       });
       return newForm;
     });
+
+    const existingSelfie = assessment.assessment_photos?.find((p: any) => p.label === 'selfie_post');
+    if (existingSelfie) {
+      setPendingSelfie({ uri: 'existing' });
+    }
   }
 
   const calculateRemoteAssessment = () => {
@@ -534,8 +540,34 @@ export default function ClientAssessments() {
     setPendingPhotos(prev => [...prev, { uri: compressed.uri, label: 'outro' }]);
   }
 
+  async function handlePickSelfie() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Habilite o acesso à galeria nas configurações do dispositivo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: false,
+      quality: 1,
+    });
+
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+
+    const compressed = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 900 } }],
+      { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    setPendingSelfie({ uri: compressed.uri });
+  }
+
   async function uploadPhotosForAssessment(assessmentId: string) {
-    if (!pendingPhotos.length || !trainerId) return;
+    if ((!pendingPhotos.length && !pendingSelfie) || !trainerId) return;
 
     setUploadingPhoto(true);
     try {
@@ -543,7 +575,6 @@ export default function ClientAssessments() {
         const filename = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
         const storagePath = `${trainerId}/${clientId}/${assessmentId}/${filename}`;
 
-        // Lê o arquivo como ArrayBuffer para upload
         const response = await fetch(photo.uri);
         const blob = await response.blob();
         const arrayBuffer = await blob.arrayBuffer();
@@ -568,11 +599,40 @@ export default function ClientAssessments() {
           label: photo.label,
         });
       }
+
+      if (pendingSelfie) {
+        const filename = `selfie_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
+        const storagePath = `${trainerId}/${clientId}/${assessmentId}/${filename}`;
+
+        const response = await fetch(pendingSelfie.uri);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+
+        const { error: storageError } = await supabase.storage
+          .from('assessment-photos')
+          .upload(storagePath, arrayBuffer, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+
+        if (storageError) {
+          console.error('Erro no upload da selfie:', storageError.message);
+        } else {
+          await supabase.from('assessment_photos').insert({
+            assessment_id: assessmentId,
+            trainer_id: trainerId,
+            client_id: clientId,
+            storage_path: storagePath,
+            label: 'selfie_post',
+          });
+        }
+      }
     } catch (err: any) {
       console.error('Erro ao salvar fotos:', err.message);
     } finally {
       setUploadingPhoto(false);
       setPendingPhotos([]);
+      setPendingSelfie(null);
     }
   }
 
@@ -624,6 +684,7 @@ export default function ClientAssessments() {
       setEditingAssessmentId(null);
       setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "" });
       setPendingPhotos([]);
+      setPendingSelfie(null);
       await fetchHistory();
       setSaving(false);
       setFormModalVisible(false);
@@ -644,7 +705,7 @@ export default function ClientAssessments() {
 
     await supabase.from("anthropometry").insert({ assessment_id: assessment.id, ...payload });
 
-    if (pendingPhotos.length > 0) {
+    if (pendingPhotos.length > 0 || pendingSelfie) {
       await uploadPhotosForAssessment(assessment.id);
     }
 
@@ -758,6 +819,26 @@ export default function ClientAssessments() {
                     </View>
                   </TouchableOpacity>
 
+                  {/* Botão Post com Cliente */}
+                  <TouchableOpacity
+                    onPress={handlePickSelfie}
+                    disabled={uploadingPhoto || !!pendingSelfie}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 6,
+                      backgroundColor: pendingSelfie ? T.blueGlow : T.card,
+                      borderWidth: 1, borderColor: pendingSelfie ? T.blue : T.border,
+                      borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
+                      opacity: uploadingPhoto || !!pendingSelfie ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ fontSize: 20 }}>📸</Text>
+                    <View>
+                      <Text style={{ color: pendingSelfie ? T.blue : T.t1, fontWeight: 'bold', fontSize: 13 }}>
+                        {pendingSelfie ? '🔄 Trocar Selfie' : 'Post com Cliente'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
                   {/* Campo Data/Hora — canto direito (sem alteração) */}
                   <View style={{ width: 140 }}>
                     <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
@@ -794,6 +875,39 @@ export default function ClientAssessments() {
                         </TouchableOpacity>
                       </View>
                     ))}
+                  </View>
+                )}
+
+                {/* Thumbnail da selfie */}
+                {pendingSelfie && (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: T.blue, marginBottom: 6 }}>📸 Selfie com Cliente:</Text>
+                    <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+                      <Image
+                        source={{ uri: pendingSelfie.uri === 'existing' ? '' : pendingSelfie.uri }}
+                        style={{
+                          width: 96, height: 96, borderRadius: 10,
+                          borderWidth: 2, borderColor: T.blue,
+                          backgroundColor: pendingSelfie.uri === 'existing' ? T.blueGlow : T.surface
+                        }}
+                      />
+                      {pendingSelfie.uri === 'existing' && (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' }}>
+                          <Text style={{ fontSize: 32 }}>📸</Text>
+                          <Text style={{ fontSize: 10, color: T.blue, fontWeight: 'bold', marginTop: 4 }}>Já salva</Text>
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        onPress={() => setPendingSelfie(null)}
+                        style={{
+                          position: 'absolute', top: -6, right: -6,
+                          backgroundColor: T.red, borderRadius: 12,
+                          width: 24, height: 24, alignItems: 'center', justifyContent: 'center'
+                        }}
+                      >
+                        <Text style={{ color: T.white, fontSize: 13, fontWeight: 'bold' }}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
                 <BluetoothScaleConnector
