@@ -605,7 +605,25 @@ export default function ClientAssessments() {
         });
       }
 
-      if (pendingSelfie) {
+      if (pendingSelfie && pendingSelfie.uri !== 'existing') {
+        const { data: existingSelfie } = await supabase
+          .from('assessment_photos')
+          .select('id, storage_path')
+          .eq('assessment_id', assessmentId)
+          .eq('label', 'selfie_post')
+          .single();
+
+        if (existingSelfie) {
+          await supabase.storage
+            .from('assessment-photos')
+            .remove([existingSelfie.storage_path]);
+
+          await supabase
+            .from('assessment_photos')
+            .delete()
+            .eq('id', existingSelfie.id);
+        }
+
         const filename = `selfie_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
         const storagePath = `${trainerId}/${clientId}/${assessmentId}/${filename}`;
 
