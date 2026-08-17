@@ -48,7 +48,7 @@ export default function ClientCreate() {
     birth_date: "",
     gender: "",
     height_cm: "",
-    client_status: "Cliente",
+    client_status: "Aluno",
     notes: "",
     objective: "" as Objective | "",
     activity_level: "" as ActivityLevel | "",
@@ -56,7 +56,7 @@ export default function ClientCreate() {
   });
 
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const CLIENT_STATUS_OPTIONS = ["Cliente", "Cliente Premium", "Embaixador", "Consultor", "Supervisor"];
+  const CLIENT_STATUS_OPTIONS = ["Aluno", "Cliente", "Cliente Premium", "Embaixador", "Consultor", "Supervisor"];
 
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [coachQuestionnaire, setCoachQuestionnaire] = useState<CoachQuestionnaireData>({
