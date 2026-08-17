@@ -124,55 +124,57 @@ export const AuthProvider = ({ children }: any) => {
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        try {
-          if (event === "TOKEN_REFRESHED") {
+        setTimeout(async () => {
+          try {
+            if (event === "TOKEN_REFRESHED") {
+              setSession(session);
+              return;
+            }
+            if (event === "USER_UPDATED") {
+              setSession(session);
+              // Detecta role se ainda não foi detectado (ex: após reset de senha)
+              if (session?.user?.id) {
+                const [detectedRole, detectedAdmin] = await Promise.all([
+                  detectRole(session.user.id),
+                  detectIsAdmin(session.user.id),
+                ]);
+                if (detectedRole !== null) setRole(detectedRole);
+                setIsAdmin(detectedAdmin);
+              }
+              return;
+            }
+
+            // SIGNED_OUT só limpa sessão se realmente não há sessão válida.
+            // Guarda contra SIGNED_OUT espúrio disparado por erros de network durante chamadas longas.
+            if (event === "SIGNED_OUT") {
+              setSession(null);
+              setRole(null);
+              setIsAdmin(false);
+              setLoading(false);
+              return;
+            }
+
             setSession(session);
-            return;
-          }
-          if (event === "USER_UPDATED") {
-            setSession(session);
-            // Detecta role se ainda não foi detectado (ex: após reset de senha)
             if (session?.user?.id) {
+              const currentRole = role; // Capture existing role
               const [detectedRole, detectedAdmin] = await Promise.all([
                 detectRole(session.user.id),
                 detectIsAdmin(session.user.id),
               ]);
-              if (detectedRole !== null) setRole(detectedRole);
+              // Only update role if detection succeeded OR session is gone
+              if (detectedRole !== null || !session) {
+                setRole(detectedRole);
+              }
               setIsAdmin(detectedAdmin);
+              // If detectRole returned null but session is valid, keep existing role
+            } else {
+              setRole(null);
+              setIsAdmin(false);
             }
-            return;
-          }
-
-          // SIGNED_OUT só limpa sessão se realmente não há sessão válida.
-          // Guarda contra SIGNED_OUT espúrio disparado por erros de network durante chamadas longas.
-          if (event === "SIGNED_OUT") {
-            setSession(null);
-            setRole(null);
-            setIsAdmin(false);
+          } finally {
             setLoading(false);
-            return;
           }
-
-          setSession(session);
-          if (session?.user?.id) {
-            const currentRole = role; // Capture existing role
-            const [detectedRole, detectedAdmin] = await Promise.all([
-              detectRole(session.user.id),
-              detectIsAdmin(session.user.id),
-            ]);
-            // Only update role if detection succeeded OR session is gone
-            if (detectedRole !== null || !session) {
-              setRole(detectedRole);
-            }
-            setIsAdmin(detectedAdmin);
-            // If detectRole returned null but session is valid, keep existing role
-          } else {
-            setRole(null);
-            setIsAdmin(false);
-          }
-        } finally {
-          setLoading(false);
-        }
+        }, 0);
       }
     );
 
