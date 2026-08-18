@@ -906,6 +906,7 @@ export default function ClientAssessments() {
                       borderWidth: 1, borderColor: pendingSelfie ? T.blue : T.border,
                       borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
                       opacity: uploadingPhoto ? 0.6 : 1,
+                      marginLeft: 'auto',
                     }}
                   >
                     <Text style={{ fontSize: 20 }}>📸</Text>
