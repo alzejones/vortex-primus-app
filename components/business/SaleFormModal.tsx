@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Modal,
@@ -15,9 +14,9 @@ import {
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
-import { todayBR } from '../../utils/dateBR';
 import { normalizeSearch } from '../../utils/textSearch';
 import ConfirmModal from '../ui/ConfirmModal';
+import ResetProtocolDateModal from '../ui/ResetProtocolDateModal';
 
 export function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -40,6 +39,7 @@ export interface Kit {
   name: string;
   default_price: number;
   is_redemption_only: boolean;
+  triggers_reset_protocol?: boolean;
 }
 export interface KitItem {
   kit_id: string;
@@ -129,6 +129,7 @@ export default function SaleFormModal({
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
   const [reassessTarget, setReassessTarget] = useState<{id: string; name: string} | null>(null);
+  const [resetEnrollment, setResetEnrollment] = useState<{clientId: string; clientName: string; saleId: string; enrollmentId: string} | null>(null);
 
   function trainerUnitCost(p: Pricing): number {
     const map: Record<string, number> = {
@@ -447,7 +448,33 @@ export default function SaleFormModal({
         onSaved();
         onClose();
 
-        if (selClient) {
+        const hasResetKit = cart.some((item) => {
+          if (item.itemType !== 'kit') return false;
+          const kit = kits.find((k) => k.id === item.id);
+          return kit?.triggers_reset_protocol === true;
+        });
+
+        if (hasResetKit && selClient) {
+          const { data: enrollment, error: enrollErr } = await supabase
+            .from('reset_protocol_enrollments')
+            .insert({
+              trainer_id: trainerId,
+              client_id: selClient.id,
+              sale_id: sale.id,
+              status: 'aguardando_data',
+            })
+            .select('id')
+            .single();
+
+          if (!enrollErr && enrollment) {
+            setResetEnrollment({
+              clientId: selClient.id,
+              clientName: selClient.name,
+              saleId: sale.id,
+              enrollmentId: enrollment.id,
+            });
+          }
+        } else if (selClient) {
           setReassessTarget({ id: selClient.id, name: selClient.name });
         }
       } else {
@@ -487,8 +514,29 @@ export default function SaleFormModal({
 
   const isFromPresentation = !!prefillManualEntry?.prospectId && !editingSale;
 
+  async function handleResetDateConfirm(startDate: string) {
+    if (!resetEnrollment) return;
+    try {
+      await supabase
+        .from('reset_protocol_enrollments')
+        .update({ start_date: startDate })
+        .eq('id', resetEnrollment.enrollmentId);
+      setResetEnrollment(null);
+    } catch (e: any) {
+      console.error('Erro ao atualizar data de início do Reset:', e);
+      notify('Erro', 'Falha ao salvar a data de início.');
+    }
+  }
+
   return (
     <>
+      <ResetProtocolDateModal
+        visible={!!resetEnrollment}
+        clientName={resetEnrollment?.clientName || ''}
+        onConfirmDate={handleResetDateConfirm}
+        onDefineLater={() => setResetEnrollment(null)}
+      />
+
       <ConfirmModal
         visible={!!reassessTarget}
         title="Venda registrada!"
@@ -549,7 +597,7 @@ export default function SaleFormModal({
                   {!selClient && presentacoesLista.length > 0 && (
                     <TouchableOpacity style={s.selector} onPress={() => openPicker('apresentacao')}>
                       <Text style={[s.selectorTxt, { color: '#A855F7' }]}>
-                        🎤 Selecionar de "Apresentações Kit Acesso de hoje"…
+                        🎤 Selecionar de &ldquo;Apresentações Kit Acesso de hoje&rdquo;…
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -680,7 +728,6 @@ export default function SaleFormModal({
                       setSelClient(item);
                       setSelectedProspectId(null);
                       setPickerOpen(null);
-                      if (selProduct) setPrice(String(clientUnitPrice(selProduct, item.herbalife_discount_level)));
                     }
                   }}
                 >
