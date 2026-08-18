@@ -864,7 +864,7 @@ export default function ClientAssessments() {
                 </View>
               </View>
               <View style={{ padding: 16 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                   {/* Botão Salvar Foto — canto superior esquerdo do formulário */}
                   <TouchableOpacity
                     onPress={handlePickPhoto}
@@ -905,7 +905,7 @@ export default function ClientAssessments() {
                   </TouchableOpacity>
 
                   {/* Campo Data/Hora — canto direito (sem alteração) */}
-                  <View style={{ width: 140 }}>
+                  <View style={{ width: 140, marginTop: 8 }}>
                     <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
                     <TextInput
                       style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
