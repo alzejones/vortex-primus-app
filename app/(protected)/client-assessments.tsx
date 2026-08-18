@@ -908,7 +908,7 @@ export default function ClientAssessments() {
                   <View style={{ width: 140, marginTop: 8 }}>
                     <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
                     <TextInput
-                      style={[styles.gridInput, { fontSize: 12, padding: 6, minHeight: 35, textAlign: 'center' }]}
+                      style={[styles.gridInput, { fontSize: 12, paddingVertical: 6, paddingHorizontal: 8, minHeight: 35, textAlign: 'left' }]}
                       value={form.assessment_date}
                       onChangeText={handleDateChange}
                       placeholder="DD/MM/AAAA HH:mm"
@@ -921,16 +921,16 @@ export default function ClientAssessments() {
 
                 {/* Thumbnails das fotos selecionadas */}
                 {(pendingPhotos.length > 0 || existingPhotos.length > 0) && (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                     {existingPhotos.filter(ep => !photosToDelete.includes(ep.id)).map((photo) => (
                       <View key={photo.id} style={{ position: 'relative' }}>
                         {photo.signedUrl ? (
                           <Image
                             source={{ uri: photo.signedUrl }}
-                            style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
+                            style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
                           />
                         ) : (
-                          <View style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+                          <View style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
                             <ActivityIndicator size="small" color={T.blue} />
                           </View>
                         )}
@@ -939,10 +939,10 @@ export default function ClientAssessments() {
                           style={{
                             position: 'absolute', top: -6, right: -6,
                             backgroundColor: T.red, borderRadius: 10,
-                            width: 20, height: 20, alignItems: 'center', justifyContent: 'center'
+                            width: 16, height: 16, alignItems: 'center', justifyContent: 'center'
                           }}
                         >
-                          <Text style={{ color: T.white, fontSize: 11, fontWeight: 'bold' }}>✕</Text>
+                          <Text style={{ color: T.white, fontSize: 9, fontWeight: 'bold' }}>✕</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
@@ -950,17 +950,17 @@ export default function ClientAssessments() {
                       <View key={`pending-${index}`} style={{ position: 'relative' }}>
                         <Image
                           source={{ uri: photo.uri }}
-                          style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
+                          style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
                         />
                         <TouchableOpacity
                           onPress={() => setPendingPhotos(prev => prev.filter((_, i) => i !== index))}
                           style={{
                             position: 'absolute', top: -6, right: -6,
                             backgroundColor: T.red, borderRadius: 10,
-                            width: 20, height: 20, alignItems: 'center', justifyContent: 'center'
+                            width: 16, height: 16, alignItems: 'center', justifyContent: 'center'
                           }}
                         >
-                          <Text style={{ color: T.white, fontSize: 11, fontWeight: 'bold' }}>✕</Text>
+                          <Text style={{ color: T.white, fontSize: 9, fontWeight: 'bold' }}>✕</Text>
                         </TouchableOpacity>
                       </View>
                     ))}
