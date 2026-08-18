@@ -909,9 +909,9 @@ export default function ClientAssessments() {
                     }}
                   >
                     <Text style={{ fontSize: 20 }}>📸</Text>
-                    <View>
+                    <View style={{ alignItems: 'flex-end' }}>
                       <Text style={{ color: pendingSelfie ? T.blue : T.t1, fontWeight: 'bold', fontSize: 13 }}>
-                        {pendingSelfie ? '🔄 Up Selfie' : 'Post com Cliente'}
+                        {pendingSelfie ? '🔄 Salvar Selfie' : 'Post com Cliente'}
                       </Text>
                     </View>
                   </TouchableOpacity>
