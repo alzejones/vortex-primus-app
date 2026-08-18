@@ -864,7 +864,7 @@ export default function ClientAssessments() {
                 </View>
               </View>
               <View style={{ padding: 16 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'flex-end', marginTop: 10, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                   {/* Botão Salvar Foto — canto superior esquerdo do formulário */}
                   <TouchableOpacity
                     onPress={handlePickPhoto}
@@ -899,7 +899,7 @@ export default function ClientAssessments() {
                     <Text style={{ fontSize: 20 }}>📸</Text>
                     <View>
                       <Text style={{ color: pendingSelfie ? T.blue : T.t1, fontWeight: 'bold', fontSize: 13 }}>
-                        {pendingSelfie ? '🔄 Trocar Selfie' : 'Post com Cliente'}
+                        {pendingSelfie ? '🔄 Up Selfie' : 'Post com Cliente'}
                       </Text>
                     </View>
                   </TouchableOpacity>
