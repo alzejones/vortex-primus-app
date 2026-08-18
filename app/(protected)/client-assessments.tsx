@@ -553,9 +553,9 @@ export default function ClientAssessments() {
       { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG }
     );
 
-    // Máximo 4 fotos por avaliação
-    if (pendingPhotos.length >= 4) {
-      Alert.alert('Limite atingido', 'Máximo de 4 fotos por avaliação.');
+    // Máximo 3 fotos por avaliação
+    if (pendingPhotos.length >= 3) {
+      Alert.alert('Limite atingido', 'Máximo de 3 fotos por avaliação.');
       return;
     }
 
@@ -844,8 +844,9 @@ export default function ClientAssessments() {
         {/* MODAL DE FORMULÁRIO */}
         <Modal visible={formModalVisible} animationType="slide" onRequestClose={() => setFormModalVisible(false)}>
           <View style={{ flex: 1, backgroundColor: T.bg }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: T.bgAlt, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: T.border }}>
-              <Text style={{ color: T.t1, fontSize: 18, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: T.bgAlt, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: T.border, flexWrap: 'wrap', gap: 8 }}>
+              <Text style={{ color: T.t1, fontSize: 14, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
+              <Text style={{ color: T.t2, fontSize: 13 }}>{editingAssessmentId ? `Nome: ${client?.name?.substring(0, 15)}${client?.name?.length > 15 ? '...' : ''}` : ''}</Text>
               <TouchableOpacity onPress={() => {
                 setFormModalVisible(false);
                 setPendingPhotos([]);
@@ -858,9 +859,9 @@ export default function ClientAssessments() {
             <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
               <View style={styles.stickyHeader}>
                 <View style={styles.headerRow}>
-                  <Text style={styles.headerItem}><Text style={styles.bold}>Nome: </Text>{client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}</Text>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
-                  <Text style={styles.headerItem}><Text style={styles.bold}>Alt: </Text>{client?.height_cm}cm</Text>
+                  <Text style={styles.headerItem}><Text style={styles.bold}>Altura: </Text>{client?.height_cm}cm</Text>
+                  <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text>{form.assessment_date}</Text>
                 </View>
               </View>
               <View style={{ padding: 16 }}>
@@ -919,9 +920,9 @@ export default function ClientAssessments() {
                   </View>
                 </View>
 
-                {/* Thumbnails das fotos selecionadas */}
-                {(pendingPhotos.length > 0 || existingPhotos.length > 0) && (
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {/* Thumbnails das fotos e selfie */}
+                {(pendingPhotos.length > 0 || existingPhotos.length > 0 || pendingSelfie) && (
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 6, marginBottom: 12 }}>
                     {existingPhotos.filter(ep => !photosToDelete.includes(ep.id)).map((photo) => (
                       <View key={photo.id} style={{ position: 'relative' }}>
                         {photo.signedUrl ? (
@@ -964,38 +965,36 @@ export default function ClientAssessments() {
                         </TouchableOpacity>
                       </View>
                     ))}
-                  </View>
-                )}
-
-                {/* Thumbnail da selfie */}
-                {pendingSelfie && (
-                  <View style={{ marginBottom: 12 }}>
-                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: T.blue, marginBottom: 4 }}>📸 Selfie com Cliente:</Text>
-                    <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
-                      <Image
-                        source={{ uri: pendingSelfie.uri === 'existing' ? (selfieSignedUrl || '') : pendingSelfie.uri }}
-                        style={{
-                          width: 60, height: 60, borderRadius: 10,
-                          borderWidth: 1.5, borderColor: T.blue,
-                          backgroundColor: T.surface
-                        }}
-                      />
-                      {pendingSelfie.uri === 'existing' && !selfieSignedUrl && (
-                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: T.blueGlow }}>
-                          <ActivityIndicator size="small" color={T.blue} />
+                    {pendingSelfie && (
+                      <View style={{ alignItems: 'flex-start' }}>
+                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: T.blue, marginBottom: 2 }}>📸 Selfie</Text>
+                        <View style={{ position: 'relative' }}>
+                          <Image
+                            source={{ uri: pendingSelfie.uri === 'existing' ? (selfieSignedUrl || '') : pendingSelfie.uri }}
+                            style={{
+                              width: 60, height: 60, borderRadius: 10,
+                              borderWidth: 1.5, borderColor: T.blue,
+                              backgroundColor: T.surface
+                            }}
+                          />
+                          {pendingSelfie.uri === 'existing' && !selfieSignedUrl && (
+                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: T.blueGlow }}>
+                              <ActivityIndicator size="small" color={T.blue} />
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            onPress={() => setPendingSelfie(null)}
+                            style={{
+                              position: 'absolute', top: -6, right: -6,
+                              backgroundColor: T.red, borderRadius: 8,
+                              width: 16, height: 16, alignItems: 'center', justifyContent: 'center'
+                            }}
+                          >
+                            <Text style={{ color: T.white, fontSize: 9, fontWeight: 'bold' }}>✕</Text>
+                          </TouchableOpacity>
                         </View>
-                      )}
-                      <TouchableOpacity
-                        onPress={() => setPendingSelfie(null)}
-                        style={{
-                          position: 'absolute', top: -6, right: -6,
-                          backgroundColor: T.red, borderRadius: 8,
-                          width: 16, height: 16, alignItems: 'center', justifyContent: 'center'
-                        }}
-                      >
-                        <Text style={{ color: T.white, fontSize: 9, fontWeight: 'bold' }}>✕</Text>
-                      </TouchableOpacity>
-                    </View>
+                      </View>
+                    )}
                   </View>
                 )}
                 <BluetoothScaleConnector
