@@ -75,7 +75,7 @@ export default function NewAppointment() {
         .neq("status", "cancelled");
 
       if (data) {
-        const times = data.map((a) => a.appointment_time);
+        const times = data.map((a) => a.appointment_time.substring(0, 5));
         setBookedTimes(times);
         
         if (selectedTime && times.includes(selectedTime)) {
@@ -131,7 +131,7 @@ export default function NewAppointment() {
       }]);
 
       if (error) {
-        if (error.message && error.message.startsWith("CONFLITO_HORARIO")) {
+        if (error.code === '23505') {
           alert("Esse horário acabou de ser ocupado por outro agendamento. Escolha outro horário.");
           
           const { data } = await supabase
@@ -142,7 +142,7 @@ export default function NewAppointment() {
             .neq("status", "cancelled");
           
           if (data) {
-            setBookedTimes(data.map((a) => a.appointment_time));
+            setBookedTimes(data.map((a) => a.appointment_time.substring(0, 5)));
           }
           return;
         }
