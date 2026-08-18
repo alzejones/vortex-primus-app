@@ -970,13 +970,13 @@ export default function ClientAssessments() {
                 {/* Thumbnail da selfie */}
                 {pendingSelfie && (
                   <View style={{ marginBottom: 12 }}>
-                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: T.blue, marginBottom: 6 }}>📸 Selfie com Cliente:</Text>
+                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: T.blue, marginBottom: 4 }}>📸 Selfie com Cliente:</Text>
                     <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
                       <Image
                         source={{ uri: pendingSelfie.uri === 'existing' ? (selfieSignedUrl || '') : pendingSelfie.uri }}
                         style={{
-                          width: 96, height: 96, borderRadius: 10,
-                          borderWidth: 2, borderColor: T.blue,
+                          width: 60, height: 60, borderRadius: 10,
+                          borderWidth: 1.5, borderColor: T.blue,
                           backgroundColor: T.surface
                         }}
                       />
@@ -989,11 +989,11 @@ export default function ClientAssessments() {
                         onPress={() => setPendingSelfie(null)}
                         style={{
                           position: 'absolute', top: -6, right: -6,
-                          backgroundColor: T.red, borderRadius: 12,
-                          width: 24, height: 24, alignItems: 'center', justifyContent: 'center'
+                          backgroundColor: T.red, borderRadius: 8,
+                          width: 16, height: 16, alignItems: 'center', justifyContent: 'center'
                         }}
                       >
-                        <Text style={{ color: T.white, fontSize: 13, fontWeight: 'bold' }}>✕</Text>
+                        <Text style={{ color: T.white, fontSize: 9, fontWeight: 'bold' }}>✕</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
