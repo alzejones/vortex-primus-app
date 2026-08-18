@@ -553,9 +553,8 @@ export default function ClientAssessments() {
       { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG }
     );
 
-    // Máximo 3 fotos por avaliação
-    if (pendingPhotos.length >= 3) {
-      Alert.alert('Limite atingido', 'Máximo de 3 fotos por avaliação.');
+    if (pendingPhotos.length >= 4) {
+      Alert.alert('Limite atingido', 'Máximo de 4 fotos por avaliação.');
       return;
     }
 
@@ -846,7 +845,7 @@ export default function ClientAssessments() {
           <View style={{ flex: 1, backgroundColor: T.bg }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: T.bgAlt, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: T.border, flexWrap: 'wrap', gap: 8 }}>
               <Text style={{ color: T.t1, fontSize: 14, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-              <Text style={{ color: T.t2, fontSize: 13 }}>{editingAssessmentId ? `Nome: ${client?.name?.substring(0, 15)}${client?.name?.length > 15 ? '...' : ''}` : ''}</Text>
+              <Text style={{ color: T.t2, fontSize: 13 }}>{client?.name?.substring(0, 20)}{client?.name?.length > 20 ? '...' : ''}</Text>
               <TouchableOpacity onPress={() => {
                 setFormModalVisible(false);
                 setPendingPhotos([]);
