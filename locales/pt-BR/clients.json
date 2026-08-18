@@ -52,5 +52,6 @@
   "emptySearchTitle": "Nenhum aluno encontrado.",
   "emptySearchSub": "Tente buscar por outro nome.",
   "emptyListTitle": "Nenhum aluno cadastrado.",
-  "emptyListSub": "Toque em \"+ Novo Cliente\" para começar."
+  "emptyListSub": "Toque em \"+ Novo Cliente\" para começar.",
+  "statusLabel": "Status"
 }

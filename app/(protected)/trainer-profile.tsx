@@ -23,7 +23,7 @@ import { T } from "../../utils/theme";
 
 export default function TrainerProfile() {
   const router = useRouter();
-  const { signOut, signingOut, debugMessages } = useAuth();
+  const { signOut, signingOut, debugMessages, isAdmin } = useAuth();
   const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
   const licenseStatus = useLicenseStatus();
   const [loading, setLoading] = useState(true);
@@ -539,6 +539,26 @@ export default function TrainerProfile() {
             </View>
             <Text style={styles.configButtonArrow}>›</Text>
           </TouchableOpacity>
+
+          {/* Botão Admin: Kits Globais (condicional) */}
+          {isAdmin && (
+            <TouchableOpacity 
+              style={[styles.configButton, { borderWidth: 1.5, borderColor: '#ef4444' }]}
+              onPress={() => router.push('/kits-globais' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.configButtonLeft}>
+                <View style={[styles.configButtonIcon, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                  <Text style={{ fontSize: 24 }}>🔑</Text>
+                </View>
+                <View>
+                  <Text style={[styles.configButtonTitle, { color: '#ef4444' }]}>Administração — Kits Globais</Text>
+                  <Text style={styles.configButtonSubtitle}>Gerenciar kits disponíveis para todos os trainers</Text>
+                </View>
+              </View>
+              <Text style={styles.configButtonArrow}>›</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity

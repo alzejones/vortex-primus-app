@@ -23,6 +23,7 @@ import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
 import MobileLayout from './DashboardLayoutMobile';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
+import { useAuth } from '../../contexts/AuthContext';
 
 function isNavActive(key: string, pathname: string): boolean {
   switch (key) {
@@ -30,6 +31,7 @@ function isNavActive(key: string, pathname: string): boolean {
     case 'clients':  return pathname.includes('client');
     case 'schedule': return pathname.includes('schedule');
     case 'config':   return pathname.includes('trainer-profile') || pathname.includes('upgrade') || pathname.includes('plans');
+    case 'admin':    return pathname.includes('kits-globais');
     default:         return false;
   }
 }
@@ -50,6 +52,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   const { t, i18n } = useTranslation('dashboard');
   const pathname = usePathname();
   const licenseStatus = useLicenseStatus();
+  const { isAdmin } = useAuth();
 
   const NAV_ITEMS = useMemo(() => [
     { key: 'home',     label: t('navHome'),     icon: '⊞',  href: '/(protected)'                },
@@ -122,6 +125,21 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             </TouchableOpacity>
           );
         })}
+        
+        {/* Item Admin: Kits Globais (condicional) */}
+        {isAdmin && (
+          <TouchableOpacity
+            style={[styles.navItem, isNavActive('admin', pathname) && styles.navItemActive]}
+            onPress={() => router.push('/kits-globais' as any)}
+            activeOpacity={0.7}
+          >
+            {isNavActive('admin', pathname) && <View style={styles.navActiveBar} />}
+            <Text style={styles.navIcon}>🔑</Text>
+            <Text style={[styles.navLabel, isNavActive('admin', pathname) && styles.navLabelActive]}>
+              Kits Globais
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Spacer */}

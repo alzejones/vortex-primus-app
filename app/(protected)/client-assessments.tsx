@@ -62,8 +62,12 @@ export default function ClientAssessments() {
   const [assessmentForReport, setAssessmentForReport] = useState<any>(null);
 
   const [pendingPhotos, setPendingPhotos] = useState<{ uri: string; label: string }[]>([]);
+  const [pendingSelfie, setPendingSelfie] = useState<{ uri: string; storagePath?: string } | null>(null);
+  const [selfieSignedUrl, setSelfieSignedUrl] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [selectedScale, setSelectedScale] = useState<any>(null);
+  const [existingPhotos, setExistingPhotos] = useState<{ id: string; storagePath: string; signedUrl: string | null }[]>([]);
+  const [photosToDelete, setPhotosToDelete] = useState<string[]>([]);
 
   const formatDateBR = (date: Date) => {
     const d = date.getDate().toString().padStart(2, '0');
@@ -395,6 +399,30 @@ export default function ClientAssessments() {
       });
       return newForm;
     });
+
+    const existingSelfie = assessment.assessment_photos?.find((p: any) => p.label === 'selfie_post');
+    if (existingSelfie) {
+      setPendingSelfie({ uri: 'existing', storagePath: existingSelfie.storage_path });
+      getSignedUrl(existingSelfie.storage_path).then(url => setSelfieSignedUrl(url));
+    } else {
+      setPendingSelfie(null);
+      setSelfieSignedUrl(null);
+    }
+
+    const otherPhotos = (assessment.assessment_photos || []).filter((p: any) => p.label !== 'selfie_post');
+    const photoEntries = otherPhotos.map((p: any) => ({
+      id: p.id,
+      storagePath: p.storage_path,
+      signedUrl: null
+    }));
+    setExistingPhotos(photoEntries);
+    setPhotosToDelete([]);
+
+    photoEntries.forEach((entry) => {
+      getSignedUrl(entry.storagePath).then(url => {
+        setExistingPhotos(prev => prev.map(e => e.id === entry.id ? { ...e, signedUrl: url } : e));
+      });
+    });
   }
 
   const calculateRemoteAssessment = () => {
@@ -534,16 +562,53 @@ export default function ClientAssessments() {
     setPendingPhotos(prev => [...prev, { uri: compressed.uri, label: 'outro' }]);
   }
 
+  async function handlePickSelfie() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permissão necessária', 'Habilite o acesso à galeria nas configurações do dispositivo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: false,
+      quality: 1,
+    });
+
+    if (result.canceled || !result.assets?.length) return;
+
+    const asset = result.assets[0];
+
+    const compressed = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 900 } }],
+      { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
+    setPendingSelfie({ uri: compressed.uri });
+  }
+
   async function uploadPhotosForAssessment(assessmentId: string) {
-    if (!pendingPhotos.length || !trainerId) return;
+    if ((!pendingPhotos.length && !pendingSelfie && !photosToDelete.length) || !trainerId) return;
 
     setUploadingPhoto(true);
     try {
+      if (photosToDelete.length > 0) {
+        const { data: photosData } = await supabase
+          .from('assessment_photos')
+          .select('storage_path')
+          .in('id', photosToDelete);
+
+        if (photosData && photosData.length > 0) {
+          const paths = photosData.map(p => p.storage_path);
+          await supabase.storage.from('assessment-photos').remove(paths);
+          await supabase.from('assessment_photos').delete().in('id', photosToDelete);
+        }
+      }
       for (const photo of pendingPhotos) {
         const filename = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
         const storagePath = `${trainerId}/${clientId}/${assessmentId}/${filename}`;
 
-        // Lê o arquivo como ArrayBuffer para upload
         const response = await fetch(photo.uri);
         const blob = await response.blob();
         const arrayBuffer = await blob.arrayBuffer();
@@ -568,11 +633,61 @@ export default function ClientAssessments() {
           label: photo.label,
         });
       }
+
+      if (pendingSelfie && pendingSelfie.uri !== 'existing') {
+        const { data: existingSelfie } = await supabase
+          .from('assessment_photos')
+          .select('id, storage_path')
+          .eq('assessment_id', assessmentId)
+          .eq('label', 'selfie_post')
+          .single();
+
+        if (existingSelfie) {
+          await supabase.storage
+            .from('assessment-photos')
+            .remove([existingSelfie.storage_path]);
+
+          await supabase
+            .from('assessment_photos')
+            .delete()
+            .eq('id', existingSelfie.id);
+        }
+
+        const filename = `selfie_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
+        const storagePath = `${trainerId}/${clientId}/${assessmentId}/${filename}`;
+
+        const response = await fetch(pendingSelfie.uri);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+
+        const { error: storageError } = await supabase.storage
+          .from('assessment-photos')
+          .upload(storagePath, arrayBuffer, {
+            contentType: 'image/jpeg',
+            upsert: false,
+          });
+
+        if (storageError) {
+          console.error('Erro no upload da selfie:', storageError.message);
+        } else {
+          await supabase.from('assessment_photos').insert({
+            assessment_id: assessmentId,
+            trainer_id: trainerId,
+            client_id: clientId,
+            storage_path: storagePath,
+            label: 'selfie_post',
+          });
+        }
+      }
     } catch (err: any) {
       console.error('Erro ao salvar fotos:', err.message);
     } finally {
       setUploadingPhoto(false);
       setPendingPhotos([]);
+      setPendingSelfie(null);
+      setSelfieSignedUrl(null);
+      setExistingPhotos([]);
+      setPhotosToDelete([]);
     }
   }
 
@@ -615,15 +730,19 @@ export default function ClientAssessments() {
     if (editingAnthropometryId) {
       if (editingAssessmentId) {
         await supabase.from("physical_assessments").update({ date: isoDate }).eq("id", editingAssessmentId);
-        if (pendingPhotos.length > 0 && editingAssessmentId) {
+        if ((pendingPhotos.length > 0 || pendingSelfie) && editingAssessmentId) {
           await uploadPhotosForAssessment(editingAssessmentId);
         }
       }
       await supabase.from("anthropometry").update(payload).eq("id", editingAnthropometryId);
       setEditingAnthropometryId(null);
       setEditingAssessmentId(null);
-      setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "" });
+      setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "", bmi: "", water_percent: "", bone_mass: "", source: "manual" });
       setPendingPhotos([]);
+      setPendingSelfie(null);
+      setSelfieSignedUrl(null);
+      setExistingPhotos([]);
+      setPhotosToDelete([]);
       await fetchHistory();
       setSaving(false);
       setFormModalVisible(false);
@@ -644,7 +763,7 @@ export default function ClientAssessments() {
 
     await supabase.from("anthropometry").insert({ assessment_id: assessment.id, ...payload });
 
-    if (pendingPhotos.length > 0) {
+    if (pendingPhotos.length > 0 || pendingSelfie) {
       await uploadPhotosForAssessment(assessment.id);
     }
 
@@ -727,7 +846,14 @@ export default function ClientAssessments() {
           <View style={{ flex: 1, backgroundColor: T.bg }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: T.bgAlt, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: T.border }}>
               <Text style={{ color: T.t1, fontSize: 18, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-              <TouchableOpacity onPress={() => setFormModalVisible(false)}><Text style={{ color: T.red, fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                setFormModalVisible(false);
+                setPendingPhotos([]);
+                setPendingSelfie(null);
+                setSelfieSignedUrl(null);
+                setExistingPhotos([]);
+                setPhotosToDelete([]);
+              }}><Text style={{ color: T.red, fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text></TouchableOpacity>
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
               <View style={styles.stickyHeader}>
@@ -758,6 +884,26 @@ export default function ClientAssessments() {
                     </View>
                   </TouchableOpacity>
 
+                  {/* Botão Post com Cliente */}
+                  <TouchableOpacity
+                    onPress={handlePickSelfie}
+                    disabled={uploadingPhoto}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 6,
+                      backgroundColor: pendingSelfie ? T.blueGlow : T.card,
+                      borderWidth: 1, borderColor: pendingSelfie ? T.blue : T.border,
+                      borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
+                      opacity: uploadingPhoto ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ fontSize: 20 }}>📸</Text>
+                    <View>
+                      <Text style={{ color: pendingSelfie ? T.blue : T.t1, fontWeight: 'bold', fontSize: 13 }}>
+                        {pendingSelfie ? '🔄 Trocar Selfie' : 'Post com Cliente'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
                   {/* Campo Data/Hora — canto direito (sem alteração) */}
                   <View style={{ width: 140 }}>
                     <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
@@ -774,10 +920,34 @@ export default function ClientAssessments() {
                 </View>
 
                 {/* Thumbnails das fotos selecionadas */}
-                {pendingPhotos.length > 0 && (
+                {(pendingPhotos.length > 0 || existingPhotos.length > 0) && (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                    {existingPhotos.filter(ep => !photosToDelete.includes(ep.id)).map((photo) => (
+                      <View key={photo.id} style={{ position: 'relative' }}>
+                        {photo.signedUrl ? (
+                          <Image
+                            source={{ uri: photo.signedUrl }}
+                            style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
+                          />
+                        ) : (
+                          <View style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+                            <ActivityIndicator size="small" color={T.blue} />
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => setPhotosToDelete(prev => [...prev, photo.id])}
+                          style={{
+                            position: 'absolute', top: -6, right: -6,
+                            backgroundColor: T.red, borderRadius: 10,
+                            width: 20, height: 20, alignItems: 'center', justifyContent: 'center'
+                          }}
+                        >
+                          <Text style={{ color: T.white, fontSize: 11, fontWeight: 'bold' }}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                     {pendingPhotos.map((photo, index) => (
-                      <View key={index} style={{ position: 'relative' }}>
+                      <View key={`pending-${index}`} style={{ position: 'relative' }}>
                         <Image
                           source={{ uri: photo.uri }}
                           style={{ width: 72, height: 72, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
@@ -794,6 +964,38 @@ export default function ClientAssessments() {
                         </TouchableOpacity>
                       </View>
                     ))}
+                  </View>
+                )}
+
+                {/* Thumbnail da selfie */}
+                {pendingSelfie && (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: T.blue, marginBottom: 6 }}>📸 Selfie com Cliente:</Text>
+                    <View style={{ position: 'relative', alignSelf: 'flex-start' }}>
+                      <Image
+                        source={{ uri: pendingSelfie.uri === 'existing' ? (selfieSignedUrl || '') : pendingSelfie.uri }}
+                        style={{
+                          width: 96, height: 96, borderRadius: 10,
+                          borderWidth: 2, borderColor: T.blue,
+                          backgroundColor: T.surface
+                        }}
+                      />
+                      {pendingSelfie.uri === 'existing' && !selfieSignedUrl && (
+                        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: T.blueGlow }}>
+                          <ActivityIndicator size="small" color={T.blue} />
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        onPress={() => setPendingSelfie(null)}
+                        style={{
+                          position: 'absolute', top: -6, right: -6,
+                          backgroundColor: T.red, borderRadius: 12,
+                          width: 24, height: 24, alignItems: 'center', justifyContent: 'center'
+                        }}
+                      >
+                        <Text style={{ color: T.white, fontSize: 13, fontWeight: 'bold' }}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
                 <BluetoothScaleConnector

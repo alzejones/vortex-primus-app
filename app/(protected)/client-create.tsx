@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Dimensions,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -49,11 +50,15 @@ export default function ClientCreate() {
     birth_date: "",
     gender: "",
     height_cm: "",
+    client_status: "Aluno",
     notes: "",
     objective: "" as Objective | "",
     activity_level: "" as ActivityLevel | "",
     food_restrictions: "",
   });
+
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const CLIENT_STATUS_OPTIONS = ["Aluno", "Cliente", "Cliente Premium", "Embaixador", "Consultor", "Supervisor"];
 
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [coachQuestionnaire, setCoachQuestionnaire] = useState<CoachQuestionnaireData>({
@@ -196,6 +201,7 @@ export default function ClientCreate() {
         birth_date: formattedDate,
         gender: safeGenderDB,
         height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
+        client_status: form.client_status,
         observation: (form.notes || "").trim() || null,
         objective: form.objective || null,
         activity_level: form.activity_level || null,
@@ -382,17 +388,69 @@ export default function ClientCreate() {
           </View>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>{t('heightLabel')}</Text>
-          <TextInput
-            placeholder={t('heightPlaceholder')}
-            placeholderTextColor={T.t3}
-            keyboardType="numeric"
-            value={form.height_cm}
-            onChangeText={(v) => handleChange("height_cm", v)}
-            style={styles.input}
-          />
+        <View style={styles.row}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: 10 }]}>
+            <Text style={styles.label}>{t('heightLabel')}</Text>
+            <TextInput
+              placeholder={t('heightPlaceholder')}
+              placeholderTextColor={T.t3}
+              keyboardType="numeric"
+              value={form.height_cm}
+              onChangeText={(v) => handleChange("height_cm", v)}
+              style={styles.input}
+            />
+          </View>
+
+          <View style={[styles.inputGroup, { flex: 1 }]}>
+            <Text style={styles.label}>{t('statusLabel')}</Text>
+            <TouchableOpacity
+              style={styles.statusField}
+              onPress={() => setShowStatusModal(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.statusFieldText}>{form.client_status}</Text>
+              <Text style={styles.statusFieldArrow}>▼</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        <Modal
+          visible={showStatusModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowStatusModal(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowStatusModal(false)}
+          >
+            <View style={styles.modalContent}>
+              {CLIENT_STATUS_OPTIONS.map((status) => (
+                <TouchableOpacity
+                  key={status}
+                  style={[
+                    styles.modalOption,
+                    form.client_status === status && styles.optionBtnActive
+                  ]}
+                  onPress={() => {
+                    handleChange("client_status", status);
+                    setShowStatusModal(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      form.client_status === status && styles.optionBtnTextActive
+                    ]}
+                  >
+                    {status}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         <View style={styles.inputGroup} ref={observacoesRef}>
           <Text style={styles.label}>{t('notesLabel')}</Text>
@@ -537,6 +595,7 @@ export default function ClientCreate() {
                     birth_date: formattedDate,
                     gender: safeGenderDB,
                     height_cm: form.height_cm ? parseInt(form.height_cm, 10) : null,
+                    client_status: form.client_status,
                     observation: (form.notes || "").trim() || null,
                     objective: form.objective || null,
                     activity_level: form.activity_level || null,
@@ -675,5 +734,52 @@ const styles = StyleSheet.create({
     borderTopColor: T.border,
     paddingHorizontal: 20,
     paddingTop: 14,
+  },
+
+  statusField: {
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: T.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  statusFieldText: {
+    fontSize: 15,
+    color: T.t1,
+    flex: 1,
+  },
+  statusFieldArrow: {
+    fontSize: 12,
+    color: T.t3,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: T.card,
+    borderRadius: 12,
+    padding: 8,
+    width: "80%",
+    maxWidth: 300,
+  },
+  modalOption: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: T.border,
+    backgroundColor: T.card,
+    marginBottom: 8,
+  },
+  modalOptionText: {
+    color: T.t2,
+    fontWeight: "600",
+    fontSize: 14,
   },
 });

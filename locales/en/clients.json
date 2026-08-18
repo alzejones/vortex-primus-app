@@ -52,5 +52,6 @@
   "emptySearchTitle": "No clients found.",
   "emptySearchSub": "Try searching for another name.",
   "emptyListTitle": "No clients registered.",
-  "emptyListSub": "Tap \"+ New Client\" to get started."
+  "emptyListSub": "Tap \"+ New Client\" to get started.",
+  "statusLabel": "Status"
 }
