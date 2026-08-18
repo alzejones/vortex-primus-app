@@ -945,7 +945,7 @@ export default function ClientAssessments() {
                           <Text style={{ color: T.white, fontSize: 11, fontWeight: 'bold' }}>✕</Text>
                         </TouchableOpacity>
                       </View>
-                    )))}
+                    ))}
                     {pendingPhotos.map((photo, index) => (
                       <View key={`pending-${index}`} style={{ position: 'relative' }}>
                         <Image
@@ -963,7 +963,7 @@ export default function ClientAssessments() {
                           <Text style={{ color: T.white, fontSize: 11, fontWeight: 'bold' }}>✕</Text>
                         </TouchableOpacity>
                       </View>
-                    )))}
+                    ))}
                   </View>
                 )}
 
