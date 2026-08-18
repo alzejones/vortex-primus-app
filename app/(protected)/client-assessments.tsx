@@ -861,7 +861,18 @@ export default function ClientAssessments() {
                 <View style={styles.headerRow}>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Altura: </Text>{client?.height_cm}cm</Text>
-                  <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text>{form.assessment_date}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text></Text>
+                    <TextInput
+                      style={{ fontSize: 14, color: T.t2, borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 0, paddingHorizontal: 2, minWidth: 110 }}
+                      value={form.assessment_date}
+                      onChangeText={handleDateChange}
+                      placeholder="DD/MM/AAAA HH:mm"
+                      placeholderTextColor={T.t3}
+                      keyboardType="numeric"
+                      maxLength={16}
+                    />
+                  </View>
                 </View>
               </View>
               <View style={{ padding: 16 }}>
@@ -904,20 +915,6 @@ export default function ClientAssessments() {
                       </Text>
                     </View>
                   </TouchableOpacity>
-
-                  {/* Campo Data/Hora — canto direito (sem alteração) */}
-                  <View style={{ width: 140, marginTop: 8 }}>
-                    <Text style={{ fontSize: 10, color: T.t3, marginBottom: 2, fontWeight: 'bold' }}>Data / Hora</Text>
-                    <TextInput
-                      style={[styles.gridInput, { fontSize: 12, paddingVertical: 6, paddingHorizontal: 8, minHeight: 35, textAlign: 'left' }]}
-                      value={form.assessment_date}
-                      onChangeText={handleDateChange}
-                      placeholder="DD/MM/AAAA HH:mm"
-                      placeholderTextColor={T.t3}
-                      keyboardType="numeric"
-                      maxLength={16}
-                    />
-                  </View>
                 </View>
 
                 {/* Thumbnails das fotos e selfie */}
@@ -966,13 +963,13 @@ export default function ClientAssessments() {
                       </View>
                     ))}
                     {pendingSelfie && (
-                      <View style={{ alignItems: 'flex-start' }}>
+                      <View style={{ alignItems: 'flex-start', marginLeft: 'auto' }}>
                         <Text style={{ fontSize: 9, fontWeight: 'bold', color: T.blue, marginBottom: 2 }}>📸 Selfie</Text>
                         <View style={{ position: 'relative' }}>
                           <Image
                             source={{ uri: pendingSelfie.uri === 'existing' ? (selfieSignedUrl || '') : pendingSelfie.uri }}
                             style={{
-                              width: 60, height: 60, borderRadius: 10,
+                              width: 56, height: 56, borderRadius: 10,
                               borderWidth: 1.5, borderColor: T.blue,
                               backgroundColor: T.surface
                             }}
