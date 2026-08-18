@@ -25,6 +25,7 @@ export default function NewAppointment() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [upcomingDays, setUpcomingDays] = useState<Date[]>([]);
+  const [bookedTimes, setBookedTimes] = useState<string[]>([]);
 
   const availableTimes = [
     "06:00", "06:30", "07:00", "07:30", "08:00", "08:30", "09:00", "09:30",
@@ -53,6 +54,38 @@ export default function NewAppointment() {
     }
     setUpcomingDays(days);
   }, [client_id]);
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setBookedTimes([]);
+      return;
+    }
+
+    const loadBookedTimes = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: trainer } = await supabase.from("trainers").select("id").eq("user_id", user?.id).single();
+      
+      const formattedDate = selectedDate.toISOString().split('T')[0];
+      
+      const { data } = await supabase
+        .from("appointments")
+        .select("appointment_time")
+        .eq("trainer_id", trainer?.id)
+        .eq("appointment_date", formattedDate)
+        .neq("status", "cancelled");
+
+      if (data) {
+        const times = data.map((a) => a.appointment_time);
+        setBookedTimes(times);
+        
+        if (selectedTime && times.includes(selectedTime)) {
+          setSelectedTime(null);
+        }
+      }
+    };
+
+    loadBookedTimes();
+  }, [selectedDate]);
 
   const toggleType = (type: string) => {
     if (selectedTypes.includes(type)) {
@@ -97,7 +130,24 @@ export default function NewAppointment() {
         status: 'scheduled'
       }]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message && error.message.startsWith("CONFLITO_HORARIO")) {
+          alert("Esse horário acabou de ser ocupado por outro agendamento. Escolha outro horário.");
+          
+          const { data } = await supabase
+            .from("appointments")
+            .select("appointment_time")
+            .eq("trainer_id", trainer?.id)
+            .eq("appointment_date", formattedDate)
+            .neq("status", "cancelled");
+          
+          if (data) {
+            setBookedTimes(data.map((a) => a.appointment_time));
+          }
+          return;
+        }
+        throw error;
+      }
       router.back();
     } catch (error: any) {
       alert("Erro ao salvar: " + error.message);
@@ -163,15 +213,30 @@ export default function NewAppointment() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>E o horário?</Text>
           <View style={styles.timeGrid}>
-            {availableTimes.map((time) => (
-              <TouchableOpacity
-                key={time}
-                style={[styles.timeBox, selectedTime === time && styles.timeBoxActive]}
-                onPress={() => setSelectedTime(time)}
-              >
-                <Text style={[styles.timeText, selectedTime === time && styles.timeTextActive]}>{time}</Text>
-              </TouchableOpacity>
-            ))}
+            {availableTimes.map((time) => {
+              const isBooked = bookedTimes.includes(time);
+              const isSelected = selectedTime === time;
+              return (
+                <TouchableOpacity
+                  key={time}
+                  style={[
+                    styles.timeBox,
+                    isSelected && styles.timeBoxActive,
+                    isBooked && styles.timeBoxDisabled
+                  ]}
+                  onPress={() => !isBooked && setSelectedTime(time)}
+                  disabled={isBooked}
+                >
+                  <Text style={[
+                    styles.timeText,
+                    isSelected && styles.timeTextActive,
+                    isBooked && styles.timeTextDisabled
+                  ]}>
+                    {time}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -266,8 +331,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   timeBoxActive: { backgroundColor: T.blue, borderColor: T.blue },
+  timeBoxDisabled: { opacity: 0.4 },
   timeText: { fontSize: 15, fontWeight: "700", color: T.t2 },
   timeTextActive: { color: T.white },
+  timeTextDisabled: { color: T.t3 },
 
   input: {
     backgroundColor: T.surface,
