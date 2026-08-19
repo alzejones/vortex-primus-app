@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -153,7 +152,7 @@ export default function ResetTemplatesScreen() {
               message_text: t.message_text,
               active: true,
             },
-            { onConflict: editingGlobal ? "day_number" : "trainer_id,day_number" }
+            { onConflict: "trainer_id,day_number" }
           );
 
         if (error) throw error;
