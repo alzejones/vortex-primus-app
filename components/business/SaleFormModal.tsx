@@ -479,21 +479,39 @@ export default function SaleFormModal({
         } else if (selClient) {
           setReassessTarget({ id: selClient.id, name: selClient.name });
         } else if (!selClient && manualName.trim()) {
-          const { data: newClient, error: clientErr } = await supabase
-            .from('clients')
-            .insert({
-              trainer_id: trainerId,
-              name: manualName.trim(),
-              phone: manualPhone.trim() || null,
-              client_status: 'Aluno',
-            })
-            .select('id, name')
-            .single();
+          let clientId: string | null = null;
+          let clientName: string = manualName.trim();
 
-          if (!clientErr && newClient) {
+          if (manualPhone.trim()) {
+            const { data: existingClient } = await supabase.rpc('find_client_by_phone', { p_phone: manualPhone.trim() });
+            if (existingClient && existingClient.length > 0) {
+              clientId = existingClient[0].id;
+              clientName = existingClient[0].name;
+            }
+          }
+
+          if (!clientId) {
+            const { data: newClient, error: clientErr } = await supabase
+              .from('clients')
+              .insert({
+                trainer_id: trainerId,
+                name: manualName.trim(),
+                phone: manualPhone.trim() || null,
+                client_status: 'Aluno',
+              })
+              .select('id, name')
+              .single();
+
+            if (!clientErr && newClient) {
+              clientId = newClient.id;
+              clientName = newClient.name;
+            }
+          }
+
+          if (clientId) {
             if (resolvedProspectId) {
               await supabase.from('herbalife_prospects').update({
-                client_id: newClient.id,
+                client_id: clientId,
               }).eq('id', resolvedProspectId);
             }
 
@@ -502,7 +520,7 @@ export default function SaleFormModal({
                 .from('reset_protocol_enrollments')
                 .insert({
                   trainer_id: trainerId,
-                  client_id: newClient.id,
+                  client_id: clientId,
                   sale_id: sale.id,
                   status: 'aguardando_data',
                 })
@@ -511,14 +529,14 @@ export default function SaleFormModal({
 
               if (!enrollErr && enrollment) {
                 setResetEnrollment({
-                  clientId: newClient.id,
-                  clientName: newClient.name,
+                  clientId: clientId,
+                  clientName: clientName,
                   saleId: sale.id,
                   enrollmentId: enrollment.id,
                 });
               }
             } else if (saleType === 'produto_fechado') {
-              setReassessTarget({ id: newClient.id, name: newClient.name });
+              setReassessTarget({ id: clientId, name: clientName });
             }
           }
         }
