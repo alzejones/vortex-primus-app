@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
+import ResetProtocolWidget from '../business/ResetProtocolWidget';
 
 export interface Client {
   id: string;
@@ -197,6 +198,9 @@ export default function DashboardLayoutMobile({
           })()}
         </TouchableOpacity>
       )}
+
+      {/* Widget Protocolo Reset */}
+      <ResetProtocolWidget />
 
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>

@@ -23,6 +23,7 @@ import type { DashboardLayoutProps } from './DashboardLayout';
 import MobileLayout from './DashboardLayoutMobile';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import { useAuth } from '../../contexts/AuthContext';
+import ResetProtocolWidget from '../business/ResetProtocolWidget';
 
 // ─── Itens de navegação da sidebar ───────────────────────────
 const NAV_ITEMS = [
@@ -358,6 +359,9 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           })()}
         </View>
       )}
+
+      {/* Widget Protocolo Reset */}
+      <ResetProtocolWidget />
 
       {/* Widget: Reavaliações Pendentes */}
       {overdueClients.length > 0 && (
