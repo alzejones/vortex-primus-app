@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
   Linking,
   Platform,
   StyleSheet,
@@ -13,6 +12,7 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { todayBR } from '../../utils/dateBR';
 import ResetProtocolDateModal from '../ui/ResetProtocolDateModal';
+import { notify } from './SaleFormModal';
 
 interface QueueItem {
   id: string;
@@ -157,25 +157,16 @@ export default function ResetProtocolWidget() {
   }
 
   async function handleSendMessage(item: QueueItem) {
-    const phoneDigits = (item.client_phone || '').replace(/\D/g, '');
-    if (!phoneDigits) {
-      Alert.alert(
-        'Sem celular cadastrado',
-        `${item.client_name} não tem celular cadastrado.`,
-        [{ text: 'OK' }]
-      );
+    const digits = (item.client_phone || '').replace(/\D/g, '');
+    if (!digits) {
+      notify('Sem celular cadastrado', `${item.client_name} não tem celular cadastrado.`);
       return;
     }
 
-    const url = `whatsapp://send?phone=55${phoneDigits}&text=${encodeURIComponent(item.message_text)}`;
+    const fullPhone = (digits.length > 11 && digits.startsWith('55')) ? digits : '55' + digits;
+    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(item.message_text)}`;
 
     try {
-      const canOpen = await Linking.canOpenURL(url);
-      if (!canOpen) {
-        Alert.alert('Erro', 'WhatsApp não instalado.');
-        return;
-      }
-
       await Linking.openURL(url);
 
       const { error } = await supabase
@@ -190,7 +181,7 @@ export default function ResetProtocolWidget() {
       }
     } catch (error) {
       console.log('Erro ao abrir WhatsApp:', error);
-      Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.');
+      notify('Erro', 'Não foi possível abrir o WhatsApp.');
     }
   }
 
@@ -222,7 +213,7 @@ export default function ResetProtocolWidget() {
 
     if (error) {
       console.log('Erro ao definir data:', error);
-      Alert.alert('Erro', 'Não foi possível definir a data.');
+      notify('Erro', 'Não foi possível definir a data.');
     } else {
       setWaitingDate((prev) => prev.filter((e) => e.id !== selectedEnrollment.id));
       setDateModalVisible(false);
