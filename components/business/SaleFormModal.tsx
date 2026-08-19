@@ -423,6 +423,7 @@ export default function SaleFormModal({
           .insert(items.map((i) => ({ ...i, sale_id: sale.id })));
         if (itemsErr) throw itemsErr;
 
+        let resolvedProspectId: string | null = selectedProspectId;
         if (!selClient && manualName.trim()) {
           const phone = manualPhone.trim() || null;
           if (selectedProspectId) {
@@ -433,7 +434,7 @@ export default function SaleFormModal({
               ...(phone ? { prospect_phone: phone } : {}),
             }).eq('id', selectedProspectId);
           } else {
-            await supabase.from('herbalife_prospects').insert({
+            const { data: newProspect } = await supabase.from('herbalife_prospects').insert({
               trainer_id: trainerId,
               prospect_name: manualName.trim(),
               prospect_phone: phone,
@@ -441,7 +442,8 @@ export default function SaleFormModal({
               converted: true,
               converted_sale_id: sale.id,
               converted_at: new Date().toISOString(),
-            });
+            }).select('id').single();
+            resolvedProspectId = newProspect?.id ?? null;
           }
         }
 
@@ -489,10 +491,10 @@ export default function SaleFormModal({
             .single();
 
           if (!clientErr && newClient) {
-            if (selectedProspectId) {
+            if (resolvedProspectId) {
               await supabase.from('herbalife_prospects').update({
                 client_id: newClient.id,
-              }).eq('id', selectedProspectId);
+              }).eq('id', resolvedProspectId);
             }
 
             if (hasResetKit) {
