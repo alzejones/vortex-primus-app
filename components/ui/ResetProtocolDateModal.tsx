@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { T } from '../../utils/theme';
-import { formatDateBR, parseDateBR, todayBR } from '../../utils/dateBR';
+import { brasiliaDate, todayBR } from '../../utils/dateBR';
 
 interface ResetProtocolDateModalProps {
   visible: boolean;
@@ -16,6 +16,8 @@ interface ResetProtocolDateModalProps {
   onConfirmDate: (date: string) => void;
   onDefineLater: () => void;
 }
+
+const fmtBR = (iso: string) => iso.split('-').reverse().join('/');
 
 export default function ResetProtocolDateModal({
   visible,
@@ -27,7 +29,7 @@ export default function ResetProtocolDateModal({
 
   const generateDates = () => {
     const dates: string[] = [];
-    const today = parseDateBR(todayBR());
+    const today = brasiliaDate();
     for (let i = 0; i < 30; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() + i);
@@ -60,7 +62,7 @@ export default function ResetProtocolDateModal({
                   onPress={() => setSelectedDate(date)}
                 >
                   <Text style={[s.dateText, isSelected && s.dateTextSelected]}>
-                    {formatDateBR(date)}
+                    {fmtBR(date)}
                   </Text>
                 </TouchableOpacity>
               );
