@@ -540,6 +540,23 @@ export default function TrainerProfile() {
             <Text style={styles.configButtonArrow}>›</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.configButton}
+            onPress={() => router.push('/(protected)/reset-templates' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.configButtonLeft}>
+              <View style={styles.configButtonIcon}>
+                <Text style={{ fontSize: 24 }}>💬</Text>
+              </View>
+              <View>
+                <Text style={styles.configButtonTitle}>Mensagens do Reset</Text>
+                <Text style={styles.configButtonSubtitle}>Editar textos enviados no protocolo de 5 dias</Text>
+              </View>
+            </View>
+            <Text style={styles.configButtonArrow}>›</Text>
+          </TouchableOpacity>
+
           {/* Botão Admin: Kits Globais (condicional) */}
           {isAdmin && (
             <TouchableOpacity 
