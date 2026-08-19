@@ -476,6 +476,49 @@ export default function SaleFormModal({
           }
         } else if (selClient) {
           setReassessTarget({ id: selClient.id, name: selClient.name });
+        } else if (!selClient && manualName.trim()) {
+          const { data: newClient, error: clientErr } = await supabase
+            .from('clients')
+            .insert({
+              trainer_id: trainerId,
+              name: manualName.trim(),
+              phone: manualPhone.trim() || null,
+              client_status: 'Aluno',
+            })
+            .select('id, name')
+            .single();
+
+          if (!clientErr && newClient) {
+            if (selectedProspectId) {
+              await supabase.from('herbalife_prospects').update({
+                client_id: newClient.id,
+              }).eq('id', selectedProspectId);
+            }
+
+            if (hasResetKit) {
+              const { data: enrollment, error: enrollErr } = await supabase
+                .from('reset_protocol_enrollments')
+                .insert({
+                  trainer_id: trainerId,
+                  client_id: newClient.id,
+                  sale_id: sale.id,
+                  status: 'aguardando_data',
+                })
+                .select('id')
+                .single();
+
+              if (!enrollErr && enrollment) {
+                setResetEnrollment({
+                  clientId: newClient.id,
+                  clientName: newClient.name,
+                  saleId: sale.id,
+                  enrollmentId: enrollment.id,
+                });
+              }
+            } else if (saleType === 'produto_fechado') {
+              setReassessTarget({ id: newClient.id, name: newClient.name });
+            }
+          }
         }
       } else {
         const { error: updateErr } = await supabase
@@ -575,7 +618,7 @@ export default function SaleFormModal({
                     <>
                       <TextInput
                         style={s.input}
-                        placeholder="Ou nome do cliente avulso"
+                        placeholder="Nome do Prospecto"
                         placeholderTextColor="#777"
                         value={manualName}
                         onChangeText={(t) => {
@@ -585,7 +628,7 @@ export default function SaleFormModal({
                       />
                       <TextInput
                         style={s.input}
-                        placeholder="Celular do cliente avulso (opcional)"
+                        placeholder="Celular do Prospecto (opcional)"
                         placeholderTextColor="#777"
                         value={manualPhone}
                         onChangeText={(t) => setManualPhone(maskPhone(t))}
