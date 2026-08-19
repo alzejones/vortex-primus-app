@@ -89,6 +89,7 @@ export default function ResetProtocolWidget() {
         supabase
           .from('reset_protocol_enrollments')
           .select('*, clients!reset_protocol_enrollments_client_id_fkey(name)')
+          .eq('trainer_id', trainer.id)
           .eq('status', 'aguardando_data')
           .order('created_at', { ascending: true }),
 
