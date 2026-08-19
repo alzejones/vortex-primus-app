@@ -67,7 +67,7 @@ export default function ResetTemplatesScreen() {
         if (error) throw error;
 
         const templatesMap = new Map<number, Template>();
-        (data || []).forEach((t) => templatesMap.set(t.day_number, t));
+        (data || []).forEach((t) => templatesMap.set(t.day_number, { ...t, send_time: t.send_time.substring(0, 5) }));
 
         const full: Template[] = [];
         for (let d = 1; d <= 5; d++) {
@@ -94,7 +94,7 @@ export default function ResetTemplatesScreen() {
           if (globalError) throw globalError;
 
           const globalMap = new Map<number, Template>();
-          (globalData || []).forEach((t) => globalMap.set(t.day_number, t));
+          (globalData || []).forEach((t) => globalMap.set(t.day_number, { ...t, send_time: t.send_time.substring(0, 5) }));
 
           const full: Template[] = [];
           for (let d = 1; d <= 5; d++) {
@@ -104,7 +104,7 @@ export default function ResetTemplatesScreen() {
           setUsingPlatformDefaults(true);
         } else {
           const templatesMap = new Map<number, Template>();
-          data.forEach((t) => templatesMap.set(t.day_number, t));
+          data.forEach((t) => templatesMap.set(t.day_number, { ...t, send_time: t.send_time.substring(0, 5) }));
 
           const full: Template[] = [];
           for (let d = 1; d <= 5; d++) {
