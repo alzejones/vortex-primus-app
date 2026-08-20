@@ -568,6 +568,14 @@ serve(async (req) => {
     const isClient  = client.user_id === user.id
     if (!isTrainer && !isClient) throw new Error('Acesso negado')
 
+    const { data: hasFeature, error: featureErr } = await supabaseAdmin.rpc('trainer_has_feature_by_id', {
+      p_trainer_id: client.trainer_id,
+      p_feature: 'ai_weekly_menu'
+    })
+    if (featureErr || !hasFeature) {
+      throw new Error('Geração de cardápio por IA não disponível no plano atual.')
+    }
+
     let trainerName = ''
     if (isTrainer && trainer) {
       trainerName = trainer.name ?? ''
