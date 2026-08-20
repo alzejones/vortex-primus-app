@@ -53,6 +53,7 @@ export default function LicenseBlockedScreen() {
           message: 'Seu período de teste de 7 dias acabou. Para continuar usando o Vortex Primus, faça upgrade para um plano pago.',
           buttonText: 'Fazer upgrade',
           onPress: handleUpgrade,
+          showRetryLink: true,
         };
       case 'limit_reached':
         return {
@@ -91,6 +92,12 @@ export default function LicenseBlockedScreen() {
             <Text style={styles.buttonText}>{content.buttonText}</Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {content.showRetryLink && (
+          <TouchableOpacity onPress={handleRetry} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Já fez o pagamento? Verificar novamente</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity onPress={signOut} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Sair e entrar com outra conta</Text>
