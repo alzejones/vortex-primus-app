@@ -19,7 +19,7 @@ import { supabase } from "../lib/supabase";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
 
-const PAYMENT_MODE: 'stripe' | 'direct_link' = 'direct_link';
+const PAYMENT_MODE: 'stripe' | 'direct_link' = 'stripe';
 const SUPPORT_WHATSAPP = '5516992107040';
 const DIRECT_PAYMENT_LINKS: Record<string, string> = {
   'bbd394d2-34d6-44b5-a131-1efd5c02af46': 'https://www.userede.com.br/pagamentos/pt/md50t655',
