@@ -5,6 +5,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { T } from '../../utils/theme';
+import { FeatureGate } from '../../components/FeatureGate';
+import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import MetasContent from '../../components/business/MetasContent';
 import VendasContent from '../../components/business/VendasContent';
 import RelatoriosContent from '../../components/business/RelatoriosContent';
@@ -19,6 +21,12 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
 
 export default function BusinessGoalsContainer() {
   const [tab, setTab] = useState<Tab>('metas');
+  const { hasFeature } = useLicenseStatus();
+
+  const hasProductivityGoals = hasFeature('productivity_goals');
+  const hasSalesTracking = hasFeature('sales_tracking');
+  const hasRealtimeEarnings = hasFeature('realtime_earnings');
+  const hasEarningsProjection = hasFeature('earnings_projection');
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
@@ -39,9 +47,45 @@ export default function BusinessGoalsContainer() {
         </View>
       </View>
 
-      {tab === 'metas' && <MetasContent />}
-      {tab === 'vendas' && <VendasContent onGoToReports={() => setTab('relatorios')} />}
-      {tab === 'relatorios' && <RelatoriosContent />}
+      {tab === 'metas' && (
+        hasProductivityGoals ? (
+          <MetasContent />
+        ) : (
+          <FeatureGate
+            featureKey="productivity_goals"
+            featureName="Metas de Produtividade"
+            requiredPlan="Escalando"
+          >
+            <MetasContent />
+          </FeatureGate>
+        )
+      )}
+      {tab === 'vendas' && (
+        hasSalesTracking && hasRealtimeEarnings ? (
+          <VendasContent onGoToReports={() => setTab('relatorios')} />
+        ) : (
+          <FeatureGate
+            featureKey="sales_tracking"
+            featureName="Controle de Vendas"
+            requiredPlan="Escalando"
+          >
+            <VendasContent onGoToReports={() => setTab('relatorios')} />
+          </FeatureGate>
+        )
+      )}
+      {tab === 'relatorios' && (
+        hasEarningsProjection ? (
+          <RelatoriosContent />
+        ) : (
+          <FeatureGate
+            featureKey="earnings_projection"
+            featureName="Projeção de Ganhos"
+            requiredPlan="Escalando"
+          >
+            <RelatoriosContent />
+          </FeatureGate>
+        )
+      )}
     </View>
   );
 }

@@ -9,6 +9,8 @@ import TrunkMeasurementsChart from "../../components/TrunkMeasurementsChart";
 import LimbMeasurementsChart from "../../components/LimbMeasurementsChart";
 import BodyAvatarRow from "../../components/BodyAvatarRow";
 import { supabase } from "../../lib/supabase";
+import { FeatureGate } from "../../components/FeatureGate";
+import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { getMetabolicStatus } from "../../utils/assessmentCalculations";
 import { T } from "../../utils/theme";
 
@@ -135,6 +137,7 @@ const getLocalVisceralStatus = (value: any) => {
 export default function PublicAssessmentView() {
   const { id } = useLocalSearchParams();
   const clientId = id as string;
+  const { hasFeature } = useLicenseStatus();
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
@@ -265,10 +268,22 @@ export default function PublicAssessmentView() {
         </View>
 
         {currentAssessment?.anthropometry?.[0]?.body_fat != null && (
-          <BodyAvatarRow
-            bodyFatPercentage={Number(currentAssessment.anthropometry[0].body_fat)}
-            gender={client?.gender}
-          />
+          hasFeature('body_twin_ai') ? (
+            <BodyAvatarRow
+              bodyFatPercentage={Number(currentAssessment.anthropometry[0].body_fat)}
+              gender={client?.gender}
+            />
+          ) : (
+            <View style={{ marginBottom: 24 }}>
+              <FeatureGate
+                featureKey="body_twin_ai"
+                featureName="Body Twin - Avatar 3D com IA"
+                requiredPlan="Escalando"
+              >
+                <View />
+              </FeatureGate>
+            </View>
+          )
         )}
 
         {fatData.length > 0 && (

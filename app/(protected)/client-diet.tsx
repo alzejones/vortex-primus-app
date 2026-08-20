@@ -16,6 +16,8 @@ import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
 import { supabase } from "../../lib/supabase";
+import { FeatureGate } from "../../components/FeatureGate";
+import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import {
   ACTIVITY_LABELS,
   ActivityLevel,
@@ -75,6 +77,7 @@ function sumMacros(foods: { calories: number | null; protein: number | null; car
 export default function ClientDiet() {
   const { id } = useLocalSearchParams();
   const clientId = id as string;
+  const { hasFeature } = useLicenseStatus();
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
@@ -376,17 +379,29 @@ export default function ClientDiet() {
       )}
 
       {/* Botão Gerar com IA */}
-      <TouchableOpacity
-        style={[styles.aiBtn, generatingAI && { opacity: 0.6 }]}
-        onPress={handleGenerateAI}
-        disabled={generatingAI}
-      >
-        {generatingAI ? (
-          <ActivityIndicator color="#D4AF37" size="small" />
-        ) : (
-          <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
-        )}
-      </TouchableOpacity>
+      {hasFeature('ai_weekly_menu') ? (
+        <TouchableOpacity
+          style={[styles.aiBtn, generatingAI && { opacity: 0.6 }]}
+          onPress={handleGenerateAI}
+          disabled={generatingAI}
+        >
+          {generatingAI ? (
+            <ActivityIndicator color="#D4AF37" size="small" />
+          ) : (
+            <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+          )}
+        </TouchableOpacity>
+      ) : (
+        <View style={{ marginBottom: 16 }}>
+          <FeatureGate
+            featureKey="ai_weekly_menu"
+            featureName="Geração Automática de Cardápio com IA"
+            requiredPlan="Escalando"
+          >
+            <View />
+          </FeatureGate>
+        </View>
+      )}
       <Text style={{ fontSize: 10, color: "#94a3b8", fontStyle: "italic", textAlign: "center", marginTop: -10, marginBottom: 12 }}>
         O plano gerado é uma sugestão educacional. Revise e adapte antes de enviar ao aluno.
       </Text>

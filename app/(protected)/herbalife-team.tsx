@@ -23,6 +23,8 @@ import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { GradientPrimary } from '../../utils/gradients';
+import { FeatureGate } from '../../components/FeatureGate';
+import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import { computeTrend } from '../../utils/goalCalculations';
 import TeamSparkline from '../../components/TeamSparkline';
 
@@ -103,6 +105,7 @@ type Tab = 'produtividade' | 'relatorios';
 
 export default function HerbalifeTeam() {
   const router = useRouter();
+  const { hasFeature } = useLicenseStatus();
   const [tab, setTab] = useState<Tab>('produtividade');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -308,6 +311,20 @@ export default function HerbalifeTeam() {
 
   const trendGrupoAgend = computeTrend(metaTotalAgend, totalAgendGrupo);
   const trendGrupoAval = computeTrend(metaTotalAval, totalAvalGrupo);
+
+  if (!hasFeature('downline_stats')) {
+    return (
+      <View style={{ flex: 1, backgroundColor: T.bg, padding: 16 }}>
+        <FeatureGate
+          featureKey="downline_stats"
+          featureName="Painel de Downlines"
+          requiredPlan="Escalando"
+        >
+          <View />
+        </FeatureGate>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
