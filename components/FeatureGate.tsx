@@ -197,3 +197,75 @@ const s = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+interface LockedButtonProps {
+  featureKey: string;
+  featureName: string;
+  requiredPlan: 'Avançado' | 'Escalando';
+  buttonStyle?: any;
+  textStyle?: any;
+  label: string;
+  icon?: string;
+}
+
+export function LockedButton({
+  featureKey,
+  featureName,
+  requiredPlan,
+  buttonStyle,
+  textStyle,
+  label,
+  icon = '🔒',
+}: LockedButtonProps) {
+  const router = useRouter();
+  const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
+
+  const handleNavigateToUpgrade = () => {
+    setShowUpgradeModal(false);
+    router.push('/upgrade');
+  };
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[buttonStyle, { opacity: 0.6 }]}
+        onPress={() => setShowUpgradeModal(true)}
+      >
+        <Text style={textStyle}>
+          {icon} {label}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={showUpgradeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowUpgradeModal(false)}
+      >
+        <View style={s.overlay}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Recurso Bloqueado</Text>
+            <Text style={s.modalMessage}>
+              <Text style={s.modalFeature}>{featureName}</Text> está disponível apenas no plano{' '}
+              <Text style={s.modalPlan}>{requiredPlan}</Text>.
+            </Text>
+            <View style={s.buttonsRow}>
+              <TouchableOpacity
+                style={s.btnCancel}
+                onPress={() => setShowUpgradeModal(false)}
+              >
+                <Text style={s.btnCancelTxt}>Voltar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.btnUpgrade}
+                onPress={handleNavigateToUpgrade}
+              >
+                <Text style={s.btnUpgradeTxt}>Ver Planos</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}

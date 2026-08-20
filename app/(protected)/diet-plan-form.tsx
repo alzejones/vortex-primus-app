@@ -18,6 +18,7 @@ import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import SupplementSearchModal, { SelectedSupplement } from "../../components/SupplementSearchModal";
 import { useTrainer } from "../../hooks/useTrainer";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
+import { LockedButton } from "../../components/FeatureGate";
 import { supabase } from "../../lib/supabase";
 import {
   ActivityLevel,
@@ -625,13 +626,23 @@ export default function DietPlanForm() {
                     >
                       <Text style={styles.tacoBtnText}>🔍 TACO</Text>
                     </TouchableOpacity>
-                    {hasFeature('herbalife_diet') && (
+                    {hasFeature('herbalife_diet') ? (
                       <TouchableOpacity
                         style={styles.supplementBtn}
                         onPress={() => setSupplementModalMealKey(meal._key)}
                       >
                         <Text style={styles.supplementBtnText}>🏃‍♂️ Herbalife</Text>
                       </TouchableOpacity>
+                    ) : (
+                      <LockedButton
+                        featureKey="herbalife_diet"
+                        featureName="Suplementos Herbalife"
+                        requiredPlan="Avançado"
+                        buttonStyle={styles.supplementBtn}
+                        textStyle={[styles.supplementBtnText, { opacity: 0.6 }]}
+                        label="Herbalife"
+                        icon="🔒"
+                      />
                     )}
                   </View>
                 </View>

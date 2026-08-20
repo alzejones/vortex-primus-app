@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { router, useLocalSearchParams } from "expo-router";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
+import { LockedButton } from "../../components/FeatureGate";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -996,7 +997,7 @@ export default function ClientAssessments() {
                     )}
                   </View>
                 )}
-                {hasFeature('bluetooth_scale') && (
+                {hasFeature('bluetooth_scale') ? (
                   <BluetoothScaleConnector
                     onDataReceived={handleScaleData}
                     disabled={saving}
@@ -1006,12 +1007,21 @@ export default function ClientAssessments() {
                     clientIsMale={clientIsMale}
                     onScaleSelected={setSelectedScale}
                   />
+                ) : (
+                  <LockedButton
+                    featureKey="bluetooth_scale"
+                    featureName="Balança Bluetooth"
+                    requiredPlan="Avançado"
+                    buttonStyle={{ backgroundColor: T.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.border, marginBottom: 16 }}
+                    textStyle={{ textAlign: 'center', color: T.t3, fontWeight: '700', fontSize: 14 }}
+                    label="Conectar Balança Bluetooth"
+                  />
                 )}
                 <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
                 <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
 
-                {hasFeature('remote_assessment') && (
+                {hasFeature('remote_assessment') ? (
                   <>
                     <TouchableOpacity
                       style={{ backgroundColor: T.blueGlow, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.borderActive, marginTop: 4, marginBottom: 16 }}
@@ -1025,6 +1035,16 @@ export default function ClientAssessments() {
                       Estimativa por IA — pode ter margem de erro em relação à medição direta.
                     </Text>
                   </>
+                ) : (
+                  <LockedButton
+                    featureKey="remote_assessment"
+                    featureName="Avaliação à Distância por IA"
+                    requiredPlan="Avançado"
+                    buttonStyle={{ backgroundColor: T.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.border, marginTop: 4, marginBottom: 16 }}
+                    textStyle={{ textAlign: 'center', color: T.t3, fontWeight: '700', fontSize: 14 }}
+                    label="Calcular Avaliação à Distância (IA)"
+                    icon="🔒"
+                  />
                 )}
 
                 <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); }} disabled={saving}>
