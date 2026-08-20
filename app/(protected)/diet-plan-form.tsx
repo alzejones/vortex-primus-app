@@ -17,6 +17,7 @@ import MacroBar from "../../components/MacroBar";
 import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import SupplementSearchModal, { SelectedSupplement } from "../../components/SupplementSearchModal";
 import { useTrainer } from "../../hooks/useTrainer";
+import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { supabase } from "../../lib/supabase";
 import {
   ActivityLevel,
@@ -90,6 +91,7 @@ export default function DietPlanForm() {
   const isEditing = !!planId;
 
   const { trainerId, loadingTrainer } = useTrainer();
+  const { hasFeature } = useLicenseStatus();
   const [userRole, setUserRole] = useState<'trainer' | 'client' | null>(null);
 
   const [loading, setLoading]     = useState(isEditing);
@@ -623,12 +625,14 @@ export default function DietPlanForm() {
                     >
                       <Text style={styles.tacoBtnText}>🔍 TACO</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.supplementBtn}
-                      onPress={() => setSupplementModalMealKey(meal._key)}
-                    >
-                      <Text style={styles.supplementBtnText}>🏃‍♂️ Herbalife</Text>
-                    </TouchableOpacity>
+                    {hasFeature('herbalife_diet') && (
+                      <TouchableOpacity
+                        style={styles.supplementBtn}
+                        onPress={() => setSupplementModalMealKey(meal._key)}
+                      >
+                        <Text style={styles.supplementBtnText}>🏃‍♂️ Herbalife</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
 

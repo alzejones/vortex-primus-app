@@ -59,6 +59,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
 
   const pathname = usePathname();
   const licenseStatus = useLicenseStatus();
+  const { hasFeature } = licenseStatus;
   const { isAdmin } = useAuth();
 
   // ─── Detecção de viewport: mobile browser usa layout mobile ──
@@ -361,7 +362,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       )}
 
       {/* Widget Protocolo Reset */}
-      <ResetProtocolWidget />
+      {hasFeature('reset_protocol') && <ResetProtocolWidget />}
 
       {/* Widget: Reavaliações Pendentes */}
       {overdueClients.length > 0 && (

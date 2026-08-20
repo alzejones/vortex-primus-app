@@ -81,6 +81,7 @@ export default function DashboardLayoutMobile({
   const [overdueModalVisible, setOverdueModalVisible] = useState(false);
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
   const licenseStatus = useLicenseStatus();
+  const { hasFeature } = licenseStatus;
 
   const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
@@ -200,7 +201,7 @@ export default function DashboardLayoutMobile({
       )}
 
       {/* Widget Protocolo Reset */}
-      <ResetProtocolWidget />
+      {hasFeature('reset_protocol') && <ResetProtocolWidget />}
 
       <View style={styles.planWidget}>
         <View style={styles.widgetHeader}>

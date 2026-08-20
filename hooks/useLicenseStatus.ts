@@ -9,16 +9,20 @@ type LicenseStatusResult = {
   plan_name: string | null;
   max_clients: number | null;
   current_clients: number | null;
+  features: string[];
   loading: boolean;
+  hasFeature: (key: string) => boolean;
 };
 
 export function useLicenseStatus(): LicenseStatusResult {
-  const [result, setResult] = useState<LicenseStatusResult>({
+  const [features, setFeatures] = useState<string[]>([]);
+  const [result, setResult] = useState<Omit<LicenseStatusResult, 'hasFeature'>>({
     status: 'trial',
     trial_ends_at: null,
     plan_name: null,
     max_clients: null,
     current_clients: null,
+    features: [],
     loading: true,
   });
 
@@ -36,12 +40,15 @@ export function useLicenseStatus(): LicenseStatusResult {
         if (!isMounted) return;
 
         if (row) {
+          const rowFeatures = row.features || [];
+          setFeatures(rowFeatures);
           setResult({
             status: row.status as LicenseStatus,
             trial_ends_at: row.trial_ends_at,
             plan_name: row.plan_name,
             max_clients: row.max_clients,
             current_clients: row.current_clients,
+            features: rowFeatures,
             loading: false,
           });
         } else {
@@ -54,12 +61,14 @@ export function useLicenseStatus(): LicenseStatusResult {
           await fetchStatus(1);
         } else {
           if (!isMounted) return;
+          setFeatures([]);
           setResult({
             status: 'blocked_error',
             trial_ends_at: null,
             plan_name: null,
             max_clients: null,
             current_clients: null,
+            features: [],
             loading: false,
           });
         }
@@ -73,5 +82,14 @@ export function useLicenseStatus(): LicenseStatusResult {
     };
   }, []);
 
-  return result;
+  const hasFeature = (key: string): boolean => {
+    if (result.loading) return true;
+    return features.includes(key);
+  };
+
+  return {
+    ...result,
+    features,
+    hasFeature,
+  };
 }
