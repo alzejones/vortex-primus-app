@@ -10,13 +10,15 @@ import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import MetasContent from '../../components/business/MetasContent';
 import VendasContent from '../../components/business/VendasContent';
 import RelatoriosContent from '../../components/business/RelatoriosContent';
+import ResetClientesContent from '../../components/business/ResetClientesContent';
 
-type Tab = 'metas' | 'vendas' | 'relatorios';
+type Tab = 'metas' | 'vendas' | 'relatorios' | 'reset';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: 'metas',      label: 'Metas',      icon: '🎯' },
   { key: 'vendas',     label: 'Vendas',     icon: '💰' },
   { key: 'relatorios', label: 'Relatórios', icon: '📊' },
+  { key: 'reset',      label: 'Reset',      icon: '🔄' },
 ];
 
 export default function BusinessGoalsContainer() {
@@ -86,6 +88,7 @@ export default function BusinessGoalsContainer() {
           </FeatureGate>
         )
       )}
+      {tab === 'reset' && <ResetClientesContent />}
     </View>
   );
 }
