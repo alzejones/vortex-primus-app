@@ -4,7 +4,7 @@
 // Filtros: Dia (setas ◀/▶) | Mês (setas ◀/▶) | Todas
 // ============================================================
 import { router } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
