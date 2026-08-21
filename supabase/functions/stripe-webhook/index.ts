@@ -56,7 +56,7 @@ serve(async (req) => {
           .eq('trainer_id', trainerId)
           .eq('is_active', true)
 
-        const { error } = await supabase
+        const { data: newSub, error } = await supabase
           .from('trainer_subscriptions')
           .insert({
             trainer_id: trainerId,
@@ -65,6 +65,8 @@ serve(async (req) => {
             is_active: true,
             start_date: new Date().toISOString(),
           })
+          .select('id')
+          .single()
 
         if (error) {
           console.error('[Webhook] Error inserting subscription:', error)
@@ -72,6 +74,13 @@ serve(async (req) => {
         }
 
         console.log(`[Webhook] Subscription created for trainer ${trainerId}`)
+
+        await supabase
+          .from('trainer_subscriptions')
+          .update({ status: 'canceled', is_active: false })
+          .eq('trainer_id', trainerId)
+          .eq('status', 'active')
+          .neq('id', newSub.id)
         break
       }
 
