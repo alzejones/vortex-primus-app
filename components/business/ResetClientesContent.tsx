@@ -24,6 +24,7 @@ interface ResetClient {
   client_phone: string | null;
   sale_date: string | null;
   created_at: string;
+  seq: number;
 }
 
 export default function ResetClientesContent() {
@@ -79,6 +80,10 @@ export default function ResetClientesContent() {
           const dateA = a.sale_date || a.created_at.split('T')[0];
           const dateB = b.sale_date || b.created_at.split('T')[0];
           return dateA.localeCompare(dateB);
+        });
+
+        mapped.forEach((item, index) => {
+          item.seq = index + 1;
         });
 
         setClients(mapped);
@@ -264,7 +269,7 @@ export default function ResetClientesContent() {
           const refDate = client.sale_date || client.created_at.split('T')[0];
           return (
             <View key={client.enrollment_id} style={s.tableRow}>
-              <Text style={[s.cell, s.cellNum]}>{index + 1}</Text>
+              <Text style={[s.cell, s.cellNum]}>{client.seq}</Text>
               <Text style={[s.cell, s.cellName]}>{client.client_name}</Text>
               <Text style={[s.cell, s.cellDate]}>{formatDate(refDate)}</Text>
               <TouchableOpacity
