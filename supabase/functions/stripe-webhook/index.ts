@@ -72,6 +72,13 @@ serve(async (req) => {
         }
 
         console.log(`[Webhook] Subscription created for trainer ${trainerId}`)
+
+        await supabase
+          .from('trainer_subscriptions')
+          .update({ status: 'canceled', is_active: false })
+          .eq('trainer_id', trainerId)
+          .eq('status', 'active')
+          .neq('stripe_subscription_id', subscriptionId)
         break
       }
 
