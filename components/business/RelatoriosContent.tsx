@@ -466,7 +466,12 @@ export default function RelatoriosContent() {
                   <Text style={s.hint}>Segure numa venda para editar ou excluir.</Text>
                 )}
 
-                <Text style={[s.sectionTitle, { marginTop: 24 }]}>Apresentações Kit Acesso — {fmtDateFull(selectedDate)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 }}>
+                  <Text style={s.sectionTitle}>Apresentações Kit Acesso — {fmtDateFull(selectedDate)}</Text>
+                  <TouchableOpacity onPress={() => router.push('/apresentacoes-pendentes' as any)}>
+                    <Text style={{ color: T.blue, fontSize: 13, fontWeight: '600' }}>Ver todas →</Text>
+                  </TouchableOpacity>
+                </View>
                 {dayPresentations.length === 0 && (
                   <Text style={s.empty}>Nenhuma apresentação nesse dia.</Text>
                 )}
@@ -572,6 +577,6 @@ const s = StyleSheet.create({
   saleCharged: { color: '#FFF', fontWeight: '700' },
   saleProfit: { color: '#4ADE80', fontSize: 12 },
   hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
-  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
+  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
 });
