@@ -557,6 +557,23 @@ export default function TrainerProfile() {
             <Text style={styles.configButtonArrow}>›</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.configButton}
+            onPress={() => router.push('/(protected)/reset-clientes' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.configButtonLeft}>
+              <View style={styles.configButtonIcon}>
+                <Text style={{ fontSize: 24 }}>📋</Text>
+              </View>
+              <View>
+                <Text style={styles.configButtonTitle}>Clientes Kit Reset</Text>
+                <Text style={styles.configButtonSubtitle}>Lista de todos os clientes inscritos</Text>
+              </View>
+            </View>
+            <Text style={styles.configButtonArrow}>›</Text>
+          </TouchableOpacity>
+
           {/* Botão Admin: Kits Globais (condicional) */}
           {isAdmin && (
             <TouchableOpacity 
