@@ -10,7 +10,7 @@ import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import MetasContent from '../../components/business/MetasContent';
 import VendasContent from '../../components/business/VendasContent';
 import RelatoriosContent from '../../components/business/RelatoriosContent';
-import ResetClientesContent from '../../components/business/ResetClientesContent';
+import ResetHubContent from '../../components/business/ResetHubContent';
 
 type Tab = 'metas' | 'vendas' | 'relatorios' | 'reset';
 
@@ -88,7 +88,7 @@ export default function BusinessGoalsContainer() {
           </FeatureGate>
         )
       )}
-      {tab === 'reset' && <ResetClientesContent />}
+      {tab === 'reset' && <ResetHubContent />}
     </View>
   );
 }

@@ -466,12 +466,7 @@ export default function RelatoriosContent() {
                   <Text style={s.hint}>Segure numa venda para editar ou excluir.</Text>
                 )}
 
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 10 }}>
-                  <Text style={s.sectionTitle}>Apresentações Kit Acesso — {fmtDateFull(selectedDate)}</Text>
-                  <TouchableOpacity onPress={() => router.push('/apresentacoes-pendentes' as any)}>
-                    <Text style={{ color: T.blue, fontSize: 13, fontWeight: '600' }}>Ver todas →</Text>
-                  </TouchableOpacity>
-                </View>
+                <Text style={[s.sectionTitle, { marginTop: 24, marginBottom: 10 }]}>Apresentações Kit Acesso — {fmtDateFull(selectedDate)}</Text>
                 {dayPresentations.length === 0 && (
                   <Text style={s.empty}>Nenhuma apresentação nesse dia.</Text>
                 )}
