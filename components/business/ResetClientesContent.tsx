@@ -66,7 +66,7 @@ export default function ResetClientesContent() {
       setTrainerId(trainer.id);
       setTrainerLevel(trainer.herbalife_discount_level || '50');
 
-      const [{ data: enrollments }, { data: k }, { data: ki }, { data: pr }, { data: cl }] = await Promise.all([
+      const [{ data: enrollments }, { data: k }, { data: ki }, { data: pr }, { data: cl }, { data: allSalesRes }] = await Promise.all([
         supabase
           .from('reset_protocol_enrollments')
           .select(`
@@ -77,7 +77,7 @@ export default function ResetClientesContent() {
             start_date,
             status,
             clients!reset_protocol_enrollments_client_id_fkey(name, phone),
-            herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date, total_pv)
+            herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date)
           `)
           .eq('trainer_id', trainer.id)
           .order('created_at', { ascending: true }),
@@ -111,12 +111,23 @@ export default function ResetClientesContent() {
           }
           return { data: allClients };
         })(),
+        supabase
+          .from('herbalife_sales')
+          .select('client_id, total_pv')
+          .eq('trainer_id', trainer.id),
       ]);
 
       setKits((k as any) || []);
       setKitItems((ki as any) || []);
       setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
       setAllClients((cl as any) || []);
+
+      const pvByClient = new Map<string, number>();
+      (allSalesRes || []).forEach((s: any) => {
+        if (!s.client_id) return;
+        const current = pvByClient.get(s.client_id) || 0;
+        pvByClient.set(s.client_id, current + (Number(s.total_pv) || 0));
+      });
 
       if (enrollments) {
         const mapped = enrollments
@@ -130,7 +141,7 @@ export default function ResetClientesContent() {
             created_at: e.created_at,
             start_date: e.start_date || null,
             enrollment_status: e.status,
-            total_pv: e.herbalife_sales?.total_pv || null,
+            total_pv: pvByClient.get(e.client_id) || null,
           }));
 
         mapped.sort((a, b) => {
