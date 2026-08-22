@@ -125,8 +125,8 @@ export default function ResetClientesContent() {
       const pvByClient = new Map<string, number>();
       const countedSaleIds = new Set<string>();
       (allSalesRes || []).forEach((s: any) => {
-        countedSaleIds.add(s.id);
         if (!s.client_id) return;
+        countedSaleIds.add(s.id);
         const current = pvByClient.get(s.client_id) || 0;
         pvByClient.set(s.client_id, current + (Number(s.total_pv) || 0));
       });
@@ -248,7 +248,7 @@ export default function ResetClientesContent() {
 
   const formatPV = (pv: number | null) => {
     if (!pv || pv === 0) return '—';
-    return `${pv}`;
+    return (Math.round(pv * 100) / 100).toString();
   };
 
   const formatPhoneBR = (phone: string) => {
