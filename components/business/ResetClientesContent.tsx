@@ -16,6 +16,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { normalizeSearch } from '../../utils/textSearch';
+import { todayBR } from '../../utils/dateBR';
 
 interface ResetClient {
   enrollment_id: string;
@@ -25,6 +26,9 @@ interface ResetClient {
   sale_date: string | null;
   created_at: string;
   seq: number;
+  start_date: string | null;
+  enrollment_status: string;
+  total_pv: number | null;
 }
 
 export default function ResetClientesContent() {
@@ -58,8 +62,10 @@ export default function ResetClientesContent() {
           client_id,
           sale_id,
           created_at,
+          start_date,
+          status,
           clients!reset_protocol_enrollments_client_id_fkey(name, phone),
-          herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date)
+          herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date, total_pv)
         `)
         .eq('trainer_id', trainer.id)
         .order('created_at', { ascending: true });
@@ -74,6 +80,9 @@ export default function ResetClientesContent() {
             client_phone: e.clients.phone || null,
             sale_date: e.herbalife_sales?.sale_date || null,
             created_at: e.created_at,
+            start_date: e.start_date || null,
+            enrollment_status: e.status,
+            total_pv: e.herbalife_sales?.total_pv || null,
           }));
 
         mapped.sort((a, b) => {
@@ -138,7 +147,41 @@ export default function ResetClientesContent() {
 
   const formatDate = (dateStr: string) => {
     const [y, m, d] = dateStr.split('-');
-    return `${d}/${m}/${y}`;
+    return `${d}/${m}`;
+  };
+
+  const getProtocolDayInfo = (startDate: string | null, status: string) => {
+    if (status === 'aguardando_data' || !startDate) {
+      return { label: '—', color: T.t3, bgColor: 'transparent' };
+    }
+    if (status === 'concluido') {
+      return { label: 'Concluído', color: T.green, bgColor: 'rgba(16,185,129,0.15)' };
+    }
+    if (status === 'cancelado') {
+      return { label: 'Cancelado', color: T.red, bgColor: 'rgba(239,68,68,0.15)' };
+    }
+
+    const today = todayBR();
+    const start = new Date(startDate + 'T00:00:00');
+    const now = new Date(today + 'T00:00:00');
+    const diffMs = now.getTime() - start.getTime();
+    const dia = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
+
+    if (dia === 1 || dia === 2) {
+      return { label: `Dia ${dia}`, color: T.cyan, bgColor: 'rgba(6,182,212,0.15)' };
+    }
+    if (dia === 3 || dia === 4) {
+      return { label: `Dia ${dia}`, color: T.blue, bgColor: T.bluePale };
+    }
+    if (dia === 5) {
+      return { label: 'Dia 5', color: T.orange, bgColor: 'rgba(245,158,11,0.15)' };
+    }
+    return { label: 'Dia 6', color: T.purple, bgColor: 'rgba(139,92,246,0.15)' };
+  };
+
+  const formatPV = (pv: number | null) => {
+    if (!pv || pv === 0) return '—';
+    return `${pv} PV`;
   };
 
   const formatPhoneBR = (phone: string) => {
@@ -262,16 +305,34 @@ export default function ResetClientesContent() {
           <Text style={[s.headerCell, s.cellNum]}>N°</Text>
           <Text style={[s.headerCell, s.cellName]}>Nome</Text>
           <Text style={[s.headerCell, s.cellDate]}>Data</Text>
+          <Text style={[s.headerCell, s.cellDay]}>Dia</Text>
+          <Text style={[s.headerCell, s.cellPV]}>PV</Text>
           <Text style={[s.headerCell, s.cellPhone]}>Celular</Text>
         </View>
 
         {filteredClients.map((client, index) => {
           const refDate = client.sale_date || client.created_at.split('T')[0];
+          const dayInfo = getProtocolDayInfo(client.start_date, client.enrollment_status);
           return (
             <View key={client.enrollment_id} style={s.tableRow}>
               <Text style={[s.cell, s.cellNum]}>{client.seq}</Text>
-              <Text style={[s.cell, s.cellName]}>{client.client_name}</Text>
+              <Text style={[s.cell, s.cellName]} numberOfLines={1}>
+                {client.client_name}
+              </Text>
               <Text style={[s.cell, s.cellDate]}>{formatDate(refDate)}</Text>
+              <View style={s.cellDay}>
+                <View
+                  style={[
+                    s.dayBadge,
+                    { backgroundColor: dayInfo.bgColor },
+                  ]}
+                >
+                  <Text style={[s.dayBadgeText, { color: dayInfo.color }]}>
+                    {dayInfo.label}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[s.cell, s.cellPV]}>{formatPV(client.total_pv)}</Text>
               <TouchableOpacity
                 style={[s.cell, s.cellPhone]}
                 onPress={() => handleOpenWhatsApp(client)}
@@ -371,12 +432,12 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#242424',
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
     marginBottom: 8,
   },
   headerCell: {
     color: T.t2,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
   },
@@ -384,29 +445,46 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#161616',
     borderRadius: 8,
-    padding: 12,
+    padding: 10,
     marginBottom: 8,
+    alignItems: 'center',
   },
   cell: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 12,
   },
   cellNum: {
-    width: 40,
+    width: 28,
   },
   cellName: {
     flex: 1,
     fontWeight: '600',
   },
   cellDate: {
-    width: 90,
+    width: 48,
+  },
+  cellDay: {
+    width: 58,
+    alignItems: 'center',
+  },
+  cellPV: {
+    width: 42,
   },
   cellPhone: {
-    width: 110,
+    width: 90,
+  },
+  dayBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  dayBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   phoneText: {
     color: T.blue,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
