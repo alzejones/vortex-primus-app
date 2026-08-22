@@ -482,7 +482,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                   }}
                 >
                   <Text style={[s.toggleTxt, presMode === m && s.toggleTxtActive]}>
-                    {m === 'existing' ? 'Cliente Existente' : 'Avulso'}
+                    {m === 'existing' ? 'Cliente Existente' : 'Prospecto'}
                   </Text>
                 </TouchableOpacity>
               ))}
