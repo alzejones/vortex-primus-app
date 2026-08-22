@@ -172,9 +172,8 @@ export default function ApresentacoesPendentesContent() {
     const fullPhone = (digits.length > 11 && digits.startsWith('55')) ? digits : '55' + digits;
     const firstName = item.prospect_name.split(' ')[0];
     const message = `Oi ${firstName}! Tudo bem? Vi que você fez uma apresentação e queria saber se ficou alguma dúvida 😊`;
-    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
 
-    Linking.openURL(url).catch(err => {
+    Linking.openURL(`whatsapp://send?phone=${fullPhone}&text=${encodeURIComponent(message)}`).catch(err => {
       console.error('Erro ao abrir WhatsApp:', err);
       notify('Erro', 'Não foi possível abrir o WhatsApp.');
     });
