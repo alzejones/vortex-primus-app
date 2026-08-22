@@ -1,10 +1,10 @@
 // ============================================================
 // ApresentacoesPendentesContent.tsx — Apresentações sem Venda
 // Lista todas as apresentações que ainda não viraram venda
-// Filtros: Dia (setas ◀/▶) | Mês (setas ◀/▶) | Todas
+// Filtros: Mês + Dia (opcional) + Busca por nome
 // ============================================================
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,10 +18,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { todayBR } from '../../utils/dateBR';
 import { T } from '../../utils/theme';
+import { normalizeSearch } from '../../utils/textSearch';
 import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow, maskPhone, notify } from './SaleFormModal';
 
 type Presentation = {
@@ -32,52 +31,9 @@ type Presentation = {
   converted: boolean;
 };
 
-type DateFilterMode = 'dia' | 'mes' | 'todas';
-
-const brl = (v: number) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
-
-// Soma/subtrai dias a uma data 'YYYY-MM-DD', em UTC puro (sem depender de fuso local)
-function shiftDate(dateStr: string, delta: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCDate(dt.getUTCDate() + delta);
-  return dt.toISOString().split('T')[0];
-}
-
-// Soma/subtrai meses a uma data 'YYYY-MM-DD', em UTC puro
-function shiftMonth(dateStr: string, delta: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d));
-  dt.setUTCMonth(dt.getUTCMonth() + delta);
-  return dt.toISOString().split('T')[0];
-}
-
 function fmtDateFull(d: string) {
   const [y, m, day] = d.split('-');
   return `${day}/${m}/${y}`;
-}
-
-// Formata mês/ano tipo "Agosto/2026"
-function fmtMonthYear(dateStr: string) {
-  const [y, m] = dateStr.split('-');
-  const monthNames = [
-    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
-  return `${monthNames[Number(m) - 1]}/${y}`;
-}
-
-// Calcula primeiro dia do mês
-function firstDayOfMonth(dateStr: string): string {
-  const [y, m] = dateStr.split('-');
-  return `${y}-${m}-01`;
-}
-
-// Calcula último dia do mês
-function lastDayOfMonth(dateStr: string): string {
-  const [y, m] = dateStr.split('-');
-  const dt = new Date(Date.UTC(Number(y), Number(m), 0));
-  return dt.toISOString().split('T')[0];
 }
 
 export default function ApresentacoesPendentesContent() {
@@ -85,10 +41,9 @@ export default function ApresentacoesPendentesContent() {
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [trainerLevel, setTrainerLevel] = useState<string>('50');
   const [presentations, setPresentations] = useState<Presentation[]>([]);
-  const [dateFilterMode, setDateFilterMode] = useState<DateFilterMode>('todas');
-  const [selectedDate, setSelectedDate] = useState<string>(todayBR());
-  const [searchText, setSearchText] = useState('');
-  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterMonth, setFilterMonth] = useState<string>('');
+  const [filterDay, setFilterDay] = useState<string>('');
 
   // Modal de venda
   const [modalOpen, setModalOpen] = useState(false);
@@ -105,6 +60,7 @@ export default function ApresentacoesPendentesContent() {
 
   const loadData = useCallback(async () => {
     try {
+      setLoading(true);
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData?.user?.id;
       if (!uid) return;
@@ -119,8 +75,7 @@ export default function ApresentacoesPendentesContent() {
       setTrainerId(trainer.id);
       setTrainerLevel(trainer.herbalife_discount_level || '50');
 
-      // Carregar kits, pricing e clients em paralelo
-      const [{ data: k }, { data: ki }, { data: pr }, { data: cl }] = await Promise.all([
+      const [{ data: k }, { data: ki }, { data: pr }, { data: cl }, { data: pres }] = await Promise.all([
         supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only').eq('active', true).order('name'),
         supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
         supabase
@@ -147,51 +102,24 @@ export default function ApresentacoesPendentesContent() {
           }
           return { data: allClients };
         })(),
+        supabase
+          .from('herbalife_prospects')
+          .select('id, prospect_name, prospect_phone, contact_date, converted')
+          .eq('trainer_id', trainer.id)
+          .eq('source', 'apresentacao')
+          .eq('converted', false)
+          .order('contact_date', { ascending: false }),
       ]);
 
       setKits((k as any) || []);
       setKitItems((ki as any) || []);
       setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
       setClients((cl as any) || []);
-
-      loadPresentations(trainer.id, dateFilterMode, selectedDate, searchText);
+      setPresentations((pres as any) || []);
     } catch (e) {
       console.error('Erro ao carregar dados:', e);
     } finally {
       setLoading(false);
-    }
-  }, [dateFilterMode, selectedDate, searchText]);
-
-  const loadPresentations = useCallback(async (tid: string, mode: DateFilterMode, date: string, search: string) => {
-    try {
-      let query = supabase
-        .from('herbalife_prospects')
-        .select('id, prospect_name, prospect_phone, contact_date, converted')
-        .eq('trainer_id', tid)
-        .eq('source', 'apresentacao')
-        .eq('converted', false);
-
-      // Filtro de data
-      if (mode === 'dia') {
-        query = query.eq('contact_date', date);
-      } else if (mode === 'mes') {
-        const firstDay = firstDayOfMonth(date);
-        const lastDay = lastDayOfMonth(date);
-        query = query.gte('contact_date', firstDay).lte('contact_date', lastDay);
-      }
-      // mode === 'todas' não aplica filtro de data
-
-      // Filtro de busca
-      if (search.trim()) {
-        query = query.ilike('prospect_name', `%${search.trim()}%`);
-      }
-
-      query = query.order('contact_date', { ascending: false });
-
-      const { data } = await query;
-      setPresentations((data as any) || []);
-    } catch (e) {
-      console.error('Erro ao carregar apresentações:', e);
     }
   }, []);
 
@@ -201,15 +129,38 @@ export default function ApresentacoesPendentesContent() {
     }, [loadData])
   );
 
-  // Debounce da busca
-  useEffect(() => {
-    if (debounceTimeout) clearTimeout(debounceTimeout);
-    const timeout = setTimeout(() => {
-      if (trainerId) loadPresentations(trainerId, dateFilterMode, selectedDate, searchText);
-    }, 300);
-    setDebounceTimeout(timeout);
-    return () => clearTimeout(timeout);
-  }, [searchText, trainerId, dateFilterMode, selectedDate]);
+  const filteredPresentations = useMemo(() => {
+    let result = presentations;
+
+    if (searchQuery.trim()) {
+      const normalized = normalizeSearch(searchQuery);
+      result = result.filter((p) =>
+        normalizeSearch(p.prospect_name).includes(normalized)
+      );
+    }
+
+    if (filterMonth || filterDay) {
+      result = result.filter((p) => {
+        const [y, m, d] = p.contact_date.split('-');
+
+        if (filterMonth && m !== filterMonth) return false;
+        if (filterDay && d !== filterDay.padStart(2, '0')) return false;
+
+        return true;
+      });
+    }
+
+    return result;
+  }, [presentations, searchQuery, filterMonth, filterDay]);
+
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
+    presentations.forEach((p) => {
+      const [y, m] = p.contact_date.split('-');
+      months.add(m);
+    });
+    return Array.from(months).sort();
+  }, [presentations]);
 
   function handleSendMessage(item: Presentation) {
     const digits = (item.prospect_phone || '').replace(/\D/g, '');
@@ -242,7 +193,7 @@ export default function ApresentacoesPendentesContent() {
   async function deletePresentation(id: string) {
     const doDelete = async () => {
       await supabase.from('herbalife_prospects').delete().eq('id', id);
-      if (trainerId) loadPresentations(trainerId, dateFilterMode, selectedDate, searchText);
+      loadData();
     };
     if (Platform.OS === 'web') {
       if (window.confirm('Excluir esta apresentação?')) doDelete();
@@ -254,6 +205,21 @@ export default function ApresentacoesPendentesContent() {
     }
   }
 
+  const monthNames: Record<string, string> = {
+    '01': 'Janeiro',
+    '02': 'Fevereiro',
+    '03': 'Março',
+    '04': 'Abril',
+    '05': 'Maio',
+    '06': 'Junho',
+    '07': 'Julho',
+    '08': 'Agosto',
+    '09': 'Setembro',
+    '10': 'Outubro',
+    '11': 'Novembro',
+    '12': 'Dezembro',
+  };
+
   if (loading) {
     return (
       <View style={[s.center, { backgroundColor: T.bg }]}>
@@ -262,9 +228,6 @@ export default function ApresentacoesPendentesContent() {
     );
   }
 
-  const isToday = selectedDate === todayBR();
-  const hasFilter = searchText.trim().length > 0 || dateFilterMode !== 'todas';
-
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
@@ -272,76 +235,79 @@ export default function ApresentacoesPendentesContent() {
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <Text style={s.backBtnText}>←</Text>
         </TouchableOpacity>
-        <Text style={s.title}>Apresentações sem Venda</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={s.title}>Apresentações sem Venda</Text>
+          <Text style={s.subtitle}>{presentations.length} pendentes</Text>
+        </View>
       </View>
 
-      {/* Filtro de data */}
-      <View style={s.filterContainer}>
-        <View style={s.segmentedControl}>
-          {(['dia', 'mes', 'todas'] as DateFilterMode[]).map((mode) => (
-            <TouchableOpacity
-              key={mode}
-              style={[s.segment, dateFilterMode === mode && s.segmentActive]}
-              onPress={() => setDateFilterMode(mode)}
-            >
-              <Text style={[s.segmentText, dateFilterMode === mode && s.segmentTextActive]}>
-                {mode === 'dia' ? 'Dia' : mode === 'mes' ? 'Mês' : 'Todas'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Navegação de data */}
-        {dateFilterMode === 'dia' && (
-          <View style={s.dateNav}>
-            <TouchableOpacity style={s.dateNavBtn} onPress={() => setSelectedDate((d) => shiftDate(d, -1))}>
-              <Text style={s.dateNavBtnTxt}>◀</Text>
-            </TouchableOpacity>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={s.dateNavLabel}>{fmtDateFull(selectedDate)}</Text>
-              {!isToday && (
-                <TouchableOpacity onPress={() => setSelectedDate(todayBR())}>
-                  <Text style={s.dateNavToday}>Ir para hoje</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <TouchableOpacity style={s.dateNavBtn} onPress={() => setSelectedDate((d) => shiftDate(d, 1))}>
-              <Text style={s.dateNavBtnTxt}>▶</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {dateFilterMode === 'mes' && (
-          <View style={s.dateNav}>
-            <TouchableOpacity style={s.dateNavBtn} onPress={() => setSelectedDate((d) => shiftMonth(d, -1))}>
-              <Text style={s.dateNavBtnTxt}>◀</Text>
-            </TouchableOpacity>
-            <Text style={s.dateNavLabel}>{fmtMonthYear(selectedDate)}</Text>
-            <TouchableOpacity style={s.dateNavBtn} onPress={() => setSelectedDate((d) => shiftMonth(d, 1))}>
-              <Text style={s.dateNavBtnTxt}>▶</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Busca */}
+      {/* Filtros */}
+      <View style={s.filtersContainer}>
         <TextInput
           style={s.searchInput}
           placeholder="Buscar por nome..."
-          placeholderTextColor="#666"
-          value={searchText}
-          onChangeText={setSearchText}
+          placeholderTextColor={T.t3}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
+
+        <View style={s.dateFilters}>
+          <View style={s.dateFilterGroup}>
+            <Text style={s.filterLabel}>Mês</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <TouchableOpacity
+                style={[s.monthChip, !filterMonth && s.monthChipActive]}
+                onPress={() => setFilterMonth('')}
+              >
+                <Text style={[s.monthChipText, !filterMonth && s.monthChipTextActive]}>
+                  Todos
+                </Text>
+              </TouchableOpacity>
+              {availableMonths.map((month) => (
+                <TouchableOpacity
+                  key={month}
+                  style={[s.monthChip, filterMonth === month && s.monthChipActive]}
+                  onPress={() => setFilterMonth(month)}
+                >
+                  <Text
+                    style={[
+                      s.monthChipText,
+                      filterMonth === month && s.monthChipTextActive,
+                    ]}
+                  >
+                    {monthNames[month]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          <View style={s.dateFilterGroup}>
+            <Text style={s.filterLabel}>Dia (opcional)</Text>
+            <TextInput
+              style={s.dayInput}
+              placeholder="1-31"
+              placeholderTextColor={T.t3}
+              keyboardType="number-pad"
+              value={filterDay}
+              onChangeText={(text) => {
+                const num = parseInt(text, 10);
+                if (text === '' || (num >= 1 && num <= 31)) {
+                  setFilterDay(text);
+                }
+              }}
+            />
+          </View>
+        </View>
       </View>
 
       {/* Lista */}
       <FlatList
-        data={presentations}
+        data={filteredPresentations}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         ListEmptyComponent={() => (
-          <Text style={s.empty}>
-            {hasFilter ? 'Nenhuma apresentação encontrada com esse filtro.' : 'Nenhuma apresentação pendente.'}
-          </Text>
+          <Text style={s.empty}>Nenhuma apresentação encontrada</Text>
         )}
         renderItem={({ item }) => (
           <TouchableOpacity
@@ -383,7 +349,7 @@ export default function ApresentacoesPendentesContent() {
           setPrefillManualEntryForModal(undefined);
         }}
         onSaved={() => {
-          if (trainerId) loadPresentations(trainerId, dateFilterMode, selectedDate, searchText);
+          loadData();
         }}
       />
     </View>
@@ -392,23 +358,42 @@ export default function ApresentacoesPendentesContent() {
 
 const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingTop: 20, backgroundColor: T.bg, borderBottomWidth: 1, borderBottomColor: '#1E1E1E' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 16, backgroundColor: T.bg },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   backBtnText: { color: T.blue, fontSize: 20, fontWeight: '700' },
-  title: { fontSize: 20, fontWeight: '700', color: '#FFF', flex: 1 },
-  filterContainer: { padding: 16, paddingBottom: 8, backgroundColor: T.bg },
-  segmentedControl: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  segment: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#1A1A1A', alignItems: 'center' },
-  segmentActive: { backgroundColor: T.blue },
-  segmentText: { color: '#AAA', fontWeight: '600', fontSize: 14 },
-  segmentTextActive: { color: '#000' },
-  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  dateNavBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center' },
-  dateNavBtnTxt: { color: T.blue, fontSize: 16, fontWeight: '700' },
-  dateNavLabel: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  dateNavToday: { color: T.blue, fontSize: 11, fontWeight: '600', marginTop: 2 },
-  searchInput: { backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, color: '#FFF', fontSize: 14 },
-  empty: { color: '#777', fontStyle: 'italic', textAlign: 'center', marginTop: 40 },
+  title: { fontSize: 24, fontWeight: '700', color: '#FFF', marginBottom: 4 },
+  subtitle: { color: T.t2, fontSize: 14 },
+  filtersContainer: { paddingHorizontal: 20, marginBottom: 20 },
+  searchInput: {
+    backgroundColor: '#242424',
+    borderRadius: 10,
+    padding: 12,
+    color: '#FFF',
+    fontSize: 15,
+    marginBottom: 16,
+  },
+  dateFilters: { gap: 12 },
+  dateFilterGroup: { gap: 8 },
+  filterLabel: { color: T.t2, fontSize: 13, fontWeight: '600' },
+  monthChip: {
+    backgroundColor: '#242424',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  monthChipActive: { backgroundColor: T.blue },
+  monthChipText: { color: T.t2, fontSize: 13, fontWeight: '600' },
+  monthChipTextActive: { color: '#000', fontWeight: '700' },
+  dayInput: {
+    backgroundColor: '#242424',
+    borderRadius: 10,
+    padding: 12,
+    color: '#FFF',
+    fontSize: 15,
+    width: 100,
+  },
+  empty: { color: T.t2, fontSize: 14, textAlign: 'center', marginTop: 40 },
   presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
   presDate: { color: '#888', fontSize: 12, marginBottom: 4 },
   presName: { color: '#FFF', fontWeight: '600', fontSize: 15, marginBottom: 2 },
