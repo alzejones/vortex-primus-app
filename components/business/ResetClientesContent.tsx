@@ -181,7 +181,7 @@ export default function ResetClientesContent() {
 
   const formatPV = (pv: number | null) => {
     if (!pv || pv === 0) return '—';
-    return `${pv} PV`;
+    return `${pv}`;
   };
 
   const formatPhoneBR = (phone: string) => {
@@ -305,10 +305,12 @@ export default function ResetClientesContent() {
           <Text style={[s.headerCell, s.cellNum]}>N°</Text>
           <Text style={[s.headerCell, s.cellName]}>Nome</Text>
           <Text style={[s.headerCell, s.cellDate]}>Data</Text>
-          <Text style={[s.headerCell, s.cellDay]}>Dia</Text>
-          <Text style={[s.headerCell, s.cellPV]}>PV</Text>
+          <Text style={[s.headerCell, s.cellDay, s.headerCellCenter]}>Dia</Text>
+          <Text style={[s.headerCell, s.cellPV, s.headerCellCenter]}>PV</Text>
           <Text style={[s.headerCell, s.cellPhone]}>Celular</Text>
         </View>
+
+        <Text style={s.whatsappHint}>💬 Toque no celular para abrir o WhatsApp</Text>
 
         {filteredClients.map((client, index) => {
           const refDate = client.sale_date || client.created_at.split('T')[0];
@@ -441,6 +443,9 @@ const s = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
+  headerCellCenter: {
+    textAlign: 'center',
+  },
   tableRow: {
     flexDirection: 'row',
     backgroundColor: '#161616',
@@ -461,14 +466,15 @@ const s = StyleSheet.create({
     fontWeight: '600',
   },
   cellDate: {
-    width: 48,
+    width: 40,
   },
   cellDay: {
-    width: 58,
+    width: 50,
     alignItems: 'center',
   },
   cellPV: {
     width: 42,
+    textAlign: 'center',
   },
   cellPhone: {
     width: 90,
@@ -491,6 +497,14 @@ const s = StyleSheet.create({
   phoneDisabled: {
     color: T.t3,
     textDecorationLine: 'none',
+  },
+  whatsappHint: {
+    fontSize: 10,
+    color: T.t3,
+    fontStyle: 'italic',
+    textAlign: 'right',
+    marginBottom: 6,
+    paddingHorizontal: 4,
   },
   emptyState: {
     padding: 40,
