@@ -77,7 +77,7 @@ export default function ResetClientesContent() {
             start_date,
             status,
             clients!reset_protocol_enrollments_client_id_fkey(name, phone),
-            herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date)
+            herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date, total_pv)
           `)
           .eq('trainer_id', trainer.id)
           .order('created_at', { ascending: true }),
@@ -113,7 +113,7 @@ export default function ResetClientesContent() {
         })(),
         supabase
           .from('herbalife_sales')
-          .select('client_id, total_pv')
+          .select('id, client_id, total_pv')
           .eq('trainer_id', trainer.id),
       ]);
 
@@ -123,7 +123,9 @@ export default function ResetClientesContent() {
       setAllClients((cl as any) || []);
 
       const pvByClient = new Map<string, number>();
+      const countedSaleIds = new Set<string>();
       (allSalesRes || []).forEach((s: any) => {
+        countedSaleIds.add(s.id);
         if (!s.client_id) return;
         const current = pvByClient.get(s.client_id) || 0;
         pvByClient.set(s.client_id, current + (Number(s.total_pv) || 0));
@@ -132,17 +134,23 @@ export default function ResetClientesContent() {
       if (enrollments) {
         const mapped = enrollments
           .filter((e: any) => e.clients?.name)
-          .map((e: any) => ({
-            enrollment_id: e.id,
-            client_id: e.client_id,
-            client_name: e.clients.name,
-            client_phone: e.clients.phone || null,
-            sale_date: e.herbalife_sales?.sale_date || null,
-            created_at: e.created_at,
-            start_date: e.start_date || null,
-            enrollment_status: e.status,
-            total_pv: pvByClient.get(e.client_id) || null,
-          }));
+          .map((e: any) => {
+            let clientPV = pvByClient.get(e.client_id) || 0;
+            if (e.sale_id && !countedSaleIds.has(e.sale_id) && e.herbalife_sales?.total_pv) {
+              clientPV += Number(e.herbalife_sales.total_pv) || 0;
+            }
+            return {
+              enrollment_id: e.id,
+              client_id: e.client_id,
+              client_name: e.clients.name,
+              client_phone: e.clients.phone || null,
+              sale_date: e.herbalife_sales?.sale_date || null,
+              created_at: e.created_at,
+              start_date: e.start_date || null,
+              enrollment_status: e.status,
+              total_pv: clientPV || null,
+            };
+          });
 
         mapped.sort((a, b) => {
           const dateA = a.sale_date || a.created_at.split('T')[0];
