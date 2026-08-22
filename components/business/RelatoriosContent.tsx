@@ -43,6 +43,12 @@ function fmtDateFull(d: string) {
 
 type Tab = 'diario' | 'semanal' | 'mensal' | 'por_dia';
 
+const monthNames: Record<string, string> = {
+  '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril',
+  '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto',
+  '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro',
+};
+
 export default function RelatoriosContent() {
   const [tab, setTab] = useState<Tab>('diario');
   const [loading, setLoading] = useState(true);
@@ -56,6 +62,8 @@ export default function RelatoriosContent() {
   const [kitItems, setKitItems] = useState<KitItem[]>([]);
   const [pricing, setPricing] = useState<Pricing[]>([]);
   const [clients, setClients] = useState<ClientRow[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<string>(todayBR().slice(0, 7));
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   // aba "Por Dia"
   const [selectedDate, setSelectedDate] = useState<string>(todayBR());
@@ -84,15 +92,18 @@ export default function RelatoriosContent() {
       setTrainerId(trainer.id);
       setTrainerLevel(trainer.herbalife_discount_level || '50');
 
-      const cutoffStr = daysAgoBR(31);
+      const [y, m] = selectedMonth.split('-').map(Number);
+      const firstDay = selectedMonth + '-01';
+      const isCurrentMonth = selectedMonth === todayBR().slice(0, 7);
+      const lastDay = isCurrentMonth ? todayBR() : new Date(y, m, 0).toISOString().split('T')[0];
 
-      const [{ data: d }, { data: w }, { data: m }, { data: k }, { data: ki }, { data: pr }, { data: cl }, { data: prospects }] = await Promise.all([
+      const [{ data: d }, { data: w }, { data: mon }, { data: k }, { data: ki }, { data: pr }, { data: cl }, { data: prospects }, { data: resets }] = await Promise.all([
         supabase
           .from('v_herbalife_daily')
           .select('*')
           .eq('trainer_id', trainer.id)
-          .gte('report_date', cutoffStr)
-          .lte('report_date', todayBR())
+          .gte('report_date', firstDay)
+          .lte('report_date', lastDay)
           .order('report_date', { ascending: false }),
         supabase
           .from('v_herbalife_weekly')
@@ -137,8 +148,13 @@ export default function RelatoriosContent() {
           .select('contact_date')
           .eq('trainer_id', trainer.id)
           .eq('source', 'apresentacao')
-          .gte('contact_date', cutoffStr)
-          .lte('contact_date', todayBR()),
+          .gte('contact_date', firstDay)
+          .lte('contact_date', lastDay),
+        supabase
+          .from('reset_protocol_enrollments')
+          .select('sale_id, herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date)')
+          .eq('trainer_id', trainer.id)
+          .not('sale_id', 'is', null),
       ]);
       const prospectsMap = new Map<string, number>();
       (prospects || []).forEach((p: any) => {
@@ -146,12 +162,21 @@ export default function RelatoriosContent() {
         prospectsMap.set(p.contact_date, count + 1);
       });
 
+      const resetsMap = new Map<string, number>();
+      (resets || []).forEach((r: any) => {
+        const saleDate = r.herbalife_sales?.sale_date;
+        if (saleDate && saleDate >= firstDay && saleDate <= lastDay) {
+          const count = resetsMap.get(saleDate) || 0;
+          resetsMap.set(saleDate, count + 1);
+        }
+      });
+
       const dailyMap = new Map<string, any>();
       (d || []).forEach((row) => dailyMap.set(row.report_date, row));
 
       const dailyWithApresentacoes = [];
-      let current = todayBR();
-      while (current >= cutoffStr) {
+      let current = lastDay;
+      while (current >= firstDay) {
         const existing = dailyMap.get(current);
         dailyWithApresentacoes.push({
           report_date: current,
@@ -162,13 +187,14 @@ export default function RelatoriosContent() {
           acessos: existing?.acessos || 0,
           ganhos: existing?.ganhos || 0,
           apresentacoes: prospectsMap.get(current) || 0,
+          resets: resetsMap.get(current) || 0,
         });
         current = shiftDate(current, -1);
       }
 
       setDaily(dailyWithApresentacoes);
       setWeekly(w || []);
-      setMonthly(m || []);
+      setMonthly(mon || []);
       setKits((k as any) || []);
       setKitItems((ki as any) || []);
       setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
@@ -184,7 +210,7 @@ export default function RelatoriosContent() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+    }, [load, selectedMonth])
   );
 
   const loadDaySales = useCallback(async (tid: string, date: string) => {
@@ -309,27 +335,77 @@ export default function RelatoriosContent() {
       >
         {tab === 'diario' && (
           <>
+            <TouchableOpacity
+              style={s.monthSelector}
+              onPress={() => setShowMonthPicker(!showMonthPicker)}
+            >
+              <Text style={s.monthSelectorText}>
+                {monthNames[selectedMonth.slice(5, 7)]}/{selectedMonth.slice(0, 4)}
+              </Text>
+              <Text style={s.monthSelectorArrow}>{showMonthPicker ? '▲' : '▼'}</Text>
+            </TouchableOpacity>
+
+            {showMonthPicker && (
+              <View style={s.monthPickerContainer}>
+                {Array.from({ length: 12 }, (_, i) => {
+                  const today = new Date();
+                  const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                  const monthKey = targetDate.toISOString().slice(0, 7);
+                  const monthLabel = `${monthNames[monthKey.slice(5, 7)]}/${monthKey.slice(0, 4)}`;
+                  return (
+                    <TouchableOpacity
+                      key={monthKey}
+                      style={[s.monthPickerItem, selectedMonth === monthKey && s.monthPickerItemActive]}
+                      onPress={() => {
+                        setSelectedMonth(monthKey);
+                        setShowMonthPicker(false);
+                      }}
+                    >
+                      <Text style={[s.monthPickerItemText, selectedMonth === monthKey && s.monthPickerItemTextActive]}>
+                        {monthLabel}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {daily.length > 0 && (
+              <View style={[s.row, { backgroundColor: '#1A1A1A', paddingVertical: 8, marginBottom: 4 }]}>
+                <Text style={[s.cell, { flex: 0.6, color: '#FFF', fontWeight: '700' }]}>Total</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
+                <Text style={[s.cell, { flex: 1.4, fontWeight: '700', color: '#4ADE80' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
+              </View>
+            )}
+
             <View style={s.headRow}>
-              <Text style={[s.hCell, { flex: 1 }]}>Dia</Text>
-              <Text style={s.hCell}>Conv</Text>
+              <Text style={[s.hCell, { flex: 0.6 }]}>Dia</Text>
+              <Text style={s.hCell}>Contato</Text>
               <Text style={s.hCell}>Apres</Text>
+              <Text style={s.hCell}>Reset</Text>
               <Text style={s.hCell}>Nov</Text>
               <Text style={s.hCell}>Ind</Text>
-              <Text style={s.hCell}>Ace</Text>
+              <Text style={s.hCell}>Aces</Text>
               <Text style={[s.hCell, { flex: 1.4 }]}>Ganhos</Text>
             </View>
             {daily.map((r) => (
               <View key={r.report_date} style={s.row}>
-                <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>{fmtDate(r.report_date)}</Text>
+                <Text style={[s.cell, { flex: 0.6, color: '#FFF' }]}>{r.report_date.slice(8, 10)}</Text>
                 <Text style={s.cell}>{r.convites}</Text>
                 <Text style={s.cell}>{r.apresentacoes}</Text>
+                <Text style={s.cell}>{r.resets}</Text>
                 <Text style={s.cell}>{r.novos}</Text>
                 <Text style={s.cell}>{r.indicacoes}</Text>
                 <Text style={s.cell}>{r.acessos}</Text>
                 <Text style={[s.cell, { flex: 1.4, color: '#4ADE80' }]}>{brl(r.ganhos)}</Text>
               </View>
             ))}
-            {daily.length === 0 && <Text style={s.empty}>Sem dados nos últimos 31 dias.</Text>}
+            {daily.length === 0 && <Text style={s.empty}>Sem dados neste mês.</Text>}
           </>
         )}
 
@@ -574,4 +650,12 @@ const s = StyleSheet.create({
   hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
   sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+  monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 12 },
+  monthSelectorText: { color: '#FFF', fontSize: 16, fontWeight: '700', marginRight: 8 },
+  monthSelectorArrow: { color: T.blue, fontSize: 14, fontWeight: '700' },
+  monthPickerContainer: { backgroundColor: '#1A1A1A', borderRadius: 10, padding: 8, marginBottom: 12 },
+  monthPickerItem: { padding: 10, borderRadius: 8 },
+  monthPickerItemActive: { backgroundColor: T.blue },
+  monthPickerItemText: { color: '#AAA', fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  monthPickerItemTextActive: { color: '#000' },
 });
