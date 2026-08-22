@@ -17,6 +17,7 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { normalizeSearch } from '../../utils/textSearch';
 import { todayBR } from '../../utils/dateBR';
+import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow } from './SaleFormModal';
 
 interface ResetClient {
   enrollment_id: string;
@@ -39,6 +40,15 @@ export default function ResetClientesContent() {
   const [filterMonth, setFilterMonth] = useState<string>('');
   const [filterDay, setFilterDay] = useState<string>('');
 
+  const [trainerLevel, setTrainerLevel] = useState<string>('50');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<SaleRow | null>(null);
+  const [prefillClientForModal, setPrefillClientForModal] = useState<ClientRow | undefined>(undefined);
+  const [kits, setKits] = useState<Kit[]>([]);
+  const [kitItems, setKitItems] = useState<KitItem[]>([]);
+  const [pricing, setPricing] = useState<Pricing[]>([]);
+  const [allClients, setAllClients] = useState<ClientRow[]>([]);
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
@@ -48,27 +58,65 @@ export default function ResetClientesContent() {
 
       const { data: trainer } = await supabase
         .from('trainers')
-        .select('id')
+        .select('id, herbalife_discount_level')
         .eq('user_id', uid)
         .single();
 
       if (!trainer) return;
       setTrainerId(trainer.id);
+      setTrainerLevel(trainer.herbalife_discount_level || '50');
 
-      const { data: enrollments } = await supabase
-        .from('reset_protocol_enrollments')
-        .select(`
-          id,
-          client_id,
-          sale_id,
-          created_at,
-          start_date,
-          status,
-          clients!reset_protocol_enrollments_client_id_fkey(name, phone),
-          herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date, total_pv)
-        `)
-        .eq('trainer_id', trainer.id)
-        .order('created_at', { ascending: true });
+      const [{ data: enrollments }, { data: k }, { data: ki }, { data: pr }, { data: cl }] = await Promise.all([
+        supabase
+          .from('reset_protocol_enrollments')
+          .select(`
+            id,
+            client_id,
+            sale_id,
+            created_at,
+            start_date,
+            status,
+            clients!reset_protocol_enrollments_client_id_fkey(name, phone),
+            herbalife_sales!reset_protocol_enrollments_sale_id_fkey(sale_date, total_pv)
+          `)
+          .eq('trainer_id', trainer.id)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('herbalife_kits')
+          .select('id, name, default_price, is_redemption_only')
+          .eq('active', true)
+          .order('name'),
+        supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
+        supabase
+          .from('herbalife_pricing')
+          .select('*, supplements(name)')
+          .order('sku'),
+        (async () => {
+          let allClients: any[] = [];
+          let page = 0;
+          const pageSize = 1000;
+          while (true) {
+            const { data: clientsPage } = await supabase
+              .from('clients')
+              .select('id, name, herbalife_discount_level')
+              .eq('trainer_id', trainer.id)
+              .eq('is_active', true)
+              .order('name')
+              .order('id')
+              .range(page * pageSize, (page + 1) * pageSize - 1);
+            if (!clientsPage || clientsPage.length === 0) break;
+            allClients = allClients.concat(clientsPage);
+            if (clientsPage.length < pageSize) break;
+            page++;
+          }
+          return { data: allClients };
+        })(),
+      ]);
+
+      setKits((k as any) || []);
+      setKitItems((ki as any) || []);
+      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
+      setAllClients((cl as any) || []);
 
       if (enrollments) {
         const mapped = enrollments
@@ -196,7 +244,8 @@ export default function ResetClientesContent() {
     return phone;
   };
 
-  const handleOpenWhatsApp = (client: ResetClient) => {
+  const handleOpenWhatsApp = (client: ResetClient, e?: any) => {
+    if (e) e.stopPropagation();
     if (!client.client_phone) return;
 
     const digits = client.client_phone.replace(/\D/g, '');
@@ -204,12 +253,21 @@ export default function ResetClientesContent() {
 
     const fullPhone =
       digits.length > 11 && digits.startsWith('55') ? digits : '55' + digits;
-    const url = `https://wa.me/${fullPhone}`;
+    const url = `whatsapp://send?phone=${fullPhone}`;
 
     Linking.openURL(url).catch((err) => {
       console.log('Erro ao abrir WhatsApp:', err);
     });
   };
+
+  function openSaleModal(client: ResetClient) {
+    const clientRow = allClients.find((c) => c.id === client.client_id);
+    if (clientRow) {
+      setPrefillClientForModal(clientRow);
+    }
+    setEditingSale(null);
+    setModalOpen(true);
+  }
 
   const monthNames: Record<string, string> = {
     '01': 'Janeiro',
@@ -235,11 +293,12 @@ export default function ResetClientesContent() {
   }
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={{ paddingBottom: 32 }}>
-      <View style={s.header}>
-        <Text style={s.title}>Clientes Kit Reset</Text>
-        <Text style={s.subtitle}>{clients.length} inscrições</Text>
-      </View>
+    <>
+      <ScrollView style={s.container} contentContainerStyle={{ paddingBottom: 32 }}>
+        <View style={s.header}>
+          <Text style={s.title}>Clientes Kit Reset</Text>
+          <Text style={s.subtitle}>{clients.length} inscrições</Text>
+        </View>
 
       <View style={s.filtersContainer}>
         <TextInput
@@ -310,13 +369,19 @@ export default function ResetClientesContent() {
           <Text style={[s.headerCell, s.cellPhone]}>Celular</Text>
         </View>
 
+        <Text style={s.saleHint}>🛒 Toque no cliente para registrar uma venda</Text>
         <Text style={s.whatsappHint}>💬 Toque no celular para abrir o WhatsApp</Text>
 
         {filteredClients.map((client, index) => {
           const refDate = client.sale_date || client.created_at.split('T')[0];
           const dayInfo = getProtocolDayInfo(client.start_date, client.enrollment_status);
           return (
-            <View key={client.enrollment_id} style={s.tableRow}>
+            <TouchableOpacity
+              key={client.enrollment_id}
+              style={s.tableRow}
+              onPress={() => openSaleModal(client)}
+              activeOpacity={0.7}
+            >
               <Text style={[s.cell, s.cellNum]}>{client.seq}</Text>
               <Text style={[s.cell, s.cellName]} numberOfLines={1}>
                 {client.client_name}
@@ -337,14 +402,14 @@ export default function ResetClientesContent() {
               <Text style={[s.cell, s.cellPV]}>{formatPV(client.total_pv)}</Text>
               <TouchableOpacity
                 style={[s.cell, s.cellPhone]}
-                onPress={() => handleOpenWhatsApp(client)}
+                onPress={(e) => handleOpenWhatsApp(client, e)}
                 disabled={!client.client_phone}
               >
                 <Text style={[s.phoneText, !client.client_phone && s.phoneDisabled]}>
                   {client.client_phone ? formatPhoneBR(client.client_phone) : '—'}
                 </Text>
               </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
           );
         })}
 
@@ -354,7 +419,27 @@ export default function ResetClientesContent() {
           </View>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+
+      <SaleFormModal
+        visible={modalOpen}
+        editingSale={editingSale}
+        trainerId={trainerId!}
+        trainerLevel={trainerLevel}
+        kits={kits}
+        kitItems={kitItems}
+        pricing={pricing}
+        clients={allClients}
+        prefillClient={prefillClientForModal}
+        onClose={() => {
+          setModalOpen(false);
+          setPrefillClientForModal(undefined);
+        }}
+        onSaved={() => {
+          load();
+        }}
+      />
+    </>
   );
 }
 
@@ -497,6 +582,14 @@ const s = StyleSheet.create({
   phoneDisabled: {
     color: T.t3,
     textDecorationLine: 'none',
+  },
+  saleHint: {
+    fontSize: 10,
+    color: T.t3,
+    fontStyle: 'italic',
+    textAlign: 'left',
+    marginBottom: 2,
+    paddingHorizontal: 4,
   },
   whatsappHint: {
     fontSize: 10,
