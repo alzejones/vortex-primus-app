@@ -215,7 +215,8 @@ export default function SaleFormModal({
   }
 
   function updateCartPrice(index: number, price: string) {
-    const parsed = parseFloat(price.replace(',', '.')) || 0;
+    const normalized = price.replace(',', '.');
+    const parsed = parseFloat(normalized) || 0;
     setCart(cart.map((item, i) => i === index ? { ...item, unitPrice: parsed } : item));
   }
 
@@ -705,7 +706,7 @@ export default function SaleFormModal({
                         <Text style={s.cartLabel}>Valor unit.</Text>
                         <TextInput
                           style={s.cartInput}
-                          keyboardType="numeric"
+                          keyboardType="decimal-pad"
                           value={String(item.unitPrice)}
                           onChangeText={(t) => updateCartPrice(index, t)}
                         />
