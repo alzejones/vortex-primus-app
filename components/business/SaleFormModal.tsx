@@ -321,14 +321,32 @@ export default function SaleFormModal({
     }
     setSaving(true);
     try {
-      let status: 'novo' | 'indicacao' | 'repetidor' = 'novo';
-      if (isIndicacao) status = 'indicacao';
-      else if (selClient) {
-        const { count } = await supabase
-          .from('herbalife_sales')
-          .select('id', { count: 'exact', head: true })
-          .eq('client_id', selClient.id);
-        if ((count ?? 0) > 0) status = 'repetidor';
+      const hasResetKit = cart.some((item) => {
+        if (item.itemType !== 'kit') return false;
+        const kit = kits.find((k) => k.id === item.id);
+        return kit?.triggers_reset_protocol === true;
+      });
+
+      let status: 'novo' | 'indicacao' | 'repetidor' | null = null;
+      if (isIndicacao) {
+        status = 'indicacao';
+      } else {
+        let priorCount = 0;
+        if (selClient) {
+          const { count } = await supabase
+            .from('herbalife_sales')
+            .select('id', { count: 'exact', head: true })
+            .eq('client_id', selClient.id);
+          priorCount = count ?? 0;
+        }
+
+        if (priorCount > 0) {
+          status = 'repetidor';
+        } else if (hasResetKit) {
+          status = null;
+        } else {
+          status = 'novo';
+        }
       }
 
       let totalCharged = 0;
@@ -450,12 +468,6 @@ export default function SaleFormModal({
 
         onSaved();
         onClose();
-
-        const hasResetKit = cart.some((item) => {
-          if (item.itemType !== 'kit') return false;
-          const kit = kits.find((k) => k.id === item.id);
-          return kit?.triggers_reset_protocol === true;
-        });
 
         if (hasResetKit && selClient) {
           const { data: enrollment, error: enrollErr } = await supabase

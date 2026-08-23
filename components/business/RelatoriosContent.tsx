@@ -183,6 +183,7 @@ export default function RelatoriosContent() {
           convites: existing?.convites || 0,
           entraram: existing?.entraram || 0,
           novos: existing?.novos || 0,
+          repetidores: existing?.repetidores || 0,
           indicacoes: existing?.indicacoes || 0,
           acessos: existing?.acessos || 0,
           ganhos: existing?.ganhos || 0,
@@ -372,37 +373,40 @@ export default function RelatoriosContent() {
 
             {daily.length > 0 && (
               <View style={[s.row, { backgroundColor: '#1A1A1A', paddingVertical: 8, marginBottom: 4 }]}>
-                <Text style={[s.cell, { flex: 0.6, color: '#FFF', fontWeight: '700' }]}>Total</Text>
+                <Text style={[s.cell, { flex: 0.5, color: '#FFF', fontWeight: '700' }]}>Total</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
-                <Text style={[s.cell, { flex: 1.4, fontWeight: '700', color: '#4ADE80' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
+                <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
               </View>
             )}
 
             <View style={s.headRow}>
-              <Text style={[s.hCell, { flex: 0.6 }]}>Dia</Text>
+              <Text style={[s.hCell, { flex: 0.5 }]}>Dia</Text>
               <Text style={s.hCell}>Contato</Text>
               <Text style={s.hCell}>Apres</Text>
               <Text style={s.hCell}>Reset</Text>
               <Text style={s.hCell}>Nov</Text>
+              <Text style={s.hCell}>Rep</Text>
               <Text style={s.hCell}>Ind</Text>
               <Text style={s.hCell}>Aces</Text>
-              <Text style={[s.hCell, { flex: 1.4 }]}>Ganhos</Text>
+              <Text style={[s.hCell, { flex: 1.2 }]}>Ganhos</Text>
             </View>
             {daily.map((r) => (
               <View key={r.report_date} style={s.row}>
-                <Text style={[s.cell, { flex: 0.6, color: '#FFF' }]}>{r.report_date.slice(8, 10)}</Text>
+                <Text style={[s.cell, { flex: 0.5, color: '#FFF' }]}>{r.report_date.slice(8, 10)}</Text>
                 <Text style={s.cell}>{r.convites}</Text>
                 <Text style={s.cell}>{r.apresentacoes}</Text>
                 <Text style={s.cell}>{r.resets}</Text>
                 <Text style={s.cell}>{r.novos}</Text>
+                <Text style={s.cell}>{r.repetidores}</Text>
                 <Text style={s.cell}>{r.indicacoes}</Text>
                 <Text style={s.cell}>{r.acessos}</Text>
-                <Text style={[s.cell, { flex: 1.4, color: '#4ADE80' }]}>{brl(r.ganhos)}</Text>
+                <Text style={[s.cell, { flex: 1.2, color: '#4ADE80' }]}>{brl(r.ganhos)}</Text>
               </View>
             ))}
             {daily.length === 0 && <Text style={s.empty}>Sem dados neste mês.</Text>}
@@ -621,10 +625,10 @@ const s = StyleSheet.create({
   tabBtnActive: { backgroundColor: T.blue },
   tabTxt: { color: '#AAA', fontWeight: '600' },
   tabTxtActive: { color: '#000' },
-  headRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#333' },
-  hCell: { flex: 0.8, color: '#888', fontSize: 11, fontWeight: '700' },
-  row: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1E1E1E' },
-  cell: { flex: 0.8, color: '#BBB', fontSize: 12 },
+  headRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#333' },
+  hCell: { flex: 0.7, color: '#888', fontSize: 9, fontWeight: '700' },
+  row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#1E1E1E' },
+  cell: { flex: 0.7, color: '#BBB', fontSize: 10 },
   empty: { color: '#777', fontStyle: 'italic', marginTop: 12 },
   trendTitle: { color: '#FFF', fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 },
   weekCard: { backgroundColor: '#1A1A1A', borderRadius: 12, padding: 14, marginBottom: 10 },
