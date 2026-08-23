@@ -39,6 +39,7 @@ export interface Kit {
   name: string;
   default_price: number;
   is_redemption_only: boolean;
+  is_access_kit: boolean;
   triggers_reset_protocol?: boolean;
 }
 export interface KitItem {
@@ -416,7 +417,21 @@ export default function SaleFormModal({
 
       const hasKits = cart.some((item) => item.itemType === 'kit');
       const hasProdutos = cart.some((item) => item.itemType === 'produto');
-      const saleType = hasKits && hasProdutos ? 'misto' : hasKits ? 'acesso' : 'produto_fechado';
+      const hasAccessKit = cart.some((item) => {
+        if (item.itemType !== 'kit') return false;
+        const kit = kits.find((k) => k.id === item.id);
+        return kit?.is_access_kit === true;
+      });
+      const hasOnlyAccessKits = hasKits && cart.every((item) => {
+        if (item.itemType !== 'kit') return true;
+        const kit = kits.find((k) => k.id === item.id);
+        return kit?.is_access_kit === true;
+      });
+      const saleType = hasAccessKit && hasOnlyAccessKits && !hasProdutos 
+        ? 'acesso' 
+        : hasAccessKit 
+        ? 'misto' 
+        : 'produto_fechado';
 
       if (editingSale === null) {
         const { data: sale, error } = await supabase

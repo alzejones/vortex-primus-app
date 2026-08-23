@@ -35,6 +35,7 @@ interface Kit {
   kit_type: 'fechado' | 'doses';
   active: boolean;
   is_redemption_only: boolean;
+  is_access_kit: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -67,6 +68,7 @@ export default function HerbalifeKits() {
   const [kitType, setKitType] = useState<'fechado' | 'doses'>('fechado');
   const [kitPrice, setKitPrice] = useState('');
   const [isRedemptionOnly, setIsRedemptionOnly] = useState(false);
+  const [isAccessKit, setIsAccessKit] = useState(false);
   const [kitItems, setKitItems] = useState<KitItem[]>([]);
   const [priceManuallyEdited, setPriceManuallyEdited] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
@@ -157,6 +159,7 @@ export default function HerbalifeKits() {
     setKitType('fechado');
     setKitPrice('');
     setIsRedemptionOnly(false);
+    setIsAccessKit(false);
     setKitItems([]);
     setPriceManuallyEdited(false);
     setModalOpen(true);
@@ -168,6 +171,7 @@ export default function HerbalifeKits() {
     setKitType(kit.kit_type);
     setKitPrice(String(kit.default_price));
     setIsRedemptionOnly(kit.is_redemption_only);
+    setIsAccessKit(kit.is_access_kit);
     setPriceManuallyEdited(false);
 
     const { data: items } = await supabase
@@ -293,7 +297,7 @@ export default function HerbalifeKits() {
       if (editingKit) {
         const { error: updateErr } = await supabase
           .from('herbalife_kits')
-          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, updated_at: new Date().toISOString() })
+          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, is_access_kit: isAccessKit, updated_at: new Date().toISOString() })
           .eq('id', editingKit.id);
         if (updateErr) throw updateErr;
 
@@ -312,7 +316,7 @@ export default function HerbalifeKits() {
       } else {
         const { data: newKit, error: insertErr } = await supabase
           .from('herbalife_kits')
-          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, active: true })
+          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, is_access_kit: isAccessKit, active: true })
           .select('id')
           .single();
         if (insertErr) throw insertErr;
@@ -455,6 +459,11 @@ export default function HerbalifeKits() {
               }}>
                 <View style={[s.checkbox, isRedemptionOnly && { backgroundColor: T.blue }]} />
                 <Text style={s.checkTxt}>Kit de Resgate (sem cobrança)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={s.checkRowBox} onPress={() => setIsAccessKit(!isAccessKit)}>
+                <View style={[s.checkbox, isAccessKit && { backgroundColor: T.blue }]} />
+                <Text style={s.checkTxt}>Kit de Acesso</Text>
               </TouchableOpacity>
 
               <Text style={s.label}>Preço Padrão (R$)</Text>
