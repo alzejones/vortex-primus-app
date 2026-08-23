@@ -507,7 +507,7 @@ export default function SaleFormModal({
               enrollmentId: enrollment.id,
             });
           }
-        } else if (selClient) {
+        } else if (selClient && saleType === 'produto_fechado') {
           setReassessTarget({ id: selClient.id, name: selClient.name });
         } else if (!selClient && manualName.trim()) {
           let clientId: string | null = null;
