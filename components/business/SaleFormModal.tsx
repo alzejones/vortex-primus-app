@@ -328,6 +328,26 @@ export default function SaleFormModal({
         return kit?.triggers_reset_protocol === true;
       });
 
+      const hasKits = cart.some((item) => item.itemType === 'kit');
+      const hasProdutos = cart.some((item) => item.itemType === 'produto');
+      const hasAccessKit = cart.some((item) => {
+        if (item.itemType !== 'kit') return false;
+        const kit = kits.find((k) => k.id === item.id);
+        return kit?.is_access_kit === true;
+      });
+      const hasOnlyAccessKits = hasKits && cart.every((item) => {
+        if (item.itemType !== 'kit') return true;
+        const kit = kits.find((k) => k.id === item.id);
+        return kit?.is_access_kit === true;
+      });
+      const saleType = hasAccessKit && hasOnlyAccessKits && !hasProdutos 
+        ? 'acesso' 
+        : hasAccessKit 
+        ? 'misto' 
+        : 'produto_fechado';
+
+      const isPureAcesso = saleType === 'acesso';
+
       let status: 'novo' | 'indicacao' | 'repetidor' | null = null;
       if (isIndicacao) {
         status = 'indicacao';
@@ -342,7 +362,7 @@ export default function SaleFormModal({
         }
 
         if (priorCount > 0) {
-          status = 'repetidor';
+          status = isPureAcesso ? null : 'repetidor';
         } else if (hasResetKit) {
           status = null;
         } else {
@@ -414,24 +434,6 @@ export default function SaleFormModal({
           });
         }
       }
-
-      const hasKits = cart.some((item) => item.itemType === 'kit');
-      const hasProdutos = cart.some((item) => item.itemType === 'produto');
-      const hasAccessKit = cart.some((item) => {
-        if (item.itemType !== 'kit') return false;
-        const kit = kits.find((k) => k.id === item.id);
-        return kit?.is_access_kit === true;
-      });
-      const hasOnlyAccessKits = hasKits && cart.every((item) => {
-        if (item.itemType !== 'kit') return true;
-        const kit = kits.find((k) => k.id === item.id);
-        return kit?.is_access_kit === true;
-      });
-      const saleType = hasAccessKit && hasOnlyAccessKits && !hasProdutos 
-        ? 'acesso' 
-        : hasAccessKit 
-        ? 'misto' 
-        : 'produto_fechado';
 
       if (editingSale === null) {
         const { data: sale, error } = await supabase
