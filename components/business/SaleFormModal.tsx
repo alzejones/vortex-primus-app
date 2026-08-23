@@ -346,8 +346,6 @@ export default function SaleFormModal({
         ? 'misto' 
         : 'produto_fechado';
 
-      const isPureAcesso = saleType === 'acesso';
-
       let status: 'novo' | 'indicacao' | 'repetidor' | null = null;
       if (isIndicacao) {
         status = 'indicacao';
@@ -361,12 +359,12 @@ export default function SaleFormModal({
           priorCount = count ?? 0;
         }
 
-        if (priorCount > 0) {
-          status = isPureAcesso ? null : 'repetidor';
-        } else if (hasResetKit) {
+        if (priorCount === 0) {
+          status = 'novo';
+        } else if (hasAccessKit || hasResetKit) {
           status = null;
         } else {
-          status = 'novo';
+          status = 'repetidor';
         }
       }
 
