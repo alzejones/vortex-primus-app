@@ -481,7 +481,10 @@ export default function SaleFormModal({
             .select('id')
             .single();
 
-          if (!enrollErr && enrollment) {
+          if (enrollErr) {
+            console.error('Erro ao criar inscrição no Reset:', enrollErr);
+            notify('Atenção', 'A venda foi registrada, mas houve um problema ao inscrever o cliente no Protocolo Reset. Avise o suporte ou tente novamente pela tela de Clientes Kit Reset.');
+          } else if (enrollment) {
             setResetEnrollment({
               clientId: selClient.id,
               clientName: selClient.name,
@@ -540,7 +543,10 @@ export default function SaleFormModal({
                 .select('id')
                 .single();
 
-              if (!enrollErr && enrollment) {
+              if (enrollErr) {
+                console.error('Erro ao criar inscrição no Reset:', enrollErr);
+                notify('Atenção', 'A venda foi registrada, mas houve um problema ao inscrever o cliente no Protocolo Reset. Avise o suporte ou tente novamente pela tela de Clientes Kit Reset.');
+              } else if (enrollment) {
                 setResetEnrollment({
                   clientId: clientId,
                   clientName: clientName,
