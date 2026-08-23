@@ -76,7 +76,7 @@ export default function ApresentacoesPendentesContent() {
       setTrainerLevel(trainer.herbalife_discount_level || '50');
 
       const [{ data: k }, { data: ki }, { data: pr }, { data: cl }, { data: pres }] = await Promise.all([
-        supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol').eq('active', true).order('name'),
+        supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol').eq('active', true).or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`).order('name'),
         supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
         supabase
           .from('herbalife_pricing')

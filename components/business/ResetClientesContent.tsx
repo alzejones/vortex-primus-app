@@ -85,6 +85,7 @@ export default function ResetClientesContent() {
           .from('herbalife_kits')
           .select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol')
           .eq('active', true)
+          .or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`)
           .order('name'),
         supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
         supabase
