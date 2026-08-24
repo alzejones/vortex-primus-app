@@ -16,7 +16,7 @@ import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
 
 export default function NewAppointment() {
-  const { client_id, suggested_type } = useLocalSearchParams();
+  const { client_id, suggested_type, reset_enrollment_id } = useLocalSearchParams();
   const [clientName, setClientName] = useState("Carregando aluno...");
   const [loading, setLoading] = useState(false);
 
@@ -148,6 +148,18 @@ export default function NewAppointment() {
         }
         throw error;
       }
+
+      if (reset_enrollment_id) {
+        const { error: updateError } = await supabase
+          .from("reset_protocol_enrollments")
+          .update({ day6_scheduled_at: new Date().toISOString() })
+          .eq("id", reset_enrollment_id);
+
+        if (updateError) {
+          console.error("Erro ao marcar 6º dia como agendado:", updateError);
+        }
+      }
+
       router.back();
     } catch (error: any) {
       alert("Erro ao salvar: " + error.message);

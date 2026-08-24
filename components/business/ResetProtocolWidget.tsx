@@ -41,6 +41,7 @@ interface Day5Item {
   client_name: string;
   client_phone: string;
   scheduled_date: string;
+  day6_scheduled_at: string | null;
 }
 
 export default function ResetProtocolWidget() {
@@ -106,7 +107,7 @@ export default function ResetProtocolWidget() {
             scheduled_date,
             status,
             clients!reset_protocol_queue_client_id_fkey(name, phone),
-            reset_protocol_enrollments!reset_protocol_queue_enrollment_id_fkey(status)
+            reset_protocol_enrollments!reset_protocol_queue_enrollment_id_fkey(status, day6_scheduled_at)
           `)
           .eq('trainer_id', trainer.id)
           .eq('day_number', 5)
@@ -155,6 +156,7 @@ export default function ResetProtocolWidget() {
           client_name: d.clients?.name || 'Cliente',
           client_phone: d.clients?.phone || '',
           scheduled_date: d.scheduled_date,
+          day6_scheduled_at: d.reset_protocol_enrollments?.day6_scheduled_at || null,
         }));
         setDay5Items(mapped);
       }
@@ -233,7 +235,7 @@ export default function ResetProtocolWidget() {
   }
 
   function handleAgendar6Dia(item: Day5Item) {
-    router.push(`/(protected)/schedule/new?client_id=${item.client_id}&suggested_type=Comp.Corporal` as any);
+    router.push(`/(protected)/schedule/new?client_id=${item.client_id}&suggested_type=Comp.Corporal&reset_enrollment_id=${item.enrollment_id}` as any);
   }
 
   function handleWhatsAppDay5(item: Day5Item) {
@@ -351,10 +353,10 @@ export default function ResetProtocolWidget() {
               <View style={s.day5Actions}>
                 <TouchableOpacity
                   onPress={() => handleAgendar6Dia(item)}
-                  style={s.agendarBtn}
+                  style={[s.agendarBtn, item.day6_scheduled_at && s.agendarBtnDone]}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.agendarBtnText}>Agendar 6º Dia</Text>
+                  <Text style={s.agendarBtnText}>{item.day6_scheduled_at ? '6º Dia Agendado' : 'Agendar 6º Dia'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleWhatsAppDay5(item)}
@@ -534,6 +536,9 @@ const s = StyleSheet.create({
     flex: 1,
     minWidth: 100,
     alignItems: 'center',
+  },
+  agendarBtnDone: {
+    backgroundColor: '#22c55e',
   },
   agendarBtnText: {
     color: '#000',
