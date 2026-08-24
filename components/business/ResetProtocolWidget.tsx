@@ -74,6 +74,10 @@ export default function ResetProtocolWidget() {
       if (!trainer) return;
       setTrainerId(trainer.id);
 
+      try {
+        await supabase.rpc('finalize_my_reset_protocols');
+      } catch {}
+
       const today = todayBR();
 
       const [queueRes, enrollmentsRes, day5Res] = await Promise.all([
@@ -214,7 +218,11 @@ export default function ResetProtocolWidget() {
 
     if (error) {
       console.log('Erro ao definir data:', error);
-      notify('Erro', 'Não foi possível definir a data.');
+      if (error.code === '23505') {
+        notify('Atenção', 'Este cliente já possui um Protocolo Reset em andamento ou aguardando data. Conclua, cancele ou aguarde o atual finalizar antes de iniciar outro.');
+      } else {
+        notify('Erro', 'Não foi possível definir a data.');
+      }
     } else {
       setWaitingDate((prev) => prev.filter((e) => e.id !== selectedEnrollment.id));
       setDateModalVisible(false);

@@ -498,7 +498,11 @@ export default function SaleFormModal({
 
           if (enrollErr) {
             console.error('Erro ao criar inscrição no Reset:', enrollErr);
-            notify('Atenção', 'A venda foi registrada, mas houve um problema ao inscrever o cliente no Protocolo Reset. Avise o suporte ou tente novamente pela tela de Clientes Kit Reset.');
+            if (enrollErr.code === '23505') {
+              notify('Atenção', 'A venda foi registrada, mas este cliente já possui um Protocolo Reset em andamento ou aguardando data. Defina a data do novo Reset depois, na tela de Clientes Kit Reset, quando o atual for concluído.');
+            } else {
+              notify('Atenção', 'A venda foi registrada, mas houve um problema ao inscrever o cliente no Protocolo Reset. Avise o suporte ou tente novamente pela tela de Clientes Kit Reset.');
+            }
           } else if (enrollment) {
             setResetEnrollment({
               clientId: selClient.id,
@@ -560,7 +564,11 @@ export default function SaleFormModal({
 
               if (enrollErr) {
                 console.error('Erro ao criar inscrição no Reset:', enrollErr);
-                notify('Atenção', 'A venda foi registrada, mas houve um problema ao inscrever o cliente no Protocolo Reset. Avise o suporte ou tente novamente pela tela de Clientes Kit Reset.');
+                if (enrollErr.code === '23505') {
+                  notify('Atenção', 'A venda foi registrada, mas este cliente já possui um Protocolo Reset em andamento ou aguardando data. Defina a data do novo Reset depois, na tela de Clientes Kit Reset, quando o atual for concluído.');
+                } else {
+                  notify('Atenção', 'A venda foi registrada, mas houve um problema ao inscrever o cliente no Protocolo Reset. Avise o suporte ou tente novamente pela tela de Clientes Kit Reset.');
+                }
               } else if (enrollment) {
                 setResetEnrollment({
                   clientId: clientId,
@@ -614,10 +622,21 @@ export default function SaleFormModal({
   async function handleResetDateConfirm(startDate: string) {
     if (!resetEnrollment) return;
     try {
-      await supabase
+      const { error } = await supabase
         .from('reset_protocol_enrollments')
         .update({ start_date: startDate })
         .eq('id', resetEnrollment.enrollmentId);
+      
+      if (error) {
+        console.error('Erro ao atualizar data de início do Reset:', error);
+        if (error.code === '23505') {
+          notify('Atenção', 'Este cliente já possui um Protocolo Reset em andamento ou aguardando data. Conclua, cancele ou aguarde o atual finalizar antes de iniciar outro.');
+        } else {
+          notify('Erro', 'Falha ao salvar a data de início.');
+        }
+        return;
+      }
+      
       setResetEnrollment(null);
     } catch (e: any) {
       console.error('Erro ao atualizar data de início do Reset:', e);
