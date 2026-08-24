@@ -206,7 +206,7 @@ export default function RelatoriosContent() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [selectedMonth]);
 
   useFocusEffect(
     useCallback(() => {
