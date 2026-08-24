@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { todayBR } from '../../utils/dateBR';
@@ -39,6 +39,7 @@ interface Day5Item {
   enrollment_id: string;
   client_id: string;
   client_name: string;
+  client_phone: string;
   scheduled_date: string;
 }
 
@@ -104,7 +105,7 @@ export default function ResetProtocolWidget() {
             client_id,
             scheduled_date,
             status,
-            clients!reset_protocol_queue_client_id_fkey(name),
+            clients!reset_protocol_queue_client_id_fkey(name, phone),
             reset_protocol_enrollments!reset_protocol_queue_enrollment_id_fkey(status)
           `)
           .eq('trainer_id', trainer.id)
@@ -152,6 +153,7 @@ export default function ResetProtocolWidget() {
           enrollment_id: d.enrollment_id,
           client_id: d.client_id,
           client_name: d.clients?.name || 'Cliente',
+          client_phone: d.clients?.phone || '',
           scheduled_date: d.scheduled_date,
         }));
         setDay5Items(mapped);
@@ -228,6 +230,27 @@ export default function ResetProtocolWidget() {
       setDateModalVisible(false);
       setSelectedEnrollment(null);
     }
+  }
+
+  function handleAgendar6Dia(item: Day5Item) {
+    router.push(`/(protected)/schedule/new?client_id=${item.client_id}&suggested_type=Comp.Corporal` as any);
+  }
+
+  function handleWhatsAppDay5(item: Day5Item) {
+    const digits = (item.client_phone || '').replace(/\D/g, '');
+    if (!digits) {
+      notify('Sem celular', `${item.client_name} não tem celular cadastrado.`);
+      return;
+    }
+
+    const fullPhone = (digits.length > 11 && digits.startsWith('55')) ? digits : '55' + digits;
+    const firstName = item.client_name.split(' ')[0];
+    const message = `Oi ${firstName}! Tudo bem? Chegou a hora de agendar sua avaliação de retorno do Protocolo Reset 💪`;
+
+    Linking.openURL(`whatsapp://send?phone=${fullPhone}&text=${encodeURIComponent(message)}`).catch(err => {
+      console.error('Erro ao abrir WhatsApp:', err);
+      notify('Erro', 'Não foi possível abrir o WhatsApp.');
+    });
   }
 
   async function handleCompleteDay5(item: Day5Item) {
@@ -325,13 +348,29 @@ export default function ResetProtocolWidget() {
                 <View style={s.alertDot} />
                 <Text style={s.day5Text}>Agendar avaliação de retorno de {item.client_name}</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => handleCompleteDay5(item)}
-                style={s.completeBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={s.completeBtnText}>Concluir</Text>
-              </TouchableOpacity>
+              <View style={s.day5Actions}>
+                <TouchableOpacity
+                  onPress={() => handleAgendar6Dia(item)}
+                  style={s.agendarBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.agendarBtnText}>Agendar 6º Dia</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleWhatsAppDay5(item)}
+                  style={s.whatsappBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.whatsappBtnText}>WhatsApp</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleCompleteDay5(item)}
+                  style={s.completeBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.completeBtnText}>Concluir</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))}
         </View>
@@ -482,12 +521,47 @@ const s = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-  completeBtn: {
-    backgroundColor: T.green,
-    paddingHorizontal: 14,
+  day5Actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  agendarBtn: {
+    backgroundColor: T.blue,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    flex: 1,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  agendarBtnText: {
+    color: '#000',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  whatsappBtn: {
+    backgroundColor: '#25D366',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  whatsappBtnText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  completeBtn: {
+    backgroundColor: T.green,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 1,
+    minWidth: 100,
+    alignItems: 'center',
   },
   completeBtnText: {
     color: '#000',
