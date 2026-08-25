@@ -525,6 +525,23 @@ export default function TrainerProfile() {
 
           <TouchableOpacity 
             style={styles.configButton}
+            onPress={() => router.push('/(protected)/herbalife-stock' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.configButtonLeft}>
+              <View style={styles.configButtonIcon}>
+                <Text style={{ fontSize: 24 }}>📦</Text>
+              </View>
+              <View>
+                <Text style={styles.configButtonTitle}>Estoque Herbalife</Text>
+                <Text style={styles.configButtonSubtitle}>Controle de entradas (notas fiscais) e saídas (vendas)</Text>
+              </View>
+            </View>
+            <Text style={styles.configButtonArrow}>›</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.configButton}
             onPress={() => router.push('/(protected)/import-fineshape' as any)}
             activeOpacity={0.7}
           >
