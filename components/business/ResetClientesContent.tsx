@@ -235,6 +235,13 @@ export default function ResetClientesContent() {
     const diffMs = now.getTime() - start.getTime();
     const dia = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
 
+    if (dia < 1) {
+      const diasRestantes = Math.abs(dia - 1);
+      if (diasRestantes === 1) {
+        return { label: 'Inicia amanhã', color: T.t3, bgColor: 'transparent' };
+      }
+      return { label: `Inicia em ${diasRestantes} dias`, color: T.t3, bgColor: 'transparent' };
+    }
     if (dia === 1 || dia === 2) {
       return { label: `Dia ${dia}`, color: T.cyan, bgColor: 'rgba(6,182,212,0.15)' };
     }
