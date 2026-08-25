@@ -66,6 +66,7 @@ export default function HerbalifeStock() {
   const [loading, setLoading] = useState<"pick" | "import" | "data" | null>(null);
   const [importResult, setImportResult] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [isDuplicate, setIsDuplicate] = useState(false);
   
   const [stockBalance, setStockBalance] = useState<StockBalance[]>([]);
   const [recentInvoices, setRecentInvoices] = useState<InvoiceRow[]>([]);
@@ -106,6 +107,7 @@ export default function HerbalifeStock() {
     setErrorMsg("");
     setImportResult(null);
     setNfeParsed(null);
+    setIsDuplicate(false);
     
     try {
       setLoading("pick");
@@ -157,6 +159,17 @@ export default function HerbalifeStock() {
           total_value: parseFloat(prod.vProd || "0"),
         };
       });
+
+      // Verificar duplicidade
+      const { data: existingInvoice } = await supabase
+        .from('herbalife_invoices')
+        .select('id')
+        .eq('nfe_key', nfe_key)
+        .maybeSingle();
+      
+      if (existingInvoice) {
+        setIsDuplicate(true);
+      }
 
       setNfeParsed({
         nfe_key,
@@ -223,6 +236,21 @@ export default function HerbalifeStock() {
         </Text>
       </View>
 
+      {recentInvoices.length > 0 && (
+        <View style={styles.recentHeader}>
+          <Text style={styles.recentHeaderTitle}>Últimas notas importadas</Text>
+          {recentInvoices.slice(0, 3).map((inv, idx) => (
+            <View key={inv.id} style={styles.recentHeaderRow}>
+              <Text style={styles.recentHeaderNumber}>NF-e {inv.nfe_number}</Text>
+              <Text style={styles.recentHeaderDate}>{inv.issue_date}</Text>
+              <Text style={styles.recentHeaderValue}>
+                R$ {inv.total_value.toFixed(2).replace('.', ',')}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       {errorMsg !== "" && (
         <View style={styles.statusError}>
           <Text style={styles.statusErrorText}>⚠️ {errorMsg}</Text>
@@ -276,6 +304,13 @@ export default function HerbalifeStock() {
 
         {nfeParsed && (
           <View style={styles.preview}>
+            {isDuplicate && (
+              <View style={styles.duplicateWarning}>
+                <Text style={styles.duplicateWarningText}>
+                  ⚠️ Esta nota fiscal já foi importada anteriormente
+                </Text>
+              </View>
+            )}
             <Text style={styles.previewTitle}>Pré-visualização:</Text>
             <Text style={styles.previewText}>Nota: {nfeParsed.nfe_number}</Text>
             <Text style={styles.previewText}>Data: {nfeParsed.issue_date}</Text>
@@ -283,14 +318,22 @@ export default function HerbalifeStock() {
             <Text style={styles.previewText}>
               Total: R$ {nfeParsed.total_value.toFixed(2).replace('.', ',')}
             </Text>
+            <View style={styles.itemsList}>
+              <Text style={styles.itemsListTitle}>Produtos da nota:</Text>
+              {nfeParsed.items.map((item, idx) => (
+                <Text key={idx} style={styles.itemsListRow}>
+                  {item.cprod} {item.xprod} — {item.qty} un.
+                </Text>
+              ))}
+            </View>
           </View>
         )}
 
         {nfeParsed && (
           <TouchableOpacity
-            style={[styles.confirmButton, loading === "import" && styles.confirmButtonDisabled]}
+            style={[styles.confirmButton, (loading === "import" || isDuplicate) && styles.confirmButtonDisabled]}
             onPress={handleImport}
-            disabled={loading === "import"}
+            disabled={loading === "import" || isDuplicate}
             activeOpacity={0.85}
           >
             <LinearGradient {...GradientPrimary} style={styles.confirmButtonGradient}>
@@ -439,6 +482,79 @@ const styles = StyleSheet.create({
   },
   previewTitle: { fontSize: 13, fontWeight: "700", color: T.t2, marginBottom: 6 },
   previewText: { fontSize: 13, color: T.t3, marginBottom: 3 },
+
+  duplicateWarning: {
+    backgroundColor: "rgba(251,146,60,0.12)",
+    borderWidth: 1,
+    borderColor: T.orange,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  duplicateWarningText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: T.orange,
+    textAlign: "center",
+  },
+
+  itemsList: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  itemsListTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: T.t2,
+    marginBottom: 8,
+  },
+  itemsListRow: {
+    fontSize: 12,
+    color: T.t3,
+    marginBottom: 4,
+    paddingLeft: 8,
+  },
+
+  recentHeader: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  recentHeaderTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: T.t2,
+    marginBottom: 10,
+  },
+  recentHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: T.border,
+  },
+  recentHeaderNumber: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: T.t1,
+    flex: 1,
+  },
+  recentHeaderDate: {
+    fontSize: 11,
+    color: T.t3,
+    marginHorizontal: 8,
+  },
+  recentHeaderValue: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: T.blue,
+  },
 
   confirmButton: { borderRadius: 16, overflow: "hidden", marginTop: 16 },
   confirmButtonDisabled: { opacity: 0.4 },
