@@ -255,25 +255,20 @@ export default function HerbalifeTeam() {
       mensagem = `Olá ${downline.name}! 👋\n\nTudo bem? Vamos conversar sobre suas metas e como posso te apoiar nessa jornada?`;
     }
 
-    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(mensagem)}`;
-
-    if (Platform.OS === 'web') {
-      window.open(url, '_blank');
-    } else {
-      Linking.openURL(url).catch(() => {
-        Alert.alert('Erro', 'Não foi possível abrir o WhatsApp');
-      });
+    try {
+      Linking.openURL(`whatsapp://send?phone=55${phone}&text=${encodeURIComponent(mensagem)}`);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível abrir o WhatsApp');
     }
   }
 
   function handleShareApp() {
     const mensagem = `🚀 Olá! Conheça o Vortex Primus, o app completo para Personal Trainers gerenciarem clientes, avaliações, dietas e muito mais!\n\nCadastre-se como Consultor Independente Herbalife e conecte-se à minha equipe. Acesse: https://vortex-primus.vercel.app`;
-    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
 
-    if (Platform.OS === 'web') {
-      window.open(url, '_blank');
-    } else {
-      Linking.openURL(url);
+    try {
+      Linking.openURL(`whatsapp://send?text=${encodeURIComponent(mensagem)}`);
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível abrir o WhatsApp.');
     }
   }
 

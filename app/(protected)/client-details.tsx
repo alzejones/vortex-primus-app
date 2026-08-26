@@ -288,7 +288,7 @@ export default function ClientDetails() {
       const digits = phone.replace(/\D/g, "");
       const waPhone = "55" + digits;
       const msg = `Olá! Você foi convidado a acessar o Vortex Primus. Clique no link para criar seu acesso: ${inviteLink}`;
-      await Linking.openURL(`https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`);
+      await Linking.openURL(`whatsapp://send?phone=${waPhone}&text=${encodeURIComponent(msg)}`);
       setStatusMsg({ text: "WhatsApp aberto com o link de convite.", type: "success" });
     } catch (err: any) {
       setStatusMsg({ text: err.message || "Falha ao enviar convite por WhatsApp.", type: "error" });

@@ -173,10 +173,9 @@ export default function ResetProtocolWidget() {
     }
 
     const fullPhone = (digits.length > 11 && digits.startsWith('55')) ? digits : '55' + digits;
-    const url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(item.message_text)}`;
 
     try {
-      await Linking.openURL(url);
+      await Linking.openURL(`whatsapp://send?phone=${fullPhone}&text=${encodeURIComponent(item.message_text)}`);
 
       const { error } = await supabase
         .from('reset_protocol_queue')
