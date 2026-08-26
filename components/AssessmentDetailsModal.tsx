@@ -258,44 +258,6 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}><Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
 
-                  {/* 🟢 META DIÁRIA DE PROTEÍNA */}
-                  {(() => {
-                    const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight);
-                    const bodyFat = Number(selectedAssessment?.anthropometry?.[0]?.body_fat);
-                    const gender = client?.gender;
-                    
-                    if (!peso || peso <= 0) {
-                      return (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}>
-                          <Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Meta Diária de Proteína</Text>
-                          <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>-</Text>
-                        </View>
-                      );
-                    }
-                    
-                    const isMale = gender === 'M' || gender === 'Masculino';
-                    const hasObesity = bodyFat && !isNaN(bodyFat) && (
-                      (isMale && bodyFat > 25) || (!isMale && bodyFat > 32)
-                    );
-                    
-                    const pesoReferencia = hasObesity && bodyFat
-                      ? peso * (1 - bodyFat / 100)
-                      : peso;
-                    
-                    const proteinaMin = Math.round(pesoReferencia * 1.2);
-                    const proteinaMax = Math.round(pesoReferencia * 1.6);
-                    
-                    return (
-                      <View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}>
-                          <Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Meta Diária de Proteína</Text>
-                          <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{proteinaMin}–{proteinaMax} g/dia</Text>
-                        </View>
-                        <ReferenceLink />
-                      </View>
-                    );
-                  })()}
-
                   {/* 🟢 BARRA DE GORDURA CORPORAL (ATUALIZADA) */}
                   {(() => {
                     const bfStatus = getLocalBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date), scaleProtocol);
@@ -413,6 +375,45 @@ export default function AssessmentDetailsModal({
                     </View>
                     <ReferenceLink />
                   </View>
+
+                  {/* 🟢 META DIÁRIA DE PROTEÍNA */}
+                  {(() => {
+                    const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight);
+                    const bodyFat = Number(selectedAssessment?.anthropometry?.[0]?.body_fat);
+                    const gender = client?.gender;
+                    
+                    if (!peso || peso <= 0) {
+                      return (
+                        <View style={{ marginTop: 12, backgroundColor: 'rgba(191,61,251,0.12)', borderWidth: 1, borderColor: '#BF3DFB', borderRadius: 12, padding: 14 }}>
+                          <Text style={{ color: T.t2, fontSize: 13, fontWeight: '700' }}>🍗 Meta Diária de Proteína</Text>
+                          <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14, marginTop: 6 }}>-</Text>
+                        </View>
+                      );
+                    }
+                    
+                    const isMale = gender === 'M' || gender === 'Masculino';
+                    const hasObesity = bodyFat && !isNaN(bodyFat) && (
+                      (isMale && bodyFat > 25) || (!isMale && bodyFat > 32)
+                    );
+                    
+                    const pesoReferencia = hasObesity && bodyFat
+                      ? peso * (1 - bodyFat / 100)
+                      : peso;
+                    
+                    const proteinaMin = Math.round(pesoReferencia * 1.2);
+                    const proteinaMax = Math.round(pesoReferencia * 1.6);
+                    
+                    return (
+                      <View style={{ marginTop: 12, backgroundColor: 'rgba(191,61,251,0.12)', borderWidth: 1, borderColor: '#BF3DFB', borderRadius: 12, padding: 14 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                          <Text style={{ fontSize: 16 }}>🍗</Text>
+                          <Text style={{ color: T.t1, fontSize: 13, fontWeight: '800', marginLeft: 6, textTransform: 'uppercase' }}>Meta Diária de Proteína</Text>
+                        </View>
+                        <Text style={{ fontWeight: '900', color: '#BF3DFB', fontSize: 22 }}>{proteinaMin}–{proteinaMax} g/dia</Text>
+                        <ReferenceLink />
+                      </View>
+                    );
+                  })()}
 
                 </View>
 
