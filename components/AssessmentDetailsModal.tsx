@@ -258,6 +258,44 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}><Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
 
+                  {/* 🟢 META DIÁRIA DE PROTEÍNA */}
+                  {(() => {
+                    const peso = Number(selectedAssessment?.anthropometry?.[0]?.weight);
+                    const bodyFat = Number(selectedAssessment?.anthropometry?.[0]?.body_fat);
+                    const gender = client?.gender;
+                    
+                    if (!peso || peso <= 0) {
+                      return (
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}>
+                          <Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Meta Diária de Proteína</Text>
+                          <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>-</Text>
+                        </View>
+                      );
+                    }
+                    
+                    const isMale = gender === 'M' || gender === 'Masculino';
+                    const hasObesity = bodyFat && !isNaN(bodyFat) && (
+                      (isMale && bodyFat > 25) || (!isMale && bodyFat > 32)
+                    );
+                    
+                    const pesoReferencia = hasObesity && bodyFat
+                      ? peso * (1 - bodyFat / 100)
+                      : peso;
+                    
+                    const proteinaMin = Math.round(pesoReferencia * 1.2);
+                    const proteinaMax = Math.round(pesoReferencia * 1.6);
+                    
+                    return (
+                      <View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}>
+                          <Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Meta Diária de Proteína</Text>
+                          <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{proteinaMin}–{proteinaMax} g/dia</Text>
+                        </View>
+                        <ReferenceLink />
+                      </View>
+                    );
+                  })()}
+
                   {/* 🟢 BARRA DE GORDURA CORPORAL (ATUALIZADA) */}
                   {(() => {
                     const bfStatus = getLocalBodyFatStatus(selectedAssessment?.anthropometry?.[0]?.body_fat, client?.gender, calculateAge(client?.birth_date), scaleProtocol);
@@ -455,6 +493,9 @@ export default function AssessmentDetailsModal({
 
               <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Idade Metabólica & Metabolismo Basal</Text>
               <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Estimativa comparativa usando a equação preditiva de gasto energético em repouso ajustada pela massa livre de gordura.</Text>
+
+              <Text style={{ fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 6 }}>Meta Diária de Proteína</Text>
+              <Text style={{ fontSize: 13, color: '#64748b', marginBottom: 16, lineHeight: 20 }}>Faixa de 1,2 a 1,6 g de proteína por kg de peso corporal ao dia, com base no ISSN Position Stand (Jäger et al., 2017) e nas Dietary Guidelines for Americans 2025–2030. Para clientes com percentual de gordura elevado, o cálculo usa a massa magra estimada (peso menos gordura corporal) em vez do peso total, evitando superestimar a meta. Estimativa geral — não substitui orientação de um nutricionista.</Text>
             </ScrollView>
 
             <TouchableOpacity style={{ backgroundColor: '#0f172a', padding: 14, borderRadius: 10, marginTop: 10, alignItems: 'center' }} onPress={() => setReferencesVisible(false)}>
