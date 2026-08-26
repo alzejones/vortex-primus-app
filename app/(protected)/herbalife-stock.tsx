@@ -6,11 +6,13 @@ import { XMLParser } from "fast-xml-parser";
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -75,10 +77,32 @@ export default function HerbalifeStock() {
   
   const [stockBalance, setStockBalance] = useState<StockBalance[]>([]);
   const [recentInvoices, setRecentInvoices] = useState<InvoiceRow[]>([]);
+  
+  const [adjustMode, setAdjustMode] = useState(false);
+  const [adjustQuantities, setAdjustQuantities] = useState<Record<string, string>>({});
+  const [zeroMode, setZeroMode] = useState(false);
+  const [selectedForZero, setSelectedForZero] = useState<Record<string, boolean>>({});
+  const [trainerId, setTrainerId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  async function getTrainerId() {
+    if (trainerId) return trainerId;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data: trainer } = await supabase
+      .from('trainers')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+    if (trainer) {
+      setTrainerId(trainer.id);
+      return trainer.id;
+    }
+    return null;
+  }
 
   // Converter saldo bruto para unidades de embalagem
   function toUnits(item: StockBalance): number {
@@ -249,6 +273,138 @@ export default function HerbalifeStock() {
     }
   }
 
+  async function handleAdjustStock() {
+    const tid = await getTrainerId();
+    if (!tid) {
+      setErrorMsg("Não foi possível identificar o treinador.");
+      return;
+    }
+    
+    const movements: Array<{supplement_id: string, quantity: number}> = [];
+    
+    for (const [supplement_id, qtyStr] of Object.entries(adjustQuantities)) {
+      const qty = parseFloat(qtyStr.replace(',', '.'));
+      if (isNaN(qty) || qty === 0) continue;
+      
+      const item = stockBalance.find(s => s.supplement_id === supplement_id);
+      if (!item) continue;
+      
+      // Converter unidades de pacote para quantidade bruta
+      let quantity_bruto: number;
+      if (item.doses_per_package && item.doses_per_package > 0) {
+        quantity_bruto = qty * item.doses_per_package;
+      } else {
+        quantity_bruto = qty;
+      }
+      
+      movements.push({ supplement_id, quantity: quantity_bruto });
+    }
+    
+    if (movements.length === 0) {
+      setErrorMsg("Nenhum ajuste para aplicar.");
+      return;
+    }
+    
+    try {
+      setLoading("import");
+      
+      for (const mov of movements) {
+        const { error } = await supabase
+          .from('herbalife_stock_movements')
+          .insert({
+            trainer_id: tid,
+            supplement_id: mov.supplement_id,
+            movement_type: 'ajuste',
+            quantity: mov.quantity,
+            unit_value: 0,
+          });
+        
+        if (error) throw error;
+      }
+      
+      setAdjustMode(false);
+      setAdjustQuantities({});
+      setImportResult({ message: `${movements.length} ajuste(s) aplicado(s) com sucesso.` });
+      await loadData();
+    } catch (error: any) {
+      setErrorMsg(error.message || "Erro ao aplicar ajustes.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  async function handleZeroStock() {
+    const tid = await getTrainerId();
+    if (!tid) {
+      setErrorMsg("Não foi possível identificar o treinador.");
+      return;
+    }
+    
+    const toZero = stockBalance.filter(s => selectedForZero[s.supplement_id] && s.balance_raw !== 0);
+    
+    if (toZero.length === 0) {
+      setErrorMsg("Nenhum item selecionado para zerar.");
+      return;
+    }
+    
+    const confirmFn = () => {
+      return new Promise<boolean>((resolve) => {
+        if (Platform.OS === 'web') {
+          resolve(window.confirm(`Isso vai zerar o saldo de ${toZero.length} item(ns). Confirma?`));
+        } else {
+          Alert.alert(
+            "Confirmar Operação",
+            `Isso vai zerar o saldo de ${toZero.length} item(ns). Confirma?`,
+            [
+              { text: "Cancelar", onPress: () => resolve(false), style: "cancel" },
+              { text: "Confirmar", onPress: () => resolve(true) },
+            ]
+          );
+        }
+      });
+    };
+    
+    const confirmed = await confirmFn();
+    if (!confirmed) return;
+    
+    try {
+      setLoading("import");
+      
+      for (const item of toZero) {
+        const { error } = await supabase
+          .from('herbalife_stock_movements')
+          .insert({
+            trainer_id: tid,
+            supplement_id: item.supplement_id,
+            movement_type: 'ajuste',
+            quantity: -item.balance_raw,
+            unit_value: 0,
+          });
+        
+        if (error) throw error;
+      }
+      
+      setZeroMode(false);
+      setSelectedForZero({});
+      setImportResult({ message: `${toZero.length} item(ns) zerado(s) com sucesso.` });
+      await loadData();
+    } catch (error: any) {
+      setErrorMsg(error.message || "Erro ao zerar estoque.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  function toggleSelectAll() {
+    if (Object.keys(selectedForZero).length === stockBalance.length) {
+      setSelectedForZero({});
+    } else {
+      const all: Record<string, boolean> = {};
+      stockBalance.forEach(s => { all[s.supplement_id] = true; });
+      setSelectedForZero(all);
+    }
+  }
+
   const negativeCount = stockBalance.filter(s => toUnits(s) < 0).length;
 
   // Calcular totais de PV e valor financeiro
@@ -294,13 +450,19 @@ export default function HerbalifeStock() {
 
       {importResult && (
         <View style={styles.resultCard}>
-          <Text style={styles.resultTitle}>Importação concluída ✅</Text>
-          <Text style={styles.resultLine}>
-            📦 {importResult.itemsProcessed} itens processados
+          <Text style={styles.resultTitle}>
+            {importResult.message ? importResult.message : 'Importação concluída ✅'}
           </Text>
-          <Text style={styles.resultLine}>
-            💰 Total: R$ {importResult.totalValue?.toFixed(2).replace('.', ',')}
-          </Text>
+          {importResult.itemsProcessed && (
+            <Text style={styles.resultLine}>
+              📦 {importResult.itemsProcessed} itens processados
+            </Text>
+          )}
+          {importResult.totalValue && (
+            <Text style={styles.resultLine}>
+              💰 Total: R$ {importResult.totalValue?.toFixed(2).replace('.', ',')}
+            </Text>
+          )}
           {importResult.newProductsCreated?.length > 0 && (
             <View style={styles.warningBox}>
               <Text style={styles.warningTitle}>
@@ -383,7 +545,118 @@ export default function HerbalifeStock() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Saldo Atual</Text>
+        <View style={styles.cardHeaderRow}>
+          <View>
+            <Text style={styles.cardTitle}>Saldo Atual</Text>
+          </View>
+          <View style={styles.cardHeaderButtons}>
+            {!adjustMode && !zeroMode && (
+              <>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => {
+                    setAdjustMode(true);
+                    setErrorMsg("");
+                    setImportResult(null);
+                  }}
+                  disabled={loading !== null}
+                >
+                  <Text style={styles.actionButtonText}>Ajustar Estoque</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, { marginLeft: 8 }]}
+                  onPress={() => {
+                    setZeroMode(true);
+                    setErrorMsg("");
+                    setImportResult(null);
+                  }}
+                  disabled={loading !== null}
+                >
+                  <Text style={styles.actionButtonText}>Zerar Estoque</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+        
+        {adjustMode && (
+          <View style={styles.modeBox}>
+            <Text style={styles.modeBoxTitle}>🔧 Modo Ajuste de Estoque</Text>
+            <Text style={styles.modeBoxText}>
+              Digite a quantidade em unidades de pacote para cada produto (positivo = somar, negativo = descontar).
+            </Text>
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { flex: 1, marginRight: 6 }]}
+                onPress={handleAdjustStock}
+                disabled={loading === "import"}
+                activeOpacity={0.85}
+              >
+                <LinearGradient {...GradientPrimary} style={styles.confirmButtonGradient}>
+                  {loading === "import" ? (
+                    <ActivityIndicator color={T.white} size="small" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>CONFIRMAR</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cancelButton, { flex: 1 }]}
+                onPress={() => {
+                  setAdjustMode(false);
+                  setAdjustQuantities({});
+                }}
+                disabled={loading === "import"}
+              >
+                <Text style={styles.cancelButtonText}>CANCELAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        
+        {zeroMode && (
+          <View style={styles.modeBox}>
+            <Text style={styles.modeBoxTitle}>🗑️ Modo Zerar Estoque</Text>
+            <Text style={styles.modeBoxText}>
+              Selecione os produtos que deseja zerar. Itens com saldo zero serão ignorados.
+            </Text>
+            <TouchableOpacity
+              style={styles.selectAllButton}
+              onPress={toggleSelectAll}
+            >
+              <Text style={styles.selectAllButtonText}>
+                {Object.keys(selectedForZero).length === stockBalance.length ? '✓ Desmarcar todos' : 'Selecionar todos'}
+              </Text>
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', marginTop: 12 }}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { flex: 1, marginRight: 6 }]}
+                onPress={handleZeroStock}
+                disabled={loading === "import"}
+                activeOpacity={0.85}
+              >
+                <LinearGradient {...GradientPrimary} style={styles.confirmButtonGradient}>
+                  {loading === "import" ? (
+                    <ActivityIndicator color={T.white} size="small" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>CONFIRMAR</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cancelButton, { flex: 1 }]}
+                onPress={() => {
+                  setZeroMode(false);
+                  setSelectedForZero({});
+                }}
+                disabled={loading === "import"}
+              >
+                <Text style={styles.cancelButtonText}>CANCELAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        
         {negativeCount > 0 && (
           <View style={styles.negativeBanner}>
             <Text style={styles.negativeBannerText}>
@@ -418,8 +691,24 @@ export default function HerbalifeStock() {
               const units = toUnits(item);
               const isNegative = units < 0;
               const unitLabel = units === 1 ? 'unidade' : 'unidades';
+              const isSelected = selectedForZero[item.supplement_id];
               return (
                 <View style={[styles.stockRow, isNegative && styles.stockRowNegative]}>
+                  {zeroMode && (
+                    <TouchableOpacity
+                      style={styles.checkbox}
+                      onPress={() => {
+                        setSelectedForZero(prev => ({
+                          ...prev,
+                          [item.supplement_id]: !prev[item.supplement_id]
+                        }));
+                      }}
+                    >
+                      <View style={[styles.checkboxInner, isSelected && styles.checkboxInnerChecked]}>
+                        {isSelected && <Text style={styles.checkboxCheck}>✓</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  )}
                   {isNegative && <Text style={styles.warningIcon}>⚠️</Text>}
                   <View style={styles.stockInfo}>
                     <Text style={styles.stockName}>{item.supplement_name}</Text>
@@ -432,6 +721,21 @@ export default function HerbalifeStock() {
                       </Text>
                     ) : (
                       <Text style={styles.stockPVMissing}>PV não cadastrado</Text>
+                    )}
+                    {adjustMode && (
+                      <TextInput
+                        style={styles.adjustInput}
+                        placeholder="+10 ou -5"
+                        placeholderTextColor={T.t3}
+                        value={adjustQuantities[item.supplement_id] || ''}
+                        onChangeText={(text) => {
+                          setAdjustQuantities(prev => ({
+                            ...prev,
+                            [item.supplement_id]: text
+                          }));
+                        }}
+                        keyboardType="numeric"
+                      />
                     )}
                   </View>
                 </View>
@@ -673,4 +977,105 @@ const styles = StyleSheet.create({
 
   backButton: { alignItems: "center", paddingVertical: 12, marginTop: 16 },
   backButtonText: { color: T.t4, fontSize: 13, fontWeight: "500" },
+  
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  cardHeaderButtons: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    backgroundColor: T.blue,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: T.white,
+  },
+  modeBox: {
+    backgroundColor: 'rgba(59,130,246,0.08)',
+    borderWidth: 1,
+    borderColor: T.blue,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  modeBoxTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.blue,
+    marginBottom: 6,
+  },
+  modeBoxText: {
+    fontSize: 12,
+    color: T.t2,
+  },
+  selectAllButton: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  selectAllButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: T.t1,
+  },
+  cancelButton: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 56,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.t2,
+  },
+  checkbox: {
+    marginRight: 12,
+  },
+  checkboxInner: {
+    width: 24,
+    height: 24,
+    borderWidth: 2,
+    borderColor: T.border,
+    borderRadius: 6,
+    backgroundColor: T.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxInnerChecked: {
+    backgroundColor: T.blue,
+    borderColor: T.blue,
+  },
+  checkboxCheck: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: T.white,
+  },
+  adjustInput: {
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: T.t1,
+    marginTop: 8,
+  },
 });
