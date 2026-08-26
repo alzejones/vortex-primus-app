@@ -38,8 +38,13 @@ type NFeParsed = {
 type StockBalance = {
   supplement_id: string;
   supplement_name: string;
-  balance: number;
-  unit: 'dose' | 'unidade';
+  sku: string;
+  pending_catalog_data: boolean;
+  internal_unit: 'dose' | 'unidade';
+  balance_raw: number;
+  doses_per_package: number | null;
+  pv: number | null;
+  price_venda: number | null;
 };
 
 type InvoiceRow = {
@@ -74,6 +79,25 @@ export default function HerbalifeStock() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Converter saldo bruto para unidades de embalagem
+  function toUnits(item: StockBalance): number {
+    if (item.doses_per_package && item.doses_per_package > 0) {
+      return item.balance_raw / item.doses_per_package;
+    }
+    return item.balance_raw;
+  }
+
+  // Formatar número de unidades (sem casas decimais se for inteiro, 1 casa se decimal)
+  function formatUnits(units: number): string {
+    const isInteger = units === Math.floor(units);
+    return isInteger ? units.toFixed(0) : units.toFixed(1);
+  }
+
+  // Formatar valor em reais (padrão brasileiro)
+  function formatCurrency(value: number): string {
+    return value.toFixed(2).replace('.', ',');
+  }
 
   async function loadData() {
     setLoading("data");
@@ -225,7 +249,18 @@ export default function HerbalifeStock() {
     }
   }
 
-  const negativeCount = stockBalance.filter(s => s.balance < 0).length;
+  const negativeCount = stockBalance.filter(s => toUnits(s) < 0).length;
+
+  // Calcular totais de PV e valor financeiro
+  const totalPV = stockBalance.reduce((acc, item) => {
+    if (!item.pv) return acc;
+    return acc + (item.pv * toUnits(item));
+  }, 0);
+
+  const totalValue = stockBalance.reduce((acc, item) => {
+    if (!item.price_venda) return acc;
+    return acc + (item.price_venda * toUnits(item));
+  }, 0);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -357,6 +392,17 @@ export default function HerbalifeStock() {
           </View>
         )}
         
+        {stockBalance.length > 0 && (
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryLine}>
+              Pontuação total do estoque: {formatCurrency(totalPV)} PV
+            </Text>
+            <Text style={styles.summaryLine}>
+              Valor Financeiro do estoque: R$ {formatCurrency(totalValue)}
+            </Text>
+          </View>
+        )}
+        
         {loading === "data" ? (
           <ActivityIndicator color={T.blue} style={{ marginTop: 16 }} />
         ) : stockBalance.length === 0 ? (
@@ -368,17 +414,29 @@ export default function HerbalifeStock() {
             data={stockBalance}
             scrollEnabled={false}
             keyExtractor={(item) => item.supplement_id}
-            renderItem={({ item }) => (
-              <View style={[styles.stockRow, item.balance < 0 && styles.stockRowNegative]}>
-                {item.balance < 0 && <Text style={styles.warningIcon}>⚠️</Text>}
-                <View style={styles.stockInfo}>
-                  <Text style={styles.stockName}>{item.supplement_name}</Text>
-                  <Text style={styles.stockBalance}>
-                    Saldo: {item.balance} {item.unit === 'dose' ? 'doses' : 'unidades'}
-                  </Text>
+            renderItem={({ item }) => {
+              const units = toUnits(item);
+              const isNegative = units < 0;
+              const unitLabel = units === 1 ? 'unidade' : 'unidades';
+              return (
+                <View style={[styles.stockRow, isNegative && styles.stockRowNegative]}>
+                  {isNegative && <Text style={styles.warningIcon}>⚠️</Text>}
+                  <View style={styles.stockInfo}>
+                    <Text style={styles.stockName}>{item.supplement_name}</Text>
+                    <Text style={styles.stockBalance}>
+                      Saldo: {formatUnits(units)} {unitLabel}
+                    </Text>
+                    {item.pv ? (
+                      <Text style={styles.stockPV}>
+                        PV Unitário: {formatCurrency(item.pv)} · Total em estoque: {formatCurrency(item.pv * units)}
+                      </Text>
+                    ) : (
+                      <Text style={styles.stockPVMissing}>PV não cadastrado</Text>
+                    )}
+                  </View>
                 </View>
-              </View>
-            )}
+              );
+            }}
           />
         )}
       </View>
@@ -590,7 +648,19 @@ const styles = StyleSheet.create({
   warningIcon: { fontSize: 18, marginRight: 8 },
   stockInfo: { flex: 1 },
   stockName: { fontSize: 14, fontWeight: "700", color: T.t1, marginBottom: 2 },
-  stockBalance: { fontSize: 12, color: T.t3 },
+  stockBalance: { fontSize: 12, color: T.t3, marginBottom: 4 },
+  stockPV: { fontSize: 11, color: T.t2, fontWeight: "500" },
+  stockPVMissing: { fontSize: 11, color: T.t4, fontStyle: "italic" },
+  
+  summaryBox: {
+    backgroundColor: "rgba(59,130,246,0.08)",
+    borderWidth: 1,
+    borderColor: T.blue,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  summaryLine: { fontSize: 13, fontWeight: "700", color: T.blue, marginBottom: 4 },
 
   invoiceRow: {
     paddingVertical: 10,
