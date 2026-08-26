@@ -1,7 +1,7 @@
 import { Linking, StyleSheet, Text, TouchableOpacity } from "react-native";
 
 const WHATSAPP_URL =
-  "https://wa.me/5516992107040?text=Ol%C3%A1%21+Preciso+de+suporte+no+Vortex+Primus.";
+  "whatsapp://send?phone=5516992107040&text=Ol%C3%A1%21+Preciso+de+suporte+no+Vortex+Primus.";
 
 interface Props {
   bottom?: number;

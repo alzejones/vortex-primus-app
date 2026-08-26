@@ -133,23 +133,24 @@ export default function UpgradeScreen() {
         }
 
         const whatsappMessage = encodeURIComponent(`Olá! Acabei de pagar o plano ${plan.name} do Vortex Primus, segue o comprovante:`);
-        const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP}?text=${whatsappMessage}`;
 
-        if (Platform.OS === 'web') {
-          const userConfirmed = window.confirm("Pagamento aberto! Após concluir, envie o comprovante no WhatsApp para ativarmos seu plano.");
-          if (userConfirmed) {
-            window.open(whatsappUrl, '_blank');
-          }
-        } else {
-          Alert.alert(
-            "Pagamento aberto!",
-            "Após concluir, envie o comprovante no WhatsApp para ativarmos seu plano.",
-            [
-              { text: "Cancelar", style: "cancel" },
-              { text: "Abrir WhatsApp", onPress: () => Linking.openURL(whatsappUrl) }
-            ]
-          );
-        }
+        Alert.alert(
+          "Pagamento aberto!",
+          "Após concluir, envie o comprovante no WhatsApp para ativarmos seu plano.",
+          [
+            { text: "Cancelar", style: "cancel" },
+            { 
+              text: "Abrir WhatsApp", 
+              onPress: () => {
+                try {
+                  Linking.openURL(`whatsapp://send?phone=${SUPPORT_WHATSAPP}&text=${whatsappMessage}`);
+                } catch (error) {
+                  Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
+                }
+              }
+            }
+          ]
+        );
       }
 
     } catch (error: any) {
