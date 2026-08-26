@@ -227,9 +227,9 @@ export default function ResetProtocolWidget() {
         notify('Erro', 'Não foi possível definir a data.');
       }
     } else {
-      setWaitingDate((prev) => prev.filter((e) => e.id !== selectedEnrollment.id));
       setDateModalVisible(false);
       setSelectedEnrollment(null);
+      loadWidget();
     }
   }
 
@@ -264,6 +264,44 @@ export default function ResetProtocolWidget() {
       console.log('Erro ao concluir protocolo:', error);
     } else {
       setDay5Items((prev) => prev.filter((d) => d.enrollment_id !== item.enrollment_id));
+    }
+  }
+
+  function handleAlterarDataInicio(item: QueueItem) {
+    const enrollment: EnrollmentItem = {
+      id: item.enrollment_id,
+      client_id: item.client_id,
+      start_date: item.scheduled_date,
+      status: 'ativo',
+      client_name: item.client_name,
+    };
+    setSelectedEnrollment(enrollment);
+    setDateModalVisible(true);
+  }
+
+  async function handleDefineLaterFromActive() {
+    if (!selectedEnrollment) {
+      setDateModalVisible(false);
+      setSelectedEnrollment(null);
+      return;
+    }
+
+    if (selectedEnrollment.status === 'ativo') {
+      const { error } = await supabase
+        .from('reset_protocol_enrollments')
+        .update({ start_date: null, status: 'aguardando_data' })
+        .eq('id', selectedEnrollment.id);
+
+      if (error) {
+        console.log('Erro ao mover protocolo de volta para aguardando_data:', error);
+      }
+
+      setDateModalVisible(false);
+      setSelectedEnrollment(null);
+      loadWidget();
+    } else {
+      setDateModalVisible(false);
+      setSelectedEnrollment(null);
     }
   }
 
@@ -315,6 +353,13 @@ export default function ResetProtocolWidget() {
                   activeOpacity={0.7}
                 >
                   <Text style={s.skipBtnText}>Pular</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleAlterarDataInicio(item)}
+                  style={s.alterarBtn}
+                  activeOpacity={0.7}
+                >
+                  <Text style={s.alterarBtnText}>Alterar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -381,10 +426,7 @@ export default function ResetProtocolWidget() {
         visible={dateModalVisible}
         clientName={selectedEnrollment?.client_name || ''}
         onConfirmDate={handleConfirmDate}
-        onDefineLater={() => {
-          setDateModalVisible(false);
-          setSelectedEnrollment(null);
-        }}
+        onDefineLater={handleDefineLaterFromActive}
       />
     </View>
   );
@@ -570,6 +612,20 @@ const s = StyleSheet.create({
   completeBtnText: {
     color: '#000',
     fontSize: 13,
+    fontWeight: '700',
+  },
+  alterarBtn: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: T.orange,
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  alterarBtnText: {
+    color: T.orange,
+    fontSize: 14,
     fontWeight: '700',
   },
 });
