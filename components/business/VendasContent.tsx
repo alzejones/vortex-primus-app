@@ -182,7 +182,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
       setKits((k as any) || []);
       setKitItems((ki as any) || []);
-      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
+      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name, flavor_group: p.supplements?.flavor_group })));
       setClients((cl as any) || []);
 
       // Pré-seleção vinda da tela de dieta (Confirmar Venda)
