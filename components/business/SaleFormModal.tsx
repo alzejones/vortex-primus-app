@@ -202,10 +202,14 @@ export default function SaleFormModal({
       }
     }
     
-    const existing = cart.find((item) => item.itemType === 'kit' && item.id === k.id);
+    const existing = cart.find((item) => 
+      item.itemType === 'kit' && 
+      item.id === k.id && 
+      JSON.stringify(item.flavorChoices || {}) === JSON.stringify({})
+    );
     if (existing) {
       setCart(cart.map((item) =>
-        item.itemType === 'kit' && item.id === k.id
+        item.itemType === 'kit' && item.id === k.id && JSON.stringify(item.flavorChoices || {}) === JSON.stringify({})
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
@@ -278,11 +282,15 @@ export default function SaleFormModal({
         }
       });
       
-      const existing = cart.find((item) => item.itemType === 'kit' && item.id === pendingFlavorKit.id);
+      const existing = cart.find((item) => 
+        item.itemType === 'kit' && 
+        item.id === pendingFlavorKit.id && 
+        JSON.stringify(item.flavorChoices || {}) === JSON.stringify(choices)
+      );
       if (existing) {
         setCart(cart.map((item) =>
-          item.itemType === 'kit' && item.id === pendingFlavorKit.id
-            ? { ...item, quantity: item.quantity + 1, flavorChoices: choices }
+          item.itemType === 'kit' && item.id === pendingFlavorKit.id && JSON.stringify(item.flavorChoices || {}) === JSON.stringify(choices)
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         ));
       } else {
