@@ -316,7 +316,6 @@ export default function HerbalifeStock() {
             supplement_id: mov.supplement_id,
             movement_type: 'ajuste',
             quantity: mov.quantity,
-            unit_value: 0,
           });
         
         if (error) throw error;
@@ -378,7 +377,6 @@ export default function HerbalifeStock() {
             supplement_id: item.supplement_id,
             movement_type: 'ajuste',
             quantity: -item.balance_raw,
-            unit_value: 0,
           });
         
         if (error) throw error;
