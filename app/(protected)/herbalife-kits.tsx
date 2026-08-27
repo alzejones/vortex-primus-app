@@ -624,9 +624,9 @@ export default function HerbalifeKits() {
                     </View>
                     <TextInput
                       style={s.dosesInput}
-                      placeholder="Doses"
+                      placeholder="Ex: 0,5"
                       placeholderTextColor="#777"
-                      keyboardType="numeric"
+                      keyboardType="decimal-pad"
                       value={item.doses_used}
                       onChangeText={(v) => updateDoses(item.supplement_id, v)}
                     />
@@ -791,6 +791,8 @@ const s = StyleSheet.create({
     color: '#FFF',
     width: 60,
     textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#444',
   },
   addProductBtn: { backgroundColor: '#242424', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4 },
   addProductTxt: { color: T.blue, fontWeight: '700' },
