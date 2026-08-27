@@ -604,44 +604,40 @@ export default function HerbalifeStock() {
 
       <View style={styles.card}>
         <View style={styles.cardHeaderRow}>
-          <View>
-            <Text style={styles.cardTitle}>Saldo Atual</Text>
-          </View>
-          <View style={styles.cardHeaderButtons}>
-            {!adjustMode && !zeroMode && (
-              <>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={handleInitializeStock}
-                  disabled={loading !== null}
-                >
-                  <Text style={styles.actionButtonText}>Inicializar Controle de Estoque</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, { marginLeft: 8 }]}
-                  onPress={() => {
-                    setAdjustMode(true);
-                    setErrorMsg("");
-                    setImportResult(null);
-                  }}
-                  disabled={loading !== null}
-                >
-                  <Text style={styles.actionButtonText}>Ajustar Estoque</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, { marginLeft: 8 }]}
-                  onPress={() => {
-                    setZeroMode(true);
-                    setErrorMsg("");
-                    setImportResult(null);
-                  }}
-                  disabled={loading !== null}
-                >
-                  <Text style={styles.actionButtonText}>Zerar Estoque</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+          <Text style={styles.cardTitle}>Saldo Atual</Text>
+          {!adjustMode && !zeroMode && (
+            <View style={styles.cardHeaderButtons}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleInitializeStock}
+                disabled={loading !== null}
+              >
+                <Text style={styles.actionButtonText}>Inicializar Controle de Estoque</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  setAdjustMode(true);
+                  setErrorMsg("");
+                  setImportResult(null);
+                }}
+                disabled={loading !== null}
+              >
+                <Text style={styles.actionButtonText}>Ajustar Estoque</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  setZeroMode(true);
+                  setErrorMsg("");
+                  setImportResult(null);
+                }}
+                disabled={loading !== null}
+              >
+                <Text style={styles.actionButtonText}>Zerar Estoque</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
         
         {adjustMode && (
@@ -1044,19 +1040,22 @@ const styles = StyleSheet.create({
   backButtonText: { color: T.t4, fontSize: 13, fontWeight: "500" },
   
   cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
+    flexDirection: 'column',
+    marginBottom: 12,
   },
   cardHeaderButtons: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 10,
   },
   actionButton: {
     backgroundColor: T.blue,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    flex: 1,
+    minWidth: '30%',
   },
   actionButtonText: {
     fontSize: 12,
