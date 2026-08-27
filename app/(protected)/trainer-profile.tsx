@@ -49,6 +49,7 @@ export default function TrainerProfile() {
   const [herbalifePresidentName, setHerbalifePresidentName] = useState("");
   const [herbalifePresidentPhone, setHerbalifePresidentPhone] = useState("");
   const [downlineCount, setDownlineCount] = useState(0);
+  const [herbalifeStockControlEnabled, setHerbalifeStockControlEnabled] = useState(true);
 
   const [statusMsg, setStatusMsg] = useState({ text: "", type: "" });
 
@@ -75,7 +76,7 @@ export default function TrainerProfile() {
 
       const { data: trainer, error: trainerError } = await supabase
         .from("trainers")
-        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, pix_key, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone, professional_council, professional_council_number")
+        .select("id, name, email, phone, space_name, space_address, pdf_discount_percent, pix_key, is_herbalife_consultant, herbalife_president_name, herbalife_president_phone, professional_council, professional_council_number, herbalife_stock_control_enabled")
         .eq("user_id", user.id)
         .single();
 
@@ -96,6 +97,7 @@ export default function TrainerProfile() {
       setIsHerbalifeConsultant(trainer.is_herbalife_consultant || false);
       setHerbalifePresidentName(trainer.herbalife_president_name || "");
       setHerbalifePresidentPhone(trainer.herbalife_president_phone || "");
+      setHerbalifeStockControlEnabled(trainer.herbalife_stock_control_enabled ?? true);
 
       const { data: sub } = await supabase
         .from("trainer_subscriptions")
@@ -191,6 +193,8 @@ export default function TrainerProfile() {
         updateData.herbalife_president_name = null;
         updateData.herbalife_president_phone = null;
       }
+      
+      updateData.herbalife_stock_control_enabled = herbalifeStockControlEnabled;
 
       const { error } = await supabase
         .from("trainers")
@@ -487,6 +491,22 @@ export default function TrainerProfile() {
                 thumbColor={tutorialEnabled ? T.white : T.t3}
               />
             </View>
+            
+            <View style={styles.switchRow}>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={styles.switchLabel}>📦 Controle de Estoque Herbalife</Text>
+                <Text style={styles.helperText}>Habilita ou desabilita o módulo de controle de estoque. Quando desligado, o botão Estoque Herbalife fica oculto.</Text>
+              </View>
+              <Switch
+                value={herbalifeStockControlEnabled}
+                onValueChange={(val) => {
+                  setHerbalifeStockControlEnabled(val);
+                  setStatusMsg({ text: "", type: "" });
+                }}
+                trackColor={{ false: T.border, true: T.green }}
+                thumbColor={herbalifeStockControlEnabled ? T.white : T.t3}
+              />
+            </View>
           </View>
 
           <TouchableOpacity 
@@ -523,22 +543,24 @@ export default function TrainerProfile() {
             <Text style={styles.configButtonArrow}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.configButton}
-            onPress={() => router.push('/(protected)/herbalife-stock' as any)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.configButtonLeft}>
-              <View style={styles.configButtonIcon}>
-                <Text style={{ fontSize: 24 }}>📦</Text>
+          {herbalifeStockControlEnabled && (
+            <TouchableOpacity 
+              style={styles.configButton}
+              onPress={() => router.push('/(protected)/herbalife-stock' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.configButtonLeft}>
+                <View style={styles.configButtonIcon}>
+                  <Text style={{ fontSize: 24 }}>📦</Text>
+                </View>
+                <View>
+                  <Text style={styles.configButtonTitle}>Estoque Herbalife</Text>
+                  <Text style={styles.configButtonSubtitle}>Controle de entradas (notas fiscais) e saídas (vendas)</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.configButtonTitle}>Estoque Herbalife</Text>
-                <Text style={styles.configButtonSubtitle}>Controle de entradas (notas fiscais) e saídas (vendas)</Text>
-              </View>
-            </View>
-            <Text style={styles.configButtonArrow}>›</Text>
-          </TouchableOpacity>
+              <Text style={styles.configButtonArrow}>›</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity 
             style={styles.configButton}
