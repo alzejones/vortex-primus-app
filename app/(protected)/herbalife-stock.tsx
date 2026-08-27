@@ -393,6 +393,66 @@ export default function HerbalifeStock() {
     }
   }
 
+  async function handleInitializeStock() {
+    const tid = await getTrainerId();
+    if (!tid) {
+      setErrorMsg("Não foi possível identificar o treinador.");
+      return;
+    }
+    
+    try {
+      setLoading("import");
+      setErrorMsg("");
+      setImportResult(null);
+      
+      // Buscar todos os produtos Herbalife oficiais do Brasil
+      const { data: allProducts, error: productsErr } = await supabase
+        .from('herbalife_pricing')
+        .select('supplement_id, supplements!inner(name)')
+        .order('supplements(name)');
+      
+      if (productsErr) throw productsErr;
+      if (!allProducts || allProducts.length === 0) {
+        setErrorMsg("Nenhum produto encontrado em herbalife_pricing.");
+        return;
+      }
+      
+      // IDs dos produtos que já têm movimentação
+      const existingIds = new Set(stockBalance.map(s => s.supplement_id));
+      
+      // Produtos que ainda não têm movimentação
+      const missingProducts = allProducts.filter(p => !existingIds.has(p.supplement_id));
+      
+      if (missingProducts.length === 0) {
+        setImportResult({ message: "✅ Estoque já inicializado — nenhum produto novo encontrado." });
+        return;
+      }
+      
+      // Inserir linha com saldo 0 para cada produto faltante
+      for (const product of missingProducts) {
+        const { error } = await supabase
+          .from('herbalife_stock_movements')
+          .insert({
+            trainer_id: tid,
+            supplement_id: product.supplement_id,
+            movement_type: 'ajuste',
+            quantity: 0,
+          });
+        
+        if (error) throw error;
+      }
+      
+      setImportResult({ 
+        message: `✅ ${missingProducts.length} produto(s) adicionado(s) ao controle de estoque com saldo inicial zero.` 
+      });
+      await loadData();
+    } catch (error: any) {
+      setErrorMsg(error.message || "Erro ao inicializar estoque.");
+    } finally {
+      setLoading(null);
+    }
+  }
+
   function toggleSelectAll() {
     if (Object.keys(selectedForZero).length === stockBalance.length) {
       setSelectedForZero({});
@@ -552,6 +612,13 @@ export default function HerbalifeStock() {
               <>
                 <TouchableOpacity
                   style={styles.actionButton}
+                  onPress={handleInitializeStock}
+                  disabled={loading !== null}
+                >
+                  <Text style={styles.actionButtonText}>Inicializar Controle de Estoque</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.actionButton, { marginLeft: 8 }]}
                   onPress={() => {
                     setAdjustMode(true);
                     setErrorMsg("");
