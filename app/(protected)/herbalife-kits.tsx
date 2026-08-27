@@ -500,7 +500,12 @@ export default function HerbalifeKits() {
               <View style={s.typeSelector}>
                 <TouchableOpacity
                   style={[s.typeOption, !isRecipe && s.typeOptionActive]}
-                  onPress={() => setIsRecipe(false)}
+                  onPress={() => {
+                    setIsRecipe(false);
+                    if (kitType === 'doses') {
+                      setKitType('fechado');
+                    }
+                  }}
                 >
                   <Text style={[s.typeOptionTxt, !isRecipe && s.typeOptionTxtActive]}>
                     Kit
@@ -508,7 +513,11 @@ export default function HerbalifeKits() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[s.typeOption, isRecipe && s.typeOptionActive]}
-                  onPress={() => setIsRecipe(true)}
+                  onPress={() => {
+                    setIsRecipe(true);
+                    setKitType('doses');
+                    setPriceManuallyEdited(false);
+                  }}
                 >
                   <Text style={[s.typeOptionTxt, isRecipe && s.typeOptionTxtActive]}>
                     Receita
