@@ -104,11 +104,11 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .eq('trainer_id', trainer.id)
             .eq('sale_date', today)
             .order('created_at', { ascending: false }),
-          supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol').eq('active', true).or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`).order('name'),
-          supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
+          supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol, is_recipe').eq('active', true).or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`).order('name'),
+          supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used, is_flavor_choice'),
           supabase
             .from('herbalife_pricing')
-            .select('*, supplements(name)')
+            .select('*, supplements(name, flavor_group)')
             .order('sku'),
           (async () => {
             let allClients: any[] = [];
