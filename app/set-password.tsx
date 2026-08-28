@@ -49,27 +49,10 @@ export default function SetPassword() {
 
   const params = useLocalSearchParams<{ token_hash?: string; type?: string; next?: string }>();
 
-  // Helper para vincular user_id com retry automático
   async function linkClientToUser(userId: string, clientId: string): Promise<boolean> {
-    // Primeira tentativa
-    let { error } = await supabase
-      .from('clients')
-      .update({ user_id: userId })
-      .eq('id', clientId)
-      .is('user_id', null);
-
-    // Segunda tentativa se falhar
-    if (error) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const retry = await supabase
-        .from('clients')
-        .update({ user_id: userId })
-        .eq('id', clientId)
-        .is('user_id', null);
-      error = retry.error;
-    }
-
-    return !error;
+    const { data, error } = await supabase.rpc('link_client_to_auth_user', { p_client_id: clientId });
+    if (error) return false;
+    return data === true;
   }
 
   useEffect(() => {
