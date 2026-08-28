@@ -41,11 +41,13 @@ export interface Kit {
   is_redemption_only: boolean;
   is_access_kit: boolean;
   triggers_reset_protocol?: boolean;
+  is_recipe: boolean;
 }
 export interface KitItem {
   kit_id: string;
   supplement_id: string;
   doses_used: number;
+  is_flavor_choice: boolean;
 }
 export interface Pricing {
   supplement_id: string;
@@ -61,6 +63,7 @@ export interface Pricing {
   price_50: number;
   doses_per_package: number | null;
   name?: string;
+  flavor_group?: string | null;
 }
 export interface ClientRow {
   id: string;
@@ -87,6 +90,7 @@ export interface CartItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  flavorChoices?: Record<string, string>;
 }
 
 interface SaleFormModalProps {
@@ -131,6 +135,10 @@ export default function SaleFormModal({
   const [saving, setSaving] = useState(false);
   const [reassessTarget, setReassessTarget] = useState<{id: string; name: string} | null>(null);
   const [resetEnrollment, setResetEnrollment] = useState<{clientId: string; clientName: string; saleId: string; enrollmentId: string} | null>(null);
+  const [flavorPickerOpen, setFlavorPickerOpen] = useState(false);
+  const [pendingFlavorKit, setPendingFlavorKit] = useState<Kit | null>(null);
+  const [flavorChoices, setFlavorChoices] = useState<Array<{kitItemSupplementId: string; componentName: string; flavorGroup: string; selected: string | null}>>([]);
+  const [flavorStep, setFlavorStep] = useState(0);
 
   function trainerUnitCost(p: Pricing): number {
     const map: Record<string, number> = {
@@ -165,11 +173,43 @@ export default function SaleFormModal({
     return { cost, pv };
   }
 
-  function pickKit(k: Kit) {
-    const existing = cart.find((item) => item.itemType === 'kit' && item.id === k.id);
+  async function pickKit(k: Kit) {
+    const itemsWithFlavorChoice = kitItems.filter((ki) => ki.kit_id === k.id && ki.is_flavor_choice);
+    
+    if (itemsWithFlavorChoice.length > 0) {
+      const flavorGroups = new Map<string, {kitItemSupplementId: string; componentName: string; flavorGroup: string}>();
+      
+      for (const item of itemsWithFlavorChoice) {
+        const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+        if (p?.flavor_group) {
+          if (!flavorGroups.has(p.flavor_group)) {
+            flavorGroups.set(p.flavor_group, {
+              kitItemSupplementId: item.supplement_id,
+              componentName: p.name || 'Produto',
+              flavorGroup: p.flavor_group,
+            });
+          }
+        }
+      }
+      
+      if (flavorGroups.size > 0) {
+        setFlavorChoices(Array.from(flavorGroups.values()).map((g) => ({ ...g, selected: null })));
+        setFlavorStep(0);
+        setPendingFlavorKit(k);
+        setPickerOpen(null);
+        setFlavorPickerOpen(true);
+        return;
+      }
+    }
+    
+    const existing = cart.find((item) => 
+      item.itemType === 'kit' && 
+      item.id === k.id && 
+      JSON.stringify(item.flavorChoices || {}) === JSON.stringify({})
+    );
     if (existing) {
       setCart(cart.map((item) =>
-        item.itemType === 'kit' && item.id === k.id
+        item.itemType === 'kit' && item.id === k.id && JSON.stringify(item.flavorChoices || {}) === JSON.stringify({})
           ? { ...item, quantity: item.quantity + 1 }
           : item
       ));
@@ -183,6 +223,12 @@ export default function SaleFormModal({
       }]);
     }
     setPickerOpen(null);
+  }
+
+  function flavorLabel(item: CartItem): string {
+    if (!item.flavorChoices || Object.keys(item.flavorChoices).length === 0) return '';
+    const names = Object.values(item.flavorChoices).map((suppId) => pricing.find((p) => p.supplement_id === suppId)?.name).filter(Boolean);
+    return names.length > 0 ? ` (${names.join(', ')})` : '';
   }
 
   function pickProduct(p: Pricing) {
@@ -226,6 +272,51 @@ export default function SaleFormModal({
     setPickerOpen(type);
   }
 
+  function selectFlavor(supplementId: string) {
+    setFlavorChoices(flavorChoices.map((fc, i) => i === flavorStep ? { ...fc, selected: supplementId } : fc));
+  }
+
+  function confirmFlavorSelection() {
+    if (flavorStep < flavorChoices.length - 1) {
+      setFlavorStep(flavorStep + 1);
+    } else {
+      if (!pendingFlavorKit) return;
+      const choices: Record<string, string> = {};
+      flavorChoices.forEach((fc) => {
+        if (fc.selected) {
+          choices[fc.kitItemSupplementId] = fc.selected;
+        }
+      });
+      
+      const existing = cart.find((item) => 
+        item.itemType === 'kit' && 
+        item.id === pendingFlavorKit.id && 
+        JSON.stringify(item.flavorChoices || {}) === JSON.stringify(choices)
+      );
+      if (existing) {
+        setCart(cart.map((item) =>
+          item.itemType === 'kit' && item.id === pendingFlavorKit.id && JSON.stringify(item.flavorChoices || {}) === JSON.stringify(choices)
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        ));
+      } else {
+        setCart([...cart, {
+          itemType: 'kit',
+          id: pendingFlavorKit.id,
+          name: pendingFlavorKit.name,
+          quantity: 1,
+          unitPrice: pendingFlavorKit.default_price,
+          flavorChoices: choices,
+        }]);
+      }
+      
+      setFlavorPickerOpen(false);
+      setPendingFlavorKit(null);
+      setFlavorChoices([]);
+      setFlavorStep(0);
+    }
+  }
+
   useEffect(() => {
     if (!visible) return;
 
@@ -240,6 +331,8 @@ export default function SaleFormModal({
           if (!items || items.length === 0) return;
 
           const cartMap = new Map<string, CartItem>();
+          const kitFlavorChoices = new Map<string, Record<string, string>>();
+          
           items.forEach((item: any) => {
             if (item.kit_id) {
               const key = `kit_${item.kit_id}`;
@@ -248,8 +341,18 @@ export default function SaleFormModal({
                 if (!kit) return;
                 const qty = item.line_qty != null ? item.line_qty : (() => {
                   const kitItem = kitItems.find((ki) => ki.kit_id === item.kit_id && ki.supplement_id === item.supplement_id);
-                  const dosesUsed = kitItem?.doses_used || 1;
-                  return Math.round(item.quantity / dosesUsed);
+                  if (kitItem) return Math.round(item.quantity / kitItem.doses_used);
+                  
+                  const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+                  if (p?.flavor_group) {
+                    const kitItemByFlavor = kitItems.find((ki) => {
+                      if (ki.kit_id !== item.kit_id) return false;
+                      const kiPricing = pricing.find((pr) => pr.supplement_id === ki.supplement_id);
+                      return kiPricing?.flavor_group === p.flavor_group;
+                    });
+                    if (kitItemByFlavor) return Math.round(item.quantity / kitItemByFlavor.doses_used);
+                  }
+                  return 1;
                 })();
                 const unitPrice = item.line_unit_charged != null ? item.line_unit_charged : (editingSale.total_charged / qty);
                 cartMap.set(key, {
@@ -259,6 +362,24 @@ export default function SaleFormModal({
                   quantity: qty,
                   unitPrice,
                 });
+                kitFlavorChoices.set(key, {});
+              }
+              
+              const kitItemStandard = kitItems.find((ki) => ki.kit_id === item.kit_id && ki.supplement_id === item.supplement_id);
+              if (!kitItemStandard) {
+                const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+                if (p?.flavor_group) {
+                  const kitItemByFlavor = kitItems.find((ki) => {
+                    if (ki.kit_id !== item.kit_id) return false;
+                    const kiPricing = pricing.find((pr) => pr.supplement_id === ki.supplement_id);
+                    return kiPricing?.flavor_group === p.flavor_group;
+                  });
+                  if (kitItemByFlavor && kitItemByFlavor.is_flavor_choice) {
+                    const choices = kitFlavorChoices.get(key) || {};
+                    choices[kitItemByFlavor.supplement_id] = item.supplement_id;
+                    kitFlavorChoices.set(key, choices);
+                  }
+                }
               }
             } else {
               const key = `produto_${item.supplement_id}`;
@@ -277,7 +398,17 @@ export default function SaleFormModal({
               }
             }
           });
-          setCart(Array.from(cartMap.values()));
+          
+          const cartWithFlavors = Array.from(cartMap.entries()).map(([key, item]) => {
+            if (item.itemType === 'kit' && kitFlavorChoices.has(key)) {
+              const choices = kitFlavorChoices.get(key);
+              if (choices && Object.keys(choices).length > 0) {
+                return { ...item, flavorChoices: choices };
+              }
+            }
+            return item;
+          });
+          setCart(cartWithFlavors);
 
           if (editingSale.client_id) {
             const client = clients.find((c) => c.id === editingSale.client_id);
@@ -379,8 +510,9 @@ export default function SaleFormModal({
           if (!kit) continue;
           if (kit.is_redemption_only) {
             for (const item of kitItems.filter((i) => i.kit_id === kit.id)) {
+              const finalSupplementId = cartItem.flavorChoices?.[item.supplement_id] || item.supplement_id;
               items.push({
-                supplement_id: item.supplement_id,
+                supplement_id: finalSupplementId,
                 kit_id: kit.id,
                 kit_name: kit.name,
                 quantity: Number(item.doses_used) * cartItem.quantity,
@@ -397,11 +529,12 @@ export default function SaleFormModal({
             totalCost += cost * cartItem.quantity;
             totalPv += pv * cartItem.quantity;
             for (const item of kitItems.filter((i) => i.kit_id === kit.id)) {
-              const p = pricing.find((pr) => pr.supplement_id === item.supplement_id);
+              const finalSupplementId = cartItem.flavorChoices?.[item.supplement_id] || item.supplement_id;
+              const p = pricing.find((pr) => pr.supplement_id === finalSupplementId);
               if (!p) continue;
               const doses = p.doses_per_package || 1;
               items.push({
-                supplement_id: item.supplement_id,
+                supplement_id: finalSupplementId,
                 kit_id: kit.id,
                 kit_name: kit.name,
                 quantity: Number(item.doses_used) * cartItem.quantity,
@@ -743,7 +876,7 @@ export default function SaleFormModal({
               {cart.map((item, index) => (
                 <View key={index} style={s.cartItem}>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.cartItemName}>{item.name}</Text>
+                    <Text style={s.cartItemName}>{item.name}{flavorLabel(item)}</Text>
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
                       <View style={{ flex: 1 }}>
                         <Text style={s.cartLabel}>Qtd</Text>
@@ -800,7 +933,7 @@ export default function SaleFormModal({
           <View style={[s.modalBox, { maxHeight: '70%' }]}>
             <Text style={s.modalTitle}>
               {pickerOpen === 'kit'
-                ? 'Kits'
+                ? 'Kits e Receitas'
                 : pickerOpen === 'produto'
                 ? 'Produtos'
                 : pickerOpen === 'apresentacao'
@@ -815,47 +948,80 @@ export default function SaleFormModal({
               onChangeText={setPickerSearch}
               autoFocus
             />
-            <FlatList
-              data={(
-                pickerOpen === 'kit'
-                  ? kits
-                  : pickerOpen === 'produto'
-                  ? pricing.filter((p) => p.name)
-                  : pickerOpen === 'apresentacao'
-                  ? presentacoesLista
-                  : clients
-              ).filter((item: any) =>
-                normalizeSearch(item.name || item.prospect_name || '').includes(normalizeSearch(pickerSearch))
-              )}
-              keyExtractor={(item: any) => item.id || item.supplement_id}
-              renderItem={({ item }: any) => (
-                <TouchableOpacity
-                  style={s.pickerRow}
-                  onPress={() => {
-                    if (pickerOpen === 'kit') pickKit(item);
-                    else if (pickerOpen === 'produto') pickProduct(item);
-                    else if (pickerOpen === 'apresentacao') {
-                      setManualName(item.prospect_name);
-                      setManualPhone(item.prospect_phone ? maskPhone(item.prospect_phone) : '');
-                      setSelectedProspectId(item.id);
-                      setSelClient(null);
-                      setPickerOpen(null);
-                    } else {
-                      setSelClient(item);
-                      setSelectedProspectId(null);
-                      setPickerOpen(null);
-                    }
-                  }}
-                >
-                  <Text style={s.pickerTxt} numberOfLines={1}>
-                    {pickerOpen === 'apresentacao' ? item.prospect_name : item.name}
-                    {pickerOpen === 'kit' ? `  ·  ${brl(item.default_price)}` : ''}
-                    {pickerOpen === 'produto' ? `  ·  ${brl(item.price_venda)}` : ''}
-                    {pickerOpen === 'apresentacao' && item.prospect_phone ? `  ·  ${maskPhone(item.prospect_phone)}` : ''}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
+            {pickerOpen === 'kit' ? (
+              <ScrollView>
+                {kits.filter((k) => !k.is_recipe && normalizeSearch(k.name).includes(normalizeSearch(pickerSearch))).length > 0 && (
+                  <>
+                    <Text style={s.sectionLabel}>Kits</Text>
+                    {kits.filter((k) => !k.is_recipe && normalizeSearch(k.name).includes(normalizeSearch(pickerSearch))).map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={s.pickerRow}
+                        onPress={() => pickKit(item)}
+                      >
+                        <Text style={s.pickerTxt} numberOfLines={1}>
+                          {item.name}  ·  {brl(item.default_price)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+                {kits.filter((k) => k.is_recipe && normalizeSearch(k.name).includes(normalizeSearch(pickerSearch))).length > 0 && (
+                  <>
+                    <Text style={[s.sectionLabel, { marginTop: 16 }]}>Receitas</Text>
+                    {kits.filter((k) => k.is_recipe && normalizeSearch(k.name).includes(normalizeSearch(pickerSearch))).map((item) => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={s.pickerRow}
+                        onPress={() => pickKit(item)}
+                      >
+                        <Text style={s.pickerTxt} numberOfLines={1}>
+                          {item.name}  ·  {brl(item.default_price)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </>
+                )}
+              </ScrollView>
+            ) : (
+              <FlatList
+                data={(
+                  pickerOpen === 'produto'
+                    ? pricing.filter((p) => p.name)
+                    : pickerOpen === 'apresentacao'
+                    ? presentacoesLista
+                    : clients
+                ).filter((item: any) =>
+                  normalizeSearch(item.name || item.prospect_name || '').includes(normalizeSearch(pickerSearch))
+                )}
+                keyExtractor={(item: any) => item.id || item.supplement_id}
+                renderItem={({ item }: any) => (
+                  <TouchableOpacity
+                    style={s.pickerRow}
+                    onPress={() => {
+                      if (pickerOpen === 'produto') pickProduct(item);
+                      else if (pickerOpen === 'apresentacao') {
+                        setManualName(item.prospect_name);
+                        setManualPhone(item.prospect_phone ? maskPhone(item.prospect_phone) : '');
+                        setSelectedProspectId(item.id);
+                        setSelClient(null);
+                        setPickerOpen(null);
+                      } else {
+                        setSelClient(item);
+                        setSelectedProspectId(null);
+                        setPickerOpen(null);
+                      }
+                    }}
+                  >
+                    <Text style={s.pickerTxt} numberOfLines={1}>
+                      {pickerOpen === 'apresentacao' ? item.prospect_name : item.name}
+                      {pickerOpen === 'produto' ? `  ·  ${brl(item.price_venda)}` : ''}
+                      {pickerOpen === 'apresentacao' && item.prospect_phone ? `  ·  ${maskPhone(item.prospect_phone)}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
             <TouchableOpacity
               style={[s.btn, s.btnGhost, { marginTop: 8 }]}
               onPress={() => {
@@ -865,6 +1031,68 @@ export default function SaleFormModal({
             >
               <Text style={s.btnGhostTxt}>Fechar</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={flavorPickerOpen} animationType="fade" transparent>
+        <View style={s.modalBg}>
+          <View style={[s.modalBox, { maxHeight: '60%' }]}>
+            {flavorChoices[flavorStep] && (
+              <>
+                <Text style={s.modalTitle}>
+                  Escolha o sabor: {flavorChoices[flavorStep].componentName}
+                </Text>
+                <Text style={s.flavorHint}>
+                  Passo {flavorStep + 1} de {flavorChoices.length}
+                </Text>
+                <ScrollView style={{ marginVertical: 12 }}>
+                  {pricing.filter((p) => p.flavor_group === flavorChoices[flavorStep].flavorGroup).map((p) => (
+                    <TouchableOpacity
+                      key={p.supplement_id}
+                      style={[
+                        s.flavorOption,
+                        flavorChoices[flavorStep].selected === p.supplement_id && s.flavorOptionSelected,
+                      ]}
+                      onPress={() => selectFlavor(p.supplement_id)}
+                    >
+                      <View style={[
+                        s.flavorRadio,
+                        flavorChoices[flavorStep].selected === p.supplement_id && s.flavorRadioSelected,
+                      ]} />
+                      <Text style={[
+                        s.flavorOptionTxt,
+                        flavorChoices[flavorStep].selected === p.supplement_id && s.flavorOptionTxtSelected,
+                      ]}>
+                        {p.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <View style={s.inline}>
+                  <TouchableOpacity
+                    style={[s.btn, s.btnGhost]}
+                    onPress={() => {
+                      setFlavorPickerOpen(false);
+                      setPendingFlavorKit(null);
+                      setFlavorChoices([]);
+                      setFlavorStep(0);
+                    }}
+                  >
+                    <Text style={s.btnGhostTxt}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.btn, { backgroundColor: T.blue }]}
+                    onPress={confirmFlavorSelection}
+                    disabled={!flavorChoices[flavorStep].selected}
+                  >
+                    <Text style={s.btnTxt}>
+                      {flavorStep < flavorChoices.length - 1 ? 'Próximo' : 'Confirmar'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -903,4 +1131,40 @@ const s = StyleSheet.create({
   cartSubtotal: { color: '#4ADE80', fontSize: 12, fontWeight: '600', marginTop: 4 },
   removeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FF4444', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
   removeBtnTxt: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  sectionLabel: { color: T.t1, fontSize: 15, fontWeight: '700', marginBottom: 8, marginTop: 4 },
+  flavorHint: { color: '#999', fontSize: 12, marginBottom: 8 },
+  flavorOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#242424',
+  },
+  flavorOptionSelected: {
+    backgroundColor: T.blue + '22',
+    borderColor: T.blue,
+  },
+  flavorRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#555',
+    marginRight: 10,
+  },
+  flavorRadioSelected: {
+    borderColor: T.blue,
+    backgroundColor: T.blue,
+  },
+  flavorOptionTxt: {
+    color: '#DDD',
+    fontSize: 14,
+  },
+  flavorOptionTxtSelected: {
+    color: T.blue,
+    fontWeight: '600',
+  },
 });

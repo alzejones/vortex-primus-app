@@ -104,11 +104,11 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             .eq('trainer_id', trainer.id)
             .eq('sale_date', today)
             .order('created_at', { ascending: false }),
-          supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol').eq('active', true).or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`).order('name'),
-          supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used'),
+          supabase.from('herbalife_kits').select('id, name, default_price, is_redemption_only, is_access_kit, triggers_reset_protocol, is_recipe').eq('active', true).or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`).order('name'),
+          supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used, is_flavor_choice, supplements(flavor_group)'),
           supabase
             .from('herbalife_pricing')
-            .select('*, supplements(name)')
+            .select('*, supplements(name, flavor_group)')
             .order('sku'),
           (async () => {
             let allClients: any[] = [];
@@ -155,19 +155,24 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
       if (saleIds.length > 0) {
         const { data: items } = await supabase
           .from('herbalife_sale_items')
-          .select('sale_id, kit_id, kit_name, supplement_id, quantity, supplements(name)')
+          .select('sale_id, kit_id, kit_name, supplement_id, quantity, supplements(name, flavor_group)')
           .in('sale_id', saleIds);
         const lines: Record<string, string[]> = {};
         const kitProcessed = new Set<string>();
         (items || []).forEach((it: any) => {
           if (!lines[it.sale_id]) lines[it.sale_id] = [];
           if (it.kit_id) {
-            const kitKey = `${it.sale_id}_${it.kit_id}`;
+            const kitKey = `${it.sale_id}_${it.kit_id}_${it.supplements?.flavor_group ? it.supplement_id : ''}`;
             if (!kitProcessed.has(kitKey)) {
               kitProcessed.add(kitKey);
-              const dosesUsed = ((ki as any) || []).find((kitItem: any) => kitItem.kit_id === it.kit_id && kitItem.supplement_id === it.supplement_id)?.doses_used || 1;
+              let dosesUsed = ((ki as any) || []).find((kitItem: any) => kitItem.kit_id === it.kit_id && kitItem.supplement_id === it.supplement_id)?.doses_used;
+              if (!dosesUsed && it.supplements?.flavor_group) {
+                dosesUsed = ((ki as any) || []).find((kitItem: any) => kitItem.kit_id === it.kit_id && kitItem.supplements?.flavor_group === it.supplements.flavor_group)?.doses_used;
+              }
+              dosesUsed = dosesUsed || 1;
               const kitQty = Math.round(it.quantity / dosesUsed);
-              const label = `${it.kit_name}  ·  Qtd ${kitQty}`;
+              const flavorSuffix = it.supplements?.flavor_group ? ` (${it.supplements.name})` : '';
+              const label = `${it.kit_name}${flavorSuffix}  ·  Qtd ${kitQty}`;
               lines[it.sale_id].push(label);
             }
           } else {
@@ -182,7 +187,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
       setKits((k as any) || []);
       setKitItems((ki as any) || []);
-      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name })));
+      setPricing(((pr as any) || []).map((p: any) => ({ ...p, name: p.supplements?.name, flavor_group: p.supplements?.flavor_group })));
       setClients((cl as any) || []);
 
       // Pré-seleção vinda da tela de dieta (Confirmar Venda)

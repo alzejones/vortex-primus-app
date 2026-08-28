@@ -795,7 +795,7 @@ export default function HerbalifeStock() {
                             [item.supplement_id]: text
                           }));
                         }}
-                        keyboardType="numeric"
+                        keyboardType="default"
                       />
                     )}
                   </View>

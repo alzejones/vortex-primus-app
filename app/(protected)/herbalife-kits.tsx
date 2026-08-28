@@ -37,6 +37,8 @@ interface Kit {
   is_redemption_only: boolean;
   is_access_kit: boolean;
   triggers_reset_protocol: boolean;
+  is_recipe: boolean;
+  extra_ingredients_note: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +46,7 @@ interface Kit {
 interface Supplement {
   id: string;
   name: string;
+  flavor_group: string | null;
   herbalife_pricing?: {
     price_venda: number;
     doses_per_package: number | null;
@@ -54,6 +57,7 @@ interface KitItem {
   supplement_id: string;
   supplement_name?: string;
   doses_used: string;
+  is_flavor_choice?: boolean;
 }
 
 export default function HerbalifeKits() {
@@ -71,6 +75,8 @@ export default function HerbalifeKits() {
   const [isRedemptionOnly, setIsRedemptionOnly] = useState(false);
   const [isAccessKit, setIsAccessKit] = useState(false);
   const [isResetKit, setIsResetKit] = useState(false);
+  const [isRecipe, setIsRecipe] = useState(false);
+  const [extraIngredients, setExtraIngredients] = useState('');
   const [kitItems, setKitItems] = useState<KitItem[]>([]);
   const [priceManuallyEdited, setPriceManuallyEdited] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
@@ -96,7 +102,7 @@ export default function HerbalifeKits() {
           .select('*')
           .or(`trainer_id.is.null,trainer_id.eq.${trainer.id}`)
           .order('name'),
-        supabase.from('supplements').select('id, name, herbalife_pricing(price_venda, doses_per_package)').order('name'),
+        supabase.from('supplements').select('id, name, flavor_group, herbalife_pricing(price_venda, doses_per_package)').order('name'),
       ]);
 
       setKits((kitsData as Kit[]) || []);
@@ -163,6 +169,8 @@ export default function HerbalifeKits() {
     setIsRedemptionOnly(false);
     setIsAccessKit(false);
     setIsResetKit(false);
+    setIsRecipe(false);
+    setExtraIngredients('');
     setKitItems([]);
     setPriceManuallyEdited(false);
     setModalOpen(true);
@@ -176,11 +184,13 @@ export default function HerbalifeKits() {
     setIsRedemptionOnly(kit.is_redemption_only);
     setIsAccessKit(kit.is_access_kit);
     setIsResetKit(kit.triggers_reset_protocol);
+    setIsRecipe(kit.is_recipe);
+    setExtraIngredients(kit.extra_ingredients_note || '');
     setPriceManuallyEdited(false);
 
     const { data: items } = await supabase
       .from('herbalife_kit_items')
-      .select('supplement_id, doses_used, supplements(name)')
+      .select('supplement_id, doses_used, is_flavor_choice, supplements(name)')
       .eq('kit_id', kit.id);
 
     setKitItems(
@@ -188,6 +198,7 @@ export default function HerbalifeKits() {
         supplement_id: i.supplement_id,
         supplement_name: i.supplements?.name || '',
         doses_used: String(i.doses_used),
+        is_flavor_choice: i.is_flavor_choice || false,
       }))
     );
     setModalOpen(true);
@@ -198,12 +209,16 @@ export default function HerbalifeKits() {
       notify('Atenção', 'Este produto já está no kit.');
       return;
     }
-    setKitItems([...kitItems, { supplement_id: sup.id, supplement_name: sup.name, doses_used: '1' }]);
+    setKitItems([...kitItems, { supplement_id: sup.id, supplement_name: sup.name, doses_used: '1', is_flavor_choice: false }]);
     setProductPickerOpen(false);
   }
 
   function updateDoses(suppId: string, doses: string) {
     setKitItems(kitItems.map((i) => (i.supplement_id === suppId ? { ...i, doses_used: doses } : i)));
+  }
+
+  function toggleFlavorChoice(suppId: string) {
+    setKitItems(kitItems.map((i) => (i.supplement_id === suppId ? { ...i, is_flavor_choice: !i.is_flavor_choice } : i)));
   }
 
   function removeProduct(suppId: string) {
@@ -301,7 +316,7 @@ export default function HerbalifeKits() {
       if (editingKit) {
         const { error: updateErr } = await supabase
           .from('herbalife_kits')
-          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, is_access_kit: isAccessKit, triggers_reset_protocol: isResetKit, updated_at: new Date().toISOString() })
+          .update({ name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, is_access_kit: isAccessKit, triggers_reset_protocol: isResetKit, is_recipe: isRecipe, extra_ingredients_note: extraIngredients.trim() || null, updated_at: new Date().toISOString() })
           .eq('id', editingKit.id);
         if (updateErr) throw updateErr;
 
@@ -314,13 +329,14 @@ export default function HerbalifeKits() {
               kit_id: editingKit.id,
               supplement_id: i.supplement_id,
               doses_used: parseFloat(i.doses_used.replace(',', '.')),
+              is_flavor_choice: i.is_flavor_choice || false,
             }))
           );
         if (itemsErr) throw itemsErr;
       } else {
         const { data: newKit, error: insertErr } = await supabase
           .from('herbalife_kits')
-          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, is_access_kit: isAccessKit, triggers_reset_protocol: isResetKit, active: true })
+          .insert({ trainer_id: trainerId, name: kitName.trim(), kit_type: kitType, default_price: price, is_redemption_only: isRedemptionOnly, is_access_kit: isAccessKit, triggers_reset_protocol: isResetKit, is_recipe: isRecipe, extra_ingredients_note: extraIngredients.trim() || null, active: true })
           .select('id')
           .single();
         if (insertErr) throw insertErr;
@@ -332,6 +348,7 @@ export default function HerbalifeKits() {
               kit_id: newKit.id,
               supplement_id: i.supplement_id,
               doses_used: parseFloat(i.doses_used.replace(',', '.')),
+              is_flavor_choice: i.is_flavor_choice || false,
             }))
           );
         if (itemsErr) throw itemsErr;
@@ -378,7 +395,10 @@ export default function HerbalifeKits() {
         {kits.length === 0 && (
           <Text style={s.empty}>Nenhum kit cadastrado. Crie seu primeiro kit abaixo!</Text>
         )}
-        {kits.map((kit) => {
+        {kits.filter((k) => !k.is_recipe).length > 0 && (
+          <Text style={s.sectionTitle}>Kits</Text>
+        )}
+        {kits.filter((k) => !k.is_recipe).map((kit) => {
           const isGlobal = kit.trainer_id === null;
           return (
             <View key={kit.id} style={s.kitCard}>
@@ -392,6 +412,46 @@ export default function HerbalifeKits() {
                   )}
                 </View>
                 <Text style={s.kitPrice}>{brl(Number(kit.default_price))}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={s.deleteIconBtn} onPress={() => deleteKit(kit)}>
+                  <Text style={{ fontSize: 16 }}>🗑</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.editIconBtn} onPress={() => openEditModal(kit)}>
+                  <Text style={{ fontSize: 16 }}>✏️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.toggleBtn, kit.active && s.toggleBtnActive]}
+                  onPress={() => toggleActive(kit)}
+                >
+                  <Text style={[s.toggleTxt, kit.active && s.toggleTxtActive]}>
+                    {kit.active ? '✓ Ativo' : 'Inativo'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+        {kits.filter((k) => k.is_recipe).length > 0 && (
+          <Text style={[s.sectionTitle, { marginTop: 24 }]}>Receitas</Text>
+        )}
+        {kits.filter((k) => k.is_recipe).map((kit) => {
+          const isGlobal = kit.trainer_id === null;
+          return (
+            <View key={kit.id} style={s.kitCard}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <Text style={s.kitName}>{kit.name}</Text>
+                  {isGlobal && (
+                    <View style={s.badgeGlobal}>
+                      <Text style={s.badgeGlobalTxt}>Global</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={s.kitPrice}>{brl(Number(kit.default_price))}</Text>
+                {kit.extra_ingredients_note && (
+                  <Text style={s.extraIngredients}>+ {kit.extra_ingredients_note}</Text>
+                )}
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity style={s.deleteIconBtn} onPress={() => deleteKit(kit)}>
@@ -436,25 +496,58 @@ export default function HerbalifeKits() {
                 onChangeText={setKitName}
               />
 
-              <Text style={s.label}>Tipo do Kit</Text>
+              <Text style={s.label}>Categoria</Text>
               <View style={s.typeSelector}>
                 <TouchableOpacity
-                  style={[s.typeOption, kitType === 'fechado' && s.typeOptionActive]}
-                  onPress={() => setKitType('fechado')}
+                  style={[s.typeOption, !isRecipe && s.typeOptionActive]}
+                  onPress={() => {
+                    setIsRecipe(false);
+                    if (kitType === 'doses') {
+                      setKitType('fechado');
+                    }
+                  }}
                 >
-                  <Text style={[s.typeOptionTxt, kitType === 'fechado' && s.typeOptionTxtActive]}>
-                    Fechado
+                  <Text style={[s.typeOptionTxt, !isRecipe && s.typeOptionTxtActive]}>
+                    Kit
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[s.typeOption, kitType === 'doses' && s.typeOptionActive]}
-                  onPress={() => setKitType('doses')}
+                  style={[s.typeOption, isRecipe && s.typeOptionActive]}
+                  onPress={() => {
+                    setIsRecipe(true);
+                    setKitType('doses');
+                    setPriceManuallyEdited(false);
+                  }}
                 >
-                  <Text style={[s.typeOptionTxt, kitType === 'doses' && s.typeOptionTxtActive]}>
-                    Doses
+                  <Text style={[s.typeOptionTxt, isRecipe && s.typeOptionTxtActive]}>
+                    Receita
                   </Text>
                 </TouchableOpacity>
               </View>
+
+              {!isRecipe && (
+                <>
+                  <Text style={s.label}>Tipo do Kit</Text>
+                  <View style={s.typeSelector}>
+                    <TouchableOpacity
+                      style={[s.typeOption, kitType === 'fechado' && s.typeOptionActive]}
+                      onPress={() => setKitType('fechado')}
+                    >
+                      <Text style={[s.typeOptionTxt, kitType === 'fechado' && s.typeOptionTxtActive]}>
+                        Fechado
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[s.typeOption, kitType === 'doses' && s.typeOptionActive]}
+                      onPress={() => setKitType('doses')}
+                    >
+                      <Text style={[s.typeOptionTxt, kitType === 'doses' && s.typeOptionTxtActive]}>
+                        Doses
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
 
               <TouchableOpacity style={s.checkRowBox} onPress={() => {
                 const newVal = !isRedemptionOnly;
@@ -474,6 +567,19 @@ export default function HerbalifeKits() {
                 <View style={[s.checkbox, isResetKit && { backgroundColor: T.blue }]} />
                 <Text style={s.checkTxt}>Kit Reset (dispara Protocolo Reset)</Text>
               </TouchableOpacity>
+
+              {isRecipe && (
+                <>
+                  <Text style={s.label}>Ingredientes Extras (não contam no estoque)</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="Ex: 1 ovo, 100ml leite"
+                    placeholderTextColor="#777"
+                    value={extraIngredients}
+                    onChangeText={setExtraIngredients}
+                  />
+                </>
+              )}
 
               <Text style={s.label}>Preço Padrão (R$)</Text>
               <TextInput
@@ -506,26 +612,39 @@ export default function HerbalifeKits() {
               {kitItems.length === 0 && (
                 <Text style={s.emptyProducts}>Nenhum produto adicionado ainda.</Text>
               )}
-              {kitItems.map((item) => (
-                <View key={item.supplement_id} style={s.productRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.productName} numberOfLines={1}>
-                      {item.supplement_name}
-                    </Text>
+              {kitItems.map((item) => {
+                const sup = supplements.find((s) => s.id === item.supplement_id);
+                const hasFlavor = sup?.flavor_group != null;
+                return (
+                  <View key={item.supplement_id} style={s.productRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.productName} numberOfLines={1}>
+                        {item.supplement_name}
+                      </Text>
+                      {hasFlavor && (
+                        <TouchableOpacity
+                          style={s.flavorCheckRow}
+                          onPress={() => toggleFlavorChoice(item.supplement_id)}
+                        >
+                          <View style={[s.checkboxSmall, item.is_flavor_choice && { backgroundColor: T.blue }]} />
+                          <Text style={s.flavorCheckTxt}>Perguntar sabor na venda</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <TextInput
+                      style={s.dosesInput}
+                      placeholder="Ex: 0,5"
+                      placeholderTextColor="#777"
+                      keyboardType="decimal-pad"
+                      value={item.doses_used}
+                      onChangeText={(v) => updateDoses(item.supplement_id, v)}
+                    />
+                    <TouchableOpacity onPress={() => removeProduct(item.supplement_id)}>
+                      <Text style={{ fontSize: 18, color: '#ef4444' }}>🗑</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TextInput
-                    style={s.dosesInput}
-                    placeholder="Doses"
-                    placeholderTextColor="#777"
-                    keyboardType="numeric"
-                    value={item.doses_used}
-                    onChangeText={(v) => updateDoses(item.supplement_id, v)}
-                  />
-                  <TouchableOpacity onPress={() => removeProduct(item.supplement_id)}>
-                    <Text style={{ fontSize: 18, color: '#ef4444' }}>🗑</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+                );
+              })}
               <TouchableOpacity style={s.addProductBtn} onPress={() => setProductPickerOpen(true)}>
                 <Text style={s.addProductTxt}>+ Adicionar Produto</Text>
               </TouchableOpacity>
@@ -681,6 +800,8 @@ const s = StyleSheet.create({
     color: '#FFF',
     width: 60,
     textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#444',
   },
   addProductBtn: { backgroundColor: '#242424', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4 },
   addProductTxt: { color: T.blue, fontWeight: '700' },
@@ -745,5 +866,34 @@ const s = StyleSheet.create({
   },
   inputDisabled: {
     opacity: 0.5,
+  },
+  sectionTitle: {
+    color: T.t1,
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  extraIngredients: {
+    color: T.t3,
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  flavorCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  checkboxSmall: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#555',
+    marginRight: 6,
+  },
+  flavorCheckTxt: {
+    color: '#AAA',
+    fontSize: 11,
   },
 });
