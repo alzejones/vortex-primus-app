@@ -148,7 +148,7 @@ export default function PedidoEVS() {
 
       const { data: standaloneData, error: standaloneError } = await supabase
         .from("herbalife_pricing")
-        .select("supplement_id, supplements(name, flavor_group), price_venda")
+        .select("supplement_id, supplements!inner(name, flavor_group), price_venda")
         .not("supplements.flavor_group", "is", null);
 
       if (!standaloneError && standaloneData) {
