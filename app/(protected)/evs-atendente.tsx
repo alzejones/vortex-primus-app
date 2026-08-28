@@ -15,7 +15,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { T } from "../../utils/theme";
-import { calculateKitCostWithChoices, PricingData, KitItemData } from "../../utils/kitCostCalculator";
+import { calculateKitCostWithChoices, PricingData, KitItemData, DiscountLevel, trainerUnitCost } from "../../utils/kitCostCalculator";
 import { todayBR } from "../../utils/dateBR";
 
 interface EVSOrder {
@@ -203,9 +203,19 @@ export default function EVSAtendente() {
     try {
       setProcessingOrder(order.id);
 
+      const { data: trainerData, error: trainerError } = await supabase
+        .from("trainers")
+        .select("herbalife_discount_level")
+        .eq("id", trainerId)
+        .single();
+
+      if (trainerError) throw trainerError;
+
+      const trainerDiscountLevel = (trainerData?.herbalife_discount_level || "50") as DiscountLevel;
+
       const { data: pricingData, error: pricingError } = await supabase
         .from("herbalife_pricing")
-        .select("supplement_id, price_venda, price_50, price_25, pv, doses_per_package");
+        .select("supplement_id, price_venda, price_50, price_42, price_35, price_25, pv, doses_per_package");
 
       if (pricingError) throw pricingError;
 
@@ -239,7 +249,7 @@ export default function EVSAtendente() {
           kitItems,
           pricing,
           chosenSupplements,
-          "50"
+          trainerDiscountLevel
         );
 
         totalCost += cost * item.quantity;
@@ -256,7 +266,7 @@ export default function EVSAtendente() {
 
           const dosesUsed = kitItem.doses_used;
           const doses = flavorPricing.doses_per_package || 1;
-          const unitCost = (flavorPricing.price_50 || flavorPricing.price_venda) / doses * dosesUsed;
+          const unitCost = (trainerUnitCost(flavorPricing, trainerDiscountLevel) / doses) * dosesUsed;
           const unitPV = (flavorPricing.pv / doses) * dosesUsed;
 
           saleItems.push({
@@ -274,7 +284,7 @@ export default function EVSAtendente() {
           const addonPricing = pricing.find((p) => p.supplement_id === addon.supplement_id);
           if (!addonPricing) continue;
 
-          const unitCost = addonPricing.price_50 || addonPricing.price_venda;
+          const unitCost = trainerUnitCost(addonPricing, trainerDiscountLevel);
           totalCost += unitCost * addon.quantity;
           totalPV += addonPricing.pv * addon.quantity;
 
