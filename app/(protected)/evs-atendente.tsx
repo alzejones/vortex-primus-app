@@ -2,7 +2,6 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Modal,
@@ -17,6 +16,7 @@ import { supabase } from "../../lib/supabase";
 import { T } from "../../utils/theme";
 import { PricingData, KitItemData, DiscountLevel, trainerUnitCost } from "../../utils/kitCostCalculator";
 import { todayBR } from "../../utils/dateBR";
+import { notify } from "../../components/business/SaleFormModal";
 
 interface EVSOrder {
   id: string;
@@ -88,7 +88,7 @@ export default function EVSAtendente() {
       .single();
 
     if (error) {
-      Alert.alert("Erro ao carregar treinador", error.message);
+      notify("Erro ao carregar treinador", error.message);
       return;
     }
 
@@ -156,7 +156,7 @@ export default function EVSAtendente() {
       setOrders(ordersWithDetails);
       setLoading(false);
     } catch (err: any) {
-      Alert.alert("Erro ao carregar pedidos", err.message || "Erro desconhecido.");
+      notify("Erro ao carregar pedidos", err.message || "Erro desconhecido.");
       setLoading(false);
     }
   }
@@ -333,10 +333,10 @@ export default function EVSAtendente() {
 
       setProcessingOrder(null);
       loadOrders(trainerId);
-      Alert.alert("Sucesso", "Pagamento confirmado e venda registrada.");
+      notify("Sucesso", "Pagamento confirmado e venda registrada.");
     } catch (err: any) {
       setProcessingOrder(null);
-      Alert.alert("Erro ao confirmar pagamento", err.message || "Erro desconhecido.");
+      notify("Erro ao confirmar pagamento", err.message || "Erro desconhecido.");
     }
   }
 
@@ -351,7 +351,7 @@ export default function EVSAtendente() {
 
       if (trainerId) loadOrders(trainerId);
     } catch (err: any) {
-      Alert.alert("Erro ao marcar como pronto", err.message || "Erro desconhecido.");
+      notify("Erro ao marcar como pronto", err.message || "Erro desconhecido.");
     }
   }
 
@@ -365,38 +365,28 @@ export default function EVSAtendente() {
       if (error) throw error;
 
       if (trainerId) loadOrders(trainerId);
-      Alert.alert("Sucesso", "Pedido marcado como entregue.");
+      notify("Sucesso", "Pedido marcado como entregue.");
     } catch (err: any) {
-      Alert.alert("Erro ao entregar pedido", err.message || "Erro desconhecido.");
+      notify("Erro ao entregar pedido", err.message || "Erro desconhecido.");
     }
   }
 
   async function handleCancelOrder(orderId: string) {
-    Alert.alert(
-      "Cancelar Pedido",
-      "Tem certeza que deseja cancelar este pedido?",
-      [
-        { text: "Não", style: "cancel" },
-        {
-          text: "Sim, Cancelar",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from("evs_orders")
-                .update({ status: "cancelado" })
-                .eq("id", orderId);
+    const confirmed = confirm("Tem certeza que deseja cancelar este pedido?");
+    if (!confirmed) return;
 
-              if (error) throw error;
+    try {
+      const { error } = await supabase
+        .from("evs_orders")
+        .update({ status: "cancelado" })
+        .eq("id", orderId);
 
-              if (trainerId) loadOrders(trainerId);
-            } catch (err: any) {
-              Alert.alert("Erro ao cancelar pedido", err.message || "Erro desconhecido.");
-            }
-          },
-        },
-      ]
-    );
+      if (error) throw error;
+
+      if (trainerId) loadOrders(trainerId);
+    } catch (err: any) {
+      notify("Erro ao cancelar pedido", err.message || "Erro desconhecido.");
+    }
   }
 
   const renderOrderCard = (order: EVSOrder) => {
