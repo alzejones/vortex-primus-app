@@ -30,7 +30,8 @@ interface EVSOrder {
 
 interface EVSOrderItem {
   id: string;
-  kit_id: string;
+  kit_id: string | null;
+  supplement_id?: string | null;
   kit_name: string;
   quantity: number;
   unit_price: number;
@@ -111,7 +112,7 @@ export default function EVSAtendente() {
       for (const order of ordersData || []) {
         const { data: itemsData, error: itemsError } = await supabase
           .from("evs_order_items")
-          .select("id, kit_id, kit_name, quantity, unit_price")
+          .select("id, kit_id, supplement_id, kit_name, quantity, unit_price")
           .eq("order_id", order.id);
 
         if (itemsError) throw itemsError;
@@ -239,50 +240,71 @@ export default function EVSAtendente() {
       const saleItems: any[] = [];
 
       for (const item of order.items) {
-        for (const flavor of item.flavors) {
-          const flavorPricing = pricing.find((p) => p.supplement_id === flavor.chosen_supplement_id);
-          if (!flavorPricing) continue;
+        if (item.kit_id) {
+          for (const flavor of item.flavors) {
+            const flavorPricing = pricing.find((p) => p.supplement_id === flavor.chosen_supplement_id);
+            if (!flavorPricing) continue;
 
-          const kitItem = kitItems.find(
-            (ki) => ki.kit_id === item.kit_id && ki.is_flavor_choice
-          );
-          if (!kitItem) continue;
+            const kitItem = kitItems.find(
+              (ki) => ki.kit_id === item.kit_id && ki.is_flavor_choice
+            );
+            if (!kitItem) continue;
 
-          const dosesUsed = kitItem.doses_used;
-          const doses = flavorPricing.doses_per_package || 1;
-          const unitCost = (trainerUnitCost(flavorPricing, trainerDiscountLevel) / doses) * dosesUsed;
-          const unitPV = (flavorPricing.pv / doses) * dosesUsed;
+            const dosesUsed = kitItem.doses_used;
+            const doses = flavorPricing.doses_per_package || 1;
+            const unitCost = (trainerUnitCost(flavorPricing, trainerDiscountLevel) / doses) * dosesUsed;
+            const unitPV = (flavorPricing.pv / doses) * dosesUsed;
+
+            totalCost += unitCost * item.quantity;
+            totalPV += unitPV * item.quantity;
+
+            saleItems.push({
+              kit_id: item.kit_id,
+              supplement_id: flavor.chosen_supplement_id,
+              quantity: item.quantity,
+              unit_charged: item.unit_price,
+              unit_cost: unitCost,
+              pv: unitPV,
+              kit_name: item.kit_name,
+            });
+          }
+
+          for (const addon of item.addons) {
+            const addonPricing = pricing.find((p) => p.supplement_id === addon.supplement_id);
+            if (!addonPricing) continue;
+
+            const unitCost = trainerUnitCost(addonPricing, trainerDiscountLevel);
+            totalCost += unitCost * addon.quantity;
+            totalPV += addonPricing.pv * addon.quantity;
+
+            saleItems.push({
+              kit_id: null,
+              supplement_id: addon.supplement_id,
+              quantity: addon.quantity,
+              unit_charged: addon.unit_price,
+              unit_cost: unitCost,
+              pv: addonPricing.pv,
+              kit_name: null,
+            });
+          }
+        } else if (item.supplement_id) {
+          const standalonePricing = pricing.find((p) => p.supplement_id === item.supplement_id);
+          if (!standalonePricing) continue;
+
+          const unitCost = trainerUnitCost(standalonePricing, trainerDiscountLevel);
+          const unitPV = standalonePricing.pv;
 
           totalCost += unitCost * item.quantity;
           totalPV += unitPV * item.quantity;
 
           saleItems.push({
-            kit_id: item.kit_id,
-            supplement_id: flavor.chosen_supplement_id,
+            kit_id: null,
+            supplement_id: item.supplement_id,
             quantity: item.quantity,
             unit_charged: item.unit_price,
             unit_cost: unitCost,
             pv: unitPV,
             kit_name: item.kit_name,
-          });
-        }
-
-        for (const addon of item.addons) {
-          const addonPricing = pricing.find((p) => p.supplement_id === addon.supplement_id);
-          if (!addonPricing) continue;
-
-          const unitCost = trainerUnitCost(addonPricing, trainerDiscountLevel);
-          totalCost += unitCost * addon.quantity;
-          totalPV += addonPricing.pv * addon.quantity;
-
-          saleItems.push({
-            kit_id: null,
-            supplement_id: addon.supplement_id,
-            quantity: addon.quantity,
-            unit_charged: addon.unit_price,
-            unit_cost: unitCost,
-            pv: addonPricing.pv,
-            kit_name: null,
           });
         }
       }

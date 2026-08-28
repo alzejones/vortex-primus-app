@@ -54,6 +54,27 @@ interface AddonSelection {
   unit_price: number;
 }
 
+interface CartItem {
+  type: 'kit' | 'standalone';
+  kit_id?: string;
+  kit_name?: string;
+  kit_price?: number;
+  supplement_id?: string;
+  supplement_name?: string;
+  supplement_price?: number;
+  flavor_selections?: FlavorSelections;
+  flavor_group?: string | null;
+  chosen_flavor_id?: string;
+  chosen_flavor_name?: string;
+}
+
+interface StandaloneProduct {
+  supplement_id: string;
+  name: string;
+  price_venda: number;
+  flavor_group: string | null;
+}
+
 export default function PedidoEVS() {
   const { session, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -64,9 +85,9 @@ export default function PedidoEVS() {
   const [selectedKitId, setSelectedKitId] = useState<string | null>(null);
   const [flavorSelections, setFlavorSelections] = useState<FlavorSelections>({});
   const [flavorOptions, setFlavorOptions] = useState<{ [flavorGroup: string]: FlavorOption[] }>({});
-  const [addons, setAddons] = useState<{ id: string; name: string }[]>([]);
-  const [addonSelection, setAddonSelection] = useState<AddonSelection | null>(null);
-  const [addonFlavorOptions, setAddonFlavorOptions] = useState<FlavorOption[]>([]);
+  const [standaloneProducts, setStandaloneProducts] = useState<StandaloneProduct[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [expandedFlavorGroup, setExpandedFlavorGroup] = useState<string | null>(null);
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   const isDesktop = screenWidth >= 768;
@@ -98,7 +119,7 @@ export default function PedidoEVS() {
         .select("id, name, default_price, is_access_kit, is_recipe")
         .eq("trainer_id", clientData.trainer_id)
         .eq("active", true)
-        .or("is_access_kit.eq.true,is_recipe.eq.true");
+;
 
       if (kitsError) throw kitsError;
 
@@ -125,13 +146,19 @@ export default function PedidoEVS() {
 
       setKits(kitsWithItems);
 
-      const { data: addonsData, error: addonsError } = await supabase
-        .from("supplements")
-        .select("id, name")
-        .eq("flavor_group", "fiber_concentrate_450ml");
+      const { data: standaloneData, error: standaloneError } = await supabase
+        .from("herbalife_pricing")
+        .select("supplement_id, supplements(name, flavor_group), price_venda")
+        .not("supplements.flavor_group", "is", null);
 
-      if (!addonsError && addonsData) {
-        setAddons(addonsData);
+      if (!standaloneError && standaloneData) {
+        const products: StandaloneProduct[] = standaloneData.map((item: any) => ({
+          supplement_id: item.supplement_id,
+          name: item.supplements?.name || "",
+          price_venda: item.price_venda,
+          flavor_group: item.supplements?.flavor_group || null,
+        }));
+        setStandaloneProducts(products);
       }
 
       setLoading(false);
@@ -174,43 +201,57 @@ export default function PedidoEVS() {
     setFlavorSelections(newSelections);
   };
 
-  const handleAddAddon = async () => {
-    if (!addons.length) {
-      Alert.alert("Sem adicionais disponíveis", "Nenhum adicional cadastrado.");
-      return;
-    }
+  const handleAddKitToCart = () => {
+    if (!selectedKitId) return;
+    const kit = kits.find((k) => k.id === selectedKitId);
+    if (!kit) return;
 
-    const firstAddon = addons[0];
-    const { data, error } = await supabase
-      .from("supplements")
-      .select("id, name")
-      .eq("flavor_group", "fiber_concentrate_450ml");
+    const cartItem: CartItem = {
+      type: 'kit',
+      kit_id: kit.id,
+      kit_name: kit.name,
+      kit_price: kit.default_price,
+      flavor_selections: { ...flavorSelections },
+    };
 
-    if (!error && data) {
-      setAddonFlavorOptions(data);
-      setAddonSelection({
-        supplement_id: firstAddon.id,
-        name: firstAddon.name,
-        flavor_id: data[0]?.id || "",
-        flavor_name: data[0]?.name || "",
-        unit_price: 0,
-      });
-    }
+    setCart((prev) => [...prev, cartItem]);
+    setSelectedKitId(null);
+    setFlavorSelections({});
   };
 
+  const handleAddStandaloneToCart = (product: StandaloneProduct, flavorId: string, flavorName: string) => {
+    const cartItem: CartItem = {
+      type: 'standalone',
+      supplement_id: product.supplement_id,
+      supplement_name: product.name,
+      supplement_price: product.price_venda,
+      flavor_group: product.flavor_group,
+      chosen_flavor_id: flavorId,
+      chosen_flavor_name: flavorName,
+    };
+
+    setCart((prev) => [...prev, cartItem]);
+    setExpandedFlavorGroup(null);
+  };
+
+  const handleRemoveFromCart = (index: number) => {
+    setCart((prev) => prev.filter((_, i) => i !== index));
+  };
+
+
   const handleConfirmOrder = async () => {
-    if (!selectedKitId || !clientId || !trainerId) {
-      Alert.alert("Erro", "Selecione um kit antes de confirmar o pedido.");
+    if (cart.length === 0 || !clientId || !trainerId) {
+      Alert.alert("Erro", "Adicione itens ao carrinho antes de confirmar o pedido.");
       return;
     }
-
-    const selectedKit = kits.find((k) => k.id === selectedKitId);
-    if (!selectedKit) return;
 
     try {
       setSubmitting(true);
 
-      const totalAmount = selectedKit.default_price + (addonSelection ? addonSelection.unit_price : 0);
+      const totalAmount = cart.reduce((sum, item) => {
+        if (item.type === 'kit') return sum + (item.kit_price || 0);
+        return sum + (item.supplement_price || 0);
+      }, 0);
 
       const { data: orderData, error: orderError } = await supabase
         .from("evs_orders")
@@ -227,53 +268,58 @@ export default function PedidoEVS() {
 
       const orderId = orderData.id;
 
-      const { error: orderItemError } = await supabase.from("evs_order_items").insert({
-        order_id: orderId,
-        kit_id: selectedKitId,
-        kit_name: selectedKit.name,
-        quantity: 1,
-        unit_price: selectedKit.default_price,
-      }).select("id").single();
+      for (const cartItem of cart) {
+        if (cartItem.type === 'kit' && cartItem.kit_id) {
+          const { data: orderItemData, error: orderItemError } = await supabase
+            .from("evs_order_items")
+            .insert({
+              order_id: orderId,
+              kit_id: cartItem.kit_id,
+              kit_name: cartItem.kit_name,
+              quantity: 1,
+              unit_price: cartItem.kit_price,
+            })
+            .select("id")
+            .single();
 
-      if (orderItemError) throw orderItemError;
+          if (orderItemError) throw orderItemError;
 
-      const { data: orderItemData } = await supabase
-        .from("evs_order_items")
-        .select("id")
-        .eq("order_id", orderId)
-        .eq("kit_id", selectedKitId)
-        .single();
+          const orderItemId = orderItemData.id;
+          const kit = kits.find((k) => k.id === cartItem.kit_id);
+          if (!kit) continue;
 
-      if (orderItemData) {
-        const orderItemId = orderItemData.id;
+          for (const [kitItemId, chosenSupplementId] of Object.entries(cartItem.flavor_selections || {})) {
+            const kitItem = kit.items.find((i) => i.id === kitItemId);
+            if (!kitItem) continue;
 
-        for (const [kitItemId, chosenSupplementId] of Object.entries(flavorSelections)) {
-          const kitItem = selectedKit.items.find((i) => i.id === kitItemId);
-          if (!kitItem) continue;
+            await supabase.from("evs_order_item_flavors").insert({
+              order_item_id: orderItemId,
+              kit_item_id: kitItemId,
+              flavor_group: kitItem.flavor_group,
+              chosen_supplement_id: chosenSupplementId,
+            });
+          }
+        } else if (cartItem.type === 'standalone' && cartItem.supplement_id) {
+          const { error: orderItemError } = await supabase
+            .from("evs_order_items")
+            .insert({
+              order_id: orderId,
+              supplement_id: cartItem.supplement_id,
+              kit_id: null,
+              kit_name: cartItem.supplement_name,
+              quantity: 1,
+              unit_price: cartItem.supplement_price,
+            });
 
-          await supabase.from("evs_order_item_flavors").insert({
-            order_item_id: orderItemId,
-            kit_item_id: kitItemId,
-            flavor_group: kitItem.flavor_group,
-            chosen_supplement_id: chosenSupplementId,
-          });
-        }
-
-        if (addonSelection) {
-          await supabase.from("evs_order_item_addons").insert({
-            order_item_id: orderItemId,
-            supplement_id: addonSelection.supplement_id,
-            quantity: 1,
-            unit_price: addonSelection.unit_price,
-          });
+          if (orderItemError) throw orderItemError;
         }
       }
 
       setSubmitting(false);
       Alert.alert("Pedido enviado!", "Aguarde a confirmação do pagamento no balcão.");
+      setCart([]);
       setSelectedKitId(null);
       setFlavorSelections({});
-      setAddonSelection(null);
     } catch (err: any) {
       setSubmitting(false);
       Alert.alert("Erro ao enviar pedido", err.message || "Erro desconhecido.");
@@ -292,15 +338,53 @@ export default function PedidoEVS() {
 
   const selectedKit = kits.find((k) => k.id === selectedKitId);
 
+  const totalCartAmount = cart.reduce((sum, item) => {
+    if (item.type === 'kit') return sum + (item.kit_price || 0);
+    return sum + (item.supplement_price || 0);
+  }, 0);
+
+  const groupedStandalone = standaloneProducts.reduce((acc, product) => {
+    const group = product.flavor_group || 'outros';
+    if (!acc[group]) acc[group] = [];
+    acc[group].push(product);
+    return acc;
+  }, {} as Record<string, StandaloneProduct[]>);
+
   return (
     <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={true}>
           <Text style={styles.pageTitle}>Fazer Pedido</Text>
-          <Text style={styles.pageSubtitle}>Escolha seu kit e personalize os sabores.</Text>
+          <Text style={styles.pageSubtitle}>Escolha seus produtos e confirme no final.</Text>
+
+          {cart.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>🛒 Carrinho ({cart.length} {cart.length === 1 ? 'item' : 'itens'})</Text>
+              {cart.map((item, idx) => (
+                <View key={idx} style={styles.cartItemCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cartItemName}>
+                      {item.type === 'kit' ? item.kit_name : item.supplement_name}
+                      {item.type === 'standalone' && item.chosen_flavor_name ? ` (${item.chosen_flavor_name})` : ''}
+                    </Text>
+                    <Text style={styles.cartItemPrice}>
+                      R$ {((item.type === 'kit' ? item.kit_price : item.supplement_price) || 0).toFixed(2).replace(".", ",")}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={() => handleRemoveFromCart(idx)} activeOpacity={0.7}>
+                    <Text style={styles.removeCartItem}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <View style={styles.cartTotal}>
+                <Text style={styles.cartTotalLabel}>Total:</Text>
+                <Text style={styles.cartTotalValue}>R$ {totalCartAmount.toFixed(2).replace(".", ",")}</Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Selecione um Kit</Text>
+            <Text style={styles.sectionTitle}>Kits</Text>
             {kits.map((kit) => (
               <TouchableOpacity
                 key={kit.id}
@@ -352,52 +436,52 @@ export default function PedidoEVS() {
           )}
 
           {selectedKit && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Adicionais (Opcional)</Text>
-              {addonSelection ? (
-                <View style={styles.addonCard}>
-                  <Text style={styles.addonName}>{addonSelection.name}</Text>
-                  <View style={styles.flavorChips}>
-                    {addonFlavorOptions.map((option) => (
-                      <TouchableOpacity
-                        key={option.id}
-                        style={[
-                          styles.flavorChip,
-                          addonSelection.flavor_id === option.id && styles.flavorChipActive,
-                        ]}
-                        onPress={() =>
-                          setAddonSelection({
-                            ...addonSelection,
-                            flavor_id: option.id,
-                            flavor_name: option.name,
-                          })
-                        }
-                        activeOpacity={0.7}
-                      >
-                        <Text
-                          style={[
-                            styles.flavorChipText,
-                            addonSelection.flavor_id === option.id && styles.flavorChipTextActive,
-                          ]}
-                        >
-                          {option.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <TouchableOpacity onPress={() => setAddonSelection(null)}>
-                    <Text style={styles.removeAddon}>Remover</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.addAddonButton} onPress={handleAddAddon} activeOpacity={0.8}>
-                  <Text style={styles.addAddonText}>+ Adicionar Fibra Concentrada</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <TouchableOpacity
+              style={styles.addToCartButton}
+              onPress={handleAddKitToCart}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.addToCartText}>Adicionar ao Carrinho</Text>
+            </TouchableOpacity>
           )}
 
-          {selectedKit && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Produtos Avulsos</Text>
+            {Object.entries(groupedStandalone).map(([group, products]) => {
+              const isExpanded = expandedFlavorGroup === group;
+              return (
+                <View key={group} style={styles.standaloneGroup}>
+                  <TouchableOpacity
+                    style={styles.standaloneHeader}
+                    onPress={() => setExpandedFlavorGroup(isExpanded ? null : group)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.standaloneGroupName}>{group.replace(/_/g, ' ').toUpperCase()}</Text>
+                    <Text style={styles.standaloneToggle}>{isExpanded ? '▼' : '▶'}</Text>
+                  </TouchableOpacity>
+                  {isExpanded && (
+                    <View style={styles.flavorChips}>
+                      {products.map((product) => (
+                        <TouchableOpacity
+                          key={product.supplement_id}
+                          style={styles.flavorChip}
+                          onPress={() => handleAddStandaloneToCart(product, product.supplement_id, product.name)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.flavorChipText}>{product.name}</Text>
+                          <Text style={[styles.flavorChipText, { fontSize: 11, marginTop: 2 }]}>
+                            R$ {product.price_venda.toFixed(2).replace(".", ",")}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
+          {cart.length > 0 && (
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={handleConfirmOrder}
@@ -562,6 +646,85 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 14,
     fontWeight: "700",
+    color: T.t3,
+  },
+  cartItemCard: {
+    backgroundColor: T.card,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cartItemName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: T.t1,
+    marginBottom: 4,
+  },
+  cartItemPrice: {
+    fontSize: 13,
+    color: T.t2,
+  },
+  removeCartItem: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: T.red,
+    paddingHorizontal: 8,
+  },
+  cartTotal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: T.border,
+  },
+  cartTotalLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: T.t1,
+  },
+  cartTotalValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: T.blue,
+  },
+  addToCartButton: {
+    backgroundColor: T.blue,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  addToCartText: {
+    color: T.white,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  standaloneGroup: {
+    marginBottom: 12,
+  },
+  standaloneHeader: {
+    backgroundColor: T.surfaceAlt,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  standaloneGroupName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: T.t1,
+  },
+  standaloneToggle: {
+    fontSize: 14,
     color: T.t3,
   },
 });

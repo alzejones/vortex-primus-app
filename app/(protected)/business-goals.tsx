@@ -23,7 +23,7 @@ const TABS: { key: Tab; label: string; icon: string; action?: () => void }[] = [
 ];
 
 const ACTION_TABS: { label: string; icon: string; action: () => void }[] = [
-  { label: 'Atendente', icon: '🧾', action: () => router.push('/evs-atendente' as any) },
+  { label: 'EVS', icon: '🧾', action: () => router.push('/evs-atendente' as any) },
 ];
 
 export default function BusinessGoalsContainer() {
@@ -112,8 +112,8 @@ export default function BusinessGoalsContainer() {
 const styles = StyleSheet.create({
   header:        { padding: 16, paddingBottom: 8 },
   pageLabel:     { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 8 },
-  tabsRow:       { flexDirection: 'row', backgroundColor: T.card, borderRadius: 12, padding: 4, gap: 4 },
-  tabBtn:        { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
+  tabsRow:       { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: T.card, borderRadius: 12, padding: 4, gap: 4 },
+  tabBtn:        { minWidth: 80, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
   tabBtnActive:  { backgroundColor: T.blue },
   tabTxt:        { fontSize: 12, fontWeight: '700', color: T.t2 },
   tabTxtActive:  { color: '#fff' },
