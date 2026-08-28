@@ -3,7 +3,6 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   ScrollView,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { notify } from "../../components/business/SaleFormModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
@@ -106,7 +106,7 @@ export default function PedidoEVS() {
         .maybeSingle();
 
       if (clientError || !clientData) {
-        Alert.alert("Erro", "Cliente não encontrado.");
+        notify("Erro", "Cliente não encontrado.");
         setLoading(false);
         return;
       }
@@ -163,7 +163,7 @@ export default function PedidoEVS() {
 
       setLoading(false);
     } catch (err: any) {
-      Alert.alert("Erro ao carregar dados", err.message || "Erro desconhecido.");
+      notify("Erro ao carregar dados", err.message || "Erro desconhecido.");
       setLoading(false);
     }
   }
@@ -241,7 +241,7 @@ export default function PedidoEVS() {
 
   const handleConfirmOrder = async () => {
     if (cart.length === 0 || !clientId || !trainerId) {
-      Alert.alert("Erro", "Adicione itens ao carrinho antes de confirmar o pedido.");
+      notify("Erro", "Adicione itens ao carrinho antes de confirmar o pedido.");
       return;
     }
 
@@ -316,13 +316,13 @@ export default function PedidoEVS() {
       }
 
       setSubmitting(false);
-      Alert.alert("Pedido enviado!", "Aguarde a confirmação do pagamento no balcão.");
+      notify("Pedido enviado!", "Aguarde a confirmação do pagamento no balcão.");
       setCart([]);
       setSelectedKitId(null);
       setFlavorSelections({});
     } catch (err: any) {
       setSubmitting(false);
-      Alert.alert("Erro ao enviar pedido", err.message || "Erro desconhecido.");
+      notify("Erro ao enviar pedido", err.message || "Erro desconhecido.");
     }
   };
 
