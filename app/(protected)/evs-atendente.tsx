@@ -15,7 +15,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { T } from "../../utils/theme";
-import { calculateKitCostWithChoices, PricingData, KitItemData, DiscountLevel, trainerUnitCost } from "../../utils/kitCostCalculator";
+import { PricingData, KitItemData, DiscountLevel, trainerUnitCost } from "../../utils/kitCostCalculator";
 import { todayBR } from "../../utils/dateBR";
 
 interface EVSOrder {
@@ -239,22 +239,6 @@ export default function EVSAtendente() {
       const saleItems: any[] = [];
 
       for (const item of order.items) {
-        const chosenSupplements: { [key: string]: string } = {};
-        for (const flavor of item.flavors) {
-          chosenSupplements[flavor.kit_item_id] = flavor.chosen_supplement_id;
-        }
-
-        const { cost, pv } = calculateKitCostWithChoices(
-          item.kit_id,
-          kitItems,
-          pricing,
-          chosenSupplements,
-          trainerDiscountLevel
-        );
-
-        totalCost += cost * item.quantity;
-        totalPV += pv * item.quantity;
-
         for (const flavor of item.flavors) {
           const flavorPricing = pricing.find((p) => p.supplement_id === flavor.chosen_supplement_id);
           if (!flavorPricing) continue;
@@ -268,6 +252,9 @@ export default function EVSAtendente() {
           const doses = flavorPricing.doses_per_package || 1;
           const unitCost = (trainerUnitCost(flavorPricing, trainerDiscountLevel) / doses) * dosesUsed;
           const unitPV = (flavorPricing.pv / doses) * dosesUsed;
+
+          totalCost += unitCost * item.quantity;
+          totalPV += unitPV * item.quantity;
 
           saleItems.push({
             kit_id: item.kit_id,
