@@ -332,6 +332,17 @@ export default function ClientDietView() {
         </TouchableOpacity>
       </View>
 
+      {/* Botão Fazer Pedido */}
+      <TouchableOpacity
+        style={styles.orderBtn}
+        onPress={() => router.push("/pedido" as any)}
+        activeOpacity={0.85}
+      >
+        <LinearGradient {...GradientSuccess} style={styles.orderBtnGradient}>
+          <Text style={styles.orderBtnText}>🥤 Fazer Pedido</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
       {/* Mensagem de status */}
       {statusMsg.text !== "" && (
         <View style={[styles.statusBox, statusMsg.type === "error" ? styles.statusError : styles.statusSuccess]}>
@@ -635,6 +646,10 @@ const styles = StyleSheet.create({
   name: { fontSize: 26, fontWeight: "800", color: T.t1 },
   logoutBtn: { backgroundColor: T.surfaceAlt, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: T.border },
   logoutText: { fontWeight: "700", color: T.t2, fontSize: 13 },
+
+  orderBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
+  orderBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
+  orderBtnText: { color: T.white, fontWeight: "800", fontSize: 16 },
 
   statusBox: { padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1 },
   statusError: { backgroundColor: "rgba(239,68,68,0.1)", borderColor: T.red },

@@ -1,9 +1,10 @@
 // ============================================================
 // business-goals.tsx — Container "Negócio"
-// Abas: Metas | Vendas | Relatórios (Herbalife)
+// Abas: Metas | Vendas | Relatórios (Herbalife) | Atendente (EVS)
 // ============================================================
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
 import { T } from '../../utils/theme';
 import { FeatureGate } from '../../components/FeatureGate';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
@@ -14,11 +15,15 @@ import ResetHubContent from '../../components/business/ResetHubContent';
 
 type Tab = 'metas' | 'vendas' | 'relatorios' | 'reset';
 
-const TABS: { key: Tab; label: string; icon: string }[] = [
+const TABS: { key: Tab; label: string; icon: string; action?: () => void }[] = [
   { key: 'metas',      label: 'Metas',      icon: '🎯' },
   { key: 'vendas',     label: 'Vendas',     icon: '💰' },
   { key: 'relatorios', label: 'Relatórios', icon: '📊' },
   { key: 'reset',      label: 'Reset',      icon: '🔄' },
+];
+
+const ACTION_TABS: { label: string; icon: string; action: () => void }[] = [
+  { label: 'Atendente', icon: '🧾', action: () => router.push('/evs-atendente' as any) },
 ];
 
 export default function BusinessGoalsContainer() {
@@ -42,6 +47,17 @@ export default function BusinessGoalsContainer() {
               onPress={() => setTab(t.key)}
             >
               <Text style={[styles.tabTxt, tab === t.key && styles.tabTxtActive]}>
+                {t.icon} {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          {ACTION_TABS.map((t, idx) => (
+            <TouchableOpacity
+              key={`action-${idx}`}
+              style={styles.tabBtn}
+              onPress={t.action}
+            >
+              <Text style={styles.tabTxt}>
                 {t.icon} {t.label}
               </Text>
             </TouchableOpacity>
