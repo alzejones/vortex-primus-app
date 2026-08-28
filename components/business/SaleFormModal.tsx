@@ -225,6 +225,12 @@ export default function SaleFormModal({
     setPickerOpen(null);
   }
 
+  function flavorLabel(item: CartItem): string {
+    if (!item.flavorChoices || Object.keys(item.flavorChoices).length === 0) return '';
+    const names = Object.values(item.flavorChoices).map((suppId) => pricing.find((p) => p.supplement_id === suppId)?.name).filter(Boolean);
+    return names.length > 0 ? ` (${names.join(', ')})` : '';
+  }
+
   function pickProduct(p: Pricing) {
     const existing = cart.find((item) => item.itemType === 'produto' && item.id === p.supplement_id);
     if (existing) {
@@ -870,7 +876,7 @@ export default function SaleFormModal({
               {cart.map((item, index) => (
                 <View key={index} style={s.cartItem}>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.cartItemName}>{item.name}</Text>
+                    <Text style={s.cartItemName}>{item.name}{flavorLabel(item)}</Text>
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
                       <View style={{ flex: 1 }}>
                         <Text style={s.cartLabel}>Qtd</Text>
