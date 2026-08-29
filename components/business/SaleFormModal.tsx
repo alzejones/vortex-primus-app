@@ -605,28 +605,26 @@ export default function SaleFormModal({
               if (kitErr || !kitFull) continue;
 
               if (kitFull.redemption_credits_granted && kitFull.redemption_credits_granted > 0) {
-                try {
-                  await supabase.rpc('adjust_redemption_balance', {
-                    p_client_id: selClient.id,
-                    p_delta: kitFull.redemption_credits_granted * cartItem.quantity,
-                    p_reason: 'cartela_compra',
-                    p_sale_id: sale.id,
-                  });
-                } catch (e: any) {
-                  notify('Atenção', e.message || 'Erro ao creditar fichas de resgate');
+                const { error: creditErr } = await supabase.rpc('adjust_redemption_balance', {
+                  p_client_id: selClient.id,
+                  p_delta: kitFull.redemption_credits_granted * cartItem.quantity,
+                  p_reason: 'cartela_compra',
+                  p_sale_id: sale.id,
+                });
+                if (creditErr) {
+                  notify('Atenção', creditErr.message || 'Erro ao creditar fichas de resgate');
                 }
               }
 
               if (kitFull.is_redemption_only === true) {
-                try {
-                  await supabase.rpc('adjust_redemption_balance', {
-                    p_client_id: selClient.id,
-                    p_delta: -1 * cartItem.quantity,
-                    p_reason: 'resgate_kit_acesso',
-                    p_sale_id: sale.id,
-                  });
-                } catch (e: any) {
-                  notify('Atenção', e.message || 'Erro ao debitar fichas de resgate');
+                const { error: debitErr } = await supabase.rpc('adjust_redemption_balance', {
+                  p_client_id: selClient.id,
+                  p_delta: -1 * cartItem.quantity,
+                  p_reason: 'resgate_kit_acesso',
+                  p_sale_id: sale.id,
+                });
+                if (debitErr) {
+                  notify('Atenção', debitErr.message || 'Erro ao debitar fichas de resgate');
                 }
               }
             }
