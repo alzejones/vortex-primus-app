@@ -16,6 +16,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
+  const [leadSource, setLeadSource] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const formatWhatsApp = (text: string) => {
@@ -30,6 +31,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
     setName("");
     setWhatsapp("");
     setEmail("");
+    setLeadSource(null);
   };
 
   const handleSave = async () => {
@@ -64,6 +66,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
           trainer_id: trainerId,
           client_status: "Visitante EVS",
           is_active: true,
+          lead_source: leadSource,
         })
         .select("id")
         .single();
@@ -165,6 +168,64 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
             editable={!saving}
           />
 
+          <Text style={styles.label}>Como ficou sabendo? (opcional)</Text>
+          <View style={styles.chipsContainer}>
+            <TouchableOpacity
+              style={[styles.chip, leadSource === "indicacao" && styles.chipActive]}
+              onPress={() => setLeadSource(leadSource === "indicacao" ? null : "indicacao")}
+              disabled={saving}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, leadSource === "indicacao" && styles.chipTextActive]}>
+                📢 Indicação
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.chip, leadSource === "redes_sociais" && styles.chipActive]}
+              onPress={() => setLeadSource(leadSource === "redes_sociais" ? null : "redes_sociais")}
+              disabled={saving}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, leadSource === "redes_sociais" && styles.chipTextActive]}>
+                📱 Redes Sociais
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.chip, leadSource === "google_maps" && styles.chipActive]}
+              onPress={() => setLeadSource(leadSource === "google_maps" ? null : "google_maps")}
+              disabled={saving}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, leadSource === "google_maps" && styles.chipTextActive]}>
+                🔍 Google Maps
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.chip, leadSource === "anuncio" && styles.chipActive]}
+              onPress={() => setLeadSource(leadSource === "anuncio" ? null : "anuncio")}
+              disabled={saving}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, leadSource === "anuncio" && styles.chipTextActive]}>
+                📰 Anúncio
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.chip, leadSource === "outro" && styles.chipActive]}
+              onPress={() => setLeadSource(leadSource === "outro" ? null : "outro")}
+              disabled={saving}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, leadSource === "outro" && styles.chipTextActive]}>
+                ➕ Outro
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.buttons}>
             <TouchableOpacity style={styles.cancelButton} onPress={handleClose} disabled={saving} activeOpacity={0.7}>
               <Text style={styles.cancelText}>Cancelar</Text>
@@ -230,6 +291,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: T.t1,
     marginBottom: 14,
+  },
+  chipsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 18,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: T.surfaceAlt,
+    borderWidth: 1,
+    borderColor: T.border,
+  },
+  chipActive: {
+    backgroundColor: T.blue,
+    borderColor: T.blue,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: T.t2,
+  },
+  chipTextActive: {
+    color: T.white,
   },
   buttons: {
     flexDirection: "row",
