@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
-  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -73,7 +72,6 @@ export default function EVSAtendente() {
   const [orders, setOrders] = useState<EVSOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<EVSOrder | null>(null);
   const [processingOrder, setProcessingOrder] = useState<string | null>(null);
-  const [showQRModal, setShowQRModal] = useState(false);
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   useEffect(() => {
@@ -605,15 +603,6 @@ export default function EVSAtendente() {
   return (
     <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 1200 : undefined }}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            style={styles.qrButton}
-            onPress={() => setShowQRModal(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.qrButtonText}>🖨️ QR Code do Menu</Text>
-          </TouchableOpacity>
-        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kanban}>
           <View style={styles.column}>
             <Text style={styles.columnTitle}>Aguardando Pagamento ({aguardandoPagamento.length})</Text>
@@ -648,26 +637,6 @@ export default function EVSAtendente() {
             />
           </View>
         </ScrollView>
-
-      {showQRModal && (
-        <Modal visible transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>QR Code do Menu EVS</Text>
-              <Image
-                source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent('https://vortex-primus.vercel.app/pedido')}` }}
-                style={{ width: 300, height: 300, alignSelf: 'center', marginVertical: 16 }}
-                resizeMode="contain"
-              />
-              <Text style={[styles.modalStatus, { textAlign: 'center', marginBottom: 8 }]}>Aponte a câmera pra fazer seu pedido</Text>
-              <Text style={[styles.modalStatus, { textAlign: 'center', marginBottom: 16 }]}>Imprima e deixe no balcão do EVS</Text>
-              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowQRModal(false)} activeOpacity={0.8}>
-                <Text style={styles.modalCloseText}>Fechar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
 
       {selectedOrder && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setSelectedOrder(null)}>
@@ -714,22 +683,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: T.bg,
-  },
-  headerRow: {
-    padding: 16,
-    paddingBottom: 0,
-  },
-  qrButton: {
-    backgroundColor: T.blue,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignSelf: 'flex-start',
-  },
-  qrButtonText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: T.white,
   },
   firstVisitBadge: {
     backgroundColor: T.green,
