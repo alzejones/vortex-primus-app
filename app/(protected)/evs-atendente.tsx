@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Dimensions,
   FlatList,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -26,6 +27,7 @@ interface EVSOrder {
   created_at: string;
   client_name: string;
   items: EVSOrderItem[];
+  isFirstVisit: boolean;
 }
 
 interface EVSOrderItem {
@@ -71,6 +73,7 @@ export default function EVSAtendente() {
   const [orders, setOrders] = useState<EVSOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<EVSOrder | null>(null);
   const [processingOrder, setProcessingOrder] = useState<string | null>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   useEffect(() => {
@@ -151,8 +154,23 @@ export default function EVSAtendente() {
           ...order,
           client_name: (order as any).clients?.name || "Cliente",
           items,
+          isFirstVisit: false,
         });
       }
+
+      const clientIds = [...new Set(ordersWithDetails.map(o => o.client_id))];
+      const { data: priorSalesData } = await supabase
+        .from('herbalife_sales')
+        .select('client_id')
+        .in('client_id', clientIds);
+      const priorSalesCount: Record<string, number> = {};
+      (priorSalesData || []).forEach((s: any) => {
+        priorSalesCount[s.client_id] = (priorSalesCount[s.client_id] || 0) + 1;
+      });
+
+      ordersWithDetails.forEach((order) => {
+        order.isFirstVisit = priorSalesCount[order.client_id] == null || priorSalesCount[order.client_id] === 0;
+      });
 
       setOrders(ordersWithDetails);
       setLoading(false);
@@ -495,7 +513,14 @@ export default function EVSAtendente() {
         onPress={() => setSelectedOrder(order)}
         activeOpacity={0.8}
       >
-        <Text style={styles.orderClient}>{order.client_name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 6 }}>
+          <Text style={styles.orderClient}>{order.client_name}</Text>
+          {order.isFirstVisit && (
+            <View style={styles.firstVisitBadge}>
+              <Text style={styles.firstVisitText}>🆕 1ª visita</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.orderTotal}>R$ {order.total_amount.toFixed(2).replace(".", ",")}</Text>
         <View style={styles.orderItems}>
           {order.items.map((item) => (
@@ -580,6 +605,15 @@ export default function EVSAtendente() {
   return (
     <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 1200 : undefined }}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity
+            style={styles.qrButton}
+            onPress={() => setShowQRModal(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.qrButtonText}>🖨️ QR Code do Menu</Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kanban}>
           <View style={styles.column}>
             <Text style={styles.columnTitle}>Aguardando Pagamento ({aguardandoPagamento.length})</Text>
@@ -614,7 +648,26 @@ export default function EVSAtendente() {
             />
           </View>
         </ScrollView>
-      </View>
+
+      {showQRModal && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setShowQRModal(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>QR Code do Menu EVS</Text>
+              <Image
+                source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent('https://vortex-primus.vercel.app/pedido')}` }}
+                style={{ width: 300, height: 300, alignSelf: 'center', marginVertical: 16 }}
+                resizeMode="contain"
+              />
+              <Text style={[styles.modalStatus, { textAlign: 'center', marginBottom: 8 }]}>Aponte a câmera pra fazer seu pedido</Text>
+              <Text style={[styles.modalStatus, { textAlign: 'center', marginBottom: 16 }]}>Imprima e deixe no balcão do EVS</Text>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={() => setShowQRModal(false)} activeOpacity={0.8}>
+                <Text style={styles.modalCloseText}>Fechar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {selectedOrder && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setSelectedOrder(null)}>
@@ -652,6 +705,7 @@ export default function EVSAtendente() {
           </View>
         </Modal>
       )}
+      </View>
     </View>
   );
 }
@@ -660,6 +714,33 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: T.bg,
+  },
+  headerRow: {
+    padding: 16,
+    paddingBottom: 0,
+  },
+  qrButton: {
+    backgroundColor: T.blue,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+  },
+  qrButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: T.white,
+  },
+  firstVisitBadge: {
+    backgroundColor: T.green,
+    borderRadius: 12,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  firstVisitText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: T.white,
   },
   kanban: {
     padding: 16,
@@ -692,7 +773,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: T.t1,
-    marginBottom: 4,
   },
   orderTotal: {
     fontSize: 14,
