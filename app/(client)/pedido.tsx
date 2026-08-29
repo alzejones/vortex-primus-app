@@ -91,6 +91,7 @@ export default function PedidoEVS() {
   const [standaloneProducts, setStandaloneProducts] = useState<StandaloneProduct[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [expandedFlavorGroup, setExpandedFlavorGroup] = useState<string | null>(null);
+  const [lastOrder, setLastOrder] = useState<any | null>(null);
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   const isDesktop = screenWidth >= 768;
@@ -162,6 +163,32 @@ export default function PedidoEVS() {
           flavor_group: item.supplements?.flavor_group || null,
         }));
         setStandaloneProducts(products);
+      }
+
+      const { data: lastOrderData, error: lastOrderError } = await supabase
+        .from("evs_orders")
+        .select(`
+          id,
+          evs_order_items(
+            id,
+            kit_id,
+            supplement_id,
+            kit_name,
+            unit_price,
+            evs_order_item_flavors(
+              kit_item_id,
+              chosen_supplement_id
+            )
+          )
+        `)
+        .eq("client_id", clientData.id)
+        .eq("status", "entregue")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!lastOrderError && lastOrderData) {
+        setLastOrder(lastOrderData);
       }
 
       setLoading(false);
@@ -239,6 +266,43 @@ export default function PedidoEVS() {
 
   const handleRemoveFromCart = (index: number) => {
     setCart((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRepeatLastOrder = () => {
+    if (!lastOrder || !lastOrder.evs_order_items) return;
+
+    const reconstructedCart: CartItem[] = [];
+
+    for (const item of lastOrder.evs_order_items) {
+      if (item.kit_id) {
+        const flavorSelections: FlavorSelections = {};
+        if (item.evs_order_item_flavors) {
+          for (const flavor of item.evs_order_item_flavors) {
+            flavorSelections[flavor.kit_item_id] = flavor.chosen_supplement_id;
+          }
+        }
+        reconstructedCart.push({
+          type: 'kit',
+          kit_id: item.kit_id,
+          kit_name: item.kit_name,
+          kit_price: item.unit_price,
+          flavor_selections: flavorSelections,
+        });
+      } else if (item.supplement_id) {
+        reconstructedCart.push({
+          type: 'standalone',
+          supplement_id: item.supplement_id,
+          supplement_name: item.kit_name,
+          supplement_price: item.unit_price,
+          flavor_group: null,
+          chosen_flavor_id: item.supplement_id,
+          chosen_flavor_name: item.kit_name,
+        });
+      }
+    }
+
+    setCart(reconstructedCart);
+    notify("Sucesso", "Itens do seu último pedido adicionados ao carrinho \u2014 confira e confirme.");
   };
 
 
@@ -359,6 +423,22 @@ export default function PedidoEVS() {
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={true}>
           <Text style={styles.pageTitle}>Fazer Pedido</Text>
           <Text style={styles.pageSubtitle}>Escolha seus produtos e confirme no final.</Text>
+
+          {lastOrder && lastOrder.evs_order_items && lastOrder.evs_order_items.length > 0 && (
+            <TouchableOpacity
+              style={styles.repeatOrderButton}
+              onPress={handleRepeatLastOrder}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.repeatOrderEmoji}>🔁</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.repeatOrderTitle}>Repetir Último Pedido</Text>
+                <Text style={styles.repeatOrderSubtitle}>
+                  {lastOrder.evs_order_items.map((item: any) => item.kit_name).join(" + ")}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
           {cart.length > 0 && (
             <View style={styles.section}>
@@ -671,6 +751,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: T.t3,
+  },
+  repeatOrderButton: {
+    backgroundColor: T.blue,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  repeatOrderEmoji: {
+    fontSize: 32,
+  },
+  repeatOrderTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: T.white,
+    marginBottom: 4,
+  },
+  repeatOrderSubtitle: {
+    fontSize: 13,
+    color: T.white,
+    opacity: 0.9,
   },
   cartItemCard: {
     backgroundColor: T.card,
