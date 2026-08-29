@@ -42,6 +42,7 @@ export interface Kit {
   is_access_kit: boolean;
   triggers_reset_protocol?: boolean;
   is_recipe: boolean;
+  redemption_credits_granted?: number;
 }
 export interface KitItem {
   kit_id: string;
@@ -174,6 +175,31 @@ export default function SaleFormModal({
   }
 
   async function pickKit(k: Kit) {
+    if (k.redemption_credits_granted && k.redemption_credits_granted > 0) {
+      const existing = cart.find((item) => 
+        item.itemType === 'kit' && 
+        item.id === k.id && 
+        JSON.stringify(item.flavorChoices || {}) === JSON.stringify({})
+      );
+      if (existing) {
+        setCart(cart.map((item) =>
+          item.itemType === 'kit' && item.id === k.id && JSON.stringify(item.flavorChoices || {}) === JSON.stringify({})
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        ));
+      } else {
+        setCart([...cart, {
+          itemType: 'kit',
+          id: k.id,
+          name: k.name,
+          quantity: 1,
+          unitPrice: k.default_price,
+        }]);
+      }
+      setPickerOpen(null);
+      return;
+    }
+
     const itemsWithFlavorChoice = kitItems.filter((ki) => ki.kit_id === k.id && ki.is_flavor_choice);
     
     if (itemsWithFlavorChoice.length > 0) {
