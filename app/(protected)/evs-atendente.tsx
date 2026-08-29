@@ -273,9 +273,11 @@ export default function EVSAtendente() {
             const addonPricing = pricing.find((p) => p.supplement_id === addon.supplement_id);
             if (!addonPricing) continue;
 
-            const unitCost = trainerUnitCost(addonPricing, trainerDiscountLevel);
+            const doses = addonPricing.doses_per_package || 1;
+            const unitCost = trainerUnitCost(addonPricing, trainerDiscountLevel) / doses;
+            const unitPV = addonPricing.pv / doses;
             totalCost += unitCost * addon.quantity;
-            totalPV += addonPricing.pv * addon.quantity;
+            totalPV += unitPV * addon.quantity;
 
             saleItems.push({
               kit_id: null,
@@ -283,7 +285,7 @@ export default function EVSAtendente() {
               quantity: addon.quantity,
               unit_charged: addon.unit_price,
               unit_cost: unitCost,
-              pv: addonPricing.pv,
+              pv: unitPV,
               kit_name: null,
             });
           }
