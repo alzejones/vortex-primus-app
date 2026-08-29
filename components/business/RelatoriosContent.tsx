@@ -187,6 +187,7 @@ export default function RelatoriosContent() {
           indicacoes: existing?.indicacoes || 0,
           acessos: existing?.acessos || 0,
           ganhos: existing?.ganhos || 0,
+          pv: existing?.pv || 0,
           apresentacoes: prospectsMap.get(current) || 0,
           resets: resetsMap.get(current) || 0,
         });
@@ -381,6 +382,7 @@ export default function RelatoriosContent() {
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
+                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
                 <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
               </View>
             )}
@@ -394,6 +396,7 @@ export default function RelatoriosContent() {
               <Text style={s.hCell}>Rep</Text>
               <Text style={s.hCell}>Ind</Text>
               <Text style={s.hCell}>Aces</Text>
+              <Text style={s.hCell}>PV</Text>
               <Text style={[s.hCell, { flex: 1.2 }]}>Ganhos</Text>
             </View>
             {daily.map((r) => (
@@ -406,6 +409,7 @@ export default function RelatoriosContent() {
                 <Text style={s.cell}>{r.repetidores}</Text>
                 <Text style={s.cell}>{r.indicacoes}</Text>
                 <Text style={s.cell}>{r.acessos}</Text>
+                <Text style={[s.cell, { flex: 1 }]}>{Number(r.pv).toFixed(2)}</Text>
                 <Text style={[s.cell, { flex: 1.2, color: '#4ADE80' }]}>{brl(r.ganhos)}</Text>
               </View>
             ))}
