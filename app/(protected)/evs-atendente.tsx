@@ -207,14 +207,19 @@ export default function EVSAtendente() {
       const kitIds = order.items.filter((i) => i.kit_id).map((i) => i.kit_id!);
       const { data: kitsData, error: kitsError } = await supabase
         .from('herbalife_kits')
-        .select('id, is_redemption_only, redemption_credits_granted')
+        .select('id, is_redemption_only, redemption_credits_granted, is_access_kit, triggers_reset_protocol')
         .in('id', kitIds);
 
       if (kitsError) throw kitsError;
 
+      const kitsMap: Record<string, any> = {};
+      (kitsData || []).forEach((k: any) => {
+        kitsMap[k.id] = k;
+      });
+
       for (const item of order.items) {
         if (!item.kit_id) continue;
-        const kit = (kitsData || []).find((k: any) => k.id === item.kit_id);
+        const kit = kitsMap[item.kit_id];
         if (!kit) continue;
 
         if (kit.redemption_credits_granted && kit.redemption_credits_granted > 0) {
@@ -353,13 +358,38 @@ export default function EVSAtendente() {
         }
       }
 
+      const hasKits = order.items.some((item) => item.kit_id != null);
+      const hasProdutos = order.items.some((item) => item.kit_id == null && item.supplement_id != null);
+      const hasAccessKit = order.items.some((item) => item.kit_id && kitsMap[item.kit_id]?.is_access_kit === true);
+      const hasOnlyAccessKits = hasKits && order.items.every((item) => item.kit_id == null || kitsMap[item.kit_id]?.is_access_kit === true);
+      const hasResetKit = order.items.some((item) => item.kit_id && kitsMap[item.kit_id]?.triggers_reset_protocol === true);
+
+      const saleType = hasAccessKit && hasOnlyAccessKits && !hasProdutos
+        ? 'acesso'
+        : hasAccessKit
+        ? 'misto'
+        : 'produto_fechado';
+
+      const { count: priorCount } = await supabase
+        .from('herbalife_sales')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', order.client_id);
+
+      let clientStatus: 'novo' | 'repetidor' | null = null;
+      if ((priorCount ?? 0) === 0) {
+        clientStatus = 'novo';
+      } else if (!hasAccessKit && !hasResetKit) {
+        clientStatus = 'repetidor';
+      }
+
       const { data: saleData, error: saleError } = await supabase
         .from("herbalife_sales")
         .insert({
           trainer_id: trainerId,
           client_id: order.client_id,
           sale_date: todayBR(),
-          sale_type: "acesso",
+          sale_type: saleType,
+          client_status: clientStatus,
           origin: "evs_autoatendimento",
           total_charged: order.total_amount,
           total_cost: totalCost,
