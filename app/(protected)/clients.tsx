@@ -16,6 +16,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { EVSQuickRegisterModal } from "../../components/EVSQuickRegisterModal";
 
 export default function Clients() {
   const insets = useSafeAreaInsets();
@@ -39,6 +40,7 @@ export default function Clients() {
   const [totalClients, setTotalClients] = useState<number>(0);
   const [sortField, setSortField] = useState<'name' | 'data_cadastro_efetiva'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showEVSModal, setShowEVSModal] = useState(false);
 
   async function loadTrainer() {
     if (!session?.user?.id) return;
@@ -157,15 +159,25 @@ export default function Clients() {
     <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <View style={[styles.container, isDesktop && { paddingHorizontal: 32, paddingVertical: 32 }]}>
-          <TouchableOpacity
-            style={styles.newButton}
-            onPress={() => router.push("/(protected)/client-create")}
-            activeOpacity={0.85}
-          >
-            <LinearGradient {...GradientPrimary} style={styles.newButtonGradient}>
-              <Text style={styles.newButtonText}>+ Novo Cliente</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.newButton}
+              onPress={() => router.push("/(protected)/client-create")}
+              activeOpacity={0.85}
+            >
+              <LinearGradient {...GradientPrimary} style={styles.newButtonGradient}>
+                <Text style={styles.newButtonText}>+ Novo Cliente</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.evsButton}
+              onPress={() => setShowEVSModal(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.evsButtonText}>⚡ EVS</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.totalContainer}>
             <Text style={styles.totalText}>
@@ -280,6 +292,13 @@ export default function Clients() {
           />
         </View>
       </View>
+
+      <EVSQuickRegisterModal
+        visible={showEVSModal}
+        trainerId={trainerId ?? ""}
+        onClose={() => setShowEVSModal(false)}
+        onSuccess={() => trainerId && fetchClients(trainerId)}
+      />
     </View>
   );
 }
@@ -287,7 +306,16 @@ export default function Clients() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20 },
 
-  newButton: { borderRadius: 14, overflow: "hidden", marginBottom: 20 },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+  newButton: {
+    flex: 1,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
   newButtonGradient: {
     paddingVertical: 14,
     alignItems: "center",
@@ -295,6 +323,19 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   newButtonText: { color: T.white, fontWeight: "800", fontSize: 15 },
+  evsButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 14,
+    backgroundColor: T.purple,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  evsButtonText: {
+    color: T.white,
+    fontWeight: "800",
+    fontSize: 15,
+  },
 
   totalContainer: {
     marginBottom: 12,

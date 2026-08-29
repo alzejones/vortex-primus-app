@@ -47,29 +47,12 @@ export default function SetPassword() {
   const confirmRef = useRef<TextInput>(null);
   const { refreshRole } = useAuth();
 
-  const params = useLocalSearchParams<{ token_hash?: string; type?: string }>();
+  const params = useLocalSearchParams<{ token_hash?: string; type?: string; next?: string }>();
 
-  // Helper para vincular user_id com retry automático
   async function linkClientToUser(userId: string, clientId: string): Promise<boolean> {
-    // Primeira tentativa
-    let { error } = await supabase
-      .from('clients')
-      .update({ user_id: userId })
-      .eq('id', clientId)
-      .is('user_id', null);
-
-    // Segunda tentativa se falhar
-    if (error) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const retry = await supabase
-        .from('clients')
-        .update({ user_id: userId })
-        .eq('id', clientId)
-        .is('user_id', null);
-      error = retry.error;
-    }
-
-    return !error;
+    const { data, error } = await supabase.rpc('link_client_to_auth_user', { p_client_id: clientId });
+    if (error) return false;
+    return data === true;
   }
 
   useEffect(() => {
@@ -200,8 +183,12 @@ export default function SetPassword() {
         setIsSuccess(true);
         setMessage("Senha definida com sucesso! Entrando...");
         await refreshRole();
+        
+        const nextPath = Array.isArray(params.next) ? params.next[0] : params.next;
+        const destination = nextPath || "/(client)/diet";
+        
         setTimeout(() => {
-          router.replace("/(client)/diet" as any);
+          router.replace(destination as any);
         }, 1200);
       } else {
         setMessage("Não foi possível vincular sua conta. Tente novamente ou fale com seu treinador.");
