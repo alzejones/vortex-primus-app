@@ -385,17 +385,30 @@ export default function PedidoEVS() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Kits</Text>
-            {kits.map((kit) => (
-              <TouchableOpacity
-                key={kit.id}
-                style={[styles.kitCard, selectedKitId === kit.id && styles.kitCardSelected]}
-                onPress={() => handleKitSelect(kit)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.kitName}>{kit.name}</Text>
-                <Text style={styles.kitPrice}>R$ {kit.default_price.toFixed(2).replace(".", ",")}</Text>
-              </TouchableOpacity>
-            ))}
+            {selectedKitId === null ? (
+              kits.map((kit) => (
+                <TouchableOpacity
+                  key={kit.id}
+                  style={styles.kitCard}
+                  onPress={() => handleKitSelect(kit)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.kitName}>{kit.name}</Text>
+                  <Text style={styles.kitPrice}>R$ {kit.default_price.toFixed(2).replace(".", ",")}</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              selectedKit && (
+                <TouchableOpacity
+                  style={[styles.kitCard, styles.kitCardSelected]}
+                  onPress={() => handleKitSelect(selectedKit)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.kitName}>{selectedKit.name}</Text>
+                  <Text style={styles.kitPrice}>R$ {selectedKit.default_price.toFixed(2).replace(".", ",")}</Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
 
           {selectedKit && selectedKit.items.filter((i) => i.is_flavor_choice).length > 0 && (
