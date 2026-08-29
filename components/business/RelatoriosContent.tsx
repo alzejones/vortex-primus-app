@@ -382,22 +382,22 @@ export default function RelatoriosContent() {
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
                 <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
-                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
-                <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
+                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
+                <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80', textAlign: 'right' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
               </View>
             )}
 
             <View style={s.headRow}>
-              <Text style={[s.hCell, { flex: 0.5 }]}>Dia</Text>
-              <Text style={s.hCell}>Contato</Text>
-              <Text style={s.hCell}>Apres</Text>
-              <Text style={s.hCell}>Reset</Text>
-              <Text style={s.hCell}>Nov</Text>
-              <Text style={s.hCell}>Rep</Text>
-              <Text style={s.hCell}>Ind</Text>
-              <Text style={s.hCell}>Aces</Text>
-              <Text style={s.hCell}>PV</Text>
-              <Text style={[s.hCell, { flex: 1.2 }]}>Ganhos</Text>
+              <Text style={[s.hCell, { flex: 0.5 }]} numberOfLines={1}>Dia</Text>
+              <Text style={s.hCell} numberOfLines={1}>Contat</Text>
+              <Text style={s.hCell} numberOfLines={1}>Apres</Text>
+              <Text style={s.hCell} numberOfLines={1}>Reset</Text>
+              <Text style={s.hCell} numberOfLines={1}>Nov</Text>
+              <Text style={s.hCell} numberOfLines={1}>Rep</Text>
+              <Text style={s.hCell} numberOfLines={1}>Ind</Text>
+              <Text style={s.hCell} numberOfLines={1}>Aces</Text>
+              <Text style={s.hCell} numberOfLines={1}>PV</Text>
+              <Text style={[s.hCell, { flex: 1.2 }]} numberOfLines={1}>Ganhos</Text>
             </View>
             {daily.map((r) => (
               <View key={r.report_date} style={s.row}>
@@ -409,8 +409,8 @@ export default function RelatoriosContent() {
                 <Text style={s.cell}>{r.repetidores}</Text>
                 <Text style={s.cell}>{r.indicacoes}</Text>
                 <Text style={s.cell}>{r.acessos}</Text>
-                <Text style={[s.cell, { flex: 1 }]}>{Number(r.pv).toFixed(2)}</Text>
-                <Text style={[s.cell, { flex: 1.2, color: '#4ADE80' }]}>{brl(r.ganhos)}</Text>
+                <Text style={[s.cell, { flex: 1, textAlign: 'right' }]}>{Number(r.pv).toFixed(2)}</Text>
+                <Text style={[s.cell, { flex: 1.2, color: '#4ADE80', textAlign: 'right' }]}>{brl(r.ganhos)}</Text>
               </View>
             ))}
             {daily.length === 0 && <Text style={s.empty}>Sem dados neste mês.</Text>}
