@@ -590,6 +590,47 @@ export default function SaleFormModal({
           .insert(items.map((i) => ({ ...i, sale_id: sale.id })));
         if (itemsErr) throw itemsErr;
 
+        if (selClient) {
+          for (const cartItem of cart) {
+            if (cartItem.itemType === 'kit') {
+              const kit = kits.find((k) => k.id === cartItem.id);
+              if (!kit) continue;
+
+              const { data: kitFull, error: kitErr } = await supabase
+                .from('herbalife_kits')
+                .select('redemption_credits_granted, is_redemption_only')
+                .eq('id', kit.id)
+                .single();
+              
+              if (kitErr || !kitFull) continue;
+
+              if (kitFull.redemption_credits_granted && kitFull.redemption_credits_granted > 0) {
+                const { error: creditErr } = await supabase.rpc('adjust_redemption_balance', {
+                  p_client_id: selClient.id,
+                  p_delta: kitFull.redemption_credits_granted * cartItem.quantity,
+                  p_reason: 'cartela_compra',
+                  p_sale_id: sale.id,
+                });
+                if (creditErr) {
+                  notify('Atenção', creditErr.message || 'Erro ao creditar fichas de resgate');
+                }
+              }
+
+              if (kitFull.is_redemption_only === true) {
+                const { error: debitErr } = await supabase.rpc('adjust_redemption_balance', {
+                  p_client_id: selClient.id,
+                  p_delta: -1 * cartItem.quantity,
+                  p_reason: 'resgate_kit_acesso',
+                  p_sale_id: sale.id,
+                });
+                if (debitErr) {
+                  notify('Atenção', debitErr.message || 'Erro ao debitar fichas de resgate');
+                }
+              }
+            }
+          }
+        }
+
         let resolvedProspectId: string | null = selectedProspectId;
         if (!selClient && manualName.trim()) {
           const phone = manualPhone.trim() || null;

@@ -23,6 +23,8 @@ interface Kit {
   default_price: number;
   is_access_kit: boolean;
   is_recipe: boolean;
+  is_redemption_only: boolean;
+  redemption_credits_granted: number;
 }
 
 interface KitItem {
@@ -81,6 +83,7 @@ export default function PedidoEVS() {
   const [submitting, setSubmitting] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
   const [trainerId, setTrainerId] = useState<string | null>(null);
+  const [redemptionBalance, setRedemptionBalance] = useState(0);
   const [kits, setKits] = useState<KitWithItems[]>([]);
   const [selectedKitId, setSelectedKitId] = useState<string | null>(null);
   const [flavorSelections, setFlavorSelections] = useState<FlavorSelections>({});
@@ -101,7 +104,7 @@ export default function PedidoEVS() {
     try {
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
-        .select("id, trainer_id")
+        .select("id, trainer_id, redemption_balance")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
@@ -113,13 +116,13 @@ export default function PedidoEVS() {
 
       setClientId(clientData.id);
       setTrainerId(clientData.trainer_id);
+      setRedemptionBalance(clientData.redemption_balance || 0);
 
       const { data: kitsData, error: kitsError } = await supabase
         .from("herbalife_kits")
-        .select("id, name, default_price, is_access_kit, is_recipe")
-        .eq("trainer_id", clientData.trainer_id)
+        .select("id, name, default_price, is_access_kit, is_recipe, is_redemption_only, redemption_credits_granted")
         .eq("active", true)
-;
+        .or(`trainer_id.is.null,trainer_id.eq.${clientData.trainer_id}`);
 
       if (kitsError) throw kitsError;
 
@@ -383,22 +386,43 @@ export default function PedidoEVS() {
             </View>
           )}
 
+          {redemptionBalance > 0 && (
+            <View style={{ backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 14, marginBottom: 16 }}>
+              <Text style={{ fontSize: 14, fontWeight: "700", color: T.blue }}>
+                Você tem {redemptionBalance} {redemptionBalance === 1 ? 'ficha' : 'fichas'} de resgate {redemptionBalance === 1 ? 'disponível' : 'disponíveis'}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Kits</Text>
-            {kits.map((kit) => (
-              <TouchableOpacity
-                key={kit.id}
-                style={[styles.kitCard, selectedKitId === kit.id && styles.kitCardSelected]}
-                onPress={() => handleKitSelect(kit)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.kitName}>{kit.name}</Text>
-                <Text style={styles.kitPrice}>R$ {kit.default_price.toFixed(2).replace(".", ",")}</Text>
-              </TouchableOpacity>
-            ))}
+            {selectedKitId === null ? (
+              kits.filter((kit) => kit.is_redemption_only !== true || redemptionBalance > 0).map((kit) => (
+                <TouchableOpacity
+                  key={kit.id}
+                  style={styles.kitCard}
+                  onPress={() => handleKitSelect(kit)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.kitName}>{kit.name}</Text>
+                  <Text style={styles.kitPrice}>R$ {kit.default_price.toFixed(2).replace(".", ",")}</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              selectedKit && (
+                <TouchableOpacity
+                  style={[styles.kitCard, styles.kitCardSelected]}
+                  onPress={() => handleKitSelect(selectedKit)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.kitName}>{selectedKit.name}</Text>
+                  <Text style={styles.kitPrice}>R$ {selectedKit.default_price.toFixed(2).replace(".", ",")}</Text>
+                </TouchableOpacity>
+              )
+            )}
           </View>
 
-          {selectedKit && selectedKit.items.filter((i) => i.is_flavor_choice).length > 0 && (
+          {selectedKit && selectedKit.redemption_credits_granted === 0 && selectedKit.items.filter((i) => i.is_flavor_choice).length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Escolha os Sabores</Text>
               {selectedKit.items
