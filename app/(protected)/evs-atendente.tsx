@@ -204,6 +204,48 @@ export default function EVSAtendente() {
     try {
       setProcessingOrder(order.id);
 
+      const kitIds = order.items.filter((i) => i.kit_id).map((i) => i.kit_id!);
+      const { data: kitsData, error: kitsError } = await supabase
+        .from('herbalife_kits')
+        .select('id, is_redemption_only, redemption_credits_granted')
+        .in('id', kitIds);
+
+      if (kitsError) throw kitsError;
+
+      for (const item of order.items) {
+        if (!item.kit_id) continue;
+        const kit = (kitsData || []).find((k: any) => k.id === item.kit_id);
+        if (!kit) continue;
+
+        if (kit.redemption_credits_granted && kit.redemption_credits_granted > 0) {
+          const { error: creditErr } = await supabase.rpc('adjust_redemption_balance', {
+            p_client_id: order.client_id,
+            p_delta: kit.redemption_credits_granted * item.quantity,
+            p_reason: 'cartela_compra',
+            p_sale_id: null,
+          });
+          if (creditErr) {
+            setProcessingOrder(null);
+            notify('Erro', creditErr.message || 'Erro ao creditar fichas de resgate');
+            return;
+          }
+        }
+
+        if (kit.is_redemption_only === true) {
+          const { error: debitErr } = await supabase.rpc('adjust_redemption_balance', {
+            p_client_id: order.client_id,
+            p_delta: -1 * item.quantity,
+            p_reason: 'resgate_kit_acesso',
+            p_sale_id: null,
+          });
+          if (debitErr) {
+            setProcessingOrder(null);
+            notify('Erro', debitErr.message || 'Erro ao debitar fichas de resgate');
+            return;
+          }
+        }
+      }
+
       const { data: trainerData, error: trainerError } = await supabase
         .from("trainers")
         .select("herbalife_discount_level")
