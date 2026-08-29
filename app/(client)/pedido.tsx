@@ -422,7 +422,7 @@ export default function PedidoEVS() {
             )}
           </View>
 
-          {selectedKit && selectedKit.items.filter((i) => i.is_flavor_choice).length > 0 && (
+          {selectedKit && selectedKit.redemption_credits_granted === 0 && selectedKit.items.filter((i) => i.is_flavor_choice).length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Escolha os Sabores</Text>
               {selectedKit.items
