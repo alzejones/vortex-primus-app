@@ -869,7 +869,7 @@ function RelatoriosTab({
                     onPress={() => {
                       setSelectedMonth(monthKey);
                       setShowMonthPicker(false);
-                    })
+                    }}
                   >
                     <Text style={[styles.monthPickerItemText, selectedMonth === monthKey && styles.monthPickerItemTextActive]}>
                       {monthLabel}
