@@ -78,6 +78,7 @@ export interface SaleRow {
   client_phone_manual: string | null;
   client_status: string | null;
   sale_type: string;
+  origin?: string;
   total_charged: number;
   total_profit: number;
   total_pv: number;
@@ -132,6 +133,7 @@ export default function SaleFormModal({
   const [manualPhone, setManualPhone] = useState('');
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null);
   const [isIndicacao, setIsIndicacao] = useState(false);
+  const [isConsumoPessoal, setIsConsumoPessoal] = useState(false);
   const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | 'apresentacao' | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
@@ -462,6 +464,7 @@ export default function SaleFormModal({
           }
 
           setIsIndicacao(editingSale.client_status === 'indicacao');
+          setIsConsumoPessoal(editingSale.origin === 'consumo_pessoal');
         } catch (e) {
           console.error('Erro ao carregar venda para edição:', e);
         }
@@ -473,6 +476,7 @@ export default function SaleFormModal({
       setManualPhone(prefillManualEntry?.phone ? maskPhone(prefillManualEntry.phone) : '');
       setSelectedProspectId(prefillManualEntry?.prospectId || null);
       setIsIndicacao(false);
+      setIsConsumoPessoal(false);
     }
   }, [visible, editingSale, prefillClient, prefillManualEntry]);
 
@@ -512,7 +516,9 @@ export default function SaleFormModal({
         : 'produto_fechado';
 
       let status: 'novo' | 'indicacao' | 'repetidor' | null = null;
-      if (isIndicacao) {
+      if (isConsumoPessoal) {
+        status = null;
+      } else if (isIndicacao) {
         status = 'indicacao';
       } else {
         let priorCount = 0;
@@ -538,6 +544,10 @@ export default function SaleFormModal({
       let totalPv = 0;
       const items: any[] = [];
 
+      if (isConsumoPessoal) {
+        totalCharged = 0;
+      }
+
       for (const cartItem of cart) {
         if (cartItem.itemType === 'kit') {
           const kit = kits.find((k) => k.id === cartItem.id);
@@ -554,12 +564,14 @@ export default function SaleFormModal({
                 unit_cost: 0,
                 pv: 0,
                 line_qty: cartItem.quantity,
-                line_unit_charged: cartItem.unitPrice,
+                line_unit_charged: isConsumoPessoal ? 0 : cartItem.unitPrice,
               });
             }
           } else {
             const { cost, pv } = kitCost(kit);
-            totalCharged += cartItem.unitPrice * cartItem.quantity;
+            if (!isConsumoPessoal) {
+              totalCharged += cartItem.unitPrice * cartItem.quantity;
+            }
             totalCost += cost * cartItem.quantity;
             totalPv += pv * cartItem.quantity;
             for (const item of kitItems.filter((i) => i.kit_id === kit.id)) {
@@ -576,7 +588,7 @@ export default function SaleFormModal({
                 unit_cost: trainerUnitCost(p) / doses,
                 pv: (Number(p.pv) / doses) * Number(item.doses_used),
                 line_qty: cartItem.quantity,
-                line_unit_charged: cartItem.unitPrice,
+                line_unit_charged: isConsumoPessoal ? 0 : cartItem.unitPrice,
               });
             }
           }
@@ -584,18 +596,20 @@ export default function SaleFormModal({
           const product = pricing.find((p) => p.supplement_id === cartItem.id);
           if (!product) continue;
           const cost = trainerUnitCost(product);
-          totalCharged += cartItem.unitPrice * cartItem.quantity;
+          if (!isConsumoPessoal) {
+            totalCharged += cartItem.unitPrice * cartItem.quantity;
+          }
           totalCost += cost * cartItem.quantity;
           totalPv += Number(product.pv) * cartItem.quantity;
           items.push({
             supplement_id: product.supplement_id,
             kit_id: null,
             quantity: cartItem.quantity,
-            unit_charged: cartItem.unitPrice,
+            unit_charged: isConsumoPessoal ? 0 : cartItem.unitPrice,
             unit_cost: cost,
             pv: Number(product.pv),
             line_qty: cartItem.quantity,
-            line_unit_charged: cartItem.unitPrice,
+            line_unit_charged: isConsumoPessoal ? 0 : cartItem.unitPrice,
           });
         }
       }
@@ -605,12 +619,12 @@ export default function SaleFormModal({
           .from('herbalife_sales')
           .insert({
             trainer_id: trainerId,
-            client_id: selClient?.id ?? null,
-            client_name_manual: selClient ? null : manualName.trim(),
-            client_phone_manual: selClient ? null : (manualPhone.trim() || null),
+            client_id: isConsumoPessoal ? null : (selClient?.id ?? null),
+            client_name_manual: isConsumoPessoal ? 'Consumo Pessoal' : (selClient ? null : manualName.trim()),
+            client_phone_manual: isConsumoPessoal ? null : (selClient ? null : (manualPhone.trim() || null)),
             client_status: status,
             sale_type: saleType,
-            origin: 'manual',
+            origin: isConsumoPessoal ? 'consumo_pessoal' : 'manual',
             total_charged: Number(totalCharged.toFixed(2)),
             total_cost: Number(totalCost.toFixed(2)),
             total_pv: Number(totalPv.toFixed(2)),
@@ -692,7 +706,7 @@ export default function SaleFormModal({
         onSaved();
         onClose();
 
-        if (hasResetKit && selClient) {
+        if (hasResetKit && selClient && !isConsumoPessoal) {
           const { data: enrollment, error: enrollErr } = await supabase
             .from('reset_protocol_enrollments')
             .insert({
@@ -719,9 +733,9 @@ export default function SaleFormModal({
               enrollmentId: enrollment.id,
             });
           }
-        } else if (selClient && saleType === 'produto_fechado') {
+        } else if (selClient && saleType === 'produto_fechado' && !isConsumoPessoal) {
           setReassessTarget({ id: selClient.id, name: selClient.name });
-        } else if (!selClient && manualName.trim()) {
+        } else if (!selClient && manualName.trim() && !isConsumoPessoal) {
           let clientId: string | null = null;
           let clientName: string = manualName.trim();
 
@@ -794,9 +808,9 @@ export default function SaleFormModal({
         const { error: updateErr } = await supabase
           .from('herbalife_sales')
           .update({
-            client_id: selClient?.id ?? null,
-            client_name_manual: selClient ? null : manualName.trim(),
-            client_phone_manual: selClient ? null : (manualPhone.trim() || null),
+            client_id: isConsumoPessoal ? null : (selClient?.id ?? null),
+            client_name_manual: isConsumoPessoal ? 'Consumo Pessoal' : (selClient ? null : manualName.trim()),
+            client_phone_manual: isConsumoPessoal ? null : (selClient ? null : (manualPhone.trim() || null)),
             client_status: status,
             sale_type: saleType,
             total_charged: Number(totalCharged.toFixed(2)),
@@ -890,48 +904,64 @@ export default function SaleFormModal({
                 </View>
               ) : (
                 <>
-                  <TouchableOpacity style={s.selector} onPress={() => openPicker('cliente')}>
-                    <Text style={s.selectorTxt}>
-                      {selClient ? selClient.name : 'Cliente cadastrado (opcional)…'}
-                    </Text>
+                  <TouchableOpacity style={s.checkRow} onPress={() => {
+                    const newValue = !isConsumoPessoal;
+                    setIsConsumoPessoal(newValue);
+                    if (newValue) {
+                      setSelClient(null);
+                      setIsIndicacao(false);
+                    }
+                  }}>
+                    <View style={[s.checkbox, isConsumoPessoal && { backgroundColor: T.blue }]} />
+                    <Text style={s.checkTxt}>Consumo Pessoal</Text>
                   </TouchableOpacity>
-                  {!selClient && (
+
+                  {!isConsumoPessoal && (
                     <>
-                      <TextInput
-                        style={s.input}
-                        placeholder="Nome do Prospecto"
-                        placeholderTextColor="#777"
-                        value={manualName}
-                        onChangeText={(t) => {
-                          setManualName(t);
-                          setSelectedProspectId(null);
-                        }}
-                      />
-                      <TextInput
-                        style={s.input}
-                        placeholder="Celular do Prospecto (opcional)"
-                        placeholderTextColor="#777"
-                        value={manualPhone}
-                        onChangeText={(t) => setManualPhone(maskPhone(t))}
-                        keyboardType="phone-pad"
-                        maxLength={16}
-                      />
+                      <TouchableOpacity style={s.selector} onPress={() => openPicker('cliente')}>
+                        <Text style={s.selectorTxt}>
+                          {selClient ? selClient.name : 'Cliente cadastrado (opcional)…'}
+                        </Text>
+                      </TouchableOpacity>
+                      {!selClient && (
+                        <>
+                          <TextInput
+                            style={s.input}
+                            placeholder="Nome do Prospecto"
+                            placeholderTextColor="#777"
+                            value={manualName}
+                            onChangeText={(t) => {
+                              setManualName(t);
+                              setSelectedProspectId(null);
+                            }}
+                          />
+                          <TextInput
+                            style={s.input}
+                            placeholder="Celular do Prospecto (opcional)"
+                            placeholderTextColor="#777"
+                            value={manualPhone}
+                            onChangeText={(t) => setManualPhone(maskPhone(t))}
+                            keyboardType="phone-pad"
+                            maxLength={16}
+                          />
+                        </>
+                      )}
+                      {!selClient && presentacoesLista.length > 0 && (
+                        <TouchableOpacity style={s.selector} onPress={() => openPicker('apresentacao')}>
+                          <Text style={[s.selectorTxt, { color: '#A855F7' }]}>
+                            🎤 Selecionar de &ldquo;Apresentações Kit Acesso de hoje&rdquo;…
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+
+                      <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
+                        <View style={[s.checkbox, isIndicacao && { backgroundColor: T.blue }]} />
+                        <Text style={s.checkTxt}>Veio por indicação</Text>
+                      </TouchableOpacity>
                     </>
-                  )}
-                  {!selClient && presentacoesLista.length > 0 && (
-                    <TouchableOpacity style={s.selector} onPress={() => openPicker('apresentacao')}>
-                      <Text style={[s.selectorTxt, { color: '#A855F7' }]}>
-                        🎤 Selecionar de &ldquo;Apresentações Kit Acesso de hoje&rdquo;…
-                      </Text>
-                    </TouchableOpacity>
                   )}
                 </>
               )}
-
-              <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
-                <View style={[s.checkbox, isIndicacao && { backgroundColor: T.blue }]} />
-                <Text style={s.checkTxt}>Veio por indicação</Text>
-              </TouchableOpacity>
 
               <View style={s.toggleRow}>
                 <TouchableOpacity style={[s.toggleBtn, { flex: 1 }]} onPress={() => openPicker('kit')}>
