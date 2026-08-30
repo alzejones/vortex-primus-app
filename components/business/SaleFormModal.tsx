@@ -91,6 +91,7 @@ export interface CartItem {
   name: string;
   quantity: number;
   unitPrice: number;
+  unitPriceText?: string;
   flavorChoices?: Record<string, string>;
 }
 
@@ -194,6 +195,7 @@ export default function SaleFormModal({
           name: k.name,
           quantity: 1,
           unitPrice: k.default_price,
+          unitPriceText: String(k.default_price),
         }]);
       }
       setPickerOpen(null);
@@ -246,6 +248,7 @@ export default function SaleFormModal({
         name: k.name,
         quantity: 1,
         unitPrice: k.default_price,
+        unitPriceText: String(k.default_price),
       }]);
     }
     setPickerOpen(null);
@@ -267,12 +270,14 @@ export default function SaleFormModal({
       ));
     } else {
       const level = selClient?.herbalife_discount_level || 'venda';
+      const price = clientUnitPrice(p, level);
       setCart([...cart, {
         itemType: 'produto',
         id: p.supplement_id,
         name: p.name || 'Produto',
         quantity: 1,
-        unitPrice: clientUnitPrice(p, level),
+        unitPrice: price,
+        unitPriceText: String(price),
       }]);
     }
     setPickerOpen(null);
@@ -290,7 +295,7 @@ export default function SaleFormModal({
   function updateCartPrice(index: number, price: string) {
     const normalized = price.replace(',', '.');
     const parsed = parseFloat(normalized) || 0;
-    setCart(cart.map((item, i) => i === index ? { ...item, unitPrice: parsed } : item));
+    setCart(cart.map((item, i) => i === index ? { ...item, unitPriceText: price, unitPrice: parsed } : item));
   }
 
   function openPicker(type: 'kit' | 'produto' | 'cliente' | 'apresentacao') {
@@ -332,6 +337,7 @@ export default function SaleFormModal({
           name: pendingFlavorKit.name,
           quantity: 1,
           unitPrice: pendingFlavorKit.default_price,
+          unitPriceText: String(pendingFlavorKit.default_price),
           flavorChoices: choices,
         }]);
       }
@@ -387,6 +393,7 @@ export default function SaleFormModal({
                   name: kit.name,
                   quantity: qty,
                   unitPrice,
+                  unitPriceText: String(unitPrice),
                 });
                 kitFlavorChoices.set(key, {});
               }
@@ -420,6 +427,7 @@ export default function SaleFormModal({
                   name: product.name || 'Produto',
                   quantity: qty,
                   unitPrice,
+                  unitPriceText: String(unitPrice),
                 });
               }
             }
@@ -959,7 +967,7 @@ export default function SaleFormModal({
                         <TextInput
                           style={s.cartInput}
                           keyboardType="decimal-pad"
-                          value={String(item.unitPrice)}
+                          value={item.unitPriceText ?? String(item.unitPrice)}
                           onChangeText={(t) => updateCartPrice(index, t)}
                         />
                       </View>
