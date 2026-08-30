@@ -396,7 +396,7 @@ export default function RelatoriosContent() {
               <Text style={s.hCell} numberOfLines={1}>Rep</Text>
               <Text style={s.hCell} numberOfLines={1}>Ind</Text>
               <Text style={s.hCell} numberOfLines={1}>Aces</Text>
-              <Text style={[s.hCell, { textAlign: 'right' }]} numberOfLines={1}>PV</Text>
+              <Text style={[s.hCell, { flex: 1, textAlign: 'right' }]} numberOfLines={1}>PV</Text>
               <Text style={[s.hCell, { flex: 1.2, textAlign: 'right' }]} numberOfLines={1}>Ganhos</Text>
             </View>
             {daily.map((r) => (
