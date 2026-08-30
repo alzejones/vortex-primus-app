@@ -375,13 +375,13 @@ export default function RelatoriosContent() {
             {daily.length > 0 && (
               <View style={[s.row, { backgroundColor: '#1A1A1A', paddingVertical: 8, marginBottom: 4 }]}>
                 <Text style={[s.cell, { flex: 0.5, color: '#FFF', fontWeight: '700' }]}>Total</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
                 <Text style={[s.cell, { flex: 1, fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
                 <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80', textAlign: 'right' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
               </View>
@@ -402,13 +402,13 @@ export default function RelatoriosContent() {
             {daily.map((r) => (
               <View key={r.report_date} style={s.row}>
                 <Text style={[s.cell, { flex: 0.5, color: '#FFF' }]}>{r.report_date.slice(8, 10)}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.convites}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.apresentacoes}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.resets}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.novos}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.repetidores}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.indicacoes}</Text>
-                <Text style={[s.cell, { textAlign: 'right' }]}>{r.acessos}</Text>
+                <Text style={s.cell}>{r.convites}</Text>
+                <Text style={s.cell}>{r.apresentacoes}</Text>
+                <Text style={s.cell}>{r.resets}</Text>
+                <Text style={s.cell}>{r.novos}</Text>
+                <Text style={s.cell}>{r.repetidores}</Text>
+                <Text style={s.cell}>{r.indicacoes}</Text>
+                <Text style={s.cell}>{r.acessos}</Text>
                 <Text style={[s.cell, { flex: 1, textAlign: 'right' }]}>{Number(r.pv).toFixed(2)}</Text>
                 <Text style={[s.cell, { flex: 1.2, color: '#4ADE80', textAlign: 'right' }]}>{brl(r.ganhos)}</Text>
               </View>
