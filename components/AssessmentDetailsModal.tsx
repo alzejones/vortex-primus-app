@@ -205,45 +205,6 @@ export default function AssessmentDetailsModal({
                 />
               )}
 
-              <View style={{ alignItems: 'center', marginBottom: 24 }}>
-                <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 16, borderRadius: 16, elevation: 4 }}>
-                  <View style={{ width: CHART_W, alignItems: 'flex-start' }}>
-                    <LineChart
-                    data={fatData.map((val, index) => ({
-                      value: Number(val) || 0,
-                      label: chartLabels[index],
-                      dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
-                    }))}
-                    data2={muscleData.map((val) => ({
-                      value: Number(val) || 0,
-                      dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
-                    }))}
-                    height={220} width={Math.min(CHART_W - 68, 68 + 40 + Math.max(fatData.length - 1, 1) * 60)} isAnimated animationDuration={1200} curved
-                    textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
-                    spacing={60}
-                    initialSpacing={20} endSpacing={30} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
-                    thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
-                    yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
-                    yAxisLabelSuffix="%" yAxisLabelWidth={68} stepValue={5}
-                    maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
-                    noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
-                    rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
-                    />
-                  </View>
-                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
-                  </View>
-                </View>
-              </View>
-              
-              {relativeEvolution && (
-                <EvolutionPanel evolutionData={relativeEvolution} currentAssessment={selectedAssessment} prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]} firstAssessment={assessments?.[assessments.length - 1]} formatValue={formatValue} />
-              )}
-              
-              <MeasurementsEvolutionPanel currentAssessment={selectedAssessment} prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]} firstAssessment={assessments?.[assessments.length - 1]} />
-
-              <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 20 }}>
                 <View style={{ backgroundColor: T.card, borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: T.border, elevation: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: T.border, paddingBottom: 8 }}><Text style={{ fontSize: 16 }}>📊</Text><Text style={{ fontSize: 14, fontWeight: '800', color: T.t1, marginLeft: 6, textTransform: 'uppercase' }}>Composição Corporal</Text></View>
                   <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginBottom: 10 }}>
@@ -410,13 +371,51 @@ export default function AssessmentDetailsModal({
                   })()}
 
                 </View>
+              {relativeEvolution && (
+                <EvolutionPanel evolutionData={relativeEvolution} currentAssessment={selectedAssessment} prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]} firstAssessment={assessments?.[assessments.length - 1]} formatValue={formatValue} />
+              )}
+              
+              <MeasurementsEvolutionPanel currentAssessment={selectedAssessment} prevAssessment={assessments?.[(assessments?.findIndex((a: any) => a.id === selectedAssessment?.id) ?? 0) + 1]} firstAssessment={assessments?.[assessments.length - 1]} />
 
+              <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 20 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1, backgroundColor: T.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#ea580c', marginBottom: 10 }}>📏 TRONCO</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Peitoral</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.chest ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Abdômen</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.abdomen ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Cintura</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.waist ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Quadril</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.hip ?? "-"} cm</Text></View></View>
                   <View style={{ flex: 1, backgroundColor: T.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Braço</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.arm_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.arm_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Coxa</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.thigh_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.thigh_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Pantur.</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.calf_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.calf_right ?? "-"}</Text></View></View>
                 </View>
               </View>
 
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                <View style={{ backgroundColor: "#1e293b", paddingVertical: 20, paddingHorizontal: 16, borderRadius: 16, elevation: 4 }}>
+                  <View style={{ width: CHART_W, alignItems: 'flex-start' }}>
+                    <LineChart
+                    data={fatData.map((val, index) => ({
+                      value: Number(val) || 0,
+                      label: chartLabels[index],
+                      dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
+                    }))}
+                    data2={muscleData.map((val) => ({
+                      value: Number(val) || 0,
+                      dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
+                    }))}
+                    height={220} width={Math.min(CHART_W - 68, 68 + 40 + Math.max(fatData.length - 1, 1) * 60)} isAnimated animationDuration={1200} curved
+                    textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
+                    spacing={60}
+                    initialSpacing={20} endSpacing={30} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
+                    thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
+                    yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
+                    yAxisLabelSuffix="%" yAxisLabelWidth={68} stepValue={5}
+                    maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
+                    noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
+                    rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
+                    />
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
+                  </View>
+                </View>
+              </View>
+              
               <TrunkMeasurementsChart
                 chartAssessments={(() => {
                   const sorted = [...(assessments || [])].reverse();
