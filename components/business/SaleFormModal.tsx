@@ -485,7 +485,7 @@ export default function SaleFormModal({
       notify('Atenção', 'Adicione pelo menos um item ao carrinho.');
       return;
     }
-    if (!selClient && !manualName.trim()) {
+    if (!isConsumoPessoal && !selClient && !manualName.trim()) {
       notify('Atenção', 'Selecione um cliente ou digite o nome.');
       return;
     }
