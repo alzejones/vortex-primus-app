@@ -921,7 +921,7 @@ export default function SaleFormModal({
 
                   <TouchableOpacity style={s.checkRow} onPress={() => setIsVendaSiteHerba(!isVendaSiteHerba)}>
                     <View style={[s.checkbox, isVendaSiteHerba && { backgroundColor: T.blue }]} />
-                    <Text style={s.checkTxt}>Venda Site Herba</Text>
+                    <Text style={s.checkTxt}>Venda Site Herbalife</Text>
                   </TouchableOpacity>
 
                   {!isConsumoPessoal && (
