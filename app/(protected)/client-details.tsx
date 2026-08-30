@@ -87,7 +87,7 @@ export default function ClientDetails() {
 
   const [showQuestionnaire, setShowQuestionnaire] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const CLIENT_STATUS_OPTIONS = ["Aluno", "Cliente", "Cliente Premium", "Embaixador", "Consultor", "Supervisor"];
+  const CLIENT_STATUS_OPTIONS = ["Prospecto", "Aluno", "Cliente", "Cliente Premium", "Embaixador", "Consultor", "Supervisor"];
   const [coachQuestionnaire, setCoachQuestionnaire] = useState<CoachQuestionnaireData>({
     grupo: "",
     objetivos: [],
