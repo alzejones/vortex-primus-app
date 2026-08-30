@@ -134,6 +134,7 @@ export default function SaleFormModal({
   const [selectedProspectId, setSelectedProspectId] = useState<string | null>(null);
   const [isIndicacao, setIsIndicacao] = useState(false);
   const [isConsumoPessoal, setIsConsumoPessoal] = useState(false);
+  const [isVendaSiteHerba, setIsVendaSiteHerba] = useState(false);
   const [pickerOpen, setPickerOpen] = useState<'kit' | 'produto' | 'cliente' | 'apresentacao' | null>(null);
   const [pickerSearch, setPickerSearch] = useState('');
   const [saving, setSaving] = useState(false);
@@ -465,6 +466,7 @@ export default function SaleFormModal({
 
           setIsIndicacao(editingSale.client_status === 'indicacao');
           setIsConsumoPessoal(editingSale.origin === 'consumo_pessoal');
+          setIsVendaSiteHerba(editingSale.origin === 'venda_site_herbalife');
         } catch (e) {
           console.error('Erro ao carregar venda para edição:', e);
         }
@@ -477,6 +479,7 @@ export default function SaleFormModal({
       setSelectedProspectId(prefillManualEntry?.prospectId || null);
       setIsIndicacao(false);
       setIsConsumoPessoal(false);
+      setIsVendaSiteHerba(false);
     }
   }, [visible, editingSale, prefillClient, prefillManualEntry]);
 
@@ -624,7 +627,7 @@ export default function SaleFormModal({
             client_phone_manual: isConsumoPessoal ? null : (selClient ? null : (manualPhone.trim() || null)),
             client_status: status,
             sale_type: saleType,
-            origin: isConsumoPessoal ? 'consumo_pessoal' : 'manual',
+            origin: isConsumoPessoal ? 'consumo_pessoal' : (isVendaSiteHerba ? 'venda_site_herbalife' : 'manual'),
             total_charged: Number(totalCharged.toFixed(2)),
             total_cost: Number(totalCost.toFixed(2)),
             total_pv: Number(totalPv.toFixed(2)),
@@ -914,6 +917,11 @@ export default function SaleFormModal({
                   }}>
                     <View style={[s.checkbox, isConsumoPessoal && { backgroundColor: T.blue }]} />
                     <Text style={s.checkTxt}>Consumo Pessoal</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={s.checkRow} onPress={() => setIsVendaSiteHerba(!isVendaSiteHerba)}>
+                    <View style={[s.checkbox, isVendaSiteHerba && { backgroundColor: T.blue }]} />
+                    <Text style={s.checkTxt}>Venda Site Herba</Text>
                   </TouchableOpacity>
 
                   {!isConsumoPessoal && (
