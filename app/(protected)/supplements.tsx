@@ -30,6 +30,7 @@ interface Supplement {
   fat_g: number | null;
   fiber_g: number | null;
   notes: string | null;
+  price_venda: number | null;
   created_at: string;
 }
 
@@ -44,6 +45,7 @@ interface FormData {
   fat_g: string;
   fiber_g: string;
   notes: string;
+  price_venda: string;
 }
 
 const initialFormData: FormData = {
@@ -57,6 +59,7 @@ const initialFormData: FormData = {
   fat_g: '',
   fiber_g: '',
   notes: '',
+  price_venda: '',
 };
 
 export default function SupplementsScreen() {
@@ -74,14 +77,19 @@ export default function SupplementsScreen() {
     try {
       const { data, error } = await supabase
         .from('supplements')
-        .select('*')
+        .select('*, herbalife_pricing(price_venda)')
         .order('brand', { ascending: true })
         .order('name', { ascending: true });
 
       if (error) throw error;
       
-      setSupplements(data || []);
-      setFilteredSupplements(data || []);
+      const mapped = (data || []).map(item => ({
+        ...item,
+        price_venda: item.herbalife_pricing?.price_venda ?? null,
+      }));
+      
+      setSupplements(mapped);
+      setFilteredSupplements(mapped);
     } catch (error) {
       console.error('Erro ao carregar suplementos:', error);
       Alert.alert('Erro', 'Não foi possível carregar os suplementos');
@@ -128,6 +136,7 @@ export default function SupplementsScreen() {
       fat_g: supplement.fat_g?.toString() || '',
       fiber_g: supplement.fiber_g?.toString() || '',
       notes: supplement.notes || '',
+      price_venda: supplement.price_venda?.toString() || '',
     });
     setModalVisible(true);
   };
@@ -144,36 +153,28 @@ export default function SupplementsScreen() {
       return;
     }
 
+    if (!formData.price_venda.trim() || parseFloat(formData.price_venda) < 0) {
+      Alert.alert('Erro', 'Preço de venda é obrigatório');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const supplementData = {
-        brand: formData.brand.trim(),
-        sku: formData.sku.trim() || null,
-        name: formData.name.trim(),
-        serving_size_g: parseFloat(formData.serving_size_g) || 0,
-        calories: formData.calories ? parseFloat(formData.calories) : null,
-        protein_g: formData.protein_g ? parseFloat(formData.protein_g) : null,
-        carbs_g: formData.carbs_g ? parseFloat(formData.carbs_g) : null,
-        fat_g: formData.fat_g ? parseFloat(formData.fat_g) : null,
-        fiber_g: formData.fiber_g ? parseFloat(formData.fiber_g) : null,
-        notes: formData.notes.trim() || null,
-      };
-
-      let error;
-      
-      if (editingId) {
-        // Atualizar
-        ({ error } = await supabase
-          .from('supplements')
-          .update(supplementData)
-          .eq('id', editingId));
-      } else {
-        // Criar
-        ({ error } = await supabase
-          .from('supplements')
-          .insert([supplementData]));
-      }
+      const { data, error } = await supabase.rpc('upsert_supplement_with_pricing', {
+        p_id: editingId,
+        p_brand: formData.brand.trim(),
+        p_sku: formData.sku.trim() || null,
+        p_name: formData.name.trim(),
+        p_serving_size_g: parseFloat(formData.serving_size_g) || 0,
+        p_calories: formData.calories ? parseFloat(formData.calories) : null,
+        p_protein_g: formData.protein_g ? parseFloat(formData.protein_g) : null,
+        p_carbs_g: formData.carbs_g ? parseFloat(formData.carbs_g) : null,
+        p_fat_g: formData.fat_g ? parseFloat(formData.fat_g) : null,
+        p_fiber_g: formData.fiber_g ? parseFloat(formData.fiber_g) : null,
+        p_notes: formData.notes.trim() || null,
+        p_price_venda: parseFloat(formData.price_venda),
+      });
 
       if (error) throw error;
 
@@ -364,6 +365,18 @@ export default function SupplementsScreen() {
                 value={formData.name}
                 onChangeText={(text) => setFormData({...formData, name: text})}
                 placeholder="Nome do suplemento"
+              />
+            </View>
+
+            {/* Preço de Venda */}
+            <View style={styles.formFieldFull}>
+              <Text style={styles.fieldLabel}>Preço de Venda (R$) *</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={formData.price_venda}
+                onChangeText={(text) => setFormData({...formData, price_venda: text})}
+                placeholder="397.50"
+                keyboardType="numeric"
               />
             </View>
 
