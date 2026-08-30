@@ -73,6 +73,9 @@ interface BusinessReportRow {
   convites: number;
   entraram: number;
   novos: number;
+  repetidores: number;
+  apresentacoes: number;
+  resets: number;
   indicacoes: number;
   acessos: number;
   ganhos: number;
@@ -693,6 +696,14 @@ function RelatoriosTab({
   // antes ficava declarado depois dos "if (loading) return", o que quebrava a
   // ordem dos hooks entre renders.
   const [viewMode, setViewMode] = React.useState<'diario' | 'semanal' | 'mensal'>('diario');
+  const [selectedMonth, setSelectedMonth] = React.useState<string>(new Date().toISOString().slice(0, 7));
+  const [showMonthPicker, setShowMonthPicker] = React.useState(false);
+
+  const monthNames: Record<string, string> = {
+    '01': 'Janeiro', '02': 'Fevereiro', '03': 'Março', '04': 'Abril',
+    '05': 'Maio', '06': 'Junho', '07': 'Julho', '08': 'Agosto',
+    '09': 'Setembro', '10': 'Outubro', '11': 'Novembro', '12': 'Dezembro',
+  };
 
   if (businessLoading) {
     return (
@@ -720,6 +731,9 @@ function RelatoriosTab({
       existing.convites += row.convites;
       existing.entraram += row.entraram;
       existing.novos += row.novos;
+      existing.repetidores += row.repetidores;
+      existing.apresentacoes += row.apresentacoes;
+      existing.resets += row.resets;
       existing.indicacoes += row.indicacoes;
       existing.acessos += row.acessos;
       existing.ganhos += row.ganhos;
@@ -731,6 +745,45 @@ function RelatoriosTab({
   }, [] as BusinessReportRow[]);
 
   dailyGrouped.sort((a, b) => b.report_date.localeCompare(a.report_date));
+
+  // Preencher todos os dias do mês selecionado (igual RelatoriosContent.tsx)
+  function shiftDate(dateStr: string, delta: number): string {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCDate(dt.getUTCDate() + delta);
+    return dt.toISOString().split('T')[0];
+  }
+
+  const [y, m] = selectedMonth.split('-').map(Number);
+  const firstDay = selectedMonth + '-01';
+  const today = new Date().toISOString().split('T')[0];
+  const isCurrentMonth = selectedMonth === today.slice(0, 7);
+  const lastDay = isCurrentMonth ? today : new Date(y, m, 0).toISOString().split('T')[0];
+
+  const dailyMap = new Map<string, BusinessReportRow>();
+  dailyGrouped.forEach((row) => dailyMap.set(row.report_date, row));
+
+  const dailyWithAllDays: BusinessReportRow[] = [];
+  let current = lastDay;
+  while (current >= firstDay) {
+    const existing = dailyMap.get(current);
+    dailyWithAllDays.push(existing || {
+      trainer_id: '',
+      trainer_name: '',
+      report_date: current,
+      convites: 0,
+      entraram: 0,
+      novos: 0,
+      repetidores: 0,
+      apresentacoes: 0,
+      resets: 0,
+      indicacoes: 0,
+      acessos: 0,
+      ganhos: 0,
+      pv: 0,
+    });
+    current = shiftDate(current, -1);
+  }
 
   // Semanal e Mensal agora vêm prontos do banco (get_downline_weekly_report /
   // get_downline_monthly_report) — mesma fórmula exata que o downline vê no
@@ -791,33 +844,89 @@ function RelatoriosTab({
       </View>
 
       {viewMode === 'diario' && (
-        <View style={styles.reportTable}>
-          <View style={styles.reportHeaderRow}>
-            <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Data</Text>
-            <Text style={styles.reportHeaderCell}>Conv</Text>
-            <Text style={styles.reportHeaderCell}>Entr</Text>
-            <Text style={styles.reportHeaderCell}>Nov</Text>
-            <Text style={styles.reportHeaderCell}>Ind</Text>
-            <Text style={styles.reportHeaderCell}>Ace</Text>
-            <Text style={[styles.reportHeaderCell, { flex: 1.2 }]}>Ganhos</Text>
-            <Text style={[styles.reportHeaderCell, { flex: 0.9 }]}>PV</Text>
-          </View>
-          {dailyGrouped.slice(0, 31).map((row, idx) => (
-            <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
-              <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>{fmtDate(row.report_date)}</Text>
-              <Text style={styles.reportCell}>{row.convites}</Text>
-              <Text style={styles.reportCell}>{row.entraram}</Text>
-              <Text style={styles.reportCell}>{row.novos}</Text>
-              <Text style={styles.reportCell}>{row.indicacoes}</Text>
-              <Text style={styles.reportCell}>{row.acessos}</Text>
-              <Text style={[styles.reportCell, { flex: 1.2, color: T.green }]}>{brl(row.ganhos)}</Text>
-              <Text style={[styles.reportCell, { flex: 0.9 }]}>{Number(row.pv).toFixed(2)}</Text>
+        <>
+          <TouchableOpacity
+            style={styles.monthSelector}
+            onPress={() => setShowMonthPicker(!showMonthPicker)}
+          >
+            <Text style={styles.monthSelectorText}>
+              {monthNames[selectedMonth.slice(5, 7)]}/{selectedMonth.slice(0, 4)}
+            </Text>
+            <Text style={styles.monthSelectorArrow}>{showMonthPicker ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
+
+          {showMonthPicker && (
+            <View style={styles.monthPickerContainer}>
+              {Array.from({ length: 12 }, (_, i) => {
+                const today = new Date();
+                const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const monthKey = targetDate.toISOString().slice(0, 7);
+                const monthLabel = `${monthNames[monthKey.slice(5, 7)]}/${monthKey.slice(0, 4)}`;
+                return (
+                  <TouchableOpacity
+                    key={monthKey}
+                    style={[styles.monthPickerItem, selectedMonth === monthKey && styles.monthPickerItemActive]}
+                    onPress={() => {
+                      setSelectedMonth(monthKey);
+                      setShowMonthPicker(false);
+                    })
+                  >
+                    <Text style={[styles.monthPickerItemText, selectedMonth === monthKey && styles.monthPickerItemTextActive]}>
+                      {monthLabel}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          ))}
-          {dailyGrouped.length === 0 && (
-            <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados</Text>
           )}
-        </View>
+
+          <View style={styles.reportTable}>
+            {dailyWithAllDays.length > 0 && (
+              <View style={[styles.reportRow, { backgroundColor: '#1A1A1A', paddingVertical: 8, marginBottom: 4 }]}>
+                <Text style={[styles.reportCell, { flex: 0.5, color: '#FFF', fontWeight: '700' }]}>Total</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.convites, 0)}</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.resets, 0)}</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.novos, 0)}</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
+                <Text style={[styles.reportCell, { fontWeight: '700', color: '#FFF' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.acessos, 0)}</Text>
+                <Text style={[styles.reportCell, { flex: 1, fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{dailyWithAllDays.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
+                <Text style={[styles.reportCell, { flex: 1.2, fontWeight: '700', color: '#4ADE80', textAlign: 'right' }]}>{brl(dailyWithAllDays.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
+              </View>
+            )}
+
+            <View style={styles.reportHeaderRow}>
+              <Text style={[styles.reportHeaderCell, { flex: 0.5 }]} numberOfLines={1}>Dia</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Contat</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Apres</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Reset</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Nov</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Rep</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Ind</Text>
+              <Text style={styles.reportHeaderCell} numberOfLines={1}>Aces</Text>
+              <Text style={[styles.reportHeaderCell, { flex: 1, textAlign: 'right' }]} numberOfLines={1}>PV</Text>
+              <Text style={[styles.reportHeaderCell, { flex: 1.2, textAlign: 'right' }]} numberOfLines={1}>Ganhos</Text>
+            </View>
+            {dailyWithAllDays.map((row, idx) => (
+              <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
+                <Text style={[styles.reportCell, { flex: 0.5, color: '#FFF' }]}>{row.report_date.slice(8, 10)}</Text>
+                <Text style={styles.reportCell}>{row.convites}</Text>
+                <Text style={styles.reportCell}>{row.apresentacoes}</Text>
+                <Text style={styles.reportCell}>{row.resets}</Text>
+                <Text style={styles.reportCell}>{row.novos}</Text>
+                <Text style={styles.reportCell}>{row.repetidores}</Text>
+                <Text style={styles.reportCell}>{row.indicacoes}</Text>
+                <Text style={styles.reportCell}>{row.acessos}</Text>
+                <Text style={[styles.reportCell, { flex: 1, textAlign: 'right' }]}>{Number(row.pv).toFixed(2)}</Text>
+                <Text style={[styles.reportCell, { flex: 1.2, color: '#4ADE80', textAlign: 'right' }]}>{brl(row.ganhos)}</Text>
+              </View>
+            ))}
+            {dailyWithAllDays.length === 0 && (
+              <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados neste mês.</Text>
+            )}
+          </View>
+        </>
       )}
 
       {/* Semanal — mesmo layout de card que o downline vê no próprio login
@@ -1032,4 +1141,13 @@ const styles = StyleSheet.create({
 
   whatsappBtn: { backgroundColor: T.blue, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   whatsappBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+
+  monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: T.card, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  monthSelectorText: { color: T.t1, fontSize: 16, fontWeight: '700', marginRight: 8 },
+  monthSelectorArrow: { color: T.blue, fontSize: 14, fontWeight: '700' },
+  monthPickerContainer: { backgroundColor: T.card, borderRadius: 10, padding: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  monthPickerItem: { padding: 10, borderRadius: 8 },
+  monthPickerItemActive: { backgroundColor: T.blue },
+  monthPickerItemText: { color: T.t2, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  monthPickerItemTextActive: { color: '#000' },
 });
