@@ -286,35 +286,111 @@ export default function PublicAssessmentView() {
           )
         )}
 
-        {fatData.length > 0 && (
-          <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24, elevation: 4, borderWidth: 1, borderColor: T.border }}>
-            <LineChart
-              data={fatData.map((val, index) => ({
-                value: Number(val) || 0,
-                label: chartLabels[index],
-                dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
-              }))}
-              data2={muscleData.map((val) => ({
-                value: Number(val) || 0,
-                dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
-              }))}
-              height={220} width={Platform.OS === 'web' ? CONTENT_WIDTH - 40 : screenWidth - 80} isAnimated animationDuration={1200} curved
-              textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
-              spacing={Math.max(28, (Platform.OS === 'web' ? CONTENT_WIDTH - 80 : screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
-              initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
-              thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
-              yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
-              yAxisLabelSuffix="%" stepValue={5}
-              maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
-              noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
-              rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
-            />
-            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#ef4444' }]} /><Text style={styles.legendText}>% Gordura</Text></View>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#22c55e' }]} /><Text style={styles.legendText}>% Músculo</Text></View>
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 16 }}>📊</Text>
+              <Text style={{ fontSize: 14, fontWeight: '900', color: T.t1, marginLeft: 6, textTransform: 'uppercase', flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Composição Corporal</Text>
             </View>
           </View>
-        )}
+
+          <View style={styles.diagRow}>
+            <Text style={styles.diagLabel}>Peso Corporal</Text>
+            <Text style={styles.diagValueLarge}>{anthro?.weight ?? "-"} kg</Text>
+          </View>
+
+          {(() => {
+            const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age, currentAssessment?.scale_protocol ?? 'omron');
+            const peso = Number(anthro?.weight) || 0;
+            const val = anthro?.body_fat ?? "-";
+            const gorduraKg = peso > 0 && val !== "-"
+              ? (Number(val) / 100 * peso).toFixed(1)
+              : null;
+            return (
+              <View style={styles.barContainer}>
+                <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Gordura Corporal</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{gorduraKg && (
+                    <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                      ({gorduraKg} kg)
+                    </Text>
+                  )}</View>
+                </View>
+                <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
+                <View style={styles.track}>
+                  <View style={[styles.segment, { backgroundColor: '#38bdf8', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#22c55e' }]} /><View style={[styles.segment, { backgroundColor: '#eab308' }]} /><View style={[styles.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
+                  {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
+                </View>
+                <View style={styles.labelsRow}><Text style={styles.miniLabel}>BAIXO</Text><Text style={styles.miniLabel}>NORMAL</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>M. ALTO</Text></View>
+                <ReferenceLink />
+              </View>
+            );
+          })()}
+
+          {(() => {
+            const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age, currentAssessment?.scale_protocol ?? 'omron');
+            const peso = Number(anthro?.weight) || 0;
+            const val = anthro?.muscle_mass_percentage ?? "-";
+            const musculoKg = peso > 0 && val !== "-"
+              ? (Number(val) / 100 * peso).toFixed(1)
+              : null;
+            return (
+              <View style={styles.barContainer}>
+                <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Massa Muscular</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{musculoKg && (
+                    <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                      ({musculoKg} kg)
+                    </Text>
+                  )}</View>
+                </View>
+                <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
+                <View style={styles.track}>
+                  <View style={[styles.segment, { backgroundColor: '#ef4444', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#84cc16' }]} /><View style={[styles.segment, { backgroundColor: '#22c55e' }]} /><View style={[styles.segment, { backgroundColor: '#38bdf8', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
+                  {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
+                </View>
+                <View style={styles.labelsRow}><Text style={styles.miniLabel}>BAIXO</Text><Text style={styles.miniLabel}>NORMAL</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>M. ALTO</Text></View>
+                <ReferenceLink />
+              </View>
+            );
+          })()}
+
+          <View style={styles.barContainer}>
+            <View style={styles.rowBetween}><Text style={styles.diagLabel}>Idade Metabólica</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {getMetabolicStatus(anthro?.metabolic_age, age) && (
+                  <View style={[styles.badge, { backgroundColor: getMetabolicStatus(anthro?.metabolic_age, age)?.bg }]}><Text style={[styles.badgeText, { color: getMetabolicStatus(anthro?.metabolic_age, age)?.color }]}>{getMetabolicStatus(anthro?.metabolic_age, age)?.label}</Text></View>
+                )}<Text style={styles.diagValueLarge}>{anthro?.metabolic_age ?? "-"} anos</Text>
+              </View>
+            </View>
+            <ReferenceLink />
+          </View>
+
+          {(() => {
+            const status = getLocalVisceralStatus(anthro?.body_fat_index);
+            return (
+              <View style={styles.barContainer}>
+                <View style={styles.rowBetween}><Text style={styles.diagLabel}>Gordura Visceral</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{anthro?.body_fat_index ?? "-"}</Text></View>
+                </View>
+                <View style={styles.ruler}><Text style={styles.rulerText}>4</Text><Text style={styles.rulerText}>9</Text><Text style={styles.rulerText}>13</Text></View>
+                <View style={styles.track}>
+                  <View style={[styles.segment, { backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#eab308' }]} /><View style={[styles.segment, { backgroundColor: '#f97316' }]} /><View style={[styles.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
+                  {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
+                </View>
+                <View style={styles.labelsRow}><Text style={styles.miniLabel}>IDEAL</Text><Text style={styles.miniLabel}>ATENÇÃO</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>CRÍTICO</Text></View>
+                <ReferenceLink />
+              </View>
+            );
+          })()}
+
+          <View style={[styles.diagRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+            <Text style={styles.diagLabel}>Metabolismo Basal</Text>
+            <Text style={styles.diagValueLarge}>{anthro?.basal_metabolic_rate ?? "-"} kcal</Text>
+          </View>
+
+          <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginTop: 12 }}>
+            Resultado informativo de composição corporal. Não constitui diagnóstico médico.
+          </Text>
+        </View>
 
         {relativeEvolution && (
           <EvolutionPanel
@@ -331,114 +407,7 @@ export default function PublicAssessmentView() {
           firstAssessment={firstAssessment}
         />
 
-        {/* DIAGNÓSTICO */}
         <View style={styles.diagnosisSection}>
-          <Text style={styles.sectionTitle}>📋 Resumo Desta Avaliação</Text>
-
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={{ fontSize: 16 }}>📊</Text>
-                <Text style={{ fontSize: 14, fontWeight: '900', color: T.t1, marginLeft: 6, textTransform: 'uppercase', flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Composição Corporal</Text>
-              </View>
-            </View>
-            <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginTop: 8, marginBottom: 10 }}>
-              Resultado informativo de composição corporal. Não constitui diagnóstico médico.
-            </Text>
-
-            <View style={styles.diagRow}>
-              <Text style={styles.diagLabel}>Peso Corporal</Text>
-              <Text style={styles.diagValueLarge}>{anthro?.weight ?? "-"} kg</Text>
-            </View>
-
-            {(() => {
-              const status = getLocalBodyFatStatus(anthro?.body_fat, client?.gender, age, currentAssessment?.scale_protocol ?? 'omron');
-              const peso = Number(anthro?.weight) || 0;
-              const val = anthro?.body_fat ?? "-";
-              const gorduraKg = peso > 0 && val !== "-"
-                ? (Number(val) / 100 * peso).toFixed(1)
-                : null;
-              return (
-                <View style={styles.barContainer}>
-                  <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Gordura Corporal</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{gorduraKg && (
-                      <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
-                        ({gorduraKg} kg)
-                      </Text>
-                    )}</View>
-                  </View>
-                  <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
-                  <View style={styles.track}>
-                    <View style={[styles.segment, { backgroundColor: '#38bdf8', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#22c55e' }]} /><View style={[styles.segment, { backgroundColor: '#eab308' }]} /><View style={[styles.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
-                    {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
-                  </View>
-                  <View style={styles.labelsRow}><Text style={styles.miniLabel}>BAIXO</Text><Text style={styles.miniLabel}>NORMAL</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>M. ALTO</Text></View>
-                  <ReferenceLink />
-                </View>
-              );
-            })()}
-
-            {(() => {
-              const status = getLocalMuscleStatus(anthro?.muscle_mass_percentage, client?.gender, age, currentAssessment?.scale_protocol ?? 'omron');
-              const peso = Number(anthro?.weight) || 0;
-              const val = anthro?.muscle_mass_percentage ?? "-";
-              const musculoKg = peso > 0 && val !== "-"
-                ? (Number(val) / 100 * peso).toFixed(1)
-                : null;
-              return (
-                <View style={styles.barContainer}>
-                  <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Massa Muscular</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{musculoKg && (
-                      <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
-                        ({musculoKg} kg)
-                      </Text>
-                    )}</View>
-                  </View>
-                  <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
-                  <View style={styles.track}>
-                    <View style={[styles.segment, { backgroundColor: '#ef4444', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#84cc16' }]} /><View style={[styles.segment, { backgroundColor: '#22c55e' }]} /><View style={[styles.segment, { backgroundColor: '#38bdf8', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
-                    {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
-                  </View>
-                  <View style={styles.labelsRow}><Text style={styles.miniLabel}>BAIXO</Text><Text style={styles.miniLabel}>NORMAL</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>M. ALTO</Text></View>
-                  <ReferenceLink />
-                </View>
-              );
-            })()}
-
-            <View style={styles.barContainer}>
-              <View style={styles.rowBetween}><Text style={styles.diagLabel}>Idade Metabólica</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  {getMetabolicStatus(anthro?.metabolic_age, age) && (
-                    <View style={[styles.badge, { backgroundColor: getMetabolicStatus(anthro?.metabolic_age, age)?.bg }]}><Text style={[styles.badgeText, { color: getMetabolicStatus(anthro?.metabolic_age, age)?.color }]}>{getMetabolicStatus(anthro?.metabolic_age, age)?.label}</Text></View>
-                  )}<Text style={styles.diagValueLarge}>{anthro?.metabolic_age ?? "-"} anos</Text>
-                </View>
-              </View>
-              <ReferenceLink />
-            </View>
-
-            {(() => {
-              const status = getLocalVisceralStatus(anthro?.body_fat_index);
-              return (
-                <View style={styles.barContainer}>
-                  <View style={styles.rowBetween}><Text style={styles.diagLabel}>Gordura Visceral</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{anthro?.body_fat_index ?? "-"}</Text></View>
-                  </View>
-                  <View style={styles.ruler}><Text style={styles.rulerText}>4</Text><Text style={styles.rulerText}>9</Text><Text style={styles.rulerText}>13</Text></View>
-                  <View style={styles.track}>
-                    <View style={[styles.segment, { backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#eab308' }]} /><View style={[styles.segment, { backgroundColor: '#f97316' }]} /><View style={[styles.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
-                    {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
-                  </View>
-                  <View style={styles.labelsRow}><Text style={styles.miniLabel}>IDEAL</Text><Text style={styles.miniLabel}>ATENÇÃO</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>CRÍTICO</Text></View>
-                  <ReferenceLink />
-                </View>
-              );
-            })()}
-
-            <View style={[styles.diagRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-              <Text style={styles.diagLabel}>Metabolismo Basal</Text>
-              <Text style={styles.diagValueLarge}>{anthro?.basal_metabolic_rate ?? "-"} kcal</Text>
-            </View>
-          </View>
 
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
             <View style={{ flex: 1, backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}>
@@ -478,6 +447,36 @@ export default function PublicAssessmentView() {
             </View>
           </View>
         </View>
+
+        {fatData.length > 0 && (
+          <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24, elevation: 4, borderWidth: 1, borderColor: T.border }}>
+            <LineChart
+              data={fatData.map((val, index) => ({
+                value: Number(val) || 0,
+                label: chartLabels[index],
+                dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
+              }))}
+              data2={muscleData.map((val) => ({
+                value: Number(val) || 0,
+                dataPointText: val != null && val !== '' ? `${Number(val).toFixed(1)}%` : '',
+              }))}
+              height={220} width={Platform.OS === 'web' ? CONTENT_WIDTH - 40 : screenWidth - 80} isAnimated animationDuration={1200} curved
+              textShiftY={-14} textShiftX={-8} textFontSize={8} textColor1="#fca5a5" textColor2="#86efac"
+              spacing={Math.max(28, (Platform.OS === 'web' ? CONTENT_WIDTH - 80 : screenWidth - 140) / (fatData.length > 1 ? fatData.length - 1 : 1))}
+              initialSpacing={20} endSpacing={20} color1="#ef4444" color2="#22c55e" dataPointsColor1="#ef4444" dataPointsColor2="#22c55e"
+              thickness1={3} thickness2={3} dataPointsRadius={4} yAxisColor="rgba(255,255,255,0.3)" xAxisColor="rgba(255,255,255,0.3)"
+              yAxisTextStyle={{ color: "#94a3b8", fontSize: 11 }} xAxisLabelTextStyle={{ color: "#94a3b8", fontSize: 11, marginBottom: -10 }}
+              yAxisLabelSuffix="%" stepValue={5}
+              maxValue={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5) * 5}
+              noOfSections={Math.ceil((Math.max(10, ...fatData.map(Number), ...muscleData.map(Number)) + 5) / 5)}
+              rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
+              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#ef4444' }]} /><Text style={styles.legendText}>% Gordura</Text></View>
+              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#22c55e' }]} /><Text style={styles.legendText}>% Músculo</Text></View>
+            </View>
+          </View>
+        )}
 
         <TrunkMeasurementsChart
           chartAssessments={(() => {
