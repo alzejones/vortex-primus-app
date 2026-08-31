@@ -1075,11 +1075,12 @@ export default function ClientAssessments() {
         </Modal>
 
             {/* TELA PRINCIPAL */}
-          <View style={styles.stickyHeader}>
+          <View style={[styles.stickyHeader, { backgroundColor: T.surfaceAlt, borderBottomWidth: 2, borderBottomColor: T.blue, paddingVertical: 12 }]}>
             <View style={styles.headerRow}>
-              <Text style={styles.headerItem}><Text style={styles.bold}>Nome: </Text>{client?.name?.substring(0, 10)}{client?.name?.length > 10 ? '...' : ''}</Text>
-              <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
-              <Text style={styles.headerItem}><Text style={styles.bold}>Alt: </Text>{client?.height_cm}cm</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Nome: </Text>{client?.name?.substring(0, 14)}{client?.name?.length > 14 ? '...' : ''}</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Sexo: </Text>{client?.gender ?? '-'}</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Alt: </Text>{client?.height_cm}cm</Text>
             </View>
           </View>
             <ScrollView 
