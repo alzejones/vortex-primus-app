@@ -214,9 +214,6 @@ export default function AssessmentDetailsModal({
 
                 <View style={{ backgroundColor: T.card, borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: T.border, elevation: 2 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: T.border, paddingBottom: 8 }}><Text style={{ fontSize: 16 }}>📊</Text><Text style={{ fontSize: 14, fontWeight: '800', color: T.t1, marginLeft: 6, textTransform: 'uppercase' }}>Composição Corporal</Text></View>
-                  <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginBottom: 10 }}>
-                    Resultado informativo de composição corporal. Não constitui diagnóstico médico.
-                  </Text>
 
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}><Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
 
@@ -376,6 +373,10 @@ export default function AssessmentDetailsModal({
                       </View>
                     );
                   })()}
+
+                  <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginTop: 12 }}>
+                    Resultado informativo de composição corporal. Não constitui diagnóstico médico.
+                  </Text>
 
                 </View>
               {relativeEvolution && (
