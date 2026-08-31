@@ -10,7 +10,6 @@ import LimbMeasurementsChart from "../../components/LimbMeasurementsChart";
 import BodyAvatarRow from "../../components/BodyAvatarRow";
 import { supabase } from "../../lib/supabase";
 import { FeatureGate } from "../../components/FeatureGate";
-import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { getMetabolicStatus } from "../../utils/assessmentCalculations";
 import { T } from "../../utils/theme";
 
@@ -137,10 +136,10 @@ const getLocalVisceralStatus = (value: any) => {
 export default function PublicAssessmentView() {
   const { id } = useLocalSearchParams();
   const clientId = id as string;
-  const { hasFeature } = useLicenseStatus();
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
+  const [trainerFeatures, setTrainerFeatures] = useState<string[]>([]);
   const [assessments, setAssessments] = useState<any[]>([]);
   const [currentAssessment, setCurrentAssessment] = useState<any>(null);
   const [prevAssessment, setPrevAssessment] = useState<any>(null);
@@ -177,6 +176,7 @@ export default function PublicAssessmentView() {
       if (error || !data) throw new Error("Acesso indisponível.");
 
       setClient(data.client);
+      setTrainerFeatures(data.features || []);
 
       const historyData = data.assessments || [];
       if (historyData.length === 0) throw new Error("Nenhuma avaliação encontrada.");
@@ -268,7 +268,7 @@ export default function PublicAssessmentView() {
         </View>
 
         {currentAssessment?.anthropometry?.[0]?.body_fat != null && (
-          hasFeature('body_twin_ai') ? (
+          trainerFeatures.includes('body_twin_ai') ? (
             <BodyAvatarRow
               bodyFatPercentage={Number(currentAssessment.anthropometry[0].body_fat)}
               gender={client?.gender}
