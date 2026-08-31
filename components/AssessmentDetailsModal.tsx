@@ -187,6 +187,13 @@ export default function AssessmentDetailsModal({
             </TouchableOpacity>
           </View>
 
+          <View style={{ backgroundColor: T.surfaceAlt, borderBottomWidth: 2, borderBottomColor: T.blue, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, marginBottom: 15, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 }}>
+            <Text style={{ fontSize: 14, color: T.t1 }}><Text style={{ fontWeight: '800', color: T.blue }}>Nome: </Text>{client?.name?.substring(0, 14)}{client?.name?.length > 14 ? '...' : ''}</Text>
+            <Text style={{ fontSize: 14, color: T.t1 }}><Text style={{ fontWeight: '800', color: T.blue }}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
+            <Text style={{ fontSize: 14, color: T.t1 }}><Text style={{ fontWeight: '800', color: T.blue }}>Sexo: </Text>{client?.gender ?? '-'}</Text>
+            <Text style={{ fontSize: 14, color: T.t1 }}><Text style={{ fontWeight: '800', color: T.blue }}>Alt: </Text>{client?.height_cm}cm</Text>
+          </View>
+
           <ScrollView 
             showsVerticalScrollIndicator={true}
             contentContainerStyle={{ flexGrow: 1 }}
