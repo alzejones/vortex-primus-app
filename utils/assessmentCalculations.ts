@@ -135,13 +135,13 @@ export const getHistoryColor = (current: any, previous: any, type: 'fat' | 'musc
   const c = Number(current);
   const p = Number(previous);
   
-  if (!c || !p || isNaN(c) || isNaN(p)) return '#0f172a'; 
-  if (c === p) return '#0f172a'; 
+  if (c === null || c === undefined || isNaN(c) || p === null || p === undefined || isNaN(p)) return '#e2e8f0'; 
+  if (c === p) return '#e2e8f0'; 
 
   if (type === 'fat') return c < p ? '#16a34a' : '#dc2626'; 
   if (type === 'muscle') return c > p ? '#16a34a' : '#dc2626'; 
   
-  return '#0f172a';
+  return '#e2e8f0';
 };
 
 // Inteligência do Peso
@@ -150,8 +150,8 @@ export const getSmartWeightColor = (currW: any, prevW: any, currF: any, prevF: a
   const cf = Number(currF), pf = Number(prevF);
   const cm = Number(currM), pm = Number(prevM);
 
-  if (!cw || !pw || isNaN(cw) || isNaN(pw)) return '#0f172a'; 
-  if (!cf || !pf || !cm || !pm || isNaN(cf) || isNaN(pf) || isNaN(cm) || isNaN(pm)) return '#0f172a';
+  if (cw === null || cw === undefined || isNaN(cw) || pw === null || pw === undefined || isNaN(pw)) return '#e2e8f0'; 
+  if (cf === null || cf === undefined || isNaN(cf) || pf === null || pf === undefined || isNaN(pf) || cm === null || cm === undefined || isNaN(cm) || pm === null || pm === undefined || isNaN(pm)) return '#e2e8f0';
 
   if (cw < pw) { 
     if (cf > pf || cm < pm) return '#dc2626'; 
@@ -172,6 +172,6 @@ export const getSmartWeightColor = (currW: any, prevW: any, currF: any, prevF: a
     if (cm < pm || cf > pf) return '#dc2626'; 
   }
 
-  return '#0f172a'; 
+  return '#e2e8f0'; 
 };
 
