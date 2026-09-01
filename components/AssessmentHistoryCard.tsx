@@ -112,7 +112,7 @@ export default function AssessmentHistoryCard({
       {anthro ? (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Peso</Text>
+            <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>Peso</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ 
                 fontSize: 18, 
@@ -131,7 +131,7 @@ export default function AssessmentHistoryCard({
           </View>
 
           <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#f1f5f9' }}>
-            <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
+            <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat') }}>
                 {formatNum(anthro?.body_fat)}
@@ -142,7 +142,7 @@ export default function AssessmentHistoryCard({
           </View>
 
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
+            <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle') }}>
                 {formatNum(anthro?.muscle_mass_percentage)}
