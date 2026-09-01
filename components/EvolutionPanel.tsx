@@ -81,11 +81,11 @@ export default function EvolutionPanel({
     }
 
     let color = T.t3;
-    if (type === 'weight') color = getSmartWeightColor(currW, prevW, currF, prevF, currM, prevM);
-    else if (type === 'fat') color = getHistoryColor(currF, prevF, 'fat');
-    else if (type === 'muscle') color = getHistoryColor(currM, prevM, 'muscle');
-    else if (type === 'visceral' || type === 'metabolic') color = getHistoryColor(currF, prevF, 'fat');
-    else if (type === 'basal') color = getHistoryColor(currM, prevM, 'muscle');
+    if (type === 'weight') color = getSmartWeightColor(currW, prevW, currF, prevF, currM, prevM, T.t1);
+    else if (type === 'fat') color = getHistoryColor(currF, prevF, 'fat', T.t1);
+    else if (type === 'muscle') color = getHistoryColor(currM, prevM, 'muscle', T.t1);
+    else if (type === 'visceral' || type === 'metabolic') color = getHistoryColor(currF, prevF, 'fat', T.t1);
+    else if (type === 'basal') color = getHistoryColor(currM, prevM, 'muscle', T.t1);
 
     const valFormatted = formatValue(diffValue);
     const emoji = getEmoji(diffValue);

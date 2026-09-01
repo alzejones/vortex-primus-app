@@ -131,27 +131,27 @@ export const getMetabolicStatus = (metabolicAge: any, actualAge: number) => {
 };
 
 // Cores do Histórico
-export const getHistoryColor = (current: any, previous: any, type: 'fat' | 'muscle') => {
+export const getHistoryColor = (current: any, previous: any, type: 'fat' | 'muscle', neutralColor: string = '#0f172a') => {
   const c = Number(current);
   const p = Number(previous);
   
-  if (c === null || c === undefined || isNaN(c) || p === null || p === undefined || isNaN(p)) return '#e2e8f0'; 
-  if (c === p) return '#e2e8f0'; 
+  if (c === null || c === undefined || isNaN(c) || p === null || p === undefined || isNaN(p)) return neutralColor; 
+  if (c === p) return neutralColor; 
 
   if (type === 'fat') return c < p ? '#16a34a' : '#dc2626'; 
   if (type === 'muscle') return c > p ? '#16a34a' : '#dc2626'; 
   
-  return '#e2e8f0';
+  return neutralColor;
 };
 
 // Inteligência do Peso
-export const getSmartWeightColor = (currW: any, prevW: any, currF: any, prevF: any, currM: any, prevM: any) => {
+export const getSmartWeightColor = (currW: any, prevW: any, currF: any, prevF: any, currM: any, prevM: any, neutralColor: string = '#0f172a') => {
   const cw = Number(currW), pw = Number(prevW);
   const cf = Number(currF), pf = Number(prevF);
   const cm = Number(currM), pm = Number(prevM);
 
-  if (cw === null || cw === undefined || isNaN(cw) || pw === null || pw === undefined || isNaN(pw)) return '#e2e8f0'; 
-  if (cf === null || cf === undefined || isNaN(cf) || pf === null || pf === undefined || isNaN(pf) || cm === null || cm === undefined || isNaN(cm) || pm === null || pm === undefined || isNaN(pm)) return '#e2e8f0';
+  if (cw === null || cw === undefined || isNaN(cw) || pw === null || pw === undefined || isNaN(pw)) return neutralColor; 
+  if (cf === null || cf === undefined || isNaN(cf) || pf === null || pf === undefined || isNaN(pf) || cm === null || cm === undefined || isNaN(cm) || pm === null || pm === undefined || isNaN(pm)) return neutralColor;
 
   if (cw < pw) { 
     if (cf > pf || cm < pm) return '#dc2626'; 
@@ -172,6 +172,6 @@ export const getSmartWeightColor = (currW: any, prevW: any, currF: any, prevF: a
     if (cm < pm || cf > pf) return '#dc2626'; 
   }
 
-  return '#e2e8f0'; 
+  return neutralColor; 
 };
 
