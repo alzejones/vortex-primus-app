@@ -118,28 +118,25 @@ export default function ReposicoesScreen() {
       return;
     }
 
-    const waNumber = digits.length === 11 ? `55${digits}` : `55${digits}`;
-    const encodedMessage = encodeURIComponent(reminder.message_text);
-    const waLink = `https://wa.me/${waNumber}?text=${encodedMessage}`;
+    const fullPhone = (digits.length > 11 && digits.startsWith('55')) ? digits : '55' + digits;
 
-    const canOpen = await Linking.canOpenURL(waLink);
-    if (!canOpen) {
+    try {
+      await Linking.openURL(`whatsapp://send?phone=${fullPhone}&text=${encodeURIComponent(reminder.message_text)}`);
+
+      const { error } = await supabase
+        .from('product_reminder_queue')
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('id', reminder.id);
+
+      if (error) {
+        console.error('Erro ao marcar reminder como enviado:', error);
+        notify('Erro', 'Não foi possível atualizar o status do aviso.');
+      } else {
+        load();
+      }
+    } catch (error) {
+      console.error('Erro ao abrir WhatsApp:', error);
       notify('Erro', 'Não foi possível abrir o WhatsApp.');
-      return;
-    }
-
-    await Linking.openURL(waLink);
-
-    const { error } = await supabase
-      .from('product_reminder_queue')
-      .update({ status: 'sent', sent_at: new Date().toISOString() })
-      .eq('id', reminder.id);
-
-    if (error) {
-      console.error('Erro ao marcar reminder como enviado:', error);
-      notify('Erro', 'Não foi possível atualizar o status do aviso.');
-    } else {
-      load();
     }
   }
 
