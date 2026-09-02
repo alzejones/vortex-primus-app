@@ -108,7 +108,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
           supabase.from('herbalife_kit_items').select('kit_id, supplement_id, doses_used, is_flavor_choice, supplements(flavor_group)'),
           supabase
             .from('herbalife_pricing')
-            .select('*, supplements(name, flavor_group)')
+            .select('*, dose_diaria_padrao, supplements(name, flavor_group)')
             .order('sku'),
           (async () => {
             let allClients: any[] = [];

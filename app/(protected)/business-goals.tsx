@@ -23,6 +23,7 @@ const TABS: { key: Tab; label: string; icon: string; action?: () => void }[] = [
 ];
 
 const ACTION_TABS: { label: string; icon: string; action: () => void }[] = [
+  { label: 'Reposições', icon: '📦', action: () => router.push('/reposicoes' as any) },
   { label: 'EVS', icon: '🧾', action: () => router.push('/evs-atendente' as any) },
 ];
 

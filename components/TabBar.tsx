@@ -19,7 +19,7 @@ function isActive(key: string, pathname: string): boolean {
     case "home":     return pathname === "/";
     case "clients":  return pathname.startsWith("/clients") || pathname.startsWith("/client");
     case "schedule": return pathname.startsWith("/schedule");
-    case "goals":    return pathname.startsWith("/business-goals") || pathname.startsWith("/herbalife-vendas") || pathname.startsWith("/herbalife-relatorios") || pathname.startsWith("/herbalife-kits") || pathname.startsWith("/herbalife-team");
+    case "goals":    return pathname.startsWith("/business-goals") || pathname.startsWith("/herbalife-vendas") || pathname.startsWith("/herbalife-relatorios") || pathname.startsWith("/herbalife-kits") || pathname.startsWith("/herbalife-team") || pathname.startsWith("/reposicoes");
     case "config":   return pathname.startsWith("/trainer-profile");
     default:         return false;
   }

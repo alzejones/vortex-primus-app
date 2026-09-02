@@ -31,6 +31,7 @@ interface Supplement {
   fiber_g: number | null;
   notes: string | null;
   price_venda: number | null;
+  dose_diaria_padrao: number | null;
   created_at: string;
 }
 
@@ -46,6 +47,7 @@ interface FormData {
   fiber_g: string;
   notes: string;
   price_venda: string;
+  dose_diaria_padrao: string;
 }
 
 const initialFormData: FormData = {
@@ -60,6 +62,7 @@ const initialFormData: FormData = {
   fiber_g: '',
   notes: '',
   price_venda: '',
+  dose_diaria_padrao: '',
 };
 
 export default function SupplementsScreen() {
@@ -77,7 +80,7 @@ export default function SupplementsScreen() {
     try {
       const { data, error } = await supabase
         .from('supplements')
-        .select('*, herbalife_pricing(price_venda)')
+        .select('*, herbalife_pricing(price_venda, dose_diaria_padrao)')
         .order('brand', { ascending: true })
         .order('name', { ascending: true });
 
@@ -86,6 +89,7 @@ export default function SupplementsScreen() {
       const mapped = (data || []).map(item => ({
         ...item,
         price_venda: item.herbalife_pricing?.price_venda ?? null,
+        dose_diaria_padrao: item.herbalife_pricing?.dose_diaria_padrao ?? null,
       }));
       
       setSupplements(mapped);
@@ -137,6 +141,7 @@ export default function SupplementsScreen() {
       fiber_g: supplement.fiber_g?.toString() || '',
       notes: supplement.notes || '',
       price_venda: supplement.price_venda?.toString() || '',
+      dose_diaria_padrao: supplement.dose_diaria_padrao?.toString() || '',
     });
     setModalVisible(true);
   };
@@ -174,6 +179,7 @@ export default function SupplementsScreen() {
         p_fiber_g: formData.fiber_g ? parseFloat(formData.fiber_g) : null,
         p_notes: formData.notes.trim() || null,
         p_price_venda: parseFloat(formData.price_venda),
+        p_dose_diaria_padrao: formData.dose_diaria_padrao ? parseFloat(formData.dose_diaria_padrao) : null,
       });
 
       if (error) throw error;
@@ -378,6 +384,21 @@ export default function SupplementsScreen() {
                 placeholder="397.50"
                 keyboardType="numeric"
               />
+            </View>
+
+            {/* Dose Diária Padrão */}
+            <View style={styles.formFieldFull}>
+              <Text style={styles.fieldLabel}>Dose Diária Padrão (opcional)</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={formData.dose_diaria_padrao}
+                onChangeText={(text) => setFormData({...formData, dose_diaria_padrao: text})}
+                placeholder="Ex: 1 (1 dose por dia)"
+                keyboardType="numeric"
+              />
+              <Text style={styles.fieldHint}>
+                Para cálculo automático de reposição. Ex: shake = 2 doses/dia
+              </Text>
             </View>
 
             {/* Porção e Calorias */}
@@ -682,5 +703,11 @@ const styles = StyleSheet.create({
   notesInput: {
     height: 80,
     textAlignVertical: 'top',
+  },
+  fieldHint: {
+    fontSize: 12,
+    color: T.t3,
+    fontStyle: 'italic',
+    marginTop: 4,
   },
 });

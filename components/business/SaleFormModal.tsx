@@ -63,6 +63,7 @@ export interface Pricing {
   price_42: number;
   price_50: number;
   doses_per_package: number | null;
+  dose_diaria_padrao?: number | null;
   name?: string;
   flavor_group?: string | null;
 }
@@ -94,6 +95,7 @@ export interface CartItem {
   unitPrice: number;
   unitPriceText?: string;
   flavorChoices?: Record<string, string>;
+  dose_diaria?: number | null;
 }
 
 interface SaleFormModalProps {
@@ -281,6 +283,7 @@ export default function SaleFormModal({
         quantity: 1,
         unitPrice: price,
         unitPriceText: String(price),
+        dose_diaria: p.dose_diaria_padrao || null,
       }]);
     }
     setPickerOpen(null);
@@ -299,6 +302,11 @@ export default function SaleFormModal({
     const normalized = price.replace(',', '.');
     const parsed = parseFloat(normalized) || 0;
     setCart(cart.map((item, i) => i === index ? { ...item, unitPriceText: price, unitPrice: parsed } : item));
+  }
+
+  function updateCartDoseDiaria(index: number, dose: string) {
+    const parsed = dose.trim() ? parseFloat(dose) : null;
+    setCart(cart.map((item, i) => i === index ? { ...item, dose_diaria: parsed } : item));
   }
 
   function openPicker(type: 'kit' | 'produto' | 'cliente' | 'apresentacao') {
@@ -360,7 +368,7 @@ export default function SaleFormModal({
         try {
           const { data: items } = await supabase
             .from('herbalife_sale_items')
-            .select('*')
+            .select('*, dose_diaria')
             .eq('sale_id', editingSale.id);
 
           if (!items || items.length === 0) return;
@@ -431,6 +439,7 @@ export default function SaleFormModal({
                   quantity: qty,
                   unitPrice,
                   unitPriceText: String(unitPrice),
+                  dose_diaria: item.dose_diaria || null,
                 });
               }
             }
@@ -613,6 +622,7 @@ export default function SaleFormModal({
             pv: Number(product.pv),
             line_qty: cartItem.quantity,
             line_unit_charged: isConsumoPessoal ? 0 : cartItem.unitPrice,
+            dose_diaria: cartItem.dose_diaria || null,
           });
         }
       }
@@ -1009,6 +1019,18 @@ export default function SaleFormModal({
                           onChangeText={(t) => updateCartPrice(index, t)}
                         />
                       </View>
+                      {item.itemType === 'produto' && (
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.cartLabel}>Dose/dia</Text>
+                          <TextInput
+                            style={s.cartInput}
+                            keyboardType="decimal-pad"
+                            placeholder="—"
+                            value={item.dose_diaria != null ? String(item.dose_diaria) : ''}
+                            onChangeText={(t) => updateCartDoseDiaria(index, t)}
+                          />
+                        </View>
+                      )}
                     </View>
                     <Text style={s.cartSubtotal}>
                       Subtotal: {brl(item.unitPrice * item.quantity)}
