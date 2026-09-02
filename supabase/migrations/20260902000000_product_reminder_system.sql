@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS product_reminder_queue (
   product_name text,
   scheduled_date date,
   message_text text,
-  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'sent', 'dismissed')),
+  status text NOT NULL DEFAULT 'pending',
   sent_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
@@ -318,23 +318,12 @@ COMMENT ON FUNCTION upsert_supplement_with_pricing(
 -- JÁ APLICADO EM PRODUÇÃO
 ALTER TABLE product_reminder_queue ENABLE ROW LEVEL SECURITY;
 
--- Trainer vê seus próprios avisos
-DROP POLICY IF EXISTS product_reminder_queue_trainer_select ON product_reminder_queue;
-CREATE POLICY product_reminder_queue_trainer_select
-  ON product_reminder_queue FOR SELECT
-  USING (trainer_id IN (SELECT id FROM trainers WHERE user_id = auth.uid()));
-
--- Trainer atualiza status de seus avisos
-DROP POLICY IF EXISTS product_reminder_queue_trainer_update ON product_reminder_queue;
-CREATE POLICY product_reminder_queue_trainer_update
-  ON product_reminder_queue FOR UPDATE
-  USING (trainer_id IN (SELECT id FROM trainers WHERE user_id = auth.uid()));
-
--- Trainer deleta seus avisos
-DROP POLICY IF EXISTS product_reminder_queue_trainer_delete ON product_reminder_queue;
-CREATE POLICY product_reminder_queue_trainer_delete
-  ON product_reminder_queue FOR DELETE
-  USING (trainer_id IN (SELECT id FROM trainers WHERE user_id = auth.uid()));
+-- Trainer gerencia seus próprios avisos (SELECT, INSERT, UPDATE, DELETE)
+DROP POLICY IF EXISTS product_reminder_queue_trainer_all ON product_reminder_queue;
+CREATE POLICY product_reminder_queue_trainer_all
+  ON product_reminder_queue FOR ALL
+  USING (trainer_id IN (SELECT id FROM trainers WHERE user_id = auth.uid()))
+  WITH CHECK (trainer_id IN (SELECT id FROM trainers WHERE user_id = auth.uid()));
 
 
 -- ============================================================================
