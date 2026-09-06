@@ -24,7 +24,7 @@ import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 
-const SUPORTE_WHATSAPP = "5516999999999";
+const SUPORTE_WHATSAPP = "5516981020191";
 
 // A proteção que salvou a Web
 if (Platform.OS !== "web") {
