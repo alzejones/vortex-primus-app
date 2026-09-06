@@ -22,6 +22,9 @@ import { TutorialHelpButton } from "../components/tutorial/TutorialHelpButton";
 
 import * as Linking from "expo-linking";
 import * as WebBrowser from "expo-web-browser";
+import { Ionicons } from "@expo/vector-icons";
+
+const SUPORTE_WHATSAPP = "5516981020191";
 
 // A proteção que salvou a Web
 if (Platform.OS !== "web") {
@@ -30,7 +33,7 @@ if (Platform.OS !== "web") {
 
 export default function Login() {
   console.log('[DEBUG 4] login.tsx renderizando');
-  const { session, role } = useAuth();
+  const { session, role, loading, signOut } = useAuth();
 
   // ─── Responsividade ───────────────────────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
@@ -51,10 +54,14 @@ export default function Login() {
 
   // Redireciona após login baseado no role — aguarda detectRole() resolver
   useEffect(() => {
-    if (!session || role === null) return;
-    if (role === "trainer") router.replace("/(protected)" as any);
-    if (role === "client")  router.replace("/(client)/diet" as any);
-  }, [session, role]);
+    if (!session) return;
+    if (loading) return;
+    if (role === "trainer") { router.replace("/(protected)" as any); return; }
+    if (role === "client") { router.replace("/(client)/diet" as any); return; }
+    setMessage(
+      "Não conseguimos identificar seu perfil (treinador ou cliente) nesta conta. Toque em 'Precisa de ajuda?' abaixo para falar com o suporte, ou saia e tente entrar com outra conta."
+    );
+  }, [session, role, loading]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -62,6 +69,8 @@ export default function Login() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const emailRef = useRef(null);
   const senhaRef = useRef(null);
@@ -118,11 +127,14 @@ export default function Login() {
       password,
     });
     if (error) {
-      setMessage(
-        error.message.toLowerCase().includes("invalid login")
-          ? "E-mail ou senha incorretos."
-          : error.message
-      );
+      const msg = error.message.toLowerCase();
+      if (msg.includes("invalid login")) {
+        setMessage(
+          "E-mail ou senha incorretos.\n\nSe você criou a conta pelo Google, use o botão 'Entrar com Google' em vez de senha."
+        );
+      } else {
+        setMessage(error.message);
+      }
       return;
     }
   }
@@ -181,7 +193,9 @@ export default function Login() {
       setMessage(error.message);
       return;
     }
-    setMessage("Código enviado! Verifique o seu e-mail.");
+    setMessage(
+      `Se ${cleanEmail} estiver cadastrado, o código chega em até 2 minutos. Confira se o e-mail está digitado corretamente. Se você criou a conta pelo Google, use o botão 'Entrar com Google' em vez de senha.`
+    );
     setIsResetting(true);
   }
 
@@ -261,6 +275,14 @@ export default function Login() {
           >
             {message}
           </Text>
+          {session && role === null && !loading ? (
+            <TouchableOpacity
+              onPress={signOut}
+              style={styles.signOutBtn}
+            >
+              <Text style={styles.signOutText}>Sair e tentar novamente</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : null}
 
@@ -343,15 +365,27 @@ export default function Login() {
                     <Text style={styles.forgot}>Esqueceu?</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor={T.t3}
-                  value={password}
-                  onChangeText={(t) => handleTyping(t, setPassword)}
-                  secureTextEntry
-                  onSubmitEditing={handleLogin}
-                />
+                <View style={styles.inputWithIcon}>
+                  <TextInput
+                    style={styles.inputWithIconField}
+                    placeholder="••••••••"
+                    placeholderTextColor={T.t3}
+                    value={password}
+                    onChangeText={(t) => handleTyping(t, setPassword)}
+                    secureTextEntry={!showPassword}
+                    onSubmitEditing={handleLogin}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.iconEye}
+                  >
+                    <Ionicons
+                      name={showPassword ? "eye-off" : "eye"}
+                      size={20}
+                      color={T.t3}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Botão Entrar */}
@@ -368,6 +402,23 @@ export default function Login() {
                 >
                   <Text style={styles.primaryBtnText}>Entrar</Text>
                 </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Precisa de ajuda? */}
+              <TouchableOpacity
+                style={styles.helpBtn}
+                onPress={() => {
+                  try {
+                    const text = encodeURIComponent(
+                      `Olá! Não consegui entrar no Vortex Primus. Meu e-mail: ${email.trim()}. Pode me ajudar?`
+                    );
+                    Linking.openURL(`whatsapp://send?phone=${SUPORTE_WHATSAPP}&text=${text}`);
+                  } catch (err) {
+                    console.error("Erro ao abrir WhatsApp:", err);
+                  }
+                }}
+              >
+                <Text style={styles.helpText}>Precisa de ajuda?</Text>
               </TouchableOpacity>
 
               {/* Cadastro */}
@@ -403,15 +454,27 @@ export default function Login() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nova Senha</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mínimo 6 caracteres"
-                  placeholderTextColor={T.t3}
-                  value={newPassword}
-                  onChangeText={(t) => handleTyping(t, setNewPassword)}
-                  secureTextEntry
-                  onSubmitEditing={handleVerifyAndResetPassword}
-                />
+                <View style={styles.inputWithIcon}>
+                  <TextInput
+                    style={styles.inputWithIconField}
+                    placeholder="Mínimo 6 caracteres"
+                    placeholderTextColor={T.t3}
+                    value={newPassword}
+                    onChangeText={(t) => handleTyping(t, setNewPassword)}
+                    secureTextEntry={!showNewPassword}
+                    onSubmitEditing={handleVerifyAndResetPassword}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    style={styles.iconEye}
+                  >
+                    <Ionicons
+                      name={showNewPassword ? "eye-off" : "eye"}
+                      size={20}
+                      color={T.t3}
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -615,10 +678,35 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { color: T.white, fontWeight: "700", fontSize: 16 },
 
+  // ─── Precisa de ajuda? ──────────────────────────────────────────
+  helpBtn:  { marginTop: 12, alignItems: "center" },
+  helpText: { color: T.t2, fontSize: 13, fontWeight: "600" },
+
   // ─── Cadastro ───────────────────────────────────────────────────
-  signupBtn:  { marginTop: 24, alignItems: "center" },
+  signupBtn:  { marginTop: 12, alignItems: "center" },
   signupText: { color: T.t2, fontSize: 14 },
   signupLink: { color: T.blue, fontWeight: "700" },
+
+  // ─── Input com ícone (olho) ─────────────────────────────────────
+  inputWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: T.surface,
+    borderWidth: 1,
+    borderColor: T.border,
+    borderRadius: 12,
+    height: 50,
+    paddingHorizontal: 16,
+  },
+  inputWithIconField: {
+    flex: 1,
+    fontSize: 16,
+    color: T.white,
+  },
+  iconEye: {
+    marginLeft: 8,
+    padding: 4,
+  },
 
   // ─── Reset ──────────────────────────────────────────────────────
   resetTitle: {
@@ -636,4 +724,8 @@ const styles = StyleSheet.create({
   },
   backBtn:     { marginTop: 24, alignItems: "center" },
   backBtnText: { color: T.t2, fontSize: 14, fontWeight: "600" },
+
+  // ─── Botão Sair (role null) ─────────────────────────────────────
+  signOutBtn:  { marginTop: 12, alignItems: "center" },
+  signOutText: { color: T.blue, fontSize: 14, fontWeight: "600" },
 });
