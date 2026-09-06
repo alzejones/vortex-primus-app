@@ -33,7 +33,7 @@ if (Platform.OS !== "web") {
 
 export default function Login() {
   console.log('[DEBUG 4] login.tsx renderizando');
-  const { session, role } = useAuth();
+  const { session, role, loading, signOut } = useAuth();
 
   // ─── Responsividade ───────────────────────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
@@ -54,10 +54,14 @@ export default function Login() {
 
   // Redireciona após login baseado no role — aguarda detectRole() resolver
   useEffect(() => {
-    if (!session || role === null) return;
-    if (role === "trainer") router.replace("/(protected)" as any);
-    if (role === "client")  router.replace("/(client)/diet" as any);
-  }, [session, role]);
+    if (!session) return;
+    if (loading) return;
+    if (role === "trainer") { router.replace("/(protected)" as any); return; }
+    if (role === "client") { router.replace("/(client)/diet" as any); return; }
+    setMessage(
+      "Não conseguimos identificar seu perfil (treinador ou cliente) nesta conta. Toque em 'Precisa de ajuda?' abaixo para falar com o suporte, ou saia e tente entrar com outra conta."
+    );
+  }, [session, role, loading]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -271,6 +275,14 @@ export default function Login() {
           >
             {message}
           </Text>
+          {session && role === null && !loading ? (
+            <TouchableOpacity
+              onPress={signOut}
+              style={styles.signOutBtn}
+            >
+              <Text style={styles.signOutText}>Sair e tentar novamente</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : null}
 
@@ -712,4 +724,8 @@ const styles = StyleSheet.create({
   },
   backBtn:     { marginTop: 24, alignItems: "center" },
   backBtnText: { color: T.t2, fontSize: 14, fontWeight: "600" },
+
+  // ─── Botão Sair (role null) ─────────────────────────────────────
+  signOutBtn:  { marginTop: 12, alignItems: "center" },
+  signOutText: { color: T.blue, fontSize: 14, fontWeight: "600" },
 });
