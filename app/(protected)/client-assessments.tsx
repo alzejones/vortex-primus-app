@@ -157,10 +157,17 @@ export default function ClientAssessments() {
     const message = `Olá, *${firstName}*!\n\nSua autoavaliação corporal já está disponível no *Vortex Primus*.\n\n_Clique e veja *agora*:_ 📊\n${assessmentLink}\n\nParabéns pela determinação e foco no processo! 🔥`;
 
     try {
-      if (cleanPhone) {
-        await Linking.openURL(`whatsapp://send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`);
+      if (Platform.OS === 'web') {
+        const url = cleanPhone
+          ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+          : `https://wa.me/?text=${encodeURIComponent(message)}`;
+        await Linking.openURL(url);
       } else {
-        await Linking.openURL(`whatsapp://send?text=${encodeURIComponent(message)}`);
+        if (cleanPhone) {
+          await Linking.openURL(`whatsapp://send?phone=${whatsappNumber}&text=${encodeURIComponent(message)}`);
+        } else {
+          await Linking.openURL(`whatsapp://send?text=${encodeURIComponent(message)}`);
+        }
       }
     } catch (error) {
       console.error("Erro ao abrir WhatsApp:", error);
@@ -797,12 +804,24 @@ export default function ClientAssessments() {
     }
 
     const message = `Olá, *${client.name}*! 👋\n\nSua nova avaliação do *Vortex Primus* está pronta. Esqueça links externos, o seu resultado está aqui:\n\n📍 *STATUS ATUAL:*\n• Peso: *${anthro.weight ?? "-"} kg*\n• % Gordura: *${anthro.body_fat ?? "-"}%*\n• % Músculo: *${anthro.muscle_mass_percentage ?? "-"}%*\n• Idade Metab.: *${anthro.metabolic_age ?? "-"} anos*\n${evolutionSection}\n\nParabéns pela determinação e comprometimento! Esses números são o reflexo do seu suor no Cross. 👏👏👏\n\nBora buscar a próxima meta? 🔥\n_Att, Coach Alzejones_`;
-    const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
 
-    Linking.canOpenURL(url).then((supported) => {
-      if (!supported) Alert.alert("Erro", "WhatsApp não instalado.");
-      else return Linking.openURL(url);
-    });
+    if (Platform.OS === 'web') {
+      const cleanPhone = client.phone ? client.phone.replace(/\D/g, '') : '';
+      const whatsappNumber = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      const url = cleanPhone
+        ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+        : `https://wa.me/?text=${encodeURIComponent(message)}`;
+      Linking.openURL(url).catch((error) => {
+        console.error("Erro ao abrir WhatsApp:", error);
+        Alert.alert("Erro", "Não foi possível abrir o WhatsApp.");
+      });
+    } else {
+      const url = `whatsapp://send?text=${encodeURIComponent(message)}`;
+      Linking.canOpenURL(url).then((supported) => {
+        if (!supported) Alert.alert("Erro", "WhatsApp não instalado.");
+        else return Linking.openURL(url);
+      });
+    }
   }
 
   function renderGridInput(label: string, key: keyof typeof form) {
