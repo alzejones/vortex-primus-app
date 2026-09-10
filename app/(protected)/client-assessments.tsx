@@ -28,8 +28,11 @@ import AssessmentHistoryCard from '../../components/AssessmentHistoryCard';
 import AIReportModal from '../../components/AIReportModal';
 import { T } from "../../utils/theme";
 import BluetoothScaleConnector from "../../components/BluetoothScaleConnector";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ClientAssessments() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { hasFeature } = useLicenseStatus();
 
   const { id, openForm } = useLocalSearchParams();
@@ -327,7 +330,7 @@ export default function ClientAssessments() {
   }
 
   function getColor(value: any, type: "fat" | "weight" | "muscle" = "weight") {
-    if (value === null || value === "-" || value === undefined) return T.t3;
+    if (value === null || value === "-" || value === undefined) return theme.colors.textMuted;
     const num = Number(value);
     if (type === "fat" || type === "weight") {
       if (num < 0) return "#16a34a";
@@ -337,7 +340,7 @@ export default function ClientAssessments() {
       if (num > 0) return "#16a34a";
       if (num < 0) return "#dc2626";
     }
-    return T.t3;
+    return theme.colors.textMuted;
   }
 
   function formatValue(value: any) {
@@ -827,7 +830,7 @@ export default function ClientAssessments() {
   function renderGridInput(label: string, key: keyof typeof form) {
     return (
       <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
-        <Text style={{ fontSize: 12, marginBottom: 4, color: T.t2, minHeight: 30 }} numberOfLines={2}>{label}</Text>
+        <Text style={{ fontSize: 12, marginBottom: 4, color: theme.colors.textSecondary, minHeight: 30 }} numberOfLines={2}>{label}</Text>
         <TextInput style={styles.gridInput as any} keyboardType="decimal-pad" value={form[key]} onChangeText={(text) => setForm({ ...form, [key]: text.replace(',', '.') })} />
       </View>
     );
@@ -849,25 +852,25 @@ export default function ClientAssessments() {
 
   if (loading || !client) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background }}>
         <ActivityIndicator size="large" color={T.blue} />
-        <Text style={{ marginTop: 10, color: T.t3 }}>Carregando dados do aluno...</Text>
+        <Text style={{ marginTop: 10, color: theme.colors.textMuted }}>Carregando dados do aluno...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+    <View style={[{ flex: 1, backgroundColor: theme.colors.background }, { alignItems: isDesktop ? 'center' : undefined }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 480 : undefined }}>
         <SafeAreaView style={{ flex: 1, paddingTop: Platform.OS === "android" ? 48 : 0 }}>
           <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
 
         {/* MODAL DE FORMULÁRIO */}
         <Modal visible={formModalVisible} animationType="slide" onRequestClose={() => setFormModalVisible(false)}>
-          <View style={{ flex: 1, backgroundColor: T.bg }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: T.bgAlt, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: T.border, flexWrap: 'wrap', gap: 8 }}>
-              <Text style={{ color: T.t1, fontSize: 14, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-              <Text style={{ color: T.t2, fontSize: 13 }}>{client?.name?.substring(0, 20)}{client?.name?.length > 20 ? '...' : ''}</Text>
+          <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.card, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: theme.colors.border, flexWrap: 'wrap', gap: 8 }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>{client?.name?.substring(0, 20)}{client?.name?.length > 20 ? '...' : ''}</Text>
               <TouchableOpacity onPress={() => {
                 setFormModalVisible(false);
                 setPendingPhotos([]);
@@ -885,11 +888,11 @@ export default function ClientAssessments() {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text></Text>
                     <TextInput
-                      style={{ fontSize: 14, color: T.t2, borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 0, paddingHorizontal: 2, minWidth: 110 }}
+                      style={{ fontSize: 14, color: theme.colors.textSecondary, borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 0, paddingHorizontal: 2, minWidth: 110 }}
                       value={form.assessment_date}
                       onChangeText={handleDateChange}
                       placeholder="DD/MM/AAAA HH:mm"
-                      placeholderTextColor={T.t3}
+                      placeholderTextColor={theme.colors.textMuted}
                       keyboardType="numeric"
                       maxLength={16}
                     />
@@ -904,13 +907,13 @@ export default function ClientAssessments() {
                     disabled={uploadingPhoto}
                     style={{
                       flexDirection: 'row', alignItems: 'center', gap: 6,
-                      backgroundColor: T.card, borderWidth: 1, borderColor: T.border,
+                      backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border,
                       borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
                     }}
                   >
                     <Text style={{ fontSize: 20 }}>📷</Text>
                     <View>
-                      <Text style={{ color: T.t1, fontWeight: 'bold', fontSize: 13 }}>Salvar Foto</Text>
+                      <Text style={{ color: theme.colors.textPrimary, fontWeight: 'bold', fontSize: 13 }}>Salvar Foto</Text>
                       {pendingPhotos.length > 0 && (
                         <Text style={{ color: T.blue, fontSize: 11 }}>{pendingPhotos.length} foto(s)</Text>
                       )}
@@ -923,8 +926,8 @@ export default function ClientAssessments() {
                     disabled={uploadingPhoto}
                     style={{
                       flexDirection: 'row', alignItems: 'center', gap: 6,
-                      backgroundColor: pendingSelfie ? T.blueGlow : T.card,
-                      borderWidth: 1, borderColor: pendingSelfie ? T.blue : T.border,
+                      backgroundColor: pendingSelfie ? T.blueGlow : theme.colors.card,
+                      borderWidth: 1, borderColor: pendingSelfie ? T.blue : theme.colors.border,
                       borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
                       opacity: uploadingPhoto ? 0.6 : 1,
                       marginLeft: 'auto',
@@ -932,7 +935,7 @@ export default function ClientAssessments() {
                   >
                     <Text style={{ fontSize: 20 }}>📸</Text>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={{ color: pendingSelfie ? T.blue : T.t1, fontWeight: 'bold', fontSize: 13 }}>
+                      <Text style={{ color: pendingSelfie ? T.blue : theme.colors.textPrimary, fontWeight: 'bold', fontSize: 13 }}>
                         {pendingSelfie ? '🔄 Salvar Selfie' : 'Post com Cliente'}
                       </Text>
                     </View>
@@ -947,10 +950,10 @@ export default function ClientAssessments() {
                         {photo.signedUrl ? (
                           <Image
                             source={{ uri: photo.signedUrl }}
-                            style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: T.border }}
+                            style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.border }}
                           />
                         ) : (
-                          <View style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, alignItems: 'center', justifyContent: 'center' }}>
+                          <View style={{ width: 56, height: 56, borderRadius: 8, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center' }}>
                             <ActivityIndicator size="small" color={T.blue} />
                           </View>
                         )}
@@ -993,7 +996,7 @@ export default function ClientAssessments() {
                             style={{
                               width: 56, height: 56, borderRadius: 10,
                               borderWidth: 1.5, borderColor: T.blue,
-                              backgroundColor: T.surface
+                              backgroundColor: theme.colors.card
                             }}
                           />
                           {pendingSelfie.uri === 'existing' && !selfieSignedUrl && (
@@ -1031,8 +1034,8 @@ export default function ClientAssessments() {
                     featureKey="bluetooth_scale"
                     featureName="Balança Bluetooth"
                     requiredPlan="Avançado"
-                    buttonStyle={{ backgroundColor: T.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.border, marginBottom: 16 }}
-                    textStyle={{ textAlign: 'center', color: T.t3, fontWeight: '700', fontSize: 14 }}
+                    buttonStyle={{ backgroundColor: theme.colors.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 16 }}
+                    textStyle={{ textAlign: 'center', color: theme.colors.textMuted, fontWeight: '700', fontSize: 14 }}
                     label="Conectar Balança Bluetooth"
                   />
                 )}
@@ -1050,7 +1053,7 @@ export default function ClientAssessments() {
                         🪄 Calcular Avaliação à Distância (IA)
                       </Text>
                     </TouchableOpacity>
-                    <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: -10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 10, color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginTop: -10, marginBottom: 12 }}>
                       Estimativa por IA — pode ter margem de erro em relação à medição direta.
                     </Text>
                   </>
@@ -1059,8 +1062,8 @@ export default function ClientAssessments() {
                     featureKey="remote_assessment"
                     featureName="Avaliação à Distância por IA"
                     requiredPlan="Avançado"
-                    buttonStyle={{ backgroundColor: T.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.border, marginTop: 4, marginBottom: 16 }}
-                    textStyle={{ textAlign: 'center', color: T.t3, fontWeight: '700', fontSize: 14 }}
+                    buttonStyle={{ backgroundColor: theme.colors.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, marginTop: 4, marginBottom: 16 }}
+                    textStyle={{ textAlign: 'center', color: theme.colors.textMuted, fontWeight: '700', fontSize: 14 }}
                     label="Calcular Avaliação à Distância (IA)"
                     icon="🔒"
                   />
@@ -1077,13 +1080,13 @@ export default function ClientAssessments() {
         {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
         <Modal visible={!!assessmentToDelete} transparent={true} animationType="fade" onRequestClose={() => setAssessmentToDelete(null)}>
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-            <View style={{ backgroundColor: T.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: T.border, width: '100%', maxWidth: 400, alignItems: 'center' }}>
+            <View style={{ backgroundColor: theme.colors.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, width: '100%', maxWidth: 400, alignItems: 'center' }}>
               <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
-              <Text style={{ fontSize: 20, fontWeight: 'bold', color: T.t1, marginBottom: 8, textAlign: 'center' }}>Excluir Avaliação?</Text>
-              <Text style={{ fontSize: 15, color: T.t3, textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar esta avaliação permanentemente? Esta ação não pode ser desfeita.</Text>
+              <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>Excluir Avaliação?</Text>
+              <Text style={{ fontSize: 15, color: theme.colors.textMuted, textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar esta avaliação permanentemente? Esta ação não pode ser desfeita.</Text>
               <View style={{ flexDirection: 'row', width: '100%', gap: 12 }}>
-                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: T.surfaceAlt, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: T.border }} onPress={() => setAssessmentToDelete(null)} disabled={isDeleting}>
-                  <Text style={{ color: T.t2, fontWeight: 'bold', fontSize: 15 }}>Cancelar</Text>
+                <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: theme.colors.card, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }} onPress={() => setAssessmentToDelete(null)} disabled={isDeleting}>
+                  <Text style={{ color: theme.colors.textSecondary, fontWeight: 'bold', fontSize: 15 }}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: T.red, borderRadius: 10, alignItems: 'center' }} onPress={executeDelete} disabled={isDeleting}>
                   {isDeleting ? <ActivityIndicator color={T.white} /> : <Text style={{ color: T.white, fontWeight: 'bold', fontSize: 15 }}>Sim, Excluir</Text>}
@@ -1094,12 +1097,12 @@ export default function ClientAssessments() {
         </Modal>
 
             {/* TELA PRINCIPAL */}
-          <View style={[styles.stickyHeader, { backgroundColor: T.surfaceAlt, borderBottomWidth: 2, borderBottomColor: T.blue, paddingVertical: 12, zIndex: 999, elevation: 999 }]}>
+          <View style={[styles.stickyHeader, { backgroundColor: theme.colors.card, borderBottomWidth: 2, borderBottomColor: T.blue, paddingVertical: 12, zIndex: 999, elevation: 999 }]}>
             <View style={styles.headerRow}>
-              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Nome: </Text>{client?.name?.substring(0, 14)}{client?.name?.length > 14 ? '...' : ''}</Text>
-              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
-              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Sexo: </Text>{client?.gender ?? '-'}</Text>
-              <Text style={[styles.headerItem, { fontSize: 15, color: T.t1 }]}><Text style={[styles.bold, { color: T.blue }]}>Alt: </Text>{client?.height_cm}cm</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: theme.colors.textPrimary }]}><Text style={[styles.bold, { color: T.blue }]}>Nome: </Text>{client?.name?.substring(0, 14)}{client?.name?.length > 14 ? '...' : ''}</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: theme.colors.textPrimary }]}><Text style={[styles.bold, { color: T.blue }]}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: theme.colors.textPrimary }]}><Text style={[styles.bold, { color: T.blue }]}>Sexo: </Text>{client?.gender ?? '-'}</Text>
+              <Text style={[styles.headerItem, { fontSize: 15, color: theme.colors.textPrimary }]}><Text style={[styles.bold, { color: T.blue }]}>Alt: </Text>{client?.height_cm}cm</Text>
             </View>
           </View>
             <ScrollView 
@@ -1148,18 +1151,18 @@ export default function ClientAssessments() {
   );
 }
 
-const styles = StyleSheet.create({
-  stickyHeader: { backgroundColor: T.bgAlt, paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: T.border, elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  stickyHeader: { backgroundColor: theme.colors.card, paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border, elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  headerItem: { fontSize: 14, color: T.t2 },
+  headerItem: { fontSize: 14, color: theme.colors.textSecondary },
   bold: { fontWeight: "bold" },
-  pageTitle: { fontSize: 18, fontWeight: "bold", marginTop: 10, marginBottom: 16, color: T.t1 },
-  card: { padding: 12, borderWidth: 1, borderColor: T.border, borderRadius: 10, backgroundColor: T.card, marginBottom: 16 },
-  cardTitle: { fontSize: 14, fontWeight: "bold", marginBottom: 8, color: T.t2 },
+  pageTitle: { fontSize: 18, fontWeight: "bold", marginTop: 10, marginBottom: 16, color: theme.colors.textPrimary },
+  card: { padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, backgroundColor: theme.colors.card, marginBottom: 16 },
+  cardTitle: { fontSize: 14, fontWeight: "bold", marginBottom: 8, color: theme.colors.textSecondary },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  gridInput: { borderWidth: 1, borderColor: T.border, padding: 8, borderRadius: 6, backgroundColor: T.surface, textAlign: 'center', fontSize: 14, color: T.t1 },
+  gridInput: { borderWidth: 1, borderColor: theme.colors.border, padding: 8, borderRadius: 6, backgroundColor: theme.colors.card, textAlign: 'center', fontSize: 14, color: theme.colors.textPrimary },
   button: { backgroundColor: T.blue, padding: 16, borderRadius: 8, marginTop: 10 },
-  historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: T.border, borderRadius: 8, backgroundColor: T.card },
+  historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, backgroundColor: theme.colors.card },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalContent: { backgroundColor: T.card, borderRadius: 15, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90%', borderWidth: 1, borderColor: T.border, alignSelf: 'center' }
+  modalContent: { backgroundColor: theme.colors.card, borderRadius: 15, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90%', borderWidth: 1, borderColor: theme.colors.border, alignSelf: 'center' }
 });

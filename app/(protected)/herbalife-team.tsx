@@ -1060,7 +1060,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   weekValue: { color: theme.colors.textPrimary, fontWeight: '600', fontSize: 13 },
   reportHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   reportHeaderCell: { flex: 0.7, fontSize: 10, fontWeight: '800', color: theme.colors.textMuted, textTransform: 'uppercase' },
-  reportRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.surface },
+  reportRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   reportCell: { flex: 0.7, fontSize: 12, color: theme.colors.textSecondary, fontWeight: '600' },
 
   eyebrow: { fontSize: 11, fontWeight: '700', color: theme.colors.textMuted, letterSpacing: 1.5, marginBottom: 4 },
@@ -1133,7 +1133,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   miniStatCol: { alignItems: 'center' },
   miniStatLabel: { fontSize: 8, fontWeight: '700', color: theme.colors.textMuted, marginBottom: 1 },
   miniStatNum: { fontSize: 13, fontWeight: '900', color: theme.colors.textPrimary },
-  miniProgressBar: { height: 6, backgroundColor: T.surface, borderRadius: 3, overflow: 'hidden' },
+  miniProgressBar: { height: 6, backgroundColor: theme.colors.card, borderRadius: 3, overflow: 'hidden' },
   miniProgressFill: { height: 6, borderRadius: 3 },
 
   sparklineRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
