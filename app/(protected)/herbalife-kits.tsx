@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -61,6 +62,8 @@ interface KitItem {
 }
 
 export default function HerbalifeKits() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -704,20 +707,21 @@ export default function HerbalifeKits() {
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => {
+  const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  pageTitle: { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 12 },
-  empty: { color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
+  pageTitle: { fontSize: 28, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 12 },
+  empty: { color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
   kitCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
   },
-  kitName: { color: T.t1, fontWeight: '700', fontSize: 15 },
-  kitPrice: { color: T.t2, fontSize: 13, marginTop: 2 },
+  kitName: { color: theme.colors.textPrimary, fontWeight: '700', fontSize: 15 },
+  kitPrice: { color: theme.colors.textSecondary, fontSize: 13, marginTop: 2 },
   badgeGlobal: {
     backgroundColor: 'rgba(59,130,246,0.15)',
     paddingHorizontal: 8,
@@ -726,18 +730,18 @@ const s = StyleSheet.create({
   },
   badgeGlobalTxt: { color: T.blue, fontSize: 10, fontWeight: '800' },
   toggleBtn: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   toggleBtnActive: {
     backgroundColor: T.blue + '22',
     borderColor: T.blue,
   },
-  toggleTxt: { color: T.t2, fontSize: 12, fontWeight: '700' },
+  toggleTxt: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700' },
   toggleTxtActive: { color: T.blue },
   fabContainer: {
     position: 'absolute',
@@ -768,14 +772,14 @@ const s = StyleSheet.create({
     borderColor: '#ef4444',
   },
   editIconBtn: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     width: 36,
     height: 36,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
   modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
@@ -868,13 +872,13 @@ const s = StyleSheet.create({
     opacity: 0.5,
   },
   sectionTitle: {
-    color: T.t1,
+    color: theme.colors.textPrimary,
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 12,
   },
   extraIngredients: {
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontSize: 11,
     fontStyle: 'italic',
     marginTop: 2,
@@ -897,3 +901,5 @@ const s = StyleSheet.create({
     fontSize: 11,
   },
 });
+  return s;
+};
