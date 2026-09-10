@@ -45,7 +45,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   values: { fontSize: 12, fontWeight: "800" },
   track: {
     height: 8,
-    backgroundColor: theme.colors.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 99,
     overflow: "hidden",
   },

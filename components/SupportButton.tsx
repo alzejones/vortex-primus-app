@@ -33,7 +33,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     backgroundColor: "#25D366",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: theme.colors.shadowColor,
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 6,
