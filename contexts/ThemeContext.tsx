@@ -1,6 +1,11 @@
-import React, { createContext, ReactNode, useContext, useMemo, useState } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
+import { useColorScheme } from 'react-native';
 
-type Mode = "light" | "dark";
+type Mode = "light" | "dark" | "system";
+type ResolvedTheme = "light" | "dark";
+
+const THEME_STORAGE_KEY = "vortex_theme_mode";
 
 interface ThemeColors {
   background: string;
@@ -35,6 +40,8 @@ export interface AppTheme {
 
 interface ThemeContextData {
   theme: AppTheme;
+  mode: Mode;
+  setThemeMode: (mode: Mode) => void;
   toggleTheme: () => void;
 }
 
@@ -81,18 +88,58 @@ const darkTheme: AppTheme = {
 const ThemeContext = createContext<ThemeContextData | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<Mode>("light");
+  const [mode, setMode] = useState<Mode>("dark");
+  const [loading, setLoading] = useState(true);
+  const systemColorScheme = useColorScheme();
 
-  function toggleTheme() {
-    setMode((prev) => (prev === "light" ? "dark" : "light"));
+  useEffect(() => {
+    loadThemePreference();
+  }, []);
+
+  async function loadThemePreference() {
+    try {
+      const savedMode = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+      if (savedMode === "light" || savedMode === "dark" || savedMode === "system") {
+        setMode(savedMode);
+      }
+    } catch (error) {
+      console.warn('[ThemeContext] Erro ao carregar preferência de tema:', error);
+    } finally {
+      setLoading(false);
+    }
   }
 
+  async function setThemeMode(newMode: Mode) {
+    try {
+      setMode(newMode);
+      await AsyncStorage.setItem(THEME_STORAGE_KEY, newMode);
+    } catch (error) {
+      console.warn('[ThemeContext] Erro ao salvar preferência de tema:', error);
+    }
+  }
+
+  function toggleTheme() {
+    const newMode = mode === "light" ? "dark" : "light";
+    setThemeMode(newMode);
+  }
+
+  const resolvedTheme: ResolvedTheme = useMemo(() => {
+    if (mode === "system") {
+      return systemColorScheme === "light" ? "light" : "dark";
+    }
+    return mode;
+  }, [mode, systemColorScheme]);
+
   const theme = useMemo(() => {
-    return mode === "light" ? lightTheme : darkTheme;
-  }, [mode]);
+    return resolvedTheme === "light" ? lightTheme : darkTheme;
+  }, [resolvedTheme]);
+
+  if (loading) {
+    return null;
+  }
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, mode, setThemeMode, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

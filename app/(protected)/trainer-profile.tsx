@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import TrainerScalesManager from "../../components/TrainerScalesManager";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useTutorial } from "../../contexts/TutorialContext";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { supabase } from "../../lib/supabase";
@@ -24,6 +25,7 @@ import { T } from "../../utils/theme";
 export default function TrainerProfile() {
   const router = useRouter();
   const { signOut, signingOut, debugMessages, isAdmin } = useAuth();
+  const { mode: themeMode, setThemeMode } = useTheme();
   const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
   const licenseStatus = useLicenseStatus();
   const [loading, setLoading] = useState(true);
@@ -479,6 +481,41 @@ export default function TrainerProfile() {
           <Text style={styles.configSectionTitle}>Configurações</Text>
           
           <View style={styles.formCard}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>🎨 Aparência</Text>
+              <View style={styles.themeOptions}>
+                <TouchableOpacity
+                  style={[styles.themeOption, themeMode === 'light' && styles.themeOptionActive]}
+                  onPress={() => setThemeMode('light')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.themeOptionText, themeMode === 'light' && styles.themeOptionTextActive]}>
+                    ☀️ Claro
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.themeOption, themeMode === 'dark' && styles.themeOptionActive]}
+                  onPress={() => setThemeMode('dark')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.themeOptionText, themeMode === 'dark' && styles.themeOptionTextActive]}>
+                    🌙 Escuro
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.themeOption, themeMode === 'system' && styles.themeOptionActive]}
+                  onPress={() => setThemeMode('system')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.themeOptionText, themeMode === 'system' && styles.themeOptionTextActive]}>
+                    🔄 Automático
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <View style={styles.switchRow}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={styles.switchLabel}>🤖 Assistente de Ajuda</Text>
@@ -720,4 +757,28 @@ const styles = StyleSheet.create({
   teamCardTitle: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
   teamCardSubtitle: { fontSize: 13, color: T.t3, fontWeight: "600" },
   teamCardArrow: { fontSize: 24, color: T.t3 },
+
+  themeOptions: { flexDirection: "row", gap: 8 },
+  themeOption: { 
+    flex: 1, 
+    backgroundColor: T.surface, 
+    borderWidth: 1, 
+    borderColor: T.border, 
+    borderRadius: 12, 
+    paddingVertical: 14, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  themeOptionActive: { 
+    backgroundColor: T.blue, 
+    borderColor: T.blue 
+  },
+  themeOptionText: { 
+    fontSize: 14, 
+    fontWeight: "700", 
+    color: T.t2 
+  },
+  themeOptionTextActive: { 
+    color: T.white 
+  },
 });
