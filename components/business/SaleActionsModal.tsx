@@ -20,7 +20,7 @@ export default function SaleActionsModal({ sale, onClose, onEdit, onDelete, onCo
       <View style={s.modalBg}>
         <View style={s.modalBox}>
           <Text style={s.modalTitle}>Ações da venda</Text>
-          <Text style={{ color: theme.colors.text.secondary, marginBottom: 16 }}>
+          <Text style={{ color: theme.colors.textSecondary, marginBottom: 16 }}>
             {sale?.clients?.name || sale?.client_name_manual || 'Cliente'}
           </Text>
 
@@ -55,14 +55,14 @@ export default function SaleActionsModal({ sale, onClose, onEdit, onDelete, onCo
 function createStyles(theme: any) {
   return StyleSheet.create({
     modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-    modalBox: { backgroundColor: theme.colors.surface, borderRadius: 16, padding: 18 },
-    modalTitle: { color: theme.colors.text.primary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+    modalBox: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 18 },
+    modalTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
     actionBtn: { padding: 14, borderRadius: 10, alignItems: 'center', marginBottom: 10 },
     actionBtnConvert: { backgroundColor: '#10B981' },
     actionBtnEdit: { backgroundColor: theme.colors.primary },
     actionBtnDelete: { backgroundColor: '#EF4444' },
     actionBtnTxt: { color: '#FFF', fontWeight: '700', fontSize: 15 },
     btnGhost: { backgroundColor: theme.colors.card },
-    btnGhostTxt: { color: theme.colors.text.tertiary, fontWeight: '600' },
+    btnGhostTxt: { color: theme.colors.textMuted, fontWeight: '600' },
   });
 }

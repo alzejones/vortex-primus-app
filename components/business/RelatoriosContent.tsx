@@ -377,15 +377,15 @@ export default function RelatoriosContent() {
 
             {daily.length > 0 && (
               <View style={[s.row, { backgroundColor: theme.colors.card, paddingVertical: 8, marginBottom: 4 }]}>
-                <Text style={[s.cell, { flex: 0.5, color: theme.colors.text.primary, fontWeight: '700' }]}>Total</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
-                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: theme.colors.text.primary, textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
+                <Text style={[s.cell, { flex: 0.5, color: theme.colors.textPrimary, fontWeight: '700' }]}>Total</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.textPrimary }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
+                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: theme.colors.textPrimary, textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
                 <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80', textAlign: 'right' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
               </View>
             )}
@@ -404,7 +404,7 @@ export default function RelatoriosContent() {
             </View>
             {daily.map((r) => (
               <View key={r.report_date} style={s.row}>
-                <Text style={[s.cell, { flex: 0.5, color: theme.colors.text.primary }]}>{r.report_date.slice(8, 10)}</Text>
+                <Text style={[s.cell, { flex: 0.5, color: theme.colors.textPrimary }]}>{r.report_date.slice(8, 10)}</Text>
                 <Text style={s.cell}>{r.convites}</Text>
                 <Text style={s.cell}>{r.apresentacoes}</Text>
                 <Text style={s.cell}>{r.resets}</Text>
@@ -455,7 +455,7 @@ export default function RelatoriosContent() {
             </View>
             {monthly.map((r) => (
               <View key={r.month_start} style={s.row}>
-                <Text style={[s.cell, { flex: 1, color: theme.colors.text.primary }]}>
+                <Text style={[s.cell, { flex: 1, color: theme.colors.textPrimary }]}>
                   {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
                 </Text>
                 <Text style={[s.cell, { flex: 1 }]}>{Number(r.acessos_media).toFixed(1)}</Text>
@@ -477,7 +477,7 @@ export default function RelatoriosContent() {
                   .filter((r) => r.month_start.slice(0, 7) === todayBR().slice(0, 7))
                   .map((r) => (
                   <View key={`tend-${r.month_start}`} style={s.row}>
-                    <Text style={[s.cell, { flex: 1, color: theme.colors.text.primary }]}>
+                    <Text style={[s.cell, { flex: 1, color: theme.colors.textPrimary }]}>
                       {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
                     </Text>
                     <Text style={[s.cell, { flex: 1 }]}>{Number(r.tendencia_pvt).toFixed(2)}</Text>
@@ -627,48 +627,48 @@ export default function RelatoriosContent() {
 function createStyles(theme: any) {
   return StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    title: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 12 },
+    title: { fontSize: 22, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 12 },
     tabs: { flexDirection: 'row', gap: 8, marginBottom: 4 },
     tabBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
     tabBtnActive: { backgroundColor: theme.colors.primary },
-    tabTxt: { color: theme.colors.text.tertiary, fontWeight: '600' },
+    tabTxt: { color: theme.colors.textMuted, fontWeight: '600' },
     tabTxtActive: { color: '#000' },
     headRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-    hCell: { flex: 0.7, color: theme.colors.text.tertiary, fontSize: 9, fontWeight: '700', minWidth: 0 },
+    hCell: { flex: 0.7, color: theme.colors.textMuted, fontSize: 9, fontWeight: '700', minWidth: 0 },
     row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-    cell: { flex: 0.7, color: theme.colors.text.secondary, fontSize: 10, minWidth: 0 },
-    empty: { color: theme.colors.text.tertiary, fontStyle: 'italic', marginTop: 12 },
-    trendTitle: { color: theme.colors.text.primary, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 },
+    cell: { flex: 0.7, color: theme.colors.textSecondary, fontSize: 10, minWidth: 0 },
+    empty: { color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12 },
+    trendTitle: { color: theme.colors.textPrimary, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 },
     weekCard: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 14, marginBottom: 10 },
-    weekTitle: { color: theme.colors.text.primary, fontWeight: '700', marginBottom: 8 },
+    weekTitle: { color: theme.colors.textPrimary, fontWeight: '700', marginBottom: 8 },
     weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-    weekLabel: { color: theme.colors.text.tertiary, fontSize: 13 },
-    weekValue: { color: theme.colors.text.primary, fontWeight: '600', fontSize: 13 },
+    weekLabel: { color: theme.colors.textMuted, fontSize: 13 },
+    weekValue: { color: theme.colors.textPrimary, fontWeight: '600', fontSize: 13 },
     dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
     dateNavBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.card, justifyContent: 'center', alignItems: 'center' },
     dateNavBtnTxt: { color: theme.colors.primary, fontSize: 16, fontWeight: '700' },
-    dateNavLabel: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700' },
+    dateNavLabel: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700' },
     dateNavToday: { color: theme.colors.primary, fontSize: 11, fontWeight: '600', marginTop: 2 },
     dayCardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
     dayCard: { flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, alignItems: 'center' },
-    dayCardLabel: { color: theme.colors.text.tertiary, fontSize: 11, marginBottom: 6 },
-    dayCardValue: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700' },
+    dayCardLabel: { color: theme.colors.textMuted, fontSize: 11, marginBottom: 6 },
+    dayCardValue: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700' },
     saleRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-    saleName: { color: theme.colors.text.primary, fontWeight: '600' },
-    saleProduct: { color: theme.colors.text.secondary, fontSize: 12, marginTop: 2 },
-    saleMeta: { color: theme.colors.text.tertiary, fontSize: 12, marginTop: 2 },
-    saleCharged: { color: theme.colors.text.primary, fontWeight: '700' },
+    saleName: { color: theme.colors.textPrimary, fontWeight: '600' },
+    saleProduct: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
+    saleMeta: { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
+    saleCharged: { color: theme.colors.textPrimary, fontWeight: '700' },
     saleProfit: { color: '#4ADE80', fontSize: 12 },
-    hint: { color: theme.colors.text.tertiary, fontSize: 11, marginTop: 4, textAlign: 'center' },
-    sectionTitle: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '600' },
+    hint: { color: theme.colors.textMuted, fontSize: 11, marginTop: 4, textAlign: 'center' },
+    sectionTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600' },
     presRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
     monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 12 },
-    monthSelectorText: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700', marginRight: 8 },
+    monthSelectorText: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginRight: 8 },
     monthSelectorArrow: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
     monthPickerContainer: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 8, marginBottom: 12 },
     monthPickerItem: { padding: 10, borderRadius: 8 },
     monthPickerItemActive: { backgroundColor: theme.colors.primary },
-    monthPickerItemText: { color: theme.colors.text.tertiary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+    monthPickerItemText: { color: theme.colors.textMuted, fontSize: 14, fontWeight: '600', textAlign: 'center' },
     monthPickerItemTextActive: { color: '#000' },
   });
 }

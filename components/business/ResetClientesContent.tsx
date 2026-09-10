@@ -221,7 +221,7 @@ export default function ResetClientesContent() {
 
   const getProtocolDayInfo = (startDate: string | null, status: string) => {
     if (status === 'aguardando_data' || !startDate) {
-      return { label: '—', color: theme.colors.text.tertiary, bgColor: 'transparent' };
+      return { label: '—', color: theme.colors.textMuted, bgColor: 'transparent' };
     }
     if (status === 'concluido') {
       return { label: 'Concluído', color: '#10b981', bgColor: 'rgba(16,185,129,0.15)' };
@@ -334,7 +334,7 @@ export default function ResetClientesContent() {
         <TextInput
           style={s.searchInput}
           placeholder="Buscar por nome..."
-          placeholderTextColor={theme.colors.text.tertiary}
+          placeholderTextColor={theme.colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -375,7 +375,7 @@ export default function ResetClientesContent() {
             <TextInput
               style={s.dayInput}
               placeholder="1-31"
-              placeholderTextColor={theme.colors.text.tertiary}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="number-pad"
               value={filterDay}
               onChangeText={(text) => {
@@ -484,13 +484,13 @@ function createStyles(theme: any) {
       paddingBottom: 16,
     },
     title: {
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 24,
       fontWeight: '700',
       marginBottom: 4,
     },
     subtitle: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 14,
     },
     filtersContainer: {
@@ -501,7 +501,7 @@ function createStyles(theme: any) {
       backgroundColor: theme.colors.card,
       borderRadius: 10,
       padding: 12,
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 15,
       marginBottom: 16,
     },
@@ -512,7 +512,7 @@ function createStyles(theme: any) {
       gap: 8,
     },
     filterLabel: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 13,
       fontWeight: '600',
     },
@@ -527,7 +527,7 @@ function createStyles(theme: any) {
       backgroundColor: theme.colors.primary,
     },
     monthChipText: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 13,
       fontWeight: '600',
     },
@@ -539,7 +539,7 @@ function createStyles(theme: any) {
       backgroundColor: theme.colors.card,
       borderRadius: 10,
       padding: 12,
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 15,
       width: 100,
     },
@@ -554,7 +554,7 @@ function createStyles(theme: any) {
       marginBottom: 8,
     },
     headerCell: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 10,
       fontWeight: '700',
       textTransform: 'uppercase',
@@ -564,14 +564,14 @@ function createStyles(theme: any) {
     },
     tableRow: {
       flexDirection: 'row',
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.card,
       borderRadius: 8,
       padding: 10,
       marginBottom: 8,
       alignItems: 'center',
     },
     cell: {
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 12,
     },
     cellNum: {
@@ -611,12 +611,12 @@ function createStyles(theme: any) {
       textDecorationLine: 'underline',
     },
     phoneDisabled: {
-      color: theme.colors.text.tertiary,
+      color: theme.colors.textMuted,
       textDecorationLine: 'none',
     },
     saleHint: {
       fontSize: 10,
-      color: theme.colors.text.tertiary,
+      color: theme.colors.textMuted,
       fontStyle: 'italic',
       textAlign: 'left',
       marginBottom: 2,
@@ -624,7 +624,7 @@ function createStyles(theme: any) {
     },
     whatsappHint: {
       fontSize: 10,
-      color: theme.colors.text.tertiary,
+      color: theme.colors.textMuted,
       fontStyle: 'italic',
       textAlign: 'right',
       marginBottom: 6,
@@ -635,7 +635,7 @@ function createStyles(theme: any) {
       alignItems: 'center',
     },
     emptyText: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 14,
     },
   });

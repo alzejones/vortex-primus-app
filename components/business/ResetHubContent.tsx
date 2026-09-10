@@ -64,7 +64,7 @@ function createStyles(theme: any) {
     title: {
       fontSize: 20,
       fontWeight: '700',
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
     },
     container: {
       padding: 16,
@@ -89,16 +89,16 @@ function createStyles(theme: any) {
     cardTitle: {
       fontSize: 17,
       fontWeight: '700',
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
     },
     cardSubtitle: {
       fontSize: 13,
-      color: theme.colors.text.tertiary,
+      color: theme.colors.textMuted,
       lineHeight: 18,
     },
     cardArrow: {
       fontSize: 24,
-      color: theme.colors.text.tertiary,
+      color: theme.colors.textMuted,
       marginLeft: 16,
     },
   });

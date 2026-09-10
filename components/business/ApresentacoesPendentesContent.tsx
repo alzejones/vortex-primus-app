@@ -248,7 +248,7 @@ export default function ApresentacoesPendentesContent() {
         <TextInput
           style={s.searchInput}
           placeholder="Buscar por nome..."
-          placeholderTextColor={theme.colors.text.tertiary}
+          placeholderTextColor={theme.colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -289,7 +289,7 @@ export default function ApresentacoesPendentesContent() {
             <TextInput
               style={s.dayInput}
               placeholder="1-31"
-              placeholderTextColor={theme.colors.text.tertiary}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="number-pad"
               value={filterDay}
               onChangeText={(text) => {
@@ -364,20 +364,20 @@ function createStyles(theme: any) {
     header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingBottom: 16, backgroundColor: theme.colors.background },
     backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.card, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
     backBtnText: { color: theme.colors.primary, fontSize: 20, fontWeight: '700' },
-    title: { fontSize: 24, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 4 },
-    subtitle: { color: theme.colors.text.secondary, fontSize: 14 },
+    title: { fontSize: 24, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 4 },
+    subtitle: { color: theme.colors.textSecondary, fontSize: 14 },
     filtersContainer: { paddingHorizontal: 20, marginBottom: 20 },
     searchInput: {
       backgroundColor: theme.colors.card,
       borderRadius: 10,
       padding: 12,
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 15,
       marginBottom: 16,
     },
     dateFilters: { gap: 12 },
     dateFilterGroup: { gap: 8 },
-    filterLabel: { color: theme.colors.text.secondary, fontSize: 13, fontWeight: '600' },
+    filterLabel: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
     monthChip: {
       backgroundColor: theme.colors.card,
       paddingHorizontal: 14,
@@ -386,21 +386,21 @@ function createStyles(theme: any) {
       marginRight: 8,
     },
     monthChipActive: { backgroundColor: theme.colors.primary },
-    monthChipText: { color: theme.colors.text.secondary, fontSize: 13, fontWeight: '600' },
+    monthChipText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
     monthChipTextActive: { color: '#000', fontWeight: '700' },
     dayInput: {
       backgroundColor: theme.colors.card,
       borderRadius: 10,
       padding: 12,
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 15,
       width: 100,
     },
-    empty: { color: theme.colors.text.secondary, fontSize: 14, textAlign: 'center', marginTop: 40 },
+    empty: { color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 40 },
     presRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-    presDate: { color: theme.colors.text.tertiary, fontSize: 12, marginBottom: 4 },
-    presName: { color: theme.colors.text.primary, fontWeight: '600', fontSize: 15, marginBottom: 2 },
-    presPhone: { color: theme.colors.text.secondary, fontSize: 13 },
+    presDate: { color: theme.colors.textMuted, fontSize: 12, marginBottom: 4 },
+    presName: { color: theme.colors.textPrimary, fontWeight: '600', fontSize: 15, marginBottom: 2 },
+    presPhone: { color: theme.colors.textSecondary, fontSize: 13 },
     whatsappBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#25D366', justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
     whatsappIcon: { fontSize: 20 },
   });

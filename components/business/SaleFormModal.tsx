@@ -948,7 +948,7 @@ export default function SaleFormModal({
                           <TextInput
                             style={s.input}
                             placeholder="Nome do Prospecto"
-                            placeholderTextColor={theme.colors.text.tertiary}
+                            placeholderTextColor={theme.colors.textMuted}
                             value={manualName}
                             onChangeText={(t) => {
                               setManualName(t);
@@ -958,7 +958,7 @@ export default function SaleFormModal({
                           <TextInput
                             style={s.input}
                             placeholder="Celular do Prospecto (opcional)"
-                            placeholderTextColor={theme.colors.text.tertiary}
+                            placeholderTextColor={theme.colors.textMuted}
                             value={manualPhone}
                             onChangeText={(t) => setManualPhone(maskPhone(t))}
                             keyboardType="phone-pad"
@@ -1080,7 +1080,7 @@ export default function SaleFormModal({
             <TextInput
               style={s.input}
               placeholder="Buscar por nome…"
-              placeholderTextColor={theme.colors.text.tertiary}
+              placeholderTextColor={theme.colors.textMuted}
               value={pickerSearch}
               onChangeText={setPickerSearch}
               autoFocus
@@ -1240,37 +1240,37 @@ export default function SaleFormModal({
 function createStyles(theme: any) {
   return StyleSheet.create({
     modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-    modalBox: { backgroundColor: theme.colors.surface, borderRadius: 16, padding: 18, maxHeight: '85%' },
-    modalTitle: { color: theme.colors.text.primary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+    modalBox: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, maxHeight: '85%' },
+    modalTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
     toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-    toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.surface, alignItems: 'center' },
+    toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
     toggleBtnActive: { backgroundColor: theme.colors.primary },
-    toggleTxt: { color: theme.colors.text.secondary, fontWeight: '600', fontSize: 13 },
+    toggleTxt: { color: theme.colors.textSecondary, fontWeight: '600', fontSize: 13 },
     toggleTxtActive: { color: '#000' },
-    selector: { backgroundColor: theme.colors.surface, borderRadius: 10, padding: 12, marginBottom: 10 },
-    selectorTxt: { color: theme.colors.text.primary },
-    input: { backgroundColor: theme.colors.surface, borderRadius: 10, padding: 12, color: theme.colors.text.primary, marginBottom: 10 },
-    label: { color: theme.colors.text.secondary, fontSize: 12, marginBottom: 4 },
+    selector: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 10 },
+    selectorTxt: { color: theme.colors.textPrimary },
+    input: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, color: theme.colors.textPrimary, marginBottom: 10 },
+    label: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 4 },
     inline: { flexDirection: 'row', marginTop: 4 },
     checkRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: theme.colors.border, marginRight: 8 },
-    checkTxt: { color: theme.colors.text.primary },
+    checkTxt: { color: theme.colors.textPrimary },
     btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
     btnTxt: { color: '#000', fontWeight: '700' },
-    btnGhost: { backgroundColor: theme.colors.surface },
-    btnGhostTxt: { color: theme.colors.text.secondary, fontWeight: '600' },
+    btnGhost: { backgroundColor: theme.colors.card },
+    btnGhostTxt: { color: theme.colors.textSecondary, fontWeight: '600' },
     totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
-    pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.surface },
-    pickerTxt: { color: theme.colors.text.primary },
+    pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.card },
+    pickerTxt: { color: theme.colors.textPrimary },
     cartItem: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'flex-start' },
-    cartItemName: { color: theme.colors.text.primary, fontSize: 14, fontWeight: '600', marginBottom: 4 },
-    cartLabel: { color: theme.colors.text.secondary, fontSize: 11, marginBottom: 3 },
-    cartInput: { backgroundColor: theme.colors.surface, borderRadius: 6, padding: 8, color: theme.colors.text.primary, fontSize: 13 },
+    cartItemName: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 4 },
+    cartLabel: { color: theme.colors.textSecondary, fontSize: 11, marginBottom: 3 },
+    cartInput: { backgroundColor: theme.colors.card, borderRadius: 6, padding: 8, color: theme.colors.textPrimary, fontSize: 13 },
     cartSubtotal: { color: '#4ADE80', fontSize: 12, fontWeight: '600', marginTop: 4 },
     removeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FF4444', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
-    removeBtnTxt: { color: theme.colors.text.primary, fontSize: 14, fontWeight: '700' },
-    sectionLabel: { color: theme.colors.text.primary, fontSize: 15, fontWeight: '700', marginBottom: 8, marginTop: 4 },
-    flavorHint: { color: theme.colors.text.secondary, fontSize: 12, marginBottom: 8 },
+    removeBtnTxt: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700' },
+    sectionLabel: { color: theme.colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 8, marginTop: 4 },
+    flavorHint: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 8 },
     flavorOption: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1279,7 +1279,7 @@ function createStyles(theme: any) {
       borderRadius: 8,
       marginBottom: 8,
       borderWidth: 1,
-      borderColor: theme.colors.surface,
+      borderColor: theme.colors.card,
     },
     flavorOptionSelected: {
       backgroundColor: theme.colors.primary + '22',
@@ -1298,7 +1298,7 @@ function createStyles(theme: any) {
       backgroundColor: theme.colors.primary,
     },
     flavorOptionTxt: {
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 14,
     },
     flavorOptionTxtSelected: {

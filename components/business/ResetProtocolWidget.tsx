@@ -437,7 +437,7 @@ export default function ResetProtocolWidget() {
 function createStyles(theme: any) {
   return StyleSheet.create({
     widget: {
-      backgroundColor: theme.colors.surface,
+      backgroundColor: theme.colors.card,
       borderRadius: 16,
       padding: 18,
       marginBottom: 24,
@@ -446,7 +446,7 @@ function createStyles(theme: any) {
       marginBottom: 16,
     },
     title: {
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 18,
       fontWeight: '700',
     },
@@ -454,7 +454,7 @@ function createStyles(theme: any) {
       marginBottom: 16,
     },
     sectionTitle: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 13,
       fontWeight: '600',
       marginBottom: 10,
@@ -469,17 +469,17 @@ function createStyles(theme: any) {
       marginBottom: 10,
     },
     clientName: {
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 15,
       fontWeight: '600',
       marginBottom: 4,
     },
     dayLabel: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 13,
     },
     timeText: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 13,
       fontWeight: '600',
     },
@@ -518,7 +518,7 @@ function createStyles(theme: any) {
       alignItems: 'center',
     },
     skipBtnText: {
-      color: theme.colors.text.secondary,
+      color: theme.colors.textSecondary,
       fontSize: 14,
       fontWeight: '600',
     },
@@ -563,7 +563,7 @@ function createStyles(theme: any) {
       backgroundColor: '#f59e0b',
     },
     day5Text: {
-      color: theme.colors.text.primary,
+      color: theme.colors.textPrimary,
       fontSize: 14,
       flex: 1,
     },

@@ -504,7 +504,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 </TouchableOpacity>
                 {presSelectedClient && (
                   <View style={{ backgroundColor: theme.colors.card, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                    <Text style={{ color: theme.colors.text.secondary, fontSize: 11 }}>Nome e celular serão copiados do cadastro</Text>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: 11 }}>Nome e celular serão copiados do cadastro</Text>
                   </View>
                 )}
               </>
@@ -514,7 +514,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 <TextInput
                   style={s.input}
                   placeholder="Nome do prospecto"
-                  placeholderTextColor={theme.colors.text.tertiary}
+                  placeholderTextColor={theme.colors.textMuted}
                   value={presName}
                   onChangeText={setPresName}
                   autoFocus
@@ -524,7 +524,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 <TextInput
                   style={s.input}
                   placeholder="(00) 00000-0000"
-                  placeholderTextColor={theme.colors.text.tertiary}
+                  placeholderTextColor={theme.colors.textMuted}
                   value={presPhone}
                   onChangeText={(t) => setPresPhone(maskPhone(t))}
                   keyboardType="phone-pad"
@@ -572,7 +572,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             <TextInput
               style={s.input}
               placeholder="Buscar por nome…"
-              placeholderTextColor={theme.colors.text.tertiary}
+              placeholderTextColor={theme.colors.textMuted}
               value={pickerSearch}
               onChangeText={setPickerSearch}
               autoFocus
@@ -615,43 +615,43 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 function createStyles(theme: any) {
   return StyleSheet.create({
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    title: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 16 },
+    title: { fontSize: 22, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 16 },
     cardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
     card: { flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, alignItems: 'center' },
-    cardLabel: { color: theme.colors.text.secondary, fontSize: 11, marginBottom: 6 },
-    cardValue: { color: theme.colors.text.primary, fontSize: 18, fontWeight: '700' },
-    convitesInput: { backgroundColor: theme.colors.surface, borderRadius: 8, padding: 8, color: theme.colors.text.primary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4, alignSelf: 'stretch', width: '100%' },
+    cardLabel: { color: theme.colors.textSecondary, fontSize: 11, marginBottom: 6 },
+    cardValue: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700' },
+    convitesInput: { backgroundColor: theme.colors.card, borderRadius: 8, padding: 8, color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4, alignSelf: 'stretch', width: '100%' },
     primaryBtn: { backgroundColor: theme.colors.primary, borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 20 },
     primaryBtnTxt: { color: '#000', fontWeight: '700', fontSize: 16 },
-    sectionTitle: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '600', marginBottom: 10 },
-    empty: { color: theme.colors.text.tertiary, fontStyle: 'italic' },
+    sectionTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 10 },
+    empty: { color: theme.colors.textMuted, fontStyle: 'italic' },
     saleRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
     presRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-    saleName: { color: theme.colors.text.primary, fontWeight: '600' },
-    saleProduct: { color: theme.colors.text.secondary, fontSize: 12, marginTop: 2 },
-    saleMeta: { color: theme.colors.text.tertiary, fontSize: 12, marginTop: 2 },
-    saleCharged: { color: theme.colors.text.primary, fontWeight: '700' },
+    saleName: { color: theme.colors.textPrimary, fontWeight: '600' },
+    saleProduct: { color: theme.colors.textSecondary, fontSize: 12, marginTop: 2 },
+    saleMeta: { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
+    saleCharged: { color: theme.colors.textPrimary, fontWeight: '700' },
     saleProfit: { color: '#4ADE80', fontSize: 12 },
-    hint: { color: theme.colors.text.tertiary, fontSize: 11, marginTop: 4, textAlign: 'center' },
+    hint: { color: theme.colors.textMuted, fontSize: 11, marginTop: 4, textAlign: 'center' },
     totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
     modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-    modalBox: { backgroundColor: theme.colors.surface, borderRadius: 16, padding: 18, maxHeight: '85%' },
-    modalTitle: { color: theme.colors.text.primary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+    modalBox: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, maxHeight: '85%' },
+    modalTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
     toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-    toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.surface, alignItems: 'center' },
+    toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
     toggleBtnActive: { backgroundColor: theme.colors.primary },
-    toggleTxt: { color: theme.colors.text.secondary, fontWeight: '600', fontSize: 13 },
+    toggleTxt: { color: theme.colors.textSecondary, fontWeight: '600', fontSize: 13 },
     toggleTxtActive: { color: '#000' },
-    selector: { backgroundColor: theme.colors.surface, borderRadius: 10, padding: 14, marginBottom: 12 },
-    selectorTxt: { color: theme.colors.text.primary, fontSize: 15 },
-    label: { color: theme.colors.text.secondary, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
-    input: { backgroundColor: theme.colors.surface, borderRadius: 10, padding: 14, color: theme.colors.text.primary, fontSize: 15, marginBottom: 12 },
+    selector: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 14, marginBottom: 12 },
+    selectorTxt: { color: theme.colors.textPrimary, fontSize: 15 },
+    label: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
+    input: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 14, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 12 },
     inline: { flexDirection: 'row', gap: 10, marginTop: 10 },
     btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
     btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.border },
-    btnTxt: { color: theme.colors.text.primary, fontWeight: '700', fontSize: 15 },
-    btnGhostTxt: { color: theme.colors.text.secondary, fontWeight: '700', fontSize: 15 },
-    pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.surface },
-    pickerTxt: { color: theme.colors.text.primary },
+    btnTxt: { color: theme.colors.textPrimary, fontWeight: '700', fontSize: 15 },
+    btnGhostTxt: { color: theme.colors.textSecondary, fontWeight: '700', fontSize: 15 },
+    pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.card },
+    pickerTxt: { color: theme.colors.textPrimary },
   });
 }
