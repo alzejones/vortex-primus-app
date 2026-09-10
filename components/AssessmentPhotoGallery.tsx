@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, ScrollView, Act
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { T } from '../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Photo {
   id: string;
@@ -17,6 +17,8 @@ interface Props {
 }
 
 export default function AssessmentPhotoGallery({ photos, getSignedUrl }: Props) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [fullscreenUri, setFullscreenUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +94,7 @@ export default function AssessmentPhotoGallery({ photos, getSignedUrl }: Props) 
       <Text style={styles.title}>📷 Fotos da Avaliação</Text>
 
       {loading ? (
-        <ActivityIndicator color={T.blue} style={{ marginVertical: 12 }} />
+        <ActivityIndicator color={theme.colors.primary} style={{ marginVertical: 12 }} />
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
           {photos.map(photo => (
@@ -103,8 +105,8 @@ export default function AssessmentPhotoGallery({ photos, getSignedUrl }: Props) 
                 {signedUrls[photo.id] ? (
                   <Image source={{ uri: signedUrls[photo.id] }} style={styles.thumbImage} />
                 ) : (
-                  <View style={[styles.thumbImage, { backgroundColor: T.surfaceAlt, alignItems: 'center', justifyContent: 'center' }]}>
-                    <Text style={{ color: T.t3, fontSize: 20 }}>📷</Text>
+                  <View style={[styles.thumbImage, { backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center' }]}>
+                    <Text style={{ color: theme.colors.textMuted, fontSize: 20 }}>📷</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -138,7 +140,7 @@ export default function AssessmentPhotoGallery({ photos, getSignedUrl }: Props) 
       <Modal visible={!!fullscreenUri} transparent animationType="fade" onRequestClose={() => setFullscreenUri(null)}>
         <View style={styles.fullscreenOverlay}>
           <TouchableOpacity style={styles.closeBtn} onPress={() => setFullscreenUri(null)}>
-            <Text style={{ color: T.white, fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+            <Text style={{ color: "#fff", fontSize: 18, fontWeight: 'bold' }}>✕</Text>
           </TouchableOpacity>
           {/* Botão de download no fullscreen */}
           {fullscreenUri && (
@@ -170,12 +172,12 @@ export default function AssessmentPhotoGallery({ photos, getSignedUrl }: Props) 
   );
 }
 
-const styles = StyleSheet.create({
-  container: { marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: T.border },
-  title: { fontSize: 15, fontWeight: 'bold', color: T.t1, marginBottom: 12 },
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
+  container: { marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: theme.colors.border },
+  title: { fontSize: 15, fontWeight: 'bold', color: theme.colors.textPrimary, marginBottom: 12 },
   thumb: { alignItems: 'center', gap: 4 },
-  thumbImage: { width: 88, height: 88, borderRadius: 10, borderWidth: 1, borderColor: T.border },
-  label: { fontSize: 11, color: T.t3 },
+  thumbImage: { width: 88, height: 88, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border },
+  label: { fontSize: 11, color: theme.colors.textMuted },
   fullscreenOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   closeBtn: { position: 'absolute', top: 50, right: 20, zIndex: 10, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   fullscreenImage: { width: '100%', height: '80%' },

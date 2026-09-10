@@ -37,7 +37,7 @@ const REFERENCES = [
   {
     id: 2,
     tag: "ISSN",
-    color: T.blue,
+    color: "#2196F3",
     title: "International Society of Sports Nutrition Position Stand: protein and exercise",
     authors: "Jäger R, Kerksick CM, Campbell BI et al.",
     journal: "J Int Soc Sports Nutr. 2017;14:20.",
@@ -47,7 +47,7 @@ const REFERENCES = [
   {
     id: 3,
     tag: "Emagrecimento",
-    color: T.red,
+    color: "#EF4444",
     title: "Evidence-based recommendations for natural bodybuilding contest preparation",
     authors: "Helms ER, Aragon AA, Fitschen PJ.",
     journal: "J Int Soc Sports Nutr. 2014;11:20.",
@@ -57,7 +57,7 @@ const REFERENCES = [
   {
     id: 4,
     tag: "Hipertrofia",
-    color: T.green,
+    color: "#22C55E",
     title: "A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults",
     authors: "Morton RW, Murphy KT, McKellar SR et al.",
     journal: "Br J Sports Med. 2018;52(6):376–384.",
@@ -67,7 +67,7 @@ const REFERENCES = [
   {
     id: 5,
     tag: "Manutenção",
-    color: T.orange,
+    color: "#F59E0B",
     title: "Dietary protein to support anabolism with resistance exercise in young men",
     authors: "Phillips SM, Van Loon LJC.",
     journal: "J Sports Sci. 2011;29(S1):S29–S38.",

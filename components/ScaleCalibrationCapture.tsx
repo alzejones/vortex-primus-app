@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView,
          ActivityIndicator, Alert, Linking } from 'react-native';
-import { T } from '../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const ALL_SERVICE_UUIDS = [
   '0000181b-0000-1000-8000-00805f9b34fb',
@@ -10,6 +10,7 @@ const ALL_SERVICE_UUIDS = [
 ];
 
 export default function ScaleCalibrationCapture() {
+  const { theme } = useTheme();
   const [brand, setBrand]           = useState('');
   const [model, setModel]           = useState('');
   const [capturing, setCapturing]   = useState(false);
@@ -165,13 +166,13 @@ export default function ScaleCalibrationCapture() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: T.bg }}
+    <ScrollView style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
 
-      <Text style={{ fontSize: 18, fontWeight: 'bold', color: T.t1, marginBottom: 6 }}>
+      <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.colors.textPrimary, marginBottom: 6 }}>
         🔧 Configurar Nova Balança
       </Text>
-      <Text style={{ fontSize: 13, color: T.t3, marginBottom: 20, lineHeight: 19 }}>
+      <Text style={{ fontSize: 13, color: theme.colors.textMuted, marginBottom: 20, lineHeight: 19 }}>
         Sua balança não está na lista de modelos homologados?{'\n'}
         Capture os dados abaixo e envie para o suporte. Nossa equipe irá
         configurá-la e adicioná-la ao sistema.
@@ -179,24 +180,24 @@ export default function ScaleCalibrationCapture() {
 
       {/* Campos marca/modelo */}
       <View style={{ marginBottom: 12 }}>
-        <Text style={{ fontSize: 13, color: T.t2, marginBottom: 4 }}>Marca</Text>
+        <Text style={{ fontSize: 13, color: theme.colors.textSecondary, marginBottom: 4 }}>Marca</Text>
         <TextInput
-          style={{ borderWidth: 1, borderColor: T.border, borderRadius: 8,
-                   padding: 10, color: T.t1, backgroundColor: T.surface, fontSize: 14 }}
+          style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8,
+                   padding: 10, color: theme.colors.textPrimary, backgroundColor: theme.colors.card, fontSize: 14 }}
           placeholder="Ex: Relaxmedic, Xiaomi, Omron..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           value={brand}
           onChangeText={setBrand}
           editable={!capturing}
         />
       </View>
       <View style={{ marginBottom: 20 }}>
-        <Text style={{ fontSize: 13, color: T.t2, marginBottom: 4 }}>Modelo</Text>
+        <Text style={{ fontSize: 13, color: theme.colors.textSecondary, marginBottom: 4 }}>Modelo</Text>
         <TextInput
-          style={{ borderWidth: 1, borderColor: T.border, borderRadius: 8,
-                   padding: 10, color: T.t1, backgroundColor: T.surface, fontSize: 14 }}
+          style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8,
+                   padding: 10, color: theme.colors.textPrimary, backgroundColor: theme.colors.card, fontSize: 14 }}
           placeholder="Ex: RM-BD1904A, Mi Body Scale 2..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           value={model}
           onChangeText={setModel}
           editable={!capturing}
@@ -206,10 +207,10 @@ export default function ScaleCalibrationCapture() {
       {/* Botão iniciar */}
       {!capturing && status === 'idle' && (
         <TouchableOpacity
-          style={{ backgroundColor: T.blue, padding: 14, borderRadius: 10,
+          style={{ backgroundColor: theme.colors.primary, padding: 14, borderRadius: 10,
                    alignItems: 'center', marginBottom: 16 }}
           onPress={startCapture}>
-          <Text style={{ color: T.white, fontWeight: 'bold', fontSize: 15 }}>
+          <Text style={{ color: "#fff", fontWeight: 'bold', fontSize: 15 }}>
             📡 Iniciar Captura
           </Text>
         </TouchableOpacity>
@@ -218,16 +219,16 @@ export default function ScaleCalibrationCapture() {
       {/* Status */}
       {status === 'scanning' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10,
-                       backgroundColor: T.surfaceAlt, padding: 14, borderRadius: 10, marginBottom: 12 }}>
-          <ActivityIndicator color={T.blue} />
-          <Text style={{ color: T.t2 }}>Procurando balança...</Text>
+                       backgroundColor: theme.colors.card, padding: 14, borderRadius: 10, marginBottom: 12 }}>
+          <ActivityIndicator color={theme.colors.primary} />
+          <Text style={{ color: theme.colors.textSecondary }}>Procurando balança...</Text>
         </View>
       )}
       {status === 'connecting' && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10,
-                       backgroundColor: T.surfaceAlt, padding: 14, borderRadius: 10, marginBottom: 12 }}>
-          <ActivityIndicator color={T.blue} />
-          <Text style={{ color: T.t2 }}>Conectando em {deviceName}...</Text>
+                       backgroundColor: theme.colors.card, padding: 14, borderRadius: 10, marginBottom: 12 }}>
+          <ActivityIndicator color={theme.colors.primary} />
+          <Text style={{ color: theme.colors.textSecondary }}>Conectando em {deviceName}...</Text>
         </View>
       )}
       {status === 'waiting' && (
@@ -236,7 +237,7 @@ export default function ScaleCalibrationCapture() {
           <Text style={{ color: '#22c55e', fontWeight: 'bold', fontSize: 15, marginBottom: 4 }}>
             ✅ Conectado — {deviceName}
           </Text>
-          <Text style={{ color: T.t2, fontSize: 13 }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
             Suba na balança agora. Os pacotes aparecerão abaixo automaticamente.
           </Text>
         </View>
@@ -245,11 +246,11 @@ export default function ScaleCalibrationCapture() {
         <View style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1,
                        borderColor: '#EF4444', padding: 14, borderRadius: 10, marginBottom: 12 }}>
           <Text style={{ color: '#EF4444', fontWeight: 'bold' }}>Erro de conexão</Text>
-          <Text style={{ color: T.t2, fontSize: 13, marginTop: 4 }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4 }}>
             Verifique se a balança está ligada e próxima.
           </Text>
           <TouchableOpacity onPress={reset} style={{ marginTop: 10 }}>
-            <Text style={{ color: T.blue, fontWeight: 'bold' }}>Tentar novamente</Text>
+            <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Tentar novamente</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -288,7 +289,7 @@ export default function ScaleCalibrationCapture() {
           style={{ backgroundColor: '#25D366', padding: 14, borderRadius: 10,
                    alignItems: 'center', marginBottom: 12 }}
           onPress={sendToSupport}>
-          <Text style={{ color: T.white, fontWeight: 'bold', fontSize: 15 }}>
+          <Text style={{ color: "#fff", fontWeight: 'bold', fontSize: 15 }}>
             📲 Enviar para Suporte via WhatsApp
           </Text>
         </TouchableOpacity>
@@ -296,10 +297,10 @@ export default function ScaleCalibrationCapture() {
 
       {(status === 'captured' || status === 'error') && (
         <TouchableOpacity
-          style={{ backgroundColor: T.surfaceAlt, padding: 12, borderRadius: 10,
-                   alignItems: 'center', borderWidth: 1, borderColor: T.border }}
+          style={{ backgroundColor: theme.colors.card, padding: 12, borderRadius: 10,
+                   alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }}
           onPress={reset}>
-          <Text style={{ color: T.t2, fontWeight: 'bold' }}>🔄 Nova Captura</Text>
+          <Text style={{ color: theme.colors.textSecondary, fontWeight: 'bold' }}>🔄 Nova Captura</Text>
         </TouchableOpacity>
       )}
 

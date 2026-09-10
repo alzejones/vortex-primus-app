@@ -280,6 +280,8 @@ export default function SupplementSearchModal({ visible, onClose, onSelect }: Su
 }
 
 function PreviewChip({ label, value, color }: { label: string; value: number; color: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={[styles.previewChip, { borderColor: color }]}>
       <Text style={[styles.previewChipValue, { color }]}>{value}</Text>
@@ -289,6 +291,8 @@ function PreviewChip({ label, value, color }: { label: string; value: number; co
 }
 
 function MacroChip({ label, value, color }: { label: string; value: string; color: string }) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   return (
     <View style={[styles.macroChip, { borderColor: color }]}>
       <Text style={[styles.macroChipValue, { color }]}>{value}</Text>

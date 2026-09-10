@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { T } from '../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { GradientPrimary } from '../utils/gradients';
 import { supabase } from '../lib/supabase';
 
@@ -50,6 +50,8 @@ const FITDAYS_CHAR_WRITE_UUID  = '0000ffb1-0000-1000-8000-00805f9b34fb';
 
 export default function BluetoothScaleConnector({ onDataReceived, disabled = false, trainerId, onManualEntry, clientAge = 35, clientHeightCm = 170, clientIsMale = true, onScaleSelected }: Props) {
   const [trainerScales, setTrainerScales] = useState<any[]>([]);
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [selectedScale, setSelectedScale] = useState<any | null>(null);
   const [loadingScales, setLoadingScales] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -432,7 +434,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       {/* SELEÇÃO DE BALANÇAS */}
       {loadingScales ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={T.blue} />
+          <ActivityIndicator size="small" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Carregando balanças...</Text>
         </View>
       ) : trainerScales.length === 0 && trainerId ? (
@@ -506,7 +508,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
           <LinearGradient {...GradientPrimary} style={styles.connectButtonGradient}>
             {connecting ? (
               <>
-                <ActivityIndicator color={T.white} size="small" />
+                <ActivityIndicator color={"#fff"} size="small" />
                 <Text style={styles.connectButtonText}>Conectando...</Text>
               </>
             ) : (
@@ -522,21 +524,21 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
       {/* STATUS DE CONEXÃO */}
       {connectionStatus === 'scanning' && (
         <View style={styles.statusCard}>
-          <ActivityIndicator size="small" color={T.blue} />
+          <ActivityIndicator size="small" color={theme.colors.primary} />
           <Text style={styles.statusText}>Procurando sua balança...</Text>
         </View>
       )}
 
       {connectionStatus === 'connecting' && (
         <View style={styles.statusCard}>
-          <ActivityIndicator size="small" color={T.blue} />
+          <ActivityIndicator size="small" color={theme.colors.primary} />
           <Text style={styles.statusText}>Conectando...</Text>
         </View>
       )}
 
       {connectionStatus === 'waiting_data' && (
         <View style={styles.statusCard}>
-          <ActivityIndicator size="small" color={T.green} />
+          <ActivityIndicator size="small" color={"#22C55E"} />
           <Text style={styles.statusText}>Conectado! Suba na balança agora.</Text>
         </View>
       )}
@@ -640,7 +642,7 @@ export default function BluetoothScaleConnector({ onDataReceived, disabled = fal
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: {
     marginBottom: 24,
   },
@@ -652,11 +654,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '800',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   bleBadge: {
-    backgroundColor: T.blueGlow,
+    backgroundColor: theme.colors.primary,
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -666,11 +668,11 @@ const styles = StyleSheet.create({
   bleBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: T.blue,
+    color: theme.colors.primary,
   },
   subtitle: {
     fontSize: 14,
-    color: T.t3,
+    color: theme.colors.textMuted,
     lineHeight: 20,
   },
 
@@ -684,20 +686,20 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
 
   // NO SCALES
   noScalesContainer: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
   noScalesText: {
     fontSize: 13,
-    color: T.t3,
+    color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -708,22 +710,22 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   scaleCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   scaleCardSelected: {
-    borderColor: T.blue,
-    backgroundColor: `${T.blue}14`, // rgba with 0.08 opacity
+    borderColor: theme.colors.primary,
+    backgroundColor: `${theme.colors.primary}14`, // rgba with 0.08 opacity
   },
   scaleIconContainer: {
     width: 44,
     height: 44,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
@@ -738,16 +740,16 @@ const styles = StyleSheet.create({
   scaleName: {
     fontWeight: '700',
     fontSize: 15,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   scaleBrand: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
   protocolBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: T.bgAlt,
+    backgroundColor: theme.colors.background,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 20,
@@ -755,19 +757,19 @@ const styles = StyleSheet.create({
   },
   protocolBadgeText: {
     fontSize: 10,
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   selectedIndicator: {
     width: 22,
     height: 22,
-    backgroundColor: T.blue,
+    backgroundColor: theme.colors.primary,
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectedIcon: {
     fontSize: 12,
-    color: T.white,
+    color: "#fff",
   },
 
   // CONNECT BUTTON
@@ -789,7 +791,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   connectButtonText: {
-    color: T.white,
+    color: "#fff",
     fontSize: 17,
     fontWeight: '800',
   },
@@ -798,7 +800,7 @@ const styles = StyleSheet.create({
   connectedCard: {
     backgroundColor: 'rgba(16,185,129,0.1)',
     borderWidth: 1,
-    borderColor: T.green,
+    borderColor: "#22C55E",
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -811,19 +813,19 @@ const styles = StyleSheet.create({
   connectedTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: T.green,
+    color: "#22C55E",
     marginBottom: 4,
   },
   connectedText: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginBottom: 12,
   },
   disconnectButton: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -831,7 +833,7 @@ const styles = StyleSheet.create({
   disconnectButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
 
   // HOW TO USE - COLLAPSIBLE
@@ -839,28 +841,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     padding: 12,
   },
   howToUseTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   howToUseChevron: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
   howToUseContent: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     padding: 12,
     marginTop: 2,
   },
   howToUseText: {
     fontSize: 13,
-    color: T.t3,
+    color: theme.colors.textMuted,
     lineHeight: 22,
   },
 
@@ -885,7 +887,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -894,7 +896,7 @@ const styles = StyleSheet.create({
   statusCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     padding: 14,
     marginBottom: 12,
@@ -919,17 +921,17 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   statusText: {
     fontSize: 13,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     lineHeight: 19,
   },
   manualButton: {
     marginTop: 12,
-    backgroundColor: T.blue,
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -938,6 +940,6 @@ const styles = StyleSheet.create({
   manualButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: T.white,
+    color: "#fff",
   },
 });

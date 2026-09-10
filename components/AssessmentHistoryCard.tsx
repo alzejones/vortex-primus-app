@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Text, TouchableOpacity, View, Image } from 'react-native';
 import { getHistoryColor, getSmartWeightColor } from '../utils/assessmentCalculations';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface AssessmentHistoryCardProps {
   assessment: any;
@@ -31,6 +32,7 @@ export default function AssessmentHistoryCard({
   isLatest,
   getSignedUrl
 }: AssessmentHistoryCardProps) {
+  const { theme } = useTheme();
   
   function renderTrendIndicator(currentValue: any, previousValue: any, type: "weight" | "fat" | "muscle") {
     if (!currentValue || !previousValue) return null;
@@ -89,22 +91,22 @@ export default function AssessmentHistoryCard({
 
   return (
     <View style={{
-      backgroundColor: '#fff',
+      backgroundColor: theme.colors.card,
       borderRadius: 16,
       padding: 16,
       marginBottom: 16,
       borderWidth: 1,
-      borderColor: '#f1f5f9',
+      borderColor: theme.colors.border,
       elevation: 2,
     }}>
       {/* Cabeçalho */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <View>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: '#1e293b' }}>{formattedDate}</Text>
-          <Text style={{ fontSize: 11, color: '#64748b' }}>{formattedTime}</Text>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary }}>{formattedDate}</Text>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted }}>{formattedTime}</Text>
         </View>
-        <TouchableOpacity onPress={() => onViewDetails(assessment)} style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, minWidth: 82 }}>
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#475569', textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Consultar</Text>
+        <TouchableOpacity onPress={() => onViewDetails(assessment)} style={{ backgroundColor: theme.colors.card, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, minWidth: 82 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: theme.colors.textSecondary, textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>Consultar</Text>
         </TouchableOpacity>
       </View>
 
@@ -112,7 +114,7 @@ export default function AssessmentHistoryCard({
       {anthro ? (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>Peso</Text>
+            <Text style={{ fontSize: 10, color: theme.colors.textMuted, textTransform: 'uppercase', fontWeight: '700' }}>Peso</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ 
                 fontSize: 18, 
@@ -125,29 +127,29 @@ export default function AssessmentHistoryCard({
               }}>
                 {formatNum(anthro?.weight)}
               </Text>
-              <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>kg</Text>
+              <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginLeft: 2 }}>kg</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.weight, previousAnthro?.weight, "weight")}</View>
           </View>
 
-          <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#f1f5f9' }}>
-            <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
+          <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: theme.colors.border }}>
+            <Text style={{ fontSize: 10, color: theme.colors.textMuted, textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat') }}>
                 {formatNum(anthro?.body_fat)}
               </Text>
-              <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>%</Text>
+              <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginLeft: 2 }}>%</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.body_fat, previousAnthro?.body_fat, "fat")}</View>
           </View>
 
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
+            <Text style={{ fontSize: 10, color: theme.colors.textMuted, textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle') }}>
                 {formatNum(anthro?.muscle_mass_percentage)}
               </Text>
-              <Text style={{ fontSize: 11, color: '#64748b', marginLeft: 2 }}>%</Text>
+              <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginLeft: 2 }}>%</Text>
             </View>
             <View style={{ marginTop: 4 }}>{renderTrendIndicator(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, "muscle")}</View>
           </View>
@@ -159,13 +161,13 @@ export default function AssessmentHistoryCard({
       )}
 
       {/* RODAPÉ DE AÇÕES */}
-      <View style={{ borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 12 }}>
+      <View style={{ borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: 12 }}>
 
         {/* Linha 1 — ações sempre visíveis */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', gap: 15 }}>
             <TouchableOpacity onPress={() => onEdit(assessment)}>
-              <Text style={{ color: "#475569", fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: "700" }}>✏️ Editar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => onPhysicalTests(assessment)}>
@@ -203,8 +205,8 @@ export default function AssessmentHistoryCard({
             {(() => {
               const regularCount = assessment.assessment_photos.filter((p: any) => p.label !== 'selfie_post').length;
               return regularCount > 3 && (
-                <View style={{ width: 44, height: 44, borderRadius: 7, backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
-                  <Text style={{ fontSize: 11, color: '#475569', fontWeight: '800' }}>
+                <View style={{ width: 44, height: 44, borderRadius: 7, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0' }}>
+                  <Text style={{ fontSize: 11, color: theme.colors.textSecondary, fontWeight: '800' }}>
                     +{regularCount - 3}
                   </Text>
                 </View>

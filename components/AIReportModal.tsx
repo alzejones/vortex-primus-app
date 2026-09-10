@@ -19,7 +19,7 @@ import {
   Objective,
   calculateDietPlan,
 } from '../utils/dietCalculations';
-import { T } from '../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const DEFAULT_PROMPT = `Com base nos dados acima, gere um cardápio semanal (7 dias) personalizado para este aluno, respeitando:
 - Protocolo de dieta de alto teor de proteínas e baixo de carboidratos
@@ -52,6 +52,7 @@ function fmt(val: any, dec = 1): string {
 }
 
 export default function AIReportModal({ visible, onClose, client, assessment }: AIReportModalProps) {
+  const { theme } = useTheme();
   const [mealPlan, setMealPlan] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [customPrompt, setCustomPrompt] = useState(DEFAULT_PROMPT);
@@ -232,11 +233,11 @@ ${customPrompt}
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' }}>
         <View
           style={{
-            backgroundColor: T.card,
+            backgroundColor: theme.colors.background,
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             borderWidth: 1,
-            borderColor: T.border,
+            borderColor: theme.colors.border,
             maxHeight: '92%',
           }}
         >
@@ -248,21 +249,21 @@ ${customPrompt}
               alignItems: 'center',
               padding: 16,
               borderBottomWidth: 1,
-              borderBottomColor: T.border,
+              borderBottomColor: theme.colors.border,
             }}
           >
-            <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary }}>
               🤖 Relatório para IA
             </Text>
             <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
-              <Text style={{ fontSize: 18, color: T.t3, fontWeight: 'bold' }}>✕</Text>
+              <Text style={{ fontSize: 18, color: theme.colors.textMuted, fontWeight: 'bold' }}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
             <View style={{ padding: 48, alignItems: 'center' }}>
-              <ActivityIndicator color={T.blue} size="large" />
-              <Text style={{ color: T.t3, marginTop: 12, fontSize: 13 }}>
+              <ActivityIndicator color={theme.colors.primary} size="large" />
+              <Text style={{ color: theme.colors.textMuted, marginTop: 12, fontSize: 13 }}>
                 Carregando plano alimentar...
               </Text>
             </View>
@@ -276,7 +277,7 @@ ${customPrompt}
               <Text
                 style={{
                   fontSize: 11,
-                  color: T.t3,
+                  color: theme.colors.textMuted,
                   fontWeight: '700',
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -287,16 +288,16 @@ ${customPrompt}
               </Text>
               <View
                 style={{
-                  backgroundColor: T.surface,
+                  backgroundColor: theme.colors.card,
                   borderRadius: 12,
                   padding: 14,
                   borderWidth: 1,
-                  borderColor: T.border,
+                  borderColor: theme.colors.border,
                   marginBottom: 20,
                 }}
               >
                 <Text
-                  style={{ fontSize: 11.5, color: T.t1, lineHeight: 19, fontFamily: monoFont }}
+                  style={{ fontSize: 11.5, color: theme.colors.textPrimary, lineHeight: 19, fontFamily: monoFont }}
                   selectable
                 >
                   {buildReport().split('===== INSTRUÇÃO PARA A IA =====')[0].trim()}
@@ -307,7 +308,7 @@ ${customPrompt}
               <Text
                 style={{
                   fontSize: 11,
-                  color: T.t3,
+                  color: theme.colors.textMuted,
                   fontWeight: '700',
                   textTransform: 'uppercase',
                   letterSpacing: 0.5,
@@ -318,12 +319,12 @@ ${customPrompt}
               </Text>
               <TextInput
                 style={{
-                  backgroundColor: T.surface,
+                  backgroundColor: theme.colors.card,
                   borderRadius: 12,
                   padding: 14,
                   borderWidth: 1,
-                  borderColor: T.borderActive,
-                  color: T.t1,
+                  borderColor: theme.colors.primary,
+                  color: theme.colors.textPrimary,
                   fontSize: 13,
                   lineHeight: 20,
                   minHeight: 160,
@@ -334,14 +335,14 @@ ${customPrompt}
                 value={customPrompt}
                 onChangeText={setCustomPrompt}
                 multiline
-                placeholderTextColor={T.t3}
+                placeholderTextColor={theme.colors.textMuted}
               />
 
               {/* Botão copiar */}
               <TouchableOpacity
                 onPress={handleCopy}
                 style={{
-                  backgroundColor: copied ? '#16a34a' : T.blue,
+                  backgroundColor: copied ? '#16a34a' : theme.colors.primary,
                   padding: 16,
                   borderRadius: 14,
                   alignItems: 'center',
@@ -360,13 +361,13 @@ ${customPrompt}
                   padding: 14,
                   borderRadius: 14,
                   alignItems: 'center',
-                  backgroundColor: T.surfaceAlt,
+                  backgroundColor: theme.colors.card,
                   borderWidth: 1,
-                  borderColor: T.border,
+                  borderColor: theme.colors.border,
                 }}
                 activeOpacity={0.85}
               >
-                <Text style={{ color: T.t2, fontWeight: '700', fontSize: 15 }}>Fechar</Text>
+                <Text style={{ color: theme.colors.textSecondary, fontWeight: '700', fontSize: 15 }}>Fechar</Text>
               </TouchableOpacity>
             </ScrollView>
           )}

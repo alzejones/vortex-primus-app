@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { T } from "../utils/theme";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Props {
   assessments: any[];
@@ -44,6 +44,7 @@ function normalizeExerciseName(name: string): string {
 }
 
 export default function StrengthDotMatrixChart({ assessments, periodDays }: Props) {
+  const { theme } = useTheme();
   if (assessments.length === 0) return null;
 
   const curr = assessments[0];
@@ -105,22 +106,22 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
 
   return (
     <View style={{
-      backgroundColor: T.card,
+      backgroundColor: theme.colors.card,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: T.border,
+      borderColor: theme.colors.border,
       overflow: 'hidden',
       marginBottom: 20,
     }}>
       <View style={{
-        backgroundColor: T.bgAlt,
+        backgroundColor: theme.colors.background,
         padding: 12,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
         <Text style={{
-          color: T.white,
+          color: "#fff",
           fontSize: 16,
           fontWeight: '800',
           textTransform: 'uppercase',
@@ -168,7 +169,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                     {ex.sequenceNum}
                   </Text>
                   <Text style={{
-                    color: T.t1,
+                    color: theme.colors.textPrimary,
                     fontSize: 14,
                     fontWeight: '700',
                     flex: 1,
@@ -263,7 +264,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                             borderRadius: 9,
                             backgroundColor: ex.style.color,
                             borderWidth: 3,
-                            borderColor: T.card,
+                            borderColor: theme.colors.card,
                             marginLeft: -9,
                             shadowColor: ex.style.color,
                             shadowRadius: 8,
@@ -391,7 +392,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                               borderRadius: 6,
                               backgroundColor: hexAlpha(ex.style.color, 0.5),
                               borderWidth: 2,
-                              borderColor: T.card,
+                              borderColor: theme.colors.card,
                               marginLeft: -6,
                               shadowColor: ex.style.color,
                               shadowRadius: 4,
@@ -409,7 +410,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                             borderRadius: 9,
                             backgroundColor: ex.style.color,
                             borderWidth: 3,
-                            borderColor: T.card,
+                            borderColor: theme.colors.card,
                             marginLeft: -9,
                             shadowColor: ex.style.color,
                             shadowRadius: 8,
@@ -589,7 +590,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                               borderRadius: 6,
                               backgroundColor: hexAlpha(ex.style.color, 0.5),
                               borderWidth: 2,
-                              borderColor: T.card,
+                              borderColor: theme.colors.card,
                               marginLeft: -6,
                               shadowColor: ex.style.color,
                               shadowRadius: 4,
@@ -608,7 +609,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
                               borderRadius: 9,
                               backgroundColor: ex.style.color,
                               borderWidth: 3,
-                              borderColor: T.card,
+                              borderColor: theme.colors.card,
                               marginLeft: -9,
                               shadowColor: ex.style.color,
                               shadowRadius: 8,
@@ -642,7 +643,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
               )}
 
               {idx < exerciseData.length - 1 && (
-                <View style={{ height: 1, backgroundColor: T.border, marginVertical: 12 }} />
+                <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 12 }} />
               )}
             </View>
           );
