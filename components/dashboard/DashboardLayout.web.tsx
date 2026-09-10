@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import type { DashboardLayoutProps } from './DashboardLayout';
@@ -61,6 +62,8 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
   const licenseStatus = useLicenseStatus();
   const { hasFeature } = licenseStatus;
   const { isAdmin } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   // ─── Detecção de viewport: mobile browser usa layout mobile ──
   const [screenWidth, setScreenWidth] = useState(() =>
@@ -315,17 +318,17 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
       {/* Widget Metas do Mês */}
       {goalsWidget && (goalsWidget.scheduledGoal > 0 || goalsWidget.completedGoal > 0) && (
         <View style={{
-          backgroundColor: T.card,
+          backgroundColor: theme.colors.card,
           borderRadius: 16,
           padding: 16,
           marginTop: 16,
           borderWidth: 1,
-          borderColor: T.border,
+          borderColor: theme.colors.border,
         }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>🎯 Metas do Mês</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: theme.colors.textPrimary }}>🎯 Metas do Mês</Text>
             <TouchableOpacity onPress={() => router.push('/(protected)/business-goals' as any)}>
-              <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>Ver detalhes →</Text>
+              <Text style={{ fontSize: 11, color: theme.colors.primary, fontWeight: '700' }}>Ver detalhes →</Text>
             </TouchableOpacity>
           </View>
           {/* Barra agendamentos */}
@@ -334,10 +337,10 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             return (
               <View style={{ marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>📅 Agendamentos</Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>📅 Agendamentos</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6' }}>{goalsWidget.scheduledActual}/{goalsWidget.scheduledGoal} · {pct}%</Text>
                 </View>
-                <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
+                <View style={{ height: 6, backgroundColor: theme.colors.border, borderRadius: 3, overflow: 'hidden' }}>
                   <View style={{ height: 6, width: `${pct}%` as any, backgroundColor: '#3b82f6', borderRadius: 3 }} />
                 </View>
               </View>
@@ -349,10 +352,10 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             return (
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>✅ Avaliações Feitas</Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>✅ Avaliações Feitas</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#22c55e' }}>{goalsWidget.completedActual}/{goalsWidget.completedGoal} · {pct}%</Text>
                 </View>
-                <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
+                <View style={{ height: 6, backgroundColor: theme.colors.border, borderRadius: 3, overflow: 'hidden' }}>
                   <View style={{ height: 6, width: `${pct}%` as any, backgroundColor: '#22c55e', borderRadius: 3 }} />
                 </View>
               </View>
@@ -412,14 +415,14 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           ))}
           {overdueClients.length > 3 && !showAllOverdue && (
             <TouchableOpacity onPress={() => setShowAllOverdue(true)}>
-              <Text style={{ fontSize: 11, color: T.blue, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
+              <Text style={{ fontSize: 11, color: theme.colors.primary, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
                 +{overdueClients.length - 3} mais — ver todos ↓
               </Text>
             </TouchableOpacity>
           )}
           {showAllOverdue && (
             <TouchableOpacity onPress={() => setShowAllOverdue(false)}>
-              <Text style={{ fontSize: 11, color: T.t3, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
+              <Text style={{ fontSize: 11, color: theme.colors.textMuted, textAlign: 'center', marginTop: 10, fontWeight: '700' }}>
                 Recolher ↑
               </Text>
             </TouchableOpacity>
@@ -514,7 +517,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
           <TextInput
             style={styles.topSearch}
             placeholder="🔍  Buscar aluno..."
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={searchQuery}
             onChangeText={onSearchChange}
           />
@@ -527,7 +530,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             label="Alunos Ativos"
             value={currentClients}
             sub={`de ${maxClients} no plano`}
-            accent={T.blue}
+            accent={theme.colors.primary}
           />
           <MetricCard
             label="Próximas Sessões"
@@ -597,7 +600,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                 <TextInput
                   style={styles.columnSearch}
                   placeholder="Buscar Aluno..."
-                  placeholderTextColor={T.t3}
+                  placeholderTextColor={theme.colors.textMuted}
                   value={searchQuery}
                   onChangeText={onSearchChange}
                 />
@@ -646,7 +649,7 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             <TextInput
               style={styles.modalSearch}
               placeholder="Buscar aluno..."
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               value={scheduleSearchQuery}
               onChangeText={onScheduleSearchChange}
               autoFocus
@@ -683,11 +686,11 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
 
 const SIDEBAR_W = 240;
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
 
   // ─── Trial Banner ──────────────────────────────────────────
@@ -714,9 +717,9 @@ const styles = StyleSheet.create({
   // ─── Sidebar ───────────────────────────────────────────────
   sidebar: {
     width: SIDEBAR_W,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderRightWidth: 1,
-    borderRightColor: T.border,
+    borderRightColor: theme.colors.border,
     paddingTop: 24,
     paddingBottom: 24,
   },
@@ -735,12 +738,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoLetter: { fontSize: 20, fontWeight: '900', color: '#fff' },
-  logoName:   { fontSize: 16, fontWeight: '900', color: T.white, letterSpacing: -0.3 },
-  logoSub:    { fontSize: 9,  fontWeight: '800', color: T.blue,  letterSpacing: 2.5 },
+  logoName:   { fontSize: 16, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: -0.3 },
+  logoSub:    { fontSize: 9,  fontWeight: '800', color: theme.colors.primary,  letterSpacing: 2.5 },
 
   sidebarDivider: {
     height: 1,
-    backgroundColor: T.border,
+    backgroundColor: theme.colors.border,
     marginHorizontal: 20,
     marginBottom: 20,
   },
@@ -755,7 +758,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     gap: 12,
   },
-  navItemActive: { backgroundColor: T.surfaceAlt },
+  navItemActive: { backgroundColor: theme.colors.card },
   navActiveBar: {
     position: 'absolute',
     left: 0,
@@ -763,29 +766,29 @@ const styles = StyleSheet.create({
     bottom: 8,
     width: 3,
     borderRadius: 2,
-    backgroundColor: T.blue,
+    backgroundColor: theme.colors.primary,
   },
   navIcon:        { fontSize: 18, width: 24, textAlign: 'center' },
-  navLabel:       { fontSize: 14, fontWeight: '500', color: T.t2 },
-  navLabelActive: { color: T.white, fontWeight: '700' },
+  navLabel:       { fontSize: 14, fontWeight: '500', color: theme.colors.textSecondary },
+  navLabelActive: { color: theme.colors.textPrimary, fontWeight: '700' },
 
   // ─── Sidebar footer: plano ────────────────────────────────
   sidebarFooter: {
     marginHorizontal: 16,
     padding: 14,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     gap: 8,
   },
   planChip: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   planDot:  { width: 6, height: 6, borderRadius: 3 },
-  planChipText: { fontSize: 11, fontWeight: '800', color: T.white, textTransform: 'uppercase', letterSpacing: 1 },
+  planChipText: { fontSize: 11, fontWeight: '800', color: theme.colors.textPrimary, textTransform: 'uppercase', letterSpacing: 1 },
   planUsageRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  planUsageText: { fontSize: 12, color: T.t2 },
-  planUsagePct:  { fontSize: 12, color: T.t2, fontWeight: '700' },
-  planBarBg:  { height: 4, backgroundColor: T.border, borderRadius: 99, overflow: 'hidden' },
+  planUsageText: { fontSize: 12, color: theme.colors.textSecondary },
+  planUsagePct:  { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '700' },
+  planBarBg:  { height: 4, backgroundColor: theme.colors.border, borderRadius: 99, overflow: 'hidden' },
   planBarFill: { height: '100%', borderRadius: 99 },
   planWarning: { fontSize: 11, color: '#F59E0B', fontWeight: '600', textAlign: 'center' },
 
@@ -798,17 +801,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-end',
   },
-  pageGreeting: { fontSize: 12, fontWeight: '700', color: T.t3, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 },
-  pageTitle:    { fontSize: 30, fontWeight: '900', color: T.white, letterSpacing: -0.5 },
+  pageGreeting: { fontSize: 12, fontWeight: '700', color: theme.colors.textMuted, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 },
+  pageTitle:    { fontSize: 30, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: -0.5 },
   topSearch: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
-    color: T.white,
+    color: theme.colors.textPrimary,
     width: 260,
   },
 
@@ -816,16 +819,16 @@ const styles = StyleSheet.create({
   metricsRow: { flexDirection: 'row', gap: 16 },
   metricCard: {
     flex: 1,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     gap: 4,
   },
-  metricValue: { fontSize: 32, fontWeight: '900', color: T.white, letterSpacing: -1 },
-  metricLabel: { fontSize: 13, fontWeight: '600', color: T.t2 },
-  metricSub:   { fontSize: 11, color: T.t3 },
+  metricValue: { fontSize: 32, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: -1 },
+  metricLabel: { fontSize: 13, fontWeight: '600', color: theme.colors.textSecondary },
+  metricSub:   { fontSize: 11, color: theme.colors.textMuted },
 
   // ─── Duas colunas ─────────────────────────────────────────
   twoColumns: { flexDirection: 'row', gap: 20, alignItems: 'flex-start' },
@@ -833,10 +836,10 @@ const styles = StyleSheet.create({
   // ─── Coluna esquerda: alunos ──────────────────────────────
   leftColumn: {
     flex: 2,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   sectionHeader: {
@@ -845,18 +848,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: T.white },
-  sectionCount: { color: T.t3, fontWeight: '500' },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: theme.colors.textPrimary },
+  sectionCount: { color: theme.colors.textMuted, fontWeight: '500' },
 
   // ─── Ordenação compacta ───────────────────────────────────────
   sortCompact: {
     flexDirection: 'row',
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     overflow: 'hidden',
   },
   sortBtnCompact: {
@@ -865,26 +868,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   sortBtnCompactActive: {
-    backgroundColor: T.blue,
+    backgroundColor: theme.colors.primary,
   },
   sortBtnCompactText: {
     fontSize: 12,
     fontWeight: '700',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   sortBtnCompactTextActive: {
-    color: T.white,
+    color: theme.colors.textPrimary,
   },
 
   columnSearch: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 13,
-    color: T.white,
+    color: theme.colors.textPrimary,
     width: 200,
   },
 
@@ -892,11 +895,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  tableHeaderText: { fontSize: 10, fontWeight: '800', color: T.t3, letterSpacing: 1, textTransform: 'uppercase' },
+  tableHeaderText: { fontSize: 10, fontWeight: '800', color: theme.colors.textMuted, letterSpacing: 1, textTransform: 'uppercase' },
 
   clientRow: {
     flexDirection: 'row',
@@ -904,42 +907,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
     gap: 14,
   },
   clientAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  clientAvatarText: { color: T.blue, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  clientAvatarText: { color: theme.colors.primary, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
   clientInfo:  { flex: 1, gap: 2 },
-  clientName:  { fontSize: 15, fontWeight: '700', color: T.white },
-  clientEmail: { fontSize: 12, color: T.t3 },
+  clientName:  { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
+  clientEmail: { fontSize: 12, color: theme.colors.textMuted },
   clientActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   clientActionBtn: {
     minWidth: 52,
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     gap: 2,
   },
   clientActionIcon: { fontSize: 14 },
-  clientActionLabel: { fontSize: 11, color: T.t2, fontWeight: '600', marginTop: 3 },
+  clientActionLabel: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: '600', marginTop: 3 },
   clientDetailBtn: {
     width: 'auto' as any,
     paddingHorizontal: 12,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
   },
-  clientDetailBtnText: { fontSize: 12, fontWeight: '600', color: T.blue },
+  clientDetailBtnText: { fontSize: 12, fontWeight: '600', color: theme.colors.primary },
 
   emptyTable: {
     padding: 48,
@@ -947,8 +950,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTableIcon:  { fontSize: 40 },
-  emptyTableTitle: { fontSize: 16, fontWeight: '700', color: T.t1 },
-  emptyTableSub:   { fontSize: 13, color: T.t2, textAlign: 'center' },
+  emptyTableTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  emptyTableSub:   { fontSize: 13, color: theme.colors.textSecondary, textAlign: 'center' },
 
   // ─── Painel direito ───────────────────────────────────────
   rightPanel: {
@@ -960,55 +963,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     paddingBottom: 16,
   },
-  panelTitle: { fontSize: 16, fontWeight: '800', color: T.white },
-  panelLink:  { fontSize: 12, fontWeight: '700', color: T.blue },
+  panelTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary },
+  panelLink:  { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
 
   sessionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     gap: 12,
   },
   sessionDateBox: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     padding: 10,
     alignItems: 'center',
     minWidth: 54,
   },
-  sessionDate:   { fontSize: 13, fontWeight: '800', color: T.blue },
-  sessionTime:   { fontSize: 11, fontWeight: '600', color: T.blue, marginTop: 2 },
+  sessionDate:   { fontSize: 13, fontWeight: '800', color: theme.colors.primary },
+  sessionTime:   { fontSize: 11, fontWeight: '600', color: theme.colors.primary, marginTop: 2 },
   sessionInfo:   { flex: 1, gap: 2 },
-  sessionClient: { fontSize: 14, fontWeight: '700', color: T.white },
-  sessionType:   { fontSize: 12, color: T.t2 },
+  sessionClient: { fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary },
+  sessionType:   { fontSize: 12, color: theme.colors.textSecondary },
 
   emptyPanel: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     gap: 8,
   },
   emptyPanelIcon: { fontSize: 28 },
-  emptyPanelText: { fontSize: 13, color: T.t2, textAlign: 'center' },
+  emptyPanelText: { fontSize: 13, color: theme.colors.textSecondary, textAlign: 'center' },
 
 
   addClientBtn: { borderRadius: 12, overflow: 'hidden' },
   addClientBtnGradient: { padding: 16, alignItems: 'center' },
-  addClientBtnText: { fontSize: 14, fontWeight: '800', color: T.white, letterSpacing: 0.3 },
+  addClientBtnText: { fontSize: 14, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
 
   // ─── Modal overlay ────────────────────────────────────────
   modalOverlay: {
@@ -1019,11 +1022,11 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: 500,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1031,19 +1034,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  modalTitle: { fontSize: 18, fontWeight: '900', color: T.white },
-  modalClose: { fontSize: 18, color: T.t2, fontWeight: '700', padding: 4 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
+  modalClose: { fontSize: 18, color: theme.colors.textSecondary, fontWeight: '700', padding: 4 },
   modalSearch: {
     margin: 16,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 15,
-    color: T.white,
+    color: theme.colors.textPrimary,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalClientRow: {
     flexDirection: 'row',
@@ -1051,28 +1054,28 @@ const styles = StyleSheet.create({
     padding: 14,
     paddingHorizontal: 20,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
     gap: 14,
   },
   modalClientAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalClientAvatarText: { fontSize: 12, fontWeight: '800', color: T.blue },
-  modalClientName: { flex: 1, fontSize: 15, fontWeight: '600', color: T.white },
-  modalArrow: { fontSize: 16, color: T.t3, fontWeight: '700' },
+  modalClientAvatarText: { fontSize: 12, fontWeight: '800', color: theme.colors.primary },
+  modalClientName: { flex: 1, fontSize: 15, fontWeight: '600', color: theme.colors.textPrimary },
+  modalArrow: { fontSize: 16, color: theme.colors.textMuted, fontWeight: '700' },
   modalAddClient: {
     margin: 16,
     padding: 14,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  modalAddClientText: { fontSize: 14, fontWeight: '700', color: T.blue },
+  modalAddClientText: { fontSize: 14, fontWeight: '700', color: theme.colors.primary },
 });
