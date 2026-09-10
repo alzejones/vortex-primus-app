@@ -1,11 +1,11 @@
 import React from "react";
 import {
   GestureResponderEvent,
-  StyleSheet,
   Text,
   TouchableOpacity,
   ViewStyle,
 } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface AppButtonProps {
   title: string;
@@ -20,6 +20,31 @@ export default function AppButton({
   disabled = false,
   style,
 }: AppButtonProps) {
+  const { theme } = useTheme();
+
+  const styles = {
+    button: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 14,
+      borderRadius: 12,
+      alignItems: "center" as const,
+      justifyContent: "center" as const,
+      marginTop: 20,
+    },
+    buttonDisabled: {
+      backgroundColor: theme.colors.border,
+      opacity: 0.6,
+    },
+    text: {
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      fontWeight: "600" as const,
+    },
+    textDisabled: {
+      color: theme.colors.textMuted,
+    },
+  };
+
   return (
     <TouchableOpacity
       style={[
@@ -42,26 +67,3 @@ export default function AppButton({
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: "#5B3FFF",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    backgroundColor: "#3A3A3A",
-    opacity: 0.6,
-  },
-  text: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  textDisabled: {
-    color: "#CCCCCC",
-  },
-});

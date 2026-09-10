@@ -1,5 +1,6 @@
 import React from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface Props {
   value: string;
@@ -8,6 +9,22 @@ interface Props {
 }
 
 export default function InputField({ value, onChangeText, placeholder }: Props) {
+  const { theme } = useTheme();
+
+  const styles = {
+    container: {
+      marginBottom: 16,
+    },
+    input: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 16,
+      color: theme.colors.textPrimary,
+    },
+  };
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -15,22 +32,8 @@ export default function InputField({ value, onChangeText, placeholder }: Props) 
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={theme.colors.textMuted}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  input: {
-    backgroundColor: "#F1F5F9",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: "#0F172A",
-  },
-});
