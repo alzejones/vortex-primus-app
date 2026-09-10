@@ -189,7 +189,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   },
   footerIcon: { fontSize: 20 },
   footerText: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary },
-  footerChevron: { fontSize: 18, color: theme.colors.textTertiary },
+  footerChevron: { fontSize: 18, color: theme.colors.textMuted },
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: theme.colors.background },
@@ -202,8 +202,8 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     alignItems: "center",
   },
   modalTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary },
-  modalSubtitle: { fontSize: 12, color: theme.colors.textTertiary, marginTop: 2 },
-  closeBtn: { backgroundColor: theme.colors.surfaceAlt, borderRadius: 10, padding: 10 },
+  modalSubtitle: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
+  closeBtn: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 10 },
   closeBtnText: { fontSize: 16, color: theme.colors.textSecondary, fontWeight: "700" },
 
   // Cards
@@ -242,7 +242,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     marginBottom: 4,
     lineHeight: 18,
   },
-  refAuthors: { fontSize: 11, color: theme.colors.textTertiary, marginBottom: 2, fontStyle: "italic" },
+  refAuthors: { fontSize: 11, color: theme.colors.textMuted, marginBottom: 2, fontStyle: "italic" },
   refJournal: { fontSize: 11, color: theme.colors.primary, marginBottom: 8, fontWeight: "600" },
   refDesc: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18 },
   doiBtn: { marginTop: 8, flexDirection: "row", alignItems: "center", gap: 4 },

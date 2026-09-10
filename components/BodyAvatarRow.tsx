@@ -126,7 +126,7 @@ const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => Styl
   badgeText:   { fontSize: 12, fontWeight: '700' },
   row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
   cardWrapper: { flex: 1, minWidth: 0 },
-  card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: theme.colors.surface, borderWidth: 1.5, borderColor: theme.colors.border },
+  card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: theme.colors.card, borderWidth: 1.5, borderColor: theme.colors.border },
   cardInactive:{ borderColor: theme.colors.border },
   imgBox:      { width: '100%', aspectRatio: 0.48, alignItems: 'center', justifyContent: 'flex-end' },
   img:         { width: '100%', height: '100%' },
@@ -136,5 +136,5 @@ const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => Styl
   labelBox:    { alignItems: 'center', paddingVertical: 3, paddingHorizontal: 1, borderTopWidth: 1, borderTopColor: theme.colors.border, minHeight: 30, justifyContent: 'center' },
   labelTier:   { fontSize: 7, fontWeight: '600', textAlign: 'center' },
   labelPct:    { fontSize: 8, fontWeight: '700', textAlign: 'center', marginTop: 1 },
-  footer:      { fontSize: 10, color: theme.colors.textTertiary, textAlign: 'center', marginTop: 6 },
+  footer:      { fontSize: 10, color: theme.colors.textMuted, textAlign: 'center', marginTop: 6 },
 });
