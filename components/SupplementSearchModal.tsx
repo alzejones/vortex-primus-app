@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
-import { T } from "../utils/theme";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Supplement {
   id: string;
@@ -55,6 +55,9 @@ function scaleFromServing(
 }
 
 export default function SupplementSearchModal({ visible, onClose, onSelect }: SupplementSearchModalProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   const [query, setQuery]         = useState("");
   const [results, setResults]     = useState<Supplement[]>([]);
   const [searching, setSearching] = useState(false);
@@ -136,7 +139,7 @@ export default function SupplementSearchModal({ visible, onClose, onSelect }: Su
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar suplemento (ex: Shake, Whey...)"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textTertiary}
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -221,7 +224,7 @@ export default function SupplementSearchModal({ visible, onClose, onSelect }: Su
           onChangeText={setGrams}
           keyboardType="decimal-pad"
           placeholder={String(selected.serving_size_g)}
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textTertiary}
           selectTextOnFocus
         />
 
@@ -294,8 +297,8 @@ function MacroChip({ label, value, color }: { label: string; value: string; colo
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: 16 },
 
   header: {
     flexDirection: "row",
@@ -304,62 +307,62 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: "800", color: T.t1 },
-  headerSub: { fontSize: 12, color: T.orange, fontWeight: "700", marginTop: 2 },
-  closeBtn: { fontSize: 20, color: T.t3, fontWeight: "700" },
+  headerTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary },
+  headerSub: { fontSize: 12, color: "#f59e0b", fontWeight: "700", marginTop: 2 },
+  closeBtn: { fontSize: 20, color: theme.colors.textTertiary, fontWeight: "700" },
 
   searchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   searchInput: {
     flex: 1,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
-  noResults: { color: T.t3, textAlign: "center", marginTop: 24, fontSize: 14 },
+  noResults: { color: theme.colors.textTertiary, textAlign: "center", marginTop: 24, fontSize: 14 },
   resultRow: { paddingVertical: 14, paddingHorizontal: 4 },
   resultHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 },
-  resultName: { fontSize: 15, color: T.t1, fontWeight: "600", flex: 1, marginRight: 8 },
+  resultName: { fontSize: 15, color: theme.colors.textPrimary, fontWeight: "600", flex: 1, marginRight: 8 },
   brandBadge: { backgroundColor: "rgba(245,158,11,0.12)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" },
-  brandBadgeText: { color: T.orange, fontSize: 10, fontWeight: "800" },
-  resultMeta: { fontSize: 12, color: T.t2 },
-  separator: { height: 1, backgroundColor: T.border },
+  brandBadgeText: { color: "#f59e0b", fontSize: 10, fontWeight: "800" },
+  resultMeta: { fontSize: 12, color: theme.colors.textSecondary },
+  separator: { height: 1, backgroundColor: theme.colors.border },
 
   backBtn: { marginBottom: 16 },
-  backBtnText: { color: T.orange, fontWeight: "700", fontSize: 14 },
-  selectedName: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 6 },
+  backBtnText: { color: "#f59e0b", fontWeight: "700", fontSize: 14 },
+  selectedName: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 6 },
   servingInfo: { backgroundColor: "rgba(245,158,11,0.08)", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start", marginBottom: 6, borderWidth: 1, borderColor: "rgba(245,158,11,0.2)" },
-  servingText: { color: T.orange, fontWeight: "700", fontSize: 12 },
-  selectedMeta: { fontSize: 12, color: T.t2, marginBottom: 20, lineHeight: 18 },
-  qtyLabel: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  servingText: { color: "#f59e0b", fontWeight: "700", fontSize: 12 },
+  selectedMeta: { fontSize: 12, color: theme.colors.textSecondary, marginBottom: 20, lineHeight: 18 },
+  qtyLabel: { fontSize: 11, fontWeight: "800", color: theme.colors.textTertiary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
   qtyInput: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
     fontSize: 22,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 16,
     textAlign: "center",
   },
 
   previewCard: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     padding: 14,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: "rgba(245,158,11,0.3)",
   },
-  previewTitle: { fontSize: 12, fontWeight: "800", color: T.orange, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  previewTitle: { fontSize: 12, fontWeight: "800", color: "#f59e0b", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   previewRow: { flexDirection: "row", justifyContent: "space-between" },
   previewChip: {
     flex: 1,
@@ -368,20 +371,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     marginHorizontal: 2,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.surface,
   },
   previewChipValue: { fontSize: 16, fontWeight: "800" },
-  previewChipLabel: { fontSize: 10, color: T.t3 },
+  previewChipLabel: { fontSize: 10, color: theme.colors.textTertiary },
 
   macroCard: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.surfaceAlt,
     borderRadius: 14,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "rgba(245,158,11,0.2)",
   },
-  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.orange, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: "#f59e0b", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   macroRow: { flexDirection: "row", justifyContent: "space-between" },
   macroChip: {
     flex: 1,
@@ -390,13 +393,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     marginHorizontal: 2,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.surface,
   },
   macroChipValue: { fontSize: 14, fontWeight: "800" },
-  macroChipLabel: { fontSize: 9, color: T.t3 },
+  macroChipLabel: { fontSize: 9, color: theme.colors.textTertiary },
 
   confirmBtn: {
-    backgroundColor: T.orange,
+    backgroundColor: "#f59e0b",
     padding: 18,
     borderRadius: 14,
     alignItems: "center",
