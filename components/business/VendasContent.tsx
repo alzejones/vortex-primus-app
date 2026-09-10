@@ -22,7 +22,7 @@ import {
   View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow, maskPhone } from './SaleFormModal';
 import SaleActionsModal from './SaleActionsModal';
 import { deleteSaleWithConfirm } from '../../utils/salesActions';
@@ -33,6 +33,8 @@ const brl = (v: number) =>
   `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
 
 export default function VendasContent({ prefillClientId, onGoToReports }: { prefillClientId?: string; onGoToReports?: () => void }) {
+  const { theme } = useTheme();
+  const s = createStyles(theme);
   const [prefillDone, setPrefillDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -332,26 +334,26 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
 
   if (loading) {
     return (
-      <View style={[s.center, { backgroundColor: T.bg }]}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={[s.center, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={T.blue} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={theme.colors.primary} />
         }
       >
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.push('/herbalife-kits' as any)}>
-            <Text style={{ color: T.blue, fontWeight: '700', fontSize: 13 }}>🧰 Kits</Text>
+            <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: 13 }}>🧰 Kits</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => (onGoToReports ? onGoToReports() : router.push('/herbalife-relatorios' as any))}>
-            <Text style={{ color: T.blue, fontWeight: '700', fontSize: 13 }}>📊 Relatórios</Text>
+            <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: 13 }}>📊 Relatórios</Text>
           </TouchableOpacity>
         </View>
 
@@ -501,8 +503,8 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                   </Text>
                 </TouchableOpacity>
                 {presSelectedClient && (
-                  <View style={{ backgroundColor: '#1A1A1A', borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                    <Text style={{ color: '#999', fontSize: 11 }}>Nome e celular serão copiados do cadastro</Text>
+                  <View style={{ backgroundColor: theme.colors.card, borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                    <Text style={{ color: theme.colors.text.secondary, fontSize: 11 }}>Nome e celular serão copiados do cadastro</Text>
                   </View>
                 )}
               </>
@@ -512,7 +514,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 <TextInput
                   style={s.input}
                   placeholder="Nome do prospecto"
-                  placeholderTextColor="#777"
+                  placeholderTextColor={theme.colors.text.tertiary}
                   value={presName}
                   onChangeText={setPresName}
                   autoFocus
@@ -522,7 +524,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
                 <TextInput
                   style={s.input}
                   placeholder="(00) 00000-0000"
-                  placeholderTextColor="#777"
+                  placeholderTextColor={theme.colors.text.tertiary}
                   value={presPhone}
                   onChangeText={(t) => setPresPhone(maskPhone(t))}
                   keyboardType="phone-pad"
@@ -570,7 +572,7 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
             <TextInput
               style={s.input}
               placeholder="Buscar por nome…"
-              placeholderTextColor="#777"
+              placeholderTextColor={theme.colors.text.tertiary}
               value={pickerSearch}
               onChangeText={setPickerSearch}
               autoFocus
@@ -610,44 +612,46 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
   );
 }
 
-const s = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700', color: '#FFF', marginBottom: 16 },
-  cardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  card: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center' },
-  cardLabel: { color: '#999', fontSize: 11, marginBottom: 6 },
-  cardValue: { color: '#FFF', fontSize: 18, fontWeight: '700' },
-  convitesInput: { backgroundColor: '#242424', borderRadius: 8, padding: 8, color: '#FFF', fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4, alignSelf: 'stretch', width: '100%' },
-  primaryBtn: { backgroundColor: T.blue, borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 20 },
-  primaryBtnTxt: { color: '#000', fontWeight: '700', fontSize: 16 },
-  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600', marginBottom: 10 },
-  empty: { color: '#777', fontStyle: 'italic' },
-  saleRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-  presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-  saleName: { color: '#FFF', fontWeight: '600' },
-  saleProduct: { color: '#BBB', fontSize: 12, marginTop: 2 },
-  saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
-  saleCharged: { color: '#FFF', fontWeight: '700' },
-  saleProfit: { color: '#4ADE80', fontSize: 12 },
-  hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
-  totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-  modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
-  modalTitle: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 14 },
-  toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#242424', alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: T.blue },
-  toggleTxt: { color: '#AAA', fontWeight: '600', fontSize: 13 },
-  toggleTxtActive: { color: '#000' },
-  selector: { backgroundColor: '#242424', borderRadius: 10, padding: 14, marginBottom: 12 },
-  selectorTxt: { color: '#FFF', fontSize: 15 },
-  label: { color: '#999', fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
-  input: { backgroundColor: '#242424', borderRadius: 10, padding: 14, color: '#FFF', fontSize: 15, marginBottom: 12 },
-  inline: { flexDirection: 'row', gap: 10, marginTop: 10 },
-  btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
-  btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#444' },
-  btnTxt: { color: '#FFF', fontWeight: '700', fontSize: 15 },
-  btnGhostTxt: { color: '#AAA', fontWeight: '700', fontSize: 15 },
-  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
-  pickerTxt: { color: '#DDD' },
-});
+function createStyles(theme: any) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    title: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 16 },
+    cardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+    card: { flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, alignItems: 'center' },
+    cardLabel: { color: theme.colors.text.secondary, fontSize: 11, marginBottom: 6 },
+    cardValue: { color: theme.colors.text.primary, fontSize: 18, fontWeight: '700' },
+    convitesInput: { backgroundColor: theme.colors.surface, borderRadius: 8, padding: 8, color: theme.colors.text.primary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginTop: 4, alignSelf: 'stretch', width: '100%' },
+    primaryBtn: { backgroundColor: theme.colors.primary, borderRadius: 12, padding: 14, alignItems: 'center', marginBottom: 20 },
+    primaryBtnTxt: { color: '#000', fontWeight: '700', fontSize: 16 },
+    sectionTitle: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '600', marginBottom: 10 },
+    empty: { color: theme.colors.text.tertiary, fontStyle: 'italic' },
+    saleRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+    presRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+    saleName: { color: theme.colors.text.primary, fontWeight: '600' },
+    saleProduct: { color: theme.colors.text.secondary, fontSize: 12, marginTop: 2 },
+    saleMeta: { color: theme.colors.text.tertiary, fontSize: 12, marginTop: 2 },
+    saleCharged: { color: theme.colors.text.primary, fontWeight: '700' },
+    saleProfit: { color: '#4ADE80', fontSize: 12 },
+    hint: { color: theme.colors.text.tertiary, fontSize: 11, marginTop: 4, textAlign: 'center' },
+    totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
+    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
+    modalBox: { backgroundColor: theme.colors.surface, borderRadius: 16, padding: 18, maxHeight: '85%' },
+    modalTitle: { color: theme.colors.text.primary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+    toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+    toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.surface, alignItems: 'center' },
+    toggleBtnActive: { backgroundColor: theme.colors.primary },
+    toggleTxt: { color: theme.colors.text.secondary, fontWeight: '600', fontSize: 13 },
+    toggleTxtActive: { color: '#000' },
+    selector: { backgroundColor: theme.colors.surface, borderRadius: 10, padding: 14, marginBottom: 12 },
+    selectorTxt: { color: theme.colors.text.primary, fontSize: 15 },
+    label: { color: theme.colors.text.secondary, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
+    input: { backgroundColor: theme.colors.surface, borderRadius: 10, padding: 14, color: theme.colors.text.primary, fontSize: 15, marginBottom: 12 },
+    inline: { flexDirection: 'row', gap: 10, marginTop: 10 },
+    btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
+    btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.border },
+    btnTxt: { color: theme.colors.text.primary, fontWeight: '700', fontSize: 15 },
+    btnGhostTxt: { color: theme.colors.text.secondary, fontWeight: '700', fontSize: 15 },
+    pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.surface },
+    pickerTxt: { color: theme.colors.text.primary },
+  });
+}

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { todayBR } from '../../utils/dateBR';
 import ResetProtocolDateModal from '../ui/ResetProtocolDateModal';
 import { notify } from './SaleFormModal';
@@ -45,6 +45,7 @@ interface Day5Item {
 }
 
 export default function ResetProtocolWidget() {
+  const { theme } = useTheme();
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [todayMessages, setTodayMessages] = useState<QueueItem[]>([]);
   const [waitingDate, setWaitingDate] = useState<EnrollmentItem[]>([]);
@@ -309,6 +310,7 @@ export default function ResetProtocolWidget() {
 
   if (!hasAnyData) return null;
 
+  const s = createStyles(theme);
   const formatTime = (time: string) => time.substring(0, 5);
 
   const isOverdue = (date: string) => {
@@ -432,200 +434,202 @@ export default function ResetProtocolWidget() {
   );
 }
 
-const s = StyleSheet.create({
-  widget: {
-    backgroundColor: '#161616',
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 24,
-  },
-  header: {
-    marginBottom: 16,
-  },
-  title: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  section: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    color: T.t2,
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 10,
-  },
-  messageRow: {
-    backgroundColor: '#242424',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-  },
-  messageInfo: {
-    marginBottom: 10,
-  },
-  clientName: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  dayLabel: {
-    color: T.t2,
-    fontSize: 13,
-  },
-  timeText: {
-    color: T.t2,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  overdueTag: {
-    backgroundColor: T.orange,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  overdueText: {
-    color: '#000',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  messageActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  sendBtn: {
-    flex: 1,
-    backgroundColor: T.blue,
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  sendBtnText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  skipBtn: {
-    flex: 1,
-    backgroundColor: '#333',
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  skipBtnText: {
-    color: T.t2,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  waitingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#242424',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-  },
-  defineBtn: {
-    backgroundColor: T.blue,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  defineBtnText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  day5Row: {
-    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-    borderWidth: 1,
-    borderColor: T.orange,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-  },
-  day5Info: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
-  },
-  alertDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: T.orange,
-  },
-  day5Text: {
-    color: '#FFF',
-    fontSize: 14,
-    flex: 1,
-  },
-  day5Actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  agendarBtn: {
-    backgroundColor: T.blue,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flex: 1,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  agendarBtnDone: {
-    backgroundColor: '#22c55e',
-  },
-  agendarBtnText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  whatsappBtn: {
-    backgroundColor: '#25D366',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flex: 1,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  whatsappBtnText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  completeBtn: {
-    backgroundColor: T.green,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flex: 1,
-    minWidth: 100,
-    alignItems: 'center',
-  },
-  completeBtnText: {
-    color: '#000',
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  alterarBtn: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: T.orange,
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-  },
-  alterarBtnText: {
-    color: T.orange,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-});
+function createStyles(theme: any) {
+  return StyleSheet.create({
+    widget: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 18,
+      marginBottom: 24,
+    },
+    header: {
+      marginBottom: 16,
+    },
+    title: {
+      color: theme.colors.text.primary,
+      fontSize: 18,
+      fontWeight: '700',
+    },
+    section: {
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      color: theme.colors.text.secondary,
+      fontSize: 13,
+      fontWeight: '600',
+      marginBottom: 10,
+    },
+    messageRow: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 10,
+    },
+    messageInfo: {
+      marginBottom: 10,
+    },
+    clientName: {
+      color: theme.colors.text.primary,
+      fontSize: 15,
+      fontWeight: '600',
+      marginBottom: 4,
+    },
+    dayLabel: {
+      color: theme.colors.text.secondary,
+      fontSize: 13,
+    },
+    timeText: {
+      color: theme.colors.text.secondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    overdueTag: {
+      backgroundColor: '#f59e0b',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    overdueText: {
+      color: '#000',
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    messageActions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    sendBtn: {
+      flex: 1,
+      backgroundColor: theme.colors.primary,
+      borderRadius: 8,
+      padding: 10,
+      alignItems: 'center',
+    },
+    sendBtnText: {
+      color: '#000',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    skipBtn: {
+      flex: 1,
+      backgroundColor: theme.colors.card,
+      borderRadius: 8,
+      padding: 10,
+      alignItems: 'center',
+    },
+    skipBtnText: {
+      color: theme.colors.text.secondary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    waitingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: theme.colors.card,
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 10,
+    },
+    defineBtn: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 8,
+    },
+    defineBtnText: {
+      color: '#000',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    day5Row: {
+      backgroundColor: 'rgba(251, 191, 36, 0.1)',
+      borderWidth: 1,
+      borderColor: '#f59e0b',
+      borderRadius: 10,
+      padding: 12,
+      marginBottom: 10,
+    },
+    day5Info: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 10,
+    },
+    alertDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: '#f59e0b',
+    },
+    day5Text: {
+      color: theme.colors.text.primary,
+      fontSize: 14,
+      flex: 1,
+    },
+    day5Actions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    agendarBtn: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      flex: 1,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    agendarBtnDone: {
+      backgroundColor: '#22c55e',
+    },
+    agendarBtnText: {
+      color: '#000',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    whatsappBtn: {
+      backgroundColor: '#25D366',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      flex: 1,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    whatsappBtnText: {
+      color: '#FFF',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    completeBtn: {
+      backgroundColor: '#10b981',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      flex: 1,
+      minWidth: 100,
+      alignItems: 'center',
+    },
+    completeBtnText: {
+      color: '#000',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    alterarBtn: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: '#f59e0b',
+      borderRadius: 8,
+      padding: 10,
+      alignItems: 'center',
+    },
+    alterarBtnText: {
+      color: '#f59e0b',
+      fontSize: 14,
+      fontWeight: '700',
+    },
+  });
+}

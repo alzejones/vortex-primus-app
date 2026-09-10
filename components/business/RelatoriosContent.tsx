@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { todayBR, daysAgoBR } from '../../utils/dateBR';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow, maskPhone } from './SaleFormModal';
 import SaleActionsModal from './SaleActionsModal';
 import { deleteSaleWithConfirm } from '../../utils/salesActions';
@@ -50,6 +50,7 @@ const monthNames: Record<string, string> = {
 };
 
 export default function RelatoriosContent() {
+  const { theme } = useTheme();
   const [tab, setTab] = useState<Tab>('diario');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -299,16 +300,18 @@ export default function RelatoriosContent() {
     });
   }
 
+  const s = createStyles(theme);
+  
   if (loading) {
     return (
-      <View style={[s.center, { backgroundColor: T.bg }]}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={[s.center, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <View style={{ padding: 16, paddingBottom: 0 }}>
         <View style={s.tabs}>
           {(['diario', 'semanal', 'mensal', 'por_dia'] as Tab[]).map((t) => (
@@ -332,7 +335,7 @@ export default function RelatoriosContent() {
             setRefreshing(true);
             load();
             if (tab === 'por_dia' && trainerId) loadDaySales(trainerId, selectedDate);
-          }} tintColor={T.blue} />
+          }} tintColor={theme.colors.primary} />
         }
       >
         {tab === 'diario' && (
@@ -373,16 +376,16 @@ export default function RelatoriosContent() {
             )}
 
             {daily.length > 0 && (
-              <View style={[s.row, { backgroundColor: '#1A1A1A', paddingVertical: 8, marginBottom: 4 }]}>
-                <Text style={[s.cell, { flex: 0.5, color: '#FFF', fontWeight: '700' }]}>Total</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
-                <Text style={[s.cell, { fontWeight: '700', color: '#FFF' }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
-                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: '#FFF', textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
+              <View style={[s.row, { backgroundColor: theme.colors.card, paddingVertical: 8, marginBottom: 4 }]}>
+                <Text style={[s.cell, { flex: 0.5, color: theme.colors.text.primary, fontWeight: '700' }]}>Total</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.convites, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.apresentacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.resets, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.novos, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.repetidores, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.indicacoes, 0)}</Text>
+                <Text style={[s.cell, { fontWeight: '700', color: theme.colors.text.primary }]}>{daily.reduce((sum, r) => sum + r.acessos, 0)}</Text>
+                <Text style={[s.cell, { flex: 1, fontWeight: '700', color: theme.colors.text.primary, textAlign: 'right' }]}>{daily.reduce((sum, r) => sum + r.pv, 0).toFixed(2)}</Text>
                 <Text style={[s.cell, { flex: 1.2, fontWeight: '700', color: '#4ADE80', textAlign: 'right' }]}>{brl(daily.reduce((sum, r) => sum + r.ganhos, 0))}</Text>
               </View>
             )}
@@ -401,7 +404,7 @@ export default function RelatoriosContent() {
             </View>
             {daily.map((r) => (
               <View key={r.report_date} style={s.row}>
-                <Text style={[s.cell, { flex: 0.5, color: '#FFF' }]}>{r.report_date.slice(8, 10)}</Text>
+                <Text style={[s.cell, { flex: 0.5, color: theme.colors.text.primary }]}>{r.report_date.slice(8, 10)}</Text>
                 <Text style={s.cell}>{r.convites}</Text>
                 <Text style={s.cell}>{r.apresentacoes}</Text>
                 <Text style={s.cell}>{r.resets}</Text>
@@ -452,7 +455,7 @@ export default function RelatoriosContent() {
             </View>
             {monthly.map((r) => (
               <View key={r.month_start} style={s.row}>
-                <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>
+                <Text style={[s.cell, { flex: 1, color: theme.colors.text.primary }]}>
                   {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
                 </Text>
                 <Text style={[s.cell, { flex: 1 }]}>{Number(r.acessos_media).toFixed(1)}</Text>
@@ -474,11 +477,11 @@ export default function RelatoriosContent() {
                   .filter((r) => r.month_start.slice(0, 7) === todayBR().slice(0, 7))
                   .map((r) => (
                   <View key={`tend-${r.month_start}`} style={s.row}>
-                    <Text style={[s.cell, { flex: 1, color: '#FFF' }]}>
+                    <Text style={[s.cell, { flex: 1, color: theme.colors.text.primary }]}>
                       {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
                     </Text>
                     <Text style={[s.cell, { flex: 1 }]}>{Number(r.tendencia_pvt).toFixed(2)}</Text>
-                    <Text style={[s.cell, { flex: 1.4, color: T.blue }]}>{brl(r.tendencia_ganhos)}</Text>
+                    <Text style={[s.cell, { flex: 1.4, color: theme.colors.primary }]}>{brl(r.tendencia_ganhos)}</Text>
                   </View>
                 ))}
               </>
@@ -505,7 +508,7 @@ export default function RelatoriosContent() {
             </View>
 
             {dayLoading ? (
-              <ActivityIndicator size="small" color={T.blue} style={{ marginTop: 20 }} />
+              <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginTop: 20 }} />
             ) : (
               <>
                 <View style={s.dayCardsRow}>
@@ -621,49 +624,51 @@ export default function RelatoriosContent() {
   );
 }
 
-const s = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700', color: '#FFF', marginBottom: 12 },
-  tabs: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  tabBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#1A1A1A', alignItems: 'center' },
-  tabBtnActive: { backgroundColor: T.blue },
-  tabTxt: { color: '#AAA', fontWeight: '600' },
-  tabTxtActive: { color: '#000' },
-  headRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#333' },
-  hCell: { flex: 0.7, color: '#888', fontSize: 9, fontWeight: '700', minWidth: 0 },
-  row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#1E1E1E' },
-  cell: { flex: 0.7, color: '#BBB', fontSize: 10, minWidth: 0 },
-  empty: { color: '#777', fontStyle: 'italic', marginTop: 12 },
-  trendTitle: { color: '#FFF', fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 },
-  weekCard: { backgroundColor: '#1A1A1A', borderRadius: 12, padding: 14, marginBottom: 10 },
-  weekTitle: { color: '#FFF', fontWeight: '700', marginBottom: 8 },
-  weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  weekLabel: { color: '#999', fontSize: 13 },
-  weekValue: { color: '#FFF', fontWeight: '600', fontSize: 13 },
-  dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  dateNavBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1A1A1A', justifyContent: 'center', alignItems: 'center' },
-  dateNavBtnTxt: { color: T.blue, fontSize: 16, fontWeight: '700' },
-  dateNavLabel: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  dateNavToday: { color: T.blue, fontSize: 11, fontWeight: '600', marginTop: 2 },
-  dayCardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  dayCard: { flex: 1, backgroundColor: '#1A1A1A', borderRadius: 12, padding: 12, alignItems: 'center' },
-  dayCardLabel: { color: '#999', fontSize: 11, marginBottom: 6 },
-  dayCardValue: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  saleRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-  saleName: { color: '#FFF', fontWeight: '600' },
-  saleProduct: { color: '#BBB', fontSize: 12, marginTop: 2 },
-  saleMeta: { color: '#888', fontSize: 12, marginTop: 2 },
-  saleCharged: { color: '#FFF', fontWeight: '700' },
-  saleProfit: { color: '#4ADE80', fontSize: 12 },
-  hint: { color: '#666', fontSize: 11, marginTop: 4, textAlign: 'center' },
-  sectionTitle: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  presRow: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
-  monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 12 },
-  monthSelectorText: { color: '#FFF', fontSize: 16, fontWeight: '700', marginRight: 8 },
-  monthSelectorArrow: { color: T.blue, fontSize: 14, fontWeight: '700' },
-  monthPickerContainer: { backgroundColor: '#1A1A1A', borderRadius: 10, padding: 8, marginBottom: 12 },
-  monthPickerItem: { padding: 10, borderRadius: 8 },
-  monthPickerItemActive: { backgroundColor: T.blue },
-  monthPickerItemText: { color: '#AAA', fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  monthPickerItemTextActive: { color: '#000' },
-});
+function createStyles(theme: any) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    title: { fontSize: 22, fontWeight: '700', color: theme.colors.text.primary, marginBottom: 12 },
+    tabs: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+    tabBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
+    tabBtnActive: { backgroundColor: theme.colors.primary },
+    tabTxt: { color: theme.colors.text.tertiary, fontWeight: '600' },
+    tabTxtActive: { color: '#000' },
+    headRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    hCell: { flex: 0.7, color: theme.colors.text.tertiary, fontSize: 9, fontWeight: '700', minWidth: 0 },
+    row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+    cell: { flex: 0.7, color: theme.colors.text.secondary, fontSize: 10, minWidth: 0 },
+    empty: { color: theme.colors.text.tertiary, fontStyle: 'italic', marginTop: 12 },
+    trendTitle: { color: theme.colors.text.primary, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 },
+    weekCard: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 14, marginBottom: 10 },
+    weekTitle: { color: theme.colors.text.primary, fontWeight: '700', marginBottom: 8 },
+    weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    weekLabel: { color: theme.colors.text.tertiary, fontSize: 13 },
+    weekValue: { color: theme.colors.text.primary, fontWeight: '600', fontSize: 13 },
+    dateNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+    dateNavBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.colors.card, justifyContent: 'center', alignItems: 'center' },
+    dateNavBtnTxt: { color: theme.colors.primary, fontSize: 16, fontWeight: '700' },
+    dateNavLabel: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700' },
+    dateNavToday: { color: theme.colors.primary, fontSize: 11, fontWeight: '600', marginTop: 2 },
+    dayCardsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+    dayCard: { flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, alignItems: 'center' },
+    dayCardLabel: { color: theme.colors.text.tertiary, fontSize: 11, marginBottom: 6 },
+    dayCardValue: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700' },
+    saleRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+    saleName: { color: theme.colors.text.primary, fontWeight: '600' },
+    saleProduct: { color: theme.colors.text.secondary, fontSize: 12, marginTop: 2 },
+    saleMeta: { color: theme.colors.text.tertiary, fontSize: 12, marginTop: 2 },
+    saleCharged: { color: theme.colors.text.primary, fontWeight: '700' },
+    saleProfit: { color: '#4ADE80', fontSize: 12 },
+    hint: { color: theme.colors.text.tertiary, fontSize: 11, marginTop: 4, textAlign: 'center' },
+    sectionTitle: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '600' },
+    presRow: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'center' },
+    monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 12 },
+    monthSelectorText: { color: theme.colors.text.primary, fontSize: 16, fontWeight: '700', marginRight: 8 },
+    monthSelectorArrow: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
+    monthPickerContainer: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 8, marginBottom: 12 },
+    monthPickerItem: { padding: 10, borderRadius: 8 },
+    monthPickerItemActive: { backgroundColor: theme.colors.primary },
+    monthPickerItemText: { color: theme.colors.text.tertiary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+    monthPickerItemTextActive: { color: '#000' },
+  });
+}
