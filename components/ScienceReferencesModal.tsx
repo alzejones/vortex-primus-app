@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { T } from "../utils/theme";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // ============================================================
 // CONSTANTES
@@ -15,10 +15,10 @@ import { T } from "../utils/theme";
 
 const TAG_COLORS = {
   BMR: "#94a3b8",
-  ISSN: T.blue,
-  Emagrecimento: T.red,
-  Hipertrofia: T.green,
-  Manutenção: T.orange,
+  ISSN: "#2196F3",
+  Emagrecimento: "#EF4444",
+  Hipertrofia: "#22C55E",
+  Manutenção: "#F59E0B",
   Recomposição: "#a78bfa",
   Performance: "#f472b6",
 };
@@ -101,6 +101,8 @@ const REFERENCES = [
 // ============================================================
 
 export default function ScienceReferencesModal() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [visible, setVisible] = useState(false);
 
   return (
@@ -172,58 +174,58 @@ export default function ScienceReferencesModal() {
 // ESTILOS
 // ============================================================
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   // Botão de rodapé
   footerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 14,
     padding: 14,
     marginBottom: 12,
     gap: 10,
   },
   footerIcon: { fontSize: 20 },
-  footerText: { flex: 1, fontSize: 13, fontWeight: "700", color: T.t2 },
-  footerChevron: { fontSize: 18, color: T.t3 },
+  footerText: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary },
+  footerChevron: { fontSize: 18, color: theme.colors.textTertiary },
 
   // Modal
-  modalContainer: { flex: 1, backgroundColor: T.bg },
+  modalContainer: { flex: 1, backgroundColor: theme.colors.background },
   modalHeader: {
     flexDirection: "row",
     padding: 20,
     paddingTop: 24,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
     alignItems: "center",
   },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: T.t1 },
-  modalSubtitle: { fontSize: 12, color: T.t3, marginTop: 2 },
-  closeBtn: { backgroundColor: T.surfaceAlt, borderRadius: 10, padding: 10 },
-  closeBtnText: { fontSize: 16, color: T.t2, fontWeight: "700" },
+  modalTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary },
+  modalSubtitle: { fontSize: 12, color: theme.colors.textTertiary, marginTop: 2 },
+  closeBtn: { backgroundColor: theme.colors.surfaceAlt, borderRadius: 10, padding: 10 },
+  closeBtnText: { fontSize: 16, color: theme.colors.textSecondary, fontWeight: "700" },
 
   // Cards
   introCard: {
     margin: 16,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  introText: { fontSize: 14, color: T.t2, lineHeight: 22 },
-  introBold: { fontWeight: "800", color: T.t1 },
+  introText: { fontSize: 14, color: theme.colors.textSecondary, lineHeight: 22 },
+  introBold: { fontWeight: "800", color: theme.colors.textPrimary },
 
   refCard: {
     marginHorizontal: 16,
     marginBottom: 10,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   refTag: {
     alignSelf: "flex-start",
@@ -236,13 +238,13 @@ const styles = StyleSheet.create({
   refTitle: {
     fontSize: 13,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 4,
     lineHeight: 18,
   },
-  refAuthors: { fontSize: 11, color: T.t3, marginBottom: 2, fontStyle: "italic" },
-  refJournal: { fontSize: 11, color: T.blue, marginBottom: 8, fontWeight: "600" },
-  refDesc: { fontSize: 12, color: T.t2, lineHeight: 18 },
+  refAuthors: { fontSize: 11, color: theme.colors.textTertiary, marginBottom: 2, fontStyle: "italic" },
+  refJournal: { fontSize: 11, color: theme.colors.primary, marginBottom: 8, fontWeight: "600" },
+  refDesc: { fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18 },
   doiBtn: { marginTop: 8, flexDirection: "row", alignItems: "center", gap: 4 },
-  doiText: { fontSize: 11, color: T.blue, fontWeight: "600" },
+  doiText: { fontSize: 11, color: theme.colors.primary, fontWeight: "600" },
 });
