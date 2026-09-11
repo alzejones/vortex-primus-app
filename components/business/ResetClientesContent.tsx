@@ -239,9 +239,9 @@ export default function ResetClientesContent() {
     if (dia < 1) {
       const diasRestantes = Math.abs(dia - 1);
       if (diasRestantes === 1) {
-        return { label: 'Inicia amanhã', color: T.t3, bgColor: 'transparent' };
+        return { label: 'Inicia amanhã', color: theme.colors.textMuted, bgColor: 'transparent' };
       }
-      return { label: `Inicia em ${diasRestantes} dias`, color: T.t3, bgColor: 'transparent' };
+      return { label: `Inicia em ${diasRestantes} dias`, color: theme.colors.textMuted, bgColor: 'transparent' };
     }
     if (dia === 1 || dia === 2) {
       return { label: `Dia ${dia}`, color: '#06b6d4', bgColor: 'rgba(6,182,212,0.15)' };

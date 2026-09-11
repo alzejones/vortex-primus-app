@@ -927,12 +927,12 @@ export default function SaleFormModal({
                       setIsIndicacao(false);
                     }
                   }}>
-                    <View style={[s.checkbox, isConsumoPessoal && { backgroundColor: T.blue }]} />
+                    <View style={[s.checkbox, isConsumoPessoal && { backgroundColor: theme.colors.primary }]} />
                     <Text style={s.checkTxt}>Consumo Pessoal</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity style={s.checkRow} onPress={() => setIsVendaSiteHerba(!isVendaSiteHerba)}>
-                    <View style={[s.checkbox, isVendaSiteHerba && { backgroundColor: T.blue }]} />
+                    <View style={[s.checkbox, isVendaSiteHerba && { backgroundColor: theme.colors.primary }]} />
                     <Text style={s.checkTxt}>Venda Site Herbalife</Text>
                   </TouchableOpacity>
 
@@ -975,7 +975,7 @@ export default function SaleFormModal({
                       )}
 
                       <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
-                        <View style={[s.checkbox, isIndicacao && { backgroundColor: T.blue }]} />
+                        <View style={[s.checkbox, isIndicacao && { backgroundColor: theme.colors.primary }]} />
                         <Text style={s.checkTxt}>Veio por indicação</Text>
                       </TouchableOpacity>
                     </>
@@ -1054,7 +1054,7 @@ export default function SaleFormModal({
                 <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={onClose}>
                   <Text style={s.btnGhostTxt}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.btn, { backgroundColor: T.blue }]} onPress={saveSale} disabled={saving}>
+                <TouchableOpacity style={[s.btn, { backgroundColor: theme.colors.primary }]} onPress={saveSale} disabled={saving}>
                   <Text style={s.btnTxt}>
                     {saving ? 'Salvando…' : editingSale ? 'Salvar Alterações' : 'Confirmar Venda'}
                   </Text>

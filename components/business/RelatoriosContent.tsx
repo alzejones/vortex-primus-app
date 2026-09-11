@@ -439,7 +439,7 @@ export default function RelatoriosContent() {
                 </View>
                 <View style={s.weekLine}>
                   <Text style={s.weekLabel}>Estimado mensal</Text>
-                  <Text style={[s.weekValue, { color: T.blue }]}>{brl(r.estimado_mensal)}</Text>
+                  <Text style={[s.weekValue, { color: theme.colors.primary }]}>{brl(r.estimado_mensal)}</Text>
                 </View>
               </View>
             ))

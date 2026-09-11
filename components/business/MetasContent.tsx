@@ -510,7 +510,7 @@ export default function MetasContent() {
               <Text style={styles.summaryValue}>{Math.round(actuals.agendamentos)}</Text>
               <Text style={styles.summaryLabel}>Agendados</Text>
             </View>
-            <View style={[styles.summaryItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: T.border }]}>
+            <View style={[styles.summaryItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: theme.colors.border }]}>
               <Text style={[styles.summaryValue, { color: '#22c55e' }]}>{Math.round(actuals.avaliacoes)}</Text>
               <Text style={styles.summaryLabel}>Realizados</Text>
             </View>
