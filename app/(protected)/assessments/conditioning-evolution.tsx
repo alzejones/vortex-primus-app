@@ -538,8 +538,8 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   title: { fontSize: 24, fontWeight: "900", color: theme.colors.textPrimary, letterSpacing: -0.5 },
 
   card: { backgroundColor: theme.colors.card, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: theme.colors.border, overflow: "hidden" },
-  cardHeader: { backgroundColor: T.bgAlt, padding: 12 },
-  cardTitle: { color: T.white, fontSize: 16, fontWeight: "800", textTransform: "uppercase" },
+  cardHeader: { backgroundColor: theme.colors.card, padding: 12 },
+  cardTitle: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: "800", textTransform: "uppercase" },
 
   tableContainer: { flexDirection: 'column', minWidth: 460 },
   headerRow: { flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: theme.colors.border, backgroundColor: theme.colors.card },
@@ -551,7 +551,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   subHeaderText: { fontSize: 10, fontWeight: "700", color: theme.colors.textMuted, textAlign: 'center' },
 
   dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.colors.border },
-  rowEven: { backgroundColor: T.bgAlt },
+  rowEven: { backgroundColor: theme.colors.background },
   dataCell: { paddingVertical: 12, paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: theme.colors.border, alignItems: 'center' },
 
   exerciseText: { fontSize: 13, fontWeight: "700", color: theme.colors.textPrimary, textAlign: 'left' },
