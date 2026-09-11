@@ -702,12 +702,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   formCard: { backgroundColor: theme.colors.card, padding: 24, borderRadius: 24, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 24 },
 
   avatarContainer: { alignItems: "center", marginBottom: 24 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: T.surfaceAlt, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: T.borderActive },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.card, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: theme.colors.border },
   avatarText: { fontSize: 28, fontWeight: "900", color: theme.colors.primary, letterSpacing: 1 },
 
   inputGroup: { marginBottom: 20 },
   label: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 16, fontSize: 16, color: theme.colors.textPrimary },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 16, fontSize: 16, color: theme.colors.textPrimary },
   inputDisabled: { backgroundColor: theme.colors.background, color: theme.colors.textMuted },
   helperText: { fontSize: 12, color: theme.colors.textMuted, marginTop: 6 },
 
@@ -719,7 +719,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   signOutBtn: { alignItems: "center", paddingVertical: 12 },
   signOutText: { color: T.t4, fontSize: 13, fontWeight: "500" },
 
-  debugContainer: { backgroundColor: T.surfaceAlt, padding: 12, borderRadius: 8, marginBottom: 16, maxHeight: 200 },
+  debugContainer: { backgroundColor: theme.colors.card, padding: 12, borderRadius: 8, marginBottom: 16, maxHeight: 200 },
   debugTitle: { color: T.orange, fontSize: 12, fontWeight: "800", marginBottom: 8 },
   debugScroll: { maxHeight: 160 },
   debugText: { color: T.orange, fontSize: 10, fontWeight: "500", marginBottom: 2, fontFamily: 'monospace' },
@@ -742,7 +742,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 48, 
     height: 48, 
     borderRadius: 12, 
-    backgroundColor: T.surfaceAlt, 
+    backgroundColor: theme.colors.background, 
     justifyContent: 'center', 
     alignItems: 'center',
     marginRight: 16
@@ -763,7 +763,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   themeOptions: { flexDirection: "row", gap: 8 },
   themeOption: { 
     flex: 1, 
-    backgroundColor: T.surface, 
+    backgroundColor: theme.colors.card, 
     borderWidth: 1, 
     borderColor: theme.colors.border, 
     borderRadius: 12, 
