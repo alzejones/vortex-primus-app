@@ -511,10 +511,10 @@ export default function HerbalifeTeam() {
                   const initials = downline.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
 
                   let atividadeLabel = '';
-                  let atividadeColor = T.t3;
+                  let atividadeColor = theme.colors.textMuted;
                   if (downline.diasSemAvaliar === null) {
                     atividadeLabel = 'Sem avaliações';
-                    atividadeColor = T.t3;
+                    atividadeColor = theme.colors.textMuted;
                   } else if (downline.diasSemAvaliar <= 7) {
                     atividadeLabel = 'Ativo';
                     atividadeColor = T.green;
@@ -573,7 +573,7 @@ export default function HerbalifeTeam() {
                             </View>
                             <View style={styles.miniStatCol}>
                               <Text style={styles.miniStatLabel}>Tendência</Text>
-                              <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : T.t3 }]}>
+                              <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : theme.colors.textMuted }]}>
                                 {downline.trendAgend ? downline.trendAgend.projection : '—'}
                               </Text>
                             </View>
@@ -612,7 +612,7 @@ export default function HerbalifeTeam() {
                             </View>
                             <View style={styles.miniStatCol}>
                               <Text style={styles.miniStatLabel}>Tendência</Text>
-                              <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : T.t3 }]}>
+                              <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : theme.colors.textMuted }]}>
                                 {downline.trendAval ? downline.trendAval.projection : '—'}
                               </Text>
                             </View>
@@ -724,7 +724,7 @@ function RelatoriosTab({
   if (businessReports.length === 0) {
     return (
       <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-        <Text style={{ fontSize: 16, color: T.t2 }}>Nenhum dado de relatório disponível</Text>
+        <Text style={{ fontSize: 16, color: theme.colors.textSecondary }}>Nenhum dado de relatório disponível</Text>
       </View>
     );
   }
@@ -931,7 +931,7 @@ function RelatoriosTab({
               </View>
             ))}
             {dailyWithAllDays.length === 0 && (
-              <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados neste mês.</Text>
+              <Text style={{ color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados neste mês.</Text>
             )}
           </View>
         </>
@@ -943,14 +943,14 @@ function RelatoriosTab({
       {viewMode === 'semanal' && (
         <>
           {filteredWeekly.length === 0 && (
-            <Text style={{ color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: 12 }}>Sem dados semanais.</Text>
+            <Text style={{ color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginTop: 12 }}>Sem dados semanais.</Text>
           )}
           {filteredWeekly.slice(0, 12).map((r, idx) => (
             <View key={`${r.trainer_id}-${r.week_start}-${idx}`} style={styles.weekCard}>
               <Text style={styles.weekTitle}>
                 {fmtDate(r.week_start)} a {fmtDate(r.week_end)}
                 {selectedDownlineId === null && (
-                  <Text style={{ color: T.t3, fontWeight: '600' }}> · {r.trainer_name}</Text>
+                  <Text style={{ color: theme.colors.textMuted, fontWeight: '600' }}> · {r.trainer_name}</Text>
                 )}
               </Text>
               <View style={styles.weekLine}>
@@ -997,12 +997,12 @@ function RelatoriosTab({
             </View>
           ))}
           {filteredMonthly.length === 0 && (
-            <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados mensais.</Text>
+            <Text style={{ color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados mensais.</Text>
           )}
 
           {filteredMonthly.length > 0 && (
             <>
-              <Text style={{ color: T.t1, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 }}>— Tendências —</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 }}>— Tendências —</Text>
               <View style={styles.reportHeaderRow}>
                 <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Mês</Text>
                 {selectedDownlineId === null && (
