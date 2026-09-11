@@ -218,10 +218,10 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
           <View style={styles.previewCard}>
             <Text style={styles.previewTitle}>Macros para {g}g</Text>
             <View style={styles.previewRow}>
-              <PreviewChip label="kcal"  value={preview.calories} color={T.green} />
-              <PreviewChip label="Prot." value={preview.protein}  color={T.blue} />
-              <PreviewChip label="Carbs" value={preview.carbs}    color={T.orange} />
-              <PreviewChip label="Gord." value={preview.fat}      color={T.red} />
+              <PreviewChip label="kcal"  value={preview.calories} color={T.green} theme={theme} />
+              <PreviewChip label="Prot." value={preview.protein}  color={T.blue} theme={theme} />
+              <PreviewChip label="Carbs" value={preview.carbs}    color={T.orange} theme={theme} />
+              <PreviewChip label="Gord." value={preview.fat}      color={T.red} theme={theme} />
             </View>
           </View>
         )}
@@ -267,7 +267,8 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
 // ------------------------------------------------------------
 // Sub-componente interno
 // ------------------------------------------------------------
-function PreviewChip({ label, value, color }: { label: string; value: number; color: string }) {
+function PreviewChip({ label, value, color, theme }: { label: string; value: number; color: string; theme: import("@/contexts/ThemeContext").AppTheme }) {
+  const styles = createStyles(theme);
   return (
     <View style={[styles.previewChip, { borderColor: color }]}>
       <Text style={[styles.previewChipValue, { color }]}>{value}</Text>
