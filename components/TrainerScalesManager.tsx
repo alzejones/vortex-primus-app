@@ -17,6 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { T } from '../utils/theme';
 import { GradientPrimary } from '../utils/gradients';
 
@@ -36,6 +37,8 @@ interface TrainerScale {
 
 export default function TrainerScalesManager() {
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [scales, setScales] = useState<TrainerScale[]>([]);
   const [supportedScales, setSupportedScales] = useState<SupportedScale[]>([]);
@@ -277,7 +280,7 @@ export default function TrainerScalesManager() {
                 value={nickname}
                 onChangeText={setNickname}
                 placeholder="Digite um nome para identificar esta balança"
-                placeholderTextColor={T.t3}
+                placeholderTextColor={theme.colors.textMuted}
                 maxLength={50}
               />
             </View>
@@ -316,26 +319,26 @@ export default function TrainerScalesManager() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   container: { marginBottom: 24 },
   loadingContainer: { 
-    backgroundColor: T.card, 
+    backgroundColor: theme.colors.card, 
     padding: 40, 
     borderRadius: 24, 
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   loadingText: { 
     marginTop: 12, 
     fontSize: 14, 
-    color: T.t2, 
+    color: theme.colors.textSecondary, 
     fontWeight: '500' 
   },
 
   header: { marginBottom: 16 },
-  title: { fontSize: 20, fontWeight: '800', color: T.t1, marginBottom: 4 },
-  subtitle: { fontSize: 14, color: T.t3, lineHeight: 20 },
+  title: { fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
+  subtitle: { fontSize: 14, color: theme.colors.textMuted, lineHeight: 20 },
 
   statusBox: { padding: 12, borderRadius: 12, marginBottom: 16, borderWidth: 1 },
   statusError: { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: T.red },
@@ -345,19 +348,19 @@ const styles = StyleSheet.create({
   statusTextSuccess: { color: T.green },
 
   card: { 
-    backgroundColor: T.card, 
+    backgroundColor: theme.colors.card, 
     padding: 20, 
     borderRadius: 24, 
     borderWidth: 1, 
-    borderColor: T.border 
+    borderColor: theme.colors.border 
   },
 
   emptyState: { alignItems: 'center', paddingVertical: 32 },
   emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: T.t1, marginBottom: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 8 },
   emptyText: { 
     fontSize: 14, 
-    color: T.t3, 
+    color: theme.colors.textMuted, 
     textAlign: 'center', 
     lineHeight: 20,
     paddingHorizontal: 20
@@ -368,12 +371,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   scaleInfo: { flex: 1 },
-  scaleNickname: { fontSize: 16, fontWeight: '700', color: T.t1, marginBottom: 4 },
-  scaleModel: { fontSize: 14, color: T.t2, marginBottom: 2 },
-  scaleProtocol: { fontSize: 12, color: T.t3 },
+  scaleNickname: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 4 },
+  scaleModel: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 2 },
+  scaleProtocol: { fontSize: 12, color: theme.colors.textMuted },
   
   removeButton: { 
     padding: 8, 
@@ -404,18 +407,18 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 24,
     width: '100%',
     maxWidth: 400,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -424,36 +427,36 @@ const styles = StyleSheet.create({
   label: { 
     fontSize: 12, 
     fontWeight: '800', 
-    color: T.t2, 
+    color: theme.colors.textSecondary, 
     marginBottom: 8, 
     textTransform: 'uppercase', 
     letterSpacing: 0.5 
   },
   
   picker: { 
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     maxHeight: 150,
   },
   pickerOption: { 
     padding: 16, 
     borderBottomWidth: 1, 
-    borderBottomColor: T.border 
+    borderBottomColor: theme.colors.border 
   },
-  pickerOptionSelected: { backgroundColor: T.surfaceAlt },
-  pickerOptionText: { fontSize: 14, color: T.t1 },
+  pickerOptionSelected: { backgroundColor: theme.colors.card },
+  pickerOptionText: { fontSize: 14, color: theme.colors.textPrimary },
   pickerOptionTextSelected: { fontWeight: '700', color: T.blue },
 
   input: { 
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
 
   modalButtons: { 
@@ -465,15 +468,15 @@ const styles = StyleSheet.create({
     flex: 1, 
     paddingVertical: 14, 
     alignItems: 'center', 
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   cancelButtonText: { 
     fontSize: 14, 
     fontWeight: '600', 
-    color: T.t2 
+    color: theme.colors.textSecondary 
   },
   saveButton: { 
     flex: 1, 
