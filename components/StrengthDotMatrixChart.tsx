@@ -121,7 +121,7 @@ export default function StrengthDotMatrixChart({ assessments, periodDays }: Prop
         alignItems: 'center',
       }}>
         <Text style={{
-          color: "#fff",
+          color: theme.colors.textPrimary,
           fontSize: 16,
           fontWeight: '800',
           textTransform: 'uppercase',
