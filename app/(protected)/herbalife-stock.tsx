@@ -19,6 +19,7 @@ import {
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { useTheme } from '@/contexts/ThemeContext';
 
 type NFeParsed = {
   nfe_key: string;
@@ -69,6 +70,8 @@ async function readFileContent(uri: string): Promise<string> {
 
 export default function HerbalifeStock() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [nfeParsed, setNfeParsed] = useState<NFeParsed | null>(null);
   const [loading, setLoading] = useState<"pick" | "import" | "data" | null>(null);
   const [importResult, setImportResult] = useState<any>(null);
@@ -787,7 +790,7 @@ export default function HerbalifeStock() {
                       <TextInput
                         style={styles.adjustInput}
                         placeholder="+10 ou -5"
-                        placeholderTextColor={T.t3}
+                        placeholderTextColor={theme.colors.textMuted}
                         value={adjustQuantities[item.supplement_id] || ''}
                         onChangeText={(text) => {
                           setAdjustQuantities(prev => ({
@@ -835,13 +838,13 @@ export default function HerbalifeStock() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   scrollContent: { padding: 24, paddingBottom: 60, paddingTop: 60 },
 
   header: { marginBottom: 24 },
-  title: { fontSize: 28, fontWeight: "900", color: T.t1, marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: T.t3, lineHeight: 22 },
+  title: { fontSize: 28, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: theme.colors.textMuted, lineHeight: 22 },
 
   statusError: {
     padding: 16,
@@ -862,7 +865,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   resultTitle: { fontSize: 16, fontWeight: "800", color: T.green, marginBottom: 10 },
-  resultLine: { fontSize: 14, color: T.t1, marginBottom: 6, fontWeight: "600" },
+  resultLine: { fontSize: 14, color: theme.colors.textPrimary, marginBottom: 6, fontWeight: "600" },
 
   warningBox: {
     marginTop: 12,
@@ -871,40 +874,40 @@ const styles = StyleSheet.create({
     borderTopColor: T.orange,
   },
   warningTitle: { fontSize: 13, fontWeight: "700", color: T.orange, marginBottom: 6 },
-  warningText: { fontSize: 12, color: T.t2, marginBottom: 3 },
+  warningText: { fontSize: 12, color: theme.colors.textSecondary, marginBottom: 3 },
 
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     marginBottom: 16,
   },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  cardSubtitle: { fontSize: 13, color: T.t3, marginBottom: 16 },
+  cardTitle: { fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  cardSubtitle: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 16 },
 
   pickButton: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: "center",
   },
-  pickButtonText: { fontSize: 14, fontWeight: "700", color: T.t1, textAlign: "center" },
+  pickButtonText: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary, textAlign: "center" },
 
   preview: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  previewTitle: { fontSize: 13, fontWeight: "700", color: T.t2, marginBottom: 6 },
-  previewText: { fontSize: 13, color: T.t3, marginBottom: 3 },
+  previewTitle: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary, marginBottom: 6 },
+  previewText: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 3 },
 
   duplicateWarning: {
     backgroundColor: "rgba(251,146,60,0.12)",
@@ -925,25 +928,25 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
   },
   itemsListTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   itemsListRow: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginBottom: 4,
     paddingLeft: 8,
   },
 
   recentHeader: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -951,7 +954,7 @@ const styles = StyleSheet.create({
   recentHeaderTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 10,
   },
   recentHeaderRow: {
@@ -960,17 +963,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   recentHeaderNumber: {
     fontSize: 12,
     fontWeight: "600",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     flex: 1,
   },
   recentHeaderDate: {
     fontSize: 11,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginHorizontal: 8,
   },
   recentHeaderValue: {
@@ -994,14 +997,14 @@ const styles = StyleSheet.create({
   },
   negativeBannerText: { fontSize: 13, fontWeight: "700", color: T.orange },
 
-  emptyText: { fontSize: 13, color: T.t3, fontStyle: "italic", marginTop: 8 },
+  emptyText: { fontSize: 13, color: theme.colors.textMuted, fontStyle: "italic", marginTop: 8 },
 
   stockRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   stockRowNegative: {
     backgroundColor: "rgba(239,68,68,0.05)",
@@ -1012,10 +1015,10 @@ const styles = StyleSheet.create({
   },
   warningIcon: { fontSize: 18, marginRight: 8 },
   stockInfo: { flex: 1 },
-  stockName: { fontSize: 14, fontWeight: "700", color: T.t1, marginBottom: 2 },
-  stockBalance: { fontSize: 12, color: T.t3, marginBottom: 4 },
-  stockPV: { fontSize: 11, color: T.t2, fontWeight: "500" },
-  stockPVMissing: { fontSize: 11, color: T.t4, fontStyle: "italic" },
+  stockName: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary, marginBottom: 2 },
+  stockBalance: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 4 },
+  stockPV: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: "500" },
+  stockPVMissing: { fontSize: 11, color: theme.colors.textMuted, fontStyle: "italic" },
   
   summaryBox: {
     backgroundColor: "rgba(59,130,246,0.08)",
@@ -1030,14 +1033,14 @@ const styles = StyleSheet.create({
   invoiceRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  invoiceNumber: { fontSize: 14, fontWeight: "700", color: T.t1, marginBottom: 2 },
-  invoiceDate: { fontSize: 12, color: T.t3, marginBottom: 2 },
+  invoiceNumber: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary, marginBottom: 2 },
+  invoiceDate: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 2 },
   invoiceValue: { fontSize: 13, fontWeight: "600", color: T.blue },
 
   backButton: { alignItems: "center", paddingVertical: 12, marginTop: 16 },
-  backButtonText: { color: T.t4, fontSize: 13, fontWeight: "500" },
+  backButtonText: { color: theme.colors.textMuted, fontSize: 13, fontWeight: "500" },
   
   cardHeaderRow: {
     flexDirection: 'column',
@@ -1078,12 +1081,12 @@ const styles = StyleSheet.create({
   },
   modeBoxText: {
     fontSize: 12,
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   selectAllButton: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -1093,12 +1096,12 @@ const styles = StyleSheet.create({
   selectAllButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   cancelButton: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1107,7 +1110,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   checkbox: {
     marginRight: 12,
@@ -1116,9 +1119,9 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderWidth: 2,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 6,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1132,14 +1135,14 @@ const styles = StyleSheet.create({
     color: T.white,
   },
   adjustInput: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 14,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginTop: 8,
   },
 });
