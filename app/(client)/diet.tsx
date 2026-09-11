@@ -413,7 +413,7 @@ export default function ClientDietView() {
           </Text>
         </View>
       ) : (
-        <View style={[s.macroCard, { backgroundColor: "#1a1a1a", borderColor: theme.colors.border }]}>
+        <View style={[s.macroCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <Text style={{ color: "#fb923c", fontSize: 13, fontWeight: "600", lineHeight: 20 }}>
             Configure seu objetivo e nível de atividade abaixo para ver suas metas calóricas.
           </Text>
@@ -647,7 +647,7 @@ const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
   greeting: { fontSize: 14, color: theme.colors.textMuted, fontWeight: "600" },
   name: { fontSize: 26, fontWeight: "800", color: theme.colors.textPrimary },
-  logoutBtn: { backgroundColor: "#1a1a1a", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: theme.colors.border },
+  logoutBtn: { backgroundColor: theme.colors.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: theme.colors.border },
   logoutText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 13 },
 
   orderBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
@@ -664,7 +664,7 @@ const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet
   macroCard: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
   macroCardTitle: { fontSize: 13, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
   macroRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  macroChip: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#1a1a1a" },
+  macroChip: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: theme.colors.card },
   macroChipValue: { fontSize: 20, fontWeight: "800" },
   macroChipUnit: { fontSize: 11, color: theme.colors.textMuted },
   macroChipLabel: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: "600", marginTop: 2 },
@@ -692,11 +692,11 @@ const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet
   prefSub: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 16 },
 
   label: { fontSize: 11, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
-  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: "#1a1a1a", marginBottom: 6 },
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, marginBottom: 6 },
   optionBtnActive: { backgroundColor: "#3b82f6", borderColor: "#3b82f6" },
   optionBtnText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
   optionBtnTextActive: { color: "#ffffff" },
-  input: { backgroundColor: "#121212", borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 12, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 12 },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 12, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 12 },
 
   saveBtn: { borderRadius: 14, overflow: "hidden", marginTop: 4 },
   saveBtnGradient: { padding: 16, alignItems: "center", borderRadius: 14 },
@@ -711,13 +711,13 @@ const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet
   modalLoadingText: { marginTop: 20, fontSize: 16, fontWeight: "700", color: theme.colors.textPrimary, textAlign: "center" },
   modalLoadingSub: { marginTop: 8, fontSize: 13, color: theme.colors.textMuted, textAlign: "center" },
   modalTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 12 },
-  modalObsBox: { backgroundColor: "#1a1a1a", borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, borderRadius: 8, marginBottom: 16 },
+  modalObsBox: { backgroundColor: theme.colors.card, borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, borderRadius: 8, marginBottom: 16 },
   modalObsText: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20, fontStyle: "italic" },
   modalDaysTitle: { fontSize: 12, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
   modalDayRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   modalDayLabel: { fontSize: 14, fontWeight: "600", color: theme.colors.textSecondary },
   modalDayKcal: { fontSize: 14, fontWeight: "700", color: "#22c55e" },
-  modalCloseBtn: { marginTop: 20, padding: 14, alignItems: "center", backgroundColor: "#1a1a1a", borderRadius: 12 },
+  modalCloseBtn: { marginTop: 20, padding: 14, alignItems: "center", backgroundColor: theme.colors.card, borderRadius: 12 },
   modalCloseBtnText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 15 },
 
   fab: { position: "absolute", bottom: 84, right: 20, width: 60, height: 60, borderRadius: 30, overflow: "hidden", shadowColor: "#22c55e", shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
@@ -725,7 +725,7 @@ const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet
   fabGradient: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
   fabIcon: { fontSize: 28 },
 
-  mealLogCard: { backgroundColor: "#1a1a1a", borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border },
+  mealLogCard: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border },
   mealLogHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   mealLogDate: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: "600" },
   mealLogType: { fontSize: 11, color: "#22c55e", fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
