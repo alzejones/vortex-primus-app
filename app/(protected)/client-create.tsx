@@ -23,12 +23,15 @@ import {
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import { TutorialOverlay } from "../../components/tutorial/TutorialOverlay";
 import { TutorialHelpButton } from "../../components/tutorial/TutorialHelpButton";
 import { CoachQuestionnaireForm, CoachQuestionnaireData } from "../../components/CoachQuestionnaireForm";
 
 export default function ClientCreate() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { from, sale_id, name: prefillName, phone: prefillPhone } = useLocalSearchParams<{ from?: string; sale_id?: string; name?: string; phone?: string }>();
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
@@ -276,7 +279,7 @@ export default function ClientCreate() {
   };
 
   return (
-    <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+    <View style={[{ flex: 1, backgroundColor: theme.colors.background }, { alignItems: isDesktop ? 'center' : undefined }]}>
       <TutorialOverlay targetRefs={targetRefs} />
       <TutorialHelpButton screenId="novo_cliente" />
       
@@ -324,7 +327,7 @@ export default function ClientCreate() {
           <Text style={styles.label}>Nome Completo *</Text>
           <TextInput
             placeholder="Ex: João da Silva"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={form.name}
             onChangeText={(v) => handleChange("name", v)}
             style={styles.input}
@@ -335,7 +338,7 @@ export default function ClientCreate() {
           <Text style={styles.label}>E-mail</Text>
           <TextInput
             placeholder="Ex: joao@email.com"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             keyboardType="email-address"
             autoCapitalize="none"
             value={form.email}
@@ -348,7 +351,7 @@ export default function ClientCreate() {
           <Text style={styles.label}>Telefone</Text>
           <TextInput
             placeholder="(00) 00000-0000"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             keyboardType="phone-pad"
             value={form.phone}
             onChangeText={handlePhoneChange}
@@ -364,7 +367,7 @@ export default function ClientCreate() {
             </Text>
             <TextInput
               placeholder="DD/MM/AAAA"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="numeric"
               value={form.birth_date}
               onChangeText={handleDateChange}
@@ -377,7 +380,7 @@ export default function ClientCreate() {
             <Text style={styles.label}>Sexo</Text>
             <TextInput
               placeholder="Ex: M ou F"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               value={form.gender}
               onChangeText={(v) => handleChange("gender", v)}
               style={styles.input}
@@ -391,7 +394,7 @@ export default function ClientCreate() {
             <Text style={styles.label}>Altura (cm)</Text>
             <TextInput
               placeholder="Ex: 175"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="numeric"
               value={form.height_cm}
               onChangeText={(v) => handleChange("height_cm", v)}
@@ -454,7 +457,7 @@ export default function ClientCreate() {
           <Text style={styles.label}>Observações</Text>
           <TextInput
             placeholder="Condições médicas, objetivos, etc..."
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={form.notes}
             onChangeText={(v) => handleChange("notes", v)}
             style={[styles.input, styles.textArea]}
@@ -498,7 +501,7 @@ export default function ClientCreate() {
           <Text style={styles.label}>Restrições Alimentares</Text>
           <TextInput
             placeholder="Ex: intolerância à lactose, alergia a amendoim..."
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={form.food_restrictions}
             onChangeText={(v) => handleChange("food_restrictions", v)}
             style={[styles.input, styles.textArea]}
@@ -669,9 +672,9 @@ export default function ClientCreate() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: { flex: 1, padding: 20 },
-  pageTitle: { fontSize: 26, fontWeight: "800", color: T.t1, marginBottom: 20, marginTop: 10 },
+  pageTitle: { fontSize: 26, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 20, marginTop: 10 },
 
   statusBox: { padding: 14, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
   statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
@@ -688,18 +691,18 @@ const styles = StyleSheet.create({
 
   inputGroup: { marginBottom: 16 },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  label: { fontSize: 13, fontWeight: "700", color: T.t2, marginBottom: 6 },
-  ageText: { color: T.blue, fontWeight: "bold" },
-  input: { borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 12, backgroundColor: T.surface, fontSize: 15, color: T.t1 },
+  label: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary, marginBottom: 6 },
+  ageText: { color: theme.colors.primary, fontWeight: "bold" },
+  input: { borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 12, backgroundColor: theme.colors.card, fontSize: 15, color: theme.colors.textPrimary },
   textArea: { minHeight: 100 },
 
   button: { borderRadius: 14, overflow: "hidden", marginTop: 10 },
   buttonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
   buttonText: { color: T.white, fontWeight: "800", fontSize: 16 },
 
-  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: T.border, backgroundColor: T.card, marginBottom: 8 },
-  optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  optionBtnText: { color: T.t2, fontWeight: "600", fontSize: 14 },
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, marginBottom: 8 },
+  optionBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  optionBtnText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
   optionBtnTextActive: { color: T.white },
 
   secondaryButton: { 
@@ -707,19 +710,19 @@ const styles = StyleSheet.create({
     padding: 16, 
     marginTop: 12, 
     borderWidth: 2, 
-    borderColor: T.border, 
-    backgroundColor: T.card,
+    borderColor: theme.colors.border, 
+    backgroundColor: theme.colors.card,
     alignItems: "center",
   },
   secondaryButtonText: { 
-    color: T.t1, 
+    color: theme.colors.textPrimary, 
     fontWeight: "700", 
     fontSize: 15 
   },
   questionnaireContainer: {
     marginTop: 20,
     borderTopWidth: 2,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
     paddingTop: 20,
   },
   stickyFooter: {
@@ -727,31 +730,31 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
     paddingHorizontal: 20,
     paddingTop: 14,
   },
 
   statusField: {
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   statusFieldText: {
     fontSize: 15,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     flex: 1,
   },
   statusFieldArrow: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
 
   modalOverlay: {
@@ -761,7 +764,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 8,
     width: "80%",
@@ -771,12 +774,12 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: T.card,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
     marginBottom: 8,
   },
   modalOptionText: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontWeight: "600",
     fontSize: 14,
   },
