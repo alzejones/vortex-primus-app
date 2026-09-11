@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import TabBar from '../../components/TabBar';
 import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import SupportButton from '../../components/SupportButton';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import { useTrainerTermsStatus } from '../../hooks/useTrainerTermsStatus';
@@ -18,11 +19,12 @@ export default function ProtectedLayout() {
   const router = useRouter();
   const termsStatus = useTrainerTermsStatus();
   const licenseStatus = useLicenseStatus();
+  const { theme } = useTheme();
 
   if (loading || termsStatus.loading || licenseStatus.loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -31,8 +33,8 @@ export default function ProtectedLayout() {
 
   if (role === null) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -51,7 +53,7 @@ export default function ProtectedLayout() {
 
   // Mobile: TabBar inferior absoluta
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <View style={{ flex: 1, paddingBottom: 64 + insets.bottom }}>
         <Slot />
       </View>
