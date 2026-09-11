@@ -369,14 +369,14 @@ export default function HerbalifeKits() {
 
   if (loading) {
     return (
-      <View style={[s.center, { backgroundColor: T.bg }]}>
+      <View style={[s.center, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={T.blue} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <View style={{ padding: 16, paddingBottom: 0 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <TouchableOpacity onPress={() => router.back()}>
