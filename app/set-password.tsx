@@ -218,7 +218,7 @@ export default function SetPassword() {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={true}
             >
-              <Branding />
+              <Branding theme={theme} />
               <View style={styles.card}>
                 <Text style={styles.title}>Link inválido</Text>
                 <Text style={styles.subtitle}>
@@ -247,7 +247,7 @@ export default function SetPassword() {
               contentContainerStyle={[styles.scrollContent, { justifyContent: "center" }]}
               showsVerticalScrollIndicator={true}
             >
-              <Branding />
+              <Branding theme={theme} />
               <Text style={{ textAlign: "center", color: theme.colors.textMuted, fontSize: 14 }}>
                 Validando convite...
               </Text>
@@ -278,7 +278,7 @@ export default function SetPassword() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={true}
           >
-            <Branding />
+            <Branding theme={theme} />
 
             <View style={styles.card}>
               <Text style={styles.title}>Bem-vindo!</Text>
@@ -346,7 +346,8 @@ export default function SetPassword() {
   );
 }
 
-function Branding() {
+function Branding({ theme }: { theme: import("@/contexts/ThemeContext").AppTheme }) {
+  const styles = createStyles(theme);
   return (
     <View style={styles.brandingContainer}>
       <LinearGradient {...GradientPrimary} style={styles.logoBox}>
