@@ -11,11 +11,14 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { supabase } from "../../../lib/supabase";
 import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
 
 export default function NewAppointment() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { client_id, suggested_type, reset_enrollment_id } = useLocalSearchParams();
   const [clientName, setClientName] = useState("Carregando aluno...");
   const [loading, setLoading] = useState(false);
@@ -257,7 +260,7 @@ export default function NewAppointment() {
           <TextInput
             style={styles.input}
             placeholder="Ex: Trazer roupa de treino, chegar 10 min antes..."
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             multiline
             numberOfLines={3}
             value={notes}
@@ -284,91 +287,91 @@ export default function NewAppointment() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   header: {
     padding: 24,
     paddingTop: Platform.OS === "ios" ? 60 : 40,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   backBtn: { marginBottom: 16 },
-  backBtnText: { color: T.blue, fontWeight: "700", fontSize: 16 },
-  title: { fontSize: 28, fontWeight: "900", color: T.t1, marginBottom: 4, letterSpacing: -0.5 },
-  subtitle: { fontSize: 16, color: T.t3, fontWeight: "600" },
+  backBtnText: { color: theme.colors.primary, fontWeight: "700", fontSize: 16 },
+  title: { fontSize: 28, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 4, letterSpacing: -0.5 },
+  subtitle: { fontSize: 16, color: theme.colors.textMuted, fontWeight: "600" },
 
   scrollContent: { padding: 20, paddingBottom: 20 },
   section: { marginBottom: 30 },
-  sectionTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 16 },
 
   cardsRow: { flexDirection: "row", gap: 12 },
   typeCard: {
     flex: 1,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
   typeCardActive: { borderColor: T.blue, backgroundColor: T.blueGlow, borderWidth: 2 },
   cardEmoji: { fontSize: 32, marginBottom: 10 },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: T.t2, textAlign: "center" },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: theme.colors.textSecondary, textAlign: "center" },
   cardTitleActive: { color: T.blue },
 
   dateBox: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: "center",
     minWidth: 70,
   },
-  dateBoxActive: { backgroundColor: T.surface, borderColor: T.blue },
-  dateDay: { fontSize: 12, fontWeight: "700", color: T.t3, textTransform: "uppercase", marginBottom: 4 },
-  dateNumber: { fontSize: 20, fontWeight: "800", color: T.t1 },
-  dateTextActive: { color: T.blue },
+  dateBoxActive: { backgroundColor: theme.colors.card, borderColor: theme.colors.primary },
+  dateDay: { fontSize: 12, fontWeight: "700", color: theme.colors.textMuted, textTransform: "uppercase", marginBottom: 4 },
+  dateNumber: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary },
+  dateTextActive: { color: theme.colors.primary },
 
   timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   timeBox: {
     width: "22%",
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
   timeBoxActive: { backgroundColor: T.blue, borderColor: T.blue },
   timeBoxDisabled: { opacity: 0.4 },
-  timeText: { fontSize: 15, fontWeight: "700", color: T.t2 },
+  timeText: { fontSize: 15, fontWeight: "700", color: theme.colors.textSecondary },
   timeTextActive: { color: T.white },
-  timeTextDisabled: { color: T.t3 },
+  timeTextDisabled: { color: theme.colors.textMuted },
 
   input: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     textAlignVertical: "top",
   },
 
   footer: {
     padding: 20,
     paddingBottom: Platform.OS === "ios" ? 40 : 20,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
   },
   saveBtn: { borderRadius: 16, overflow: "hidden" },
   saveBtnGradient: { paddingVertical: 18, alignItems: "center", borderRadius: 16 },
   saveBtnText: { color: T.white, fontWeight: "900", fontSize: 16, letterSpacing: 1 },
-  addClientBtn: { marginTop: 12, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, alignItems: "center" },
-  addClientBtnText: { color: T.blue, fontWeight: "700", fontSize: 15 },
+  addClientBtn: { marginTop: 12, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, alignItems: "center" },
+  addClientBtnText: { color: theme.colors.primary, fontWeight: "700", fontSize: 15 },
 });
