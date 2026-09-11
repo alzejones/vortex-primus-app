@@ -63,7 +63,7 @@ interface KitItem {
 
 export default function HerbalifeKits() {
   const { theme } = useTheme();
-  const styles = createStyles(theme);
+  const s = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);

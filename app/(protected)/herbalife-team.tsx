@@ -918,7 +918,7 @@ function RelatoriosTab({
             </View>
             {dailyWithAllDays.map((row, idx) => (
               <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
-                <Text style={[styles.reportCell, { flex: 0.5, color: '#FFF' }]}>{row.report_date.slice(8, 10)}</Text>
+                <Text style={[styles.reportCell, { flex: 0.5, color: theme.colors.textPrimary }]}>{row.report_date.slice(8, 10)}</Text>
                 <Text style={styles.reportCell}>{row.convites}</Text>
                 <Text style={styles.reportCell}>{row.apresentacoes}</Text>
                 <Text style={styles.reportCell}>{row.resets}</Text>
@@ -985,7 +985,7 @@ function RelatoriosTab({
           </View>
           {filteredMonthly.slice(0, 12).map((r, idx) => (
             <View key={`${r.trainer_id}-${r.month_start}-${idx}`} style={styles.reportRow}>
-              <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+              <Text style={[styles.reportCell, { flex: 1, color: theme.colors.textPrimary }]}>
                 {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
               </Text>
               {selectedDownlineId === null && (
@@ -1015,7 +1015,7 @@ function RelatoriosTab({
                 .filter((r) => r.month_start.slice(0, 7) === new Date().toISOString().slice(0, 7))
                 .map((r, idx) => (
                   <View key={`tend-${r.trainer_id}-${r.month_start}-${idx}`} style={styles.reportRow}>
-                    <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+                    <Text style={[styles.reportCell, { flex: 1, color: theme.colors.textPrimary }]}>
                       {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
                     </Text>
                     {selectedDownlineId === null && (
