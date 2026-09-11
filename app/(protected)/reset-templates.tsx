@@ -350,9 +350,9 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   inputMultiline: { minHeight: 120, textAlignVertical: "top" },
   helperText: { fontSize: 12, color: theme.colors.textMuted, marginTop: 6 },
 
-  saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 12, backgroundColor: theme.colors.primary },
+  saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 12, backgroundColor: T.blue },
   saveButtonInner: { height: 56, alignItems: "center", justifyContent: "center", borderRadius: 16 },
-  saveButtonText: { color: T.white, fontWeight: "800", fontSize: 16, letterSpacing: 0.5 },
+  saveButtonText: { color: '#fff', fontWeight: "800", fontSize: 16, letterSpacing: 0.5 },
 
   restoreButton: { alignItems: "center", paddingVertical: 12, marginBottom: 24 },
   restoreButtonText: { color: theme.colors.textMuted, fontSize: 13, fontWeight: "600" },

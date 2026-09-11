@@ -374,8 +374,8 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     alignItems: "center",
   },
   sortButtonActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    backgroundColor: T.blue,
+    borderColor: T.blue,
   },
   sortButtonText: {
     fontSize: 13,
@@ -383,7 +383,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     color: theme.colors.textSecondary,
   },
   sortButtonTextActive: {
-    color: T.white,
+    color: '#fff',
   },
 
   searchContainer: { marginBottom: 16 },
