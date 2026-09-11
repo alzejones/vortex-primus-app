@@ -701,9 +701,9 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   buttonText: { color: T.white, fontWeight: "800", fontSize: 16 },
 
   optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, marginBottom: 8 },
-  optionBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
   optionBtnText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
-  optionBtnTextActive: { color: T.white },
+  optionBtnTextActive: { color: '#fff' },
 
   secondaryButton: { 
     borderRadius: 14, 

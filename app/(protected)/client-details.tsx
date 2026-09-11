@@ -794,7 +794,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, marginBottom: 8 },
   optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
   optionBtnText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
-  optionBtnTextActive: { color: T.white },
+  optionBtnTextActive: { color: '#fff' },
 
   saveButton: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
   saveButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
