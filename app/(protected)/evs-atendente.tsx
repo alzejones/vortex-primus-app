@@ -14,6 +14,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { T } from "../../utils/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import { PricingData, KitItemData, DiscountLevel, trainerUnitCost } from "../../utils/kitCostCalculator";
 import { todayBR } from "../../utils/dateBR";
 import { notify } from "../../components/business/SaleFormModal";
@@ -67,6 +68,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 export default function EVSAtendente() {
   const { session } = useAuth();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [orders, setOrders] = useState<EVSOrder[]>([]);
@@ -501,6 +503,8 @@ export default function EVSAtendente() {
     }
   }
 
+  const styles = createStyles(theme);
+
   const renderOrderCard = (order: EVSOrder) => {
     const isProcessing = processingOrder === order.id;
 
@@ -679,10 +683,10 @@ export default function EVSAtendente() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   firstVisitBadge: {
     backgroundColor: T.green,
@@ -701,23 +705,23 @@ const styles = StyleSheet.create({
   },
   column: {
     width: 300,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 12,
   },
   columnTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   columnContent: {
     paddingBottom: 12,
   },
   orderCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
@@ -725,12 +729,12 @@ const styles = StyleSheet.create({
   orderClient: {
     fontSize: 15,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   orderTotal: {
     fontSize: 14,
     fontWeight: "600",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   orderItems: {
@@ -742,11 +746,11 @@ const styles = StyleSheet.create({
   orderItemName: {
     fontSize: 14,
     fontWeight: "600",
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   orderFlavor: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
   orderAddon: {
@@ -770,9 +774,9 @@ const styles = StyleSheet.create({
     backgroundColor: T.purple,
   },
   cancelButton: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   actionButtonText: {
     fontSize: 13,
@@ -794,27 +798,27 @@ const styles = StyleSheet.create({
   modalCard: {
     width: "100%",
     maxWidth: 400,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 24,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   modalClient: {
     fontSize: 16,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   modalStatus: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   modalTotal: {
@@ -830,17 +834,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   modalItemName: {
     fontSize: 14,
     fontWeight: "600",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 4,
   },
   modalFlavor: {
     fontSize: 13,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
   modalAddon: {
@@ -851,14 +855,14 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
   modalCloseText: {
     fontSize: 14,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
 });
