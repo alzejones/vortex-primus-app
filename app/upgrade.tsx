@@ -306,7 +306,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  planCardPopular: { backgroundColor: theme.colors.card, borderColor: T.blue, transform: [{ scale: 1.02 }] },
+  planCardPopular: { backgroundColor: T.blue, borderColor: T.blue, transform: [{ scale: 1.02 }] },
   planCardCurrent: { borderColor: T.green, borderWidth: 2 },
   badgePopular: {
     position: "absolute",
