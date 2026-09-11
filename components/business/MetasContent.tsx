@@ -578,7 +578,7 @@ function createStyles(theme: any) {
     periodBtn:         { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
     periodBtnActive:   { backgroundColor: theme.colors.primary },
     periodLabel:       { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary },
-    periodLabelActive: { color: '#fff' },
+    periodLabelActive: { color: theme.colors.textPrimary },
     card:              { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16 },
     editBtn:           { backgroundColor: theme.colors.card, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
     summaryCard:       { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginTop: 8 },

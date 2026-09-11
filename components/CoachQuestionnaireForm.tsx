@@ -492,7 +492,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     borderColor: theme.colors.primary,
   },
   checkboxCheck: {
-    color: "#FFFFFF",
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: "700",
   },
@@ -531,7 +531,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     color: theme.colors.textSecondary,
   },
   scaleBtnTextActive: {
-    color: "#FFFFFF",
+    color: theme.colors.textPrimary,
   },
   assessmentBtn: {
     backgroundColor: theme.colors.primary,
@@ -541,7 +541,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     marginTop: 8,
   },
   assessmentBtnText: {
-    color: "#FFFFFF",
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: "800",
   },
