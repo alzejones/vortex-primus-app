@@ -132,7 +132,7 @@ const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => Styl
   img:         { width: '100%', height: '100%' },
   imgDim:      { opacity: 0.35 },
   youBadge:    { alignItems: 'center', paddingVertical: 2 },
-  youText:     { color: '#fff', fontSize: 8, fontWeight: '800' },
+  youText:     { color: theme.colors.textPrimary, fontSize: 8, fontWeight: '800' },
   labelBox:    { alignItems: 'center', paddingVertical: 3, paddingHorizontal: 1, borderTopWidth: 1, borderTopColor: theme.colors.border, minHeight: 30, justifyContent: 'center' },
   labelTier:   { fontSize: 7, fontWeight: '600', textAlign: 'center' },
   labelPct:    { fontSize: 8, fontWeight: '700', textAlign: 'center', marginTop: 1 },

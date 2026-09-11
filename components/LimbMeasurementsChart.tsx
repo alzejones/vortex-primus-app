@@ -186,7 +186,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: "600" }}>
                 🔵 E. (Esquerdo)
               </Text>
             </View>
@@ -200,7 +200,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: "600" }}>
                 🟢 D. (Direito)
               </Text>
             </View>
@@ -291,7 +291,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
           }}
         >
           {/* Seção COXA */}
-          <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
             COXA
           </Text>
           <BarChart
@@ -323,7 +323,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
           <View style={{ height: 24 }} />
           
           {/* Seção PANTURRILHA */}
-          <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
             PANTURRILHA
           </Text>
           <BarChart
@@ -371,7 +371,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🔵 Coxa E.
               </Text>
             </View>
@@ -385,7 +385,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🩵 Coxa D.
               </Text>
             </View>
@@ -399,7 +399,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🟠 Pant. E.
               </Text>
             </View>
@@ -413,7 +413,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🟡 Pant. D.
               </Text>
             </View>

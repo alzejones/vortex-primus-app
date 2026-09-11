@@ -161,7 +161,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: "600" }}>
                 {TRUNK_LABELS[key]}
               </Text>
             </View>
