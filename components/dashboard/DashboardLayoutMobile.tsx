@@ -990,7 +990,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   alertClientName: {
     fontSize: 14,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
+    color: '#fff',
   },
   alertClientSub: {
     fontSize: 12,
@@ -1034,7 +1034,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   birthdayWidgetTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: theme.colors.textPrimary,
+    color: '#fff',
   },
   birthdayMonth: {
     fontSize: 12,
@@ -1080,7 +1080,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   birthdayName: {
     fontSize: 14,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
+    color: '#fff',
   },
   birthdayNameToday: {
     color: '#4fc3f7',
