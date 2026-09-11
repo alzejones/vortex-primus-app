@@ -16,6 +16,7 @@ import {
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 
 type ParsedFile = {
   fileName: string;
@@ -35,6 +36,7 @@ async function readFileContent(uri: string): Promise<string> {
 
 export default function ImportFineshape() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [clientsFile, setClientsFile] = useState<ParsedFile | null>(null);
   const [assessmentsFile, setAssessmentsFile] = useState<ParsedFile | null>(null);
   const [loading, setLoading] = useState<"clients" | "assessments" | "import" | null>(null);
@@ -111,6 +113,8 @@ export default function ImportFineshape() {
       setLoading(null);
     }
   }
+
+  const styles = createStyles(theme);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -216,13 +220,13 @@ export default function ImportFineshape() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   scrollContent: { padding: 24, paddingBottom: 60, paddingTop: 60 },
 
   header: { marginBottom: 24 },
-  title: { fontSize: 28, fontWeight: "900", color: T.t1, marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: T.t3, lineHeight: 22 },
+  title: { fontSize: 28, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: theme.colors.textMuted, lineHeight: 22 },
 
   statusError: {
     padding: 16,
@@ -235,26 +239,26 @@ const styles = StyleSheet.create({
   statusErrorText: { fontWeight: "bold", fontSize: 14, color: T.red },
 
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     marginBottom: 16,
   },
-  cardTitle: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  cardSubtitle: { fontSize: 13, color: T.t3, marginBottom: 16 },
+  cardTitle: { fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  cardSubtitle: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 16 },
 
   pickButton: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: "center",
   },
-  pickButtonText: { fontSize: 14, fontWeight: "700", color: T.t1, textAlign: "center" },
+  pickButtonText: { fontSize: 14, fontWeight: "700", color: theme.colors.textPrimary, textAlign: "center" },
 
   resultCard: {
     backgroundColor: "rgba(16,185,129,0.08)",
@@ -265,7 +269,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   resultTitle: { fontSize: 16, fontWeight: "800", color: T.green, marginBottom: 10 },
-  resultLine: { fontSize: 14, color: T.t1, marginBottom: 6, fontWeight: "600" },
+  resultLine: { fontSize: 14, color: theme.colors.textPrimary, marginBottom: 6, fontWeight: "600" },
   resultLineWarn: { fontSize: 13, color: T.orange, marginBottom: 6, fontWeight: "600" },
 
   importButton: { borderRadius: 16, overflow: "hidden", marginBottom: 16 },
@@ -274,5 +278,5 @@ const styles = StyleSheet.create({
   importButtonText: { color: T.white, fontWeight: "800", fontSize: 16, letterSpacing: 0.5 },
 
   backButton: { alignItems: "center", paddingVertical: 12 },
-  backButtonText: { color: T.t4, fontSize: 13, fontWeight: "500" },
+  backButtonText: { color: theme.colors.textMuted, fontSize: 13, fontWeight: "500" },
 });
