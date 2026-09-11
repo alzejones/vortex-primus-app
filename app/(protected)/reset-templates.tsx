@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { T } from "../../utils/theme";
 
@@ -23,6 +24,8 @@ type Template = {
 };
 
 export default function ResetTemplatesScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const router = useRouter();
   const { isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -196,7 +199,7 @@ export default function ResetTemplatesScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={T.blue} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -264,7 +267,7 @@ export default function ResetTemplatesScreen() {
                 value={t.send_time}
                 onChangeText={(text) => updateTemplate(t.day_number, "send_time", text)}
                 placeholder="HH:MM"
-                placeholderTextColor={T.t3}
+                placeholderTextColor={theme.colors.textMuted}
                 maxLength={5}
               />
             </View>
@@ -276,7 +279,7 @@ export default function ResetTemplatesScreen() {
                 value={t.message_text}
                 onChangeText={(text) => updateTemplate(t.day_number, "message_text", text)}
                 placeholder="Digite a mensagem..."
-                placeholderTextColor={T.t3}
+                placeholderTextColor={theme.colors.textMuted}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -316,16 +319,16 @@ export default function ResetTemplatesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
   scrollContent: { padding: 24, paddingBottom: 60, paddingTop: Platform.OS === "ios" ? 60 : 40 },
 
   header: { marginBottom: 24 },
   backBtn: { marginBottom: 16 },
-  backBtnTxt: { fontSize: 15, color: T.blue, fontWeight: "600" },
-  title: { fontSize: 32, fontWeight: "900", color: T.t1, marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: T.t3, lineHeight: 22 },
+  backBtnTxt: { fontSize: 15, color: theme.colors.primary, fontWeight: "600" },
+  title: { fontSize: 32, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: theme.colors.textMuted, lineHeight: 22 },
 
   statusBox: { padding: 16, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
   statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
@@ -334,26 +337,26 @@ const styles = StyleSheet.create({
   statusTextError: { color: T.red },
   statusTextSuccess: { color: T.green },
 
-  infoBox: { padding: 16, borderRadius: 12, marginBottom: 20, backgroundColor: T.surfaceAlt, borderWidth: 1, borderColor: T.border },
-  infoText: { fontSize: 14, color: T.t2, lineHeight: 20 },
+  infoBox: { padding: 16, borderRadius: 12, marginBottom: 20, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border },
+  infoText: { fontSize: 14, color: theme.colors.textSecondary, lineHeight: 20 },
 
-  formCard: { backgroundColor: T.card, padding: 24, borderRadius: 24, borderWidth: 1, borderColor: T.border, marginBottom: 24 },
+  formCard: { backgroundColor: theme.colors.card, padding: 24, borderRadius: 24, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 24 },
 
-  dayLabel: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 16, letterSpacing: -0.5 },
+  dayLabel: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 16, letterSpacing: -0.5 },
 
   inputGroup: { marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: "800", color: T.t2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 16, fontSize: 16, color: T.t1 },
+  label: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 16, fontSize: 16, color: theme.colors.textPrimary },
   inputMultiline: { minHeight: 120, textAlignVertical: "top" },
-  helperText: { fontSize: 12, color: T.t3, marginTop: 6 },
+  helperText: { fontSize: 12, color: theme.colors.textMuted, marginTop: 6 },
 
-  saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 12, backgroundColor: T.blue },
+  saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 12, backgroundColor: theme.colors.primary },
   saveButtonInner: { height: 56, alignItems: "center", justifyContent: "center", borderRadius: 16 },
   saveButtonText: { color: T.white, fontWeight: "800", fontSize: 16, letterSpacing: 0.5 },
 
   restoreButton: { alignItems: "center", paddingVertical: 12, marginBottom: 24 },
-  restoreButtonText: { color: T.t3, fontSize: 13, fontWeight: "600" },
+  restoreButtonText: { color: theme.colors.textMuted, fontSize: 13, fontWeight: "600" },
 
-  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: T.border },
-  switchLabel: { fontSize: 15, fontWeight: "700", color: T.t1, flex: 1, marginRight: 12 },
+  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  switchLabel: { fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary, flex: 1, marginRight: 12 },
 });
