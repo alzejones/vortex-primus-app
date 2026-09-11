@@ -4,12 +4,13 @@
 // ============================================================
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { T } from '../../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import RelatoriosContent from '../../components/business/RelatoriosContent';
 
 export default function HerbalifeRelatoriosRoute() {
+  const { theme } = useTheme();
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
       <RelatoriosContent />
     </SafeAreaView>
   );

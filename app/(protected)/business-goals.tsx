@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import { T } from '../../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { FeatureGate } from '../../components/FeatureGate';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import MetasContent from '../../components/business/MetasContent';
@@ -30,6 +31,8 @@ const ACTION_TABS: { label: string; icon: string; action: () => void }[] = [
 export default function BusinessGoalsContainer() {
   const [tab, setTab] = useState<Tab>('metas');
   const { hasFeature } = useLicenseStatus();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const hasProductivityGoals = hasFeature('productivity_goals');
   const hasSalesTracking = hasFeature('sales_tracking');
@@ -37,7 +40,7 @@ export default function BusinessGoalsContainer() {
   const hasEarningsProjection = hasFeature('earnings_projection');
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <View style={styles.header}>
         <Text style={styles.pageLabel}>NEGÓCIO</Text>
         <View style={styles.tabsRow}>
@@ -110,12 +113,12 @@ export default function BusinessGoalsContainer() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   header:        { padding: 16, paddingBottom: 8 },
-  pageLabel:     { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 8 },
-  tabsRow:       { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: T.card, borderRadius: 12, padding: 4, gap: 4 },
+  pageLabel:     { fontSize: 11, fontWeight: '700', color: theme.colors.textMuted, letterSpacing: 1.5, marginBottom: 8 },
+  tabsRow:       { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: theme.colors.card, borderRadius: 12, padding: 4, gap: 4 },
   tabBtn:        { minWidth: 80, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
   tabBtnActive:  { backgroundColor: T.blue },
-  tabTxt:        { fontSize: 12, fontWeight: '700', color: T.t2 },
+  tabTxt:        { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
   tabTxtActive:  { color: '#fff' },
 });
