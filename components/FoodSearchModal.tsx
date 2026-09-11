@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { useTheme } from "@/contexts/ThemeContext";
 import { T } from "../utils/theme";
 
 // ------------------------------------------------------------
@@ -55,6 +56,9 @@ function scale(base: number | null, grams: number): number {
 // Componente
 // ------------------------------------------------------------
 export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSearchModalProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   const [query, setQuery]           = useState("");
   const [results, setResults]       = useState<TacoFood[]>([]);
   const [searching, setSearching]   = useState(false);
@@ -145,7 +149,7 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar alimento (ex: arroz, frango...)"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -205,7 +209,7 @@ export default function FoodSearchModal({ visible, onClose, onSelect }: FoodSear
           onChangeText={setGrams}
           keyboardType="decimal-pad"
           placeholder="100"
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           selectTextOnFocus
         />
 
@@ -275,8 +279,8 @@ function PreviewChip({ label, value, color }: { label: string; value: number; co
 // ------------------------------------------------------------
 // Estilos
 // ------------------------------------------------------------
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: 16 },
 
   header: {
     flexDirection: "row",
@@ -285,52 +289,52 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 14,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: "800", color: T.t1 },
-  closeBtn: { fontSize: 20, color: T.t3, fontWeight: "700" },
+  headerTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary },
+  closeBtn: { fontSize: 20, color: theme.colors.textMuted, fontWeight: "700" },
 
   // Busca
   searchRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   searchInput: {
     flex: 1,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
-  noResults: { color: T.t3, textAlign: "center", marginTop: 24, fontSize: 14 },
+  noResults: { color: theme.colors.textMuted, textAlign: "center", marginTop: 24, fontSize: 14 },
   resultRow: { paddingVertical: 14, paddingHorizontal: 4 },
-  resultName: { fontSize: 15, color: T.t1, fontWeight: "600", marginBottom: 2 },
-  resultMeta: { fontSize: 12, color: T.t2 },
-  separator: { height: 1, backgroundColor: T.border },
+  resultName: { fontSize: 15, color: theme.colors.textPrimary, fontWeight: "600", marginBottom: 2 },
+  resultMeta: { fontSize: 12, color: theme.colors.textSecondary },
+  separator: { height: 1, backgroundColor: theme.colors.border },
 
   // Quantidade
   backBtn: { marginBottom: 16 },
   backBtnText: { color: T.green, fontWeight: "700", fontSize: 14 },
-  selectedName: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 6 },
-  selectedMeta: { fontSize: 12, color: T.t2, marginBottom: 20, lineHeight: 18 },
-  qtyLabel: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  selectedName: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 6 },
+  selectedMeta: { fontSize: 12, color: theme.colors.textSecondary, marginBottom: 20, lineHeight: 18 },
+  qtyLabel: { fontSize: 11, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
   qtyInput: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
     fontSize: 22,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 16,
     textAlign: "center",
   },
 
-  // Preview
+  // Preview (card com borda verde = cor fixa semântica)
   previewCard: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 24,
@@ -346,12 +350,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 8,
     marginHorizontal: 2,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
   },
   previewChipValue: { fontSize: 16, fontWeight: "800" },
-  previewChipLabel: { fontSize: 10, color: T.t3 },
+  previewChipLabel: { fontSize: 10, color: theme.colors.textMuted },
 
-  // Confirmar
+  // Confirmar (botão verde = cor fixa semântica)
   confirmBtn: {
     backgroundColor: T.green,
     padding: 18,
