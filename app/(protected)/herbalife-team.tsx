@@ -666,6 +666,7 @@ export default function HerbalifeTeam() {
             downlines={downlines}
             selectedDownlineId={selectedDownlineId}
             setSelectedDownlineId={setSelectedDownlineId}
+            theme={theme}
           />
         )}
       </ScrollView>
@@ -681,6 +682,7 @@ function RelatoriosTab({
   downlines,
   selectedDownlineId,
   setSelectedDownlineId,
+  theme,
 }: {
   businessReports: BusinessReportRow[];
   weeklyReports: WeeklyReportRow[];
@@ -689,7 +691,9 @@ function RelatoriosTab({
   downlines: ProcessedDownline[];
   selectedDownlineId: string | null;
   setSelectedDownlineId: (id: string | null) => void;
+  theme: import("@/contexts/ThemeContext").AppTheme;
 }) {
+  const styles = createStyles(theme);
   const brl = (v: number) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
   const fmtDate = (d: string) => {
     const [y, m, day] = d.split('-');
