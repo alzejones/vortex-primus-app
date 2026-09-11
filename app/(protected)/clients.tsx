@@ -16,10 +16,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import { EVSQuickRegisterModal } from "../../components/EVSQuickRegisterModal";
 
 export default function Clients() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   // ─── Responsividade ───────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
     () => Dimensions.get('window').width || 375
@@ -156,7 +159,7 @@ export default function Clients() {
   }, [clients, searchQuery]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: isDesktop ? 'center' : undefined }}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <View style={[styles.container, isDesktop && { paddingHorizontal: 32, paddingVertical: 32 }]}>
           <View style={styles.buttonRow}>
@@ -232,7 +235,7 @@ export default function Clients() {
             <TextInput
               style={styles.searchInput}
               placeholder="Buscar por nome..."
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -303,7 +306,7 @@ export default function Clients() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: { flex: 1, padding: 20 },
 
   buttonRow: {
@@ -343,12 +346,12 @@ const styles = StyleSheet.create({
   },
   totalText: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontWeight: "600",
   },
   totalCount: {
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     fontWeight: "800",
   },
 
@@ -365,19 +368,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
   sortButtonActive: {
-    backgroundColor: T.blue,
-    borderColor: T.blue,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   sortButtonText: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   sortButtonTextActive: {
     color: T.white,
@@ -385,32 +388,32 @@ const styles = StyleSheet.create({
 
   searchContainer: { marginBottom: 16 },
   searchInput: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
 
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 16,
     borderRadius: 16,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  name: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  phone: { fontSize: 13, color: T.t3, marginBottom: 8 },
+  name: { fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  phone: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 8 },
 
   actions: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
   linkEdit: { fontWeight: "700", color: T.blue, fontSize: 13 },
   linkDelete: { fontWeight: "700", color: T.red, fontSize: 13 },
 
   emptyState: { alignItems: "center", paddingTop: 60 },
-  emptyText: { color: T.t2, fontSize: 16, fontWeight: "700", marginBottom: 6 },
-  emptySubText: { color: T.t3, fontSize: 13 },
+  emptyText: { color: theme.colors.textSecondary, fontSize: 16, fontWeight: "700", marginBottom: 6 },
+  emptySubText: { color: theme.colors.textMuted, fontSize: 13 },
 });
