@@ -5,6 +5,7 @@ import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TouchableOpac
 import { Ionicons } from '@expo/vector-icons';
 import { useTrainerTermsStatus } from '../hooks/useTrainerTermsStatus';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../contexts/ThemeContext';
 import { CURRENT_TRAINER_TERMS_VERSION } from '../utils/trainerTermsVersion';
 import { GradientPrimary } from '../utils/gradients';
 import { T } from '../utils/theme';
@@ -17,6 +18,7 @@ type TermsChecks = {
 export default function TermsRequiredScreen() {
   const router = useRouter();
   const termsStatus = useTrainerTermsStatus();
+  const { theme } = useTheme();
   const [checks, setChecks] = useState<TermsChecks>({
     qualification_declaration: false,
     data_processing_ack: false,
@@ -79,6 +81,8 @@ export default function TermsRequiredScreen() {
   const handleOpenFullTerms = () => {
     Linking.openURL('https://vortexprimus.com.br/termos-treinador');
   };
+
+  const styles = createStyles(theme);
 
   if (termsStatus.loading || saving) {
     return (
@@ -151,10 +155,10 @@ function CheckItem({ checked, onToggle, text }: CheckItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 24,
     maxWidth: 680,
@@ -174,13 +178,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
@@ -211,7 +215,7 @@ const styles = StyleSheet.create({
   checkText: {
     flex: 1,
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   linkButton: {
@@ -238,7 +242,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

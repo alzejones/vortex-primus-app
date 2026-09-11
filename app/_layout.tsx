@@ -2,9 +2,18 @@ import { Slot } from "expo-router";
 import { View } from "react-native";
 import StripeWrapper from "../components/StripeWrapper";
 import { AuthProvider } from "../contexts/AuthContext";
-import { ThemeProvider } from "../contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "../contexts/ThemeContext";
 import { TutorialProvider } from "../contexts/TutorialContext";
-import { T } from "../utils/theme";
+
+function RootLayoutInner() {
+  const { theme } = useTheme();
+  
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <Slot />
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
@@ -14,9 +23,7 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <TutorialProvider>
-            <View style={{ flex: 1, backgroundColor: T.bg }}>
-              <Slot />
-            </View>
+            <RootLayoutInner />
           </TutorialProvider>
         </AuthProvider>
       </ThemeProvider>

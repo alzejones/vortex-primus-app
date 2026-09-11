@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { Ionicons } from '@expo/vector-icons';
 import { useConsentStatus } from '../hooks/useConsentStatus';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../contexts/ThemeContext';
 import { CURRENT_CONSENT_VERSION } from '../utils/consentVersion';
 import { GradientPrimary } from '../utils/gradients';
 import { T } from '../utils/theme';
@@ -21,6 +22,7 @@ type ConsentChecks = {
 export default function ConsentRequiredScreen() {
   const router = useRouter();
   const consentStatus = useConsentStatus();
+  const { theme } = useTheme();
   const [checks, setChecks] = useState<ConsentChecks>({
     health_declaration: false,
     age_restriction: false,
@@ -89,6 +91,8 @@ export default function ConsentRequiredScreen() {
       setSaving(false);
     }
   };
+
+  const styles = createStyles(theme);
 
   if (consentStatus.loading || saving) {
     return (
@@ -193,10 +197,10 @@ function CheckItem({ checked, onToggle, text, optional }: CheckItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -206,7 +210,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 24,
     maxWidth: 680,
@@ -216,13 +220,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
@@ -253,16 +257,16 @@ const styles = StyleSheet.create({
   checkText: {
     flex: 1,
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   checkTextOptional: {
     fontStyle: 'italic',
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
   separator: {
     height: 1,
-    backgroundColor: T.border,
+    backgroundColor: theme.colors.border,
     marginVertical: 20,
   },
   button: {
@@ -280,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

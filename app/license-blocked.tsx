@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useLicenseStatus, LicenseStatus } from '../hooks/useLicenseStatus';
 import { GradientPrimary } from '../utils/gradients';
 import { T } from '../utils/theme';
@@ -10,6 +11,7 @@ import { T } from '../utils/theme';
 export default function LicenseBlockedScreen() {
   const router = useRouter();
   const { signOut } = useAuth();
+  const { theme } = useTheme();
   const [retryKey, setRetryKey] = useState(0);
   const licenseStatus = useLicenseStatus();
   const [isRetrying, setIsRetrying] = useState(false);
@@ -36,6 +38,8 @@ export default function LicenseBlockedScreen() {
   const handleUpgrade = () => {
     router.push('/upgrade');
   };
+
+  const styles = createStyles(theme);
 
   if (licenseStatus.loading || isRetrying) {
     return (
@@ -107,16 +111,16 @@ export default function LicenseBlockedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 32,
     maxWidth: 480,
@@ -126,13 +130,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 16,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 32,
     textAlign: 'center',
     lineHeight: 24,
@@ -148,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -157,7 +161,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutText: {
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontSize: 14,
   },
 });

@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { supabase } from "../lib/supabase";
 import { T, Typography } from "../utils/theme";
 import { GradientPrimary } from "../utils/gradients";
@@ -34,6 +35,7 @@ if (Platform.OS !== "web") {
 export default function Login() {
   console.log('[DEBUG 4] login.tsx renderizando');
   const { session, role, loading, signOut } = useAuth();
+  const { theme } = useTheme();
 
   // ─── Responsividade ───────────────────────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
@@ -239,6 +241,8 @@ export default function Login() {
     email: emailRef,
     senha: senhaRef,
   };
+
+  const styles = createStyles(theme);
 
   return (
     <KeyboardAvoidingView
@@ -508,8 +512,8 @@ export default function Login() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
 
   // ─── Glow ───────────────────────────────────────────────────────
   glowCenter: {
@@ -554,12 +558,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     zIndex: 10,
     elevation: 6,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderLeftWidth: 4,
   },
   toastError:       { borderLeftColor: T.red },
   toastSuccess:     { borderLeftColor: T.green },
-  toastText:        { fontSize: 14, ...Typography.subtitle, textAlign: "center" },
+  toastText:        { fontSize: 14, ...Typography.subtitle, textAlign: "center", color: theme.colors.textPrimary },
   toastTextError:   { color: T.red },
   toastTextSuccess: { color: T.green },
 
@@ -583,19 +587,19 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 24,
   },
-  logoLetter: { fontSize: 36, fontWeight: "900", color: T.white },
+  logoLetter: { fontSize: 36, fontWeight: "900", color: "#FFFFFF" },
   logoLetterDesktop: { fontSize: 44 },
   appName: {
     fontSize: 32,
     fontWeight: "900",
-    color: T.white,
+    color: theme.colors.textPrimary,
     letterSpacing: -0.5,
   },
   appNameDesktop: { fontSize: 40 },
   appNameBlue: { color: T.blue },
   appSubtitle: {
     fontSize: 11,
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontWeight: "700",
     letterSpacing: 2.5,
     textTransform: "uppercase",
@@ -605,11 +609,11 @@ const styles = StyleSheet.create({
   // ─── Card ───────────────────────────────────────────────────────
   // Mobile: ocupa 100% da largura (comportamento atual preservado)
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
@@ -628,14 +632,14 @@ const styles = StyleSheet.create({
     height: 54,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: T.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
   },
   googleIcon:       { width: 20, height: 20, marginRight: 12 },
-  googleButtonText: { color: T.t1, fontWeight: "600", fontSize: 15 },
+  googleButtonText: { color: theme.colors.textPrimary, fontWeight: "600", fontSize: 15 },
 
   // ─── Divider ────────────────────────────────────────────────────
   divider: {
@@ -643,10 +647,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 16,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: T.border },
+  dividerLine: { flex: 1, height: 1, backgroundColor: theme.colors.border },
   dividerText: {
     marginHorizontal: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase",
@@ -655,17 +659,17 @@ const styles = StyleSheet.create({
   // ─── Inputs ─────────────────────────────────────────────────────
   inputGroup: { marginBottom: 16 },
   row:        { flexDirection: "row", justifyContent: "space-between" },
-  label:      { fontSize: 13, color: T.t2, marginBottom: 8, ...Typography.subtitle },
+  label:      { fontSize: 13, color: theme.colors.textSecondary, marginBottom: 8, ...Typography.subtitle },
   forgot:     { fontSize: 13, color: T.blue, fontWeight: "600" },
   input: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 50,
     fontSize: 16,
-    color: T.white,
+    color: theme.colors.textPrimary,
   },
 
   // ─── Botão primário ─────────────────────────────────────────────
@@ -676,24 +680,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 14,
   },
-  primaryBtnText: { color: T.white, fontWeight: "700", fontSize: 16 },
+  primaryBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
 
   // ─── Precisa de ajuda? ──────────────────────────────────────────
   helpBtn:  { marginTop: 12, alignItems: "center" },
-  helpText: { color: T.t2, fontSize: 13, fontWeight: "600" },
+  helpText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: "600" },
 
   // ─── Cadastro ───────────────────────────────────────────────────
   signupBtn:  { marginTop: 12, alignItems: "center" },
-  signupText: { color: T.t2, fontSize: 14 },
+  signupText: { color: theme.colors.textSecondary, fontSize: 14 },
   signupLink: { color: T.blue, fontWeight: "700" },
 
   // ─── Input com ícone (olho) ─────────────────────────────────────
   inputWithIcon: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     height: 50,
     paddingHorizontal: 16,
@@ -701,7 +705,7 @@ const styles = StyleSheet.create({
   inputWithIconField: {
     flex: 1,
     fontSize: 16,
-    color: T.white,
+    color: theme.colors.textPrimary,
   },
   iconEye: {
     marginLeft: 8,
@@ -711,19 +715,19 @@ const styles = StyleSheet.create({
   // ─── Reset ──────────────────────────────────────────────────────
   resetTitle: {
     fontSize: 20,
-    color: T.white,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
     textAlign: "center",
     ...Typography.title,
   },
   resetSubtitle: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     textAlign: "center",
     marginBottom: 24,
   },
   backBtn:     { marginTop: 24, alignItems: "center" },
-  backBtnText: { color: T.t2, fontSize: 14, fontWeight: "600" },
+  backBtnText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: "600" },
 
   // ─── Botão Sair (role null) ─────────────────────────────────────
   signOutBtn:  { marginTop: 12, alignItems: "center" },

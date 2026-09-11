@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import SupportButton from "../components/SupportButton";
 import { supabase } from "../lib/supabase";
+import { useTheme } from "../contexts/ThemeContext";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
 
@@ -37,6 +38,7 @@ interface Plan {
 
 export default function UpgradeScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   useEffect(() => {
@@ -186,6 +188,8 @@ export default function UpgradeScreen() {
     }
   }
 
+  const styles = createStyles(theme);
+
   if (loading) {
     return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={T.blue} /></View>;
   }
@@ -279,30 +283,30 @@ export default function UpgradeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
   header: {
     padding: 24,
     paddingTop: Platform.OS === "ios" ? 60 : 40,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   backBtn: { marginBottom: 16 },
   backBtnText: { color: T.blue, fontWeight: "700", fontSize: 16 },
-  title: { fontSize: 28, fontWeight: "900", color: T.t1, marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: T.t3, lineHeight: 22 },
+  title: { fontSize: 28, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: theme.colors.textMuted, lineHeight: 22 },
   cardsContainer: { padding: 20 },
   planCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 24,
     padding: 24,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  planCardPopular: { backgroundColor: T.bgAlt, borderColor: T.blue, transform: [{ scale: 1.02 }] },
+  planCardPopular: { backgroundColor: theme.colors.card, borderColor: T.blue, transform: [{ scale: 1.02 }] },
   planCardCurrent: { borderColor: T.green, borderWidth: 2 },
   badgePopular: {
     position: "absolute",
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  badgePopularText: { color: T.white, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  badgePopularText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
   badgeCurrent: {
     position: "absolute",
     top: -12,
@@ -323,20 +327,20 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  badgeCurrentText: { color: T.white, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
-  textWhite: { color: T.white },
-  planName: { fontSize: 22, fontWeight: "900", color: T.t1, marginBottom: 16 },
+  badgeCurrentText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  textWhite: { color: "#FFFFFF" },
+  planName: { fontSize: 22, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 16 },
   priceRow: { flexDirection: "row", alignItems: "baseline", marginBottom: 24 },
-  currency: { fontSize: 18, fontWeight: "700", color: T.t1, marginRight: 4 },
-  price: { fontSize: 52, fontWeight: "900", color: T.t1, letterSpacing: -2 },
-  period: { fontSize: 16, fontWeight: "600", color: T.t3, marginLeft: 4 },
+  currency: { fontSize: 18, fontWeight: "700", color: theme.colors.textPrimary, marginRight: 4 },
+  price: { fontSize: 52, fontWeight: "900", color: theme.colors.textPrimary, letterSpacing: -2 },
+  period: { fontSize: 16, fontWeight: "600", color: theme.colors.textMuted, marginLeft: 4 },
   featuresListShort: { marginBottom: 24 },
   featureItem: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   featureIcon: { fontSize: 16, marginRight: 12 },
-  featureText: { fontSize: 15, color: T.t2, flex: 1 },
+  featureText: { fontSize: 15, color: theme.colors.textSecondary, flex: 1 },
   subscribeBtn: { borderRadius: 16, overflow: "hidden" },
   subscribeBtnGradient: { paddingVertical: 18, alignItems: "center", borderRadius: 16 },
-  subscribeBtnDisabled: { backgroundColor: T.surfaceAlt, paddingVertical: 18, alignItems: "center", borderRadius: 16, opacity: 0.5 },
-  subscribeBtnTextActive: { color: T.white, fontWeight: "800", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5 },
-  subscribeBtnTextDisabled: { color: T.t3, fontWeight: "800", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5, textAlign: "center" },
+  subscribeBtnDisabled: { backgroundColor: theme.colors.card, paddingVertical: 18, alignItems: "center", borderRadius: 16, opacity: 0.5 },
+  subscribeBtnTextActive: { color: "#FFFFFF", fontWeight: "800", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5 },
+  subscribeBtnTextDisabled: { color: theme.colors.textMuted, fontWeight: "800", fontSize: 16, textTransform: "uppercase", letterSpacing: 0.5, textAlign: "center" },
 });
