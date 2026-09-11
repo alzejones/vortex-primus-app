@@ -28,6 +28,7 @@ import {
 } from "../../utils/dietCalculations";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // ------------------------------------------------------------
 // Tipos locais
@@ -93,6 +94,7 @@ export default function DietPlanForm() {
 
   const { trainerId, loadingTrainer } = useTrainer();
   const { hasFeature } = useLicenseStatus();
+  const { theme } = useTheme();
   const [userRole, setUserRole] = useState<'trainer' | 'client' | null>(null);
 
   const [loading, setLoading]     = useState(isEditing);
@@ -446,6 +448,8 @@ export default function DietPlanForm() {
   // ------------------------------------------------------------
   // Render
   // ------------------------------------------------------------
+  const styles = createStyles(theme);
+
   if (loading || (userRole === 'trainer' && loadingTrainer)) {
     return (
       <View style={styles.center}>
@@ -464,7 +468,7 @@ export default function DietPlanForm() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: T.bg }}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
@@ -805,9 +809,9 @@ export default function DietPlanForm() {
 // ------------------------------------------------------------
 // Estilos
 // ------------------------------------------------------------
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
-  pageTitle: { fontSize: 22, fontWeight: "800", color: T.t1, marginBottom: 16 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
+  pageTitle: { fontSize: 22, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 16 },
 
   statusBox: { padding: 12, borderRadius: 10, marginBottom: 16, borderWidth: 1 },
   statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
@@ -816,21 +820,21 @@ const styles = StyleSheet.create({
   statusTextError: { color: T.red },
   statusTextSuccess: { color: T.green },
 
-  card: { backgroundColor: T.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  card: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
 
-  label: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
-  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 12, fontSize: 15, color: T.t1, marginBottom: 12 },
+  label: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 12, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 12 },
   textArea: { height: 80, textAlignVertical: "top" },
 
-  mealCard: { backgroundColor: T.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  mealCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
   mealCardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   mealIndex: { fontSize: 15, fontWeight: "800", color: T.green },
   mealRow: { flexDirection: "row" },
   removeText: { color: T.red, fontWeight: "700", fontSize: 13 },
 
-  foodBlock: { backgroundColor: T.surfaceAlt, borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: T.border },
+  foodBlock: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.border },
   foodBlockHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  foodBlockTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase" },
+  foodBlockTitle: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase" },
   foodRow: { flexDirection: "row" },
 
   foodNameRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
@@ -850,22 +854,22 @@ const styles = StyleSheet.create({
   saveBtnGradient: { height: 56, alignItems: "center", justifyContent: "center", borderRadius: 14 },
   saveBtnText: { color: T.white, fontWeight: "800", fontSize: 16 },
 
-  bioCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
-  bioCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  bioCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  bioCardTitle: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   bioRow: { flexDirection: "row", justifyContent: "space-between" },
-  bioBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
+  bioBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: theme.colors.card },
   bioValue: { fontSize: 16, fontWeight: "800" },
-  bioUnit: { fontSize: 10, color: T.t3 },
-  bioLabel: { fontSize: 10, color: T.t2, fontWeight: "600", marginTop: 2 },
+  bioUnit: { fontSize: 10, color: theme.colors.textMuted },
+  bioLabel: { fontSize: 10, color: theme.colors.textSecondary, fontWeight: "600", marginTop: 2 },
 
-  macroCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
-  macroCardTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  macroCardTitle: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   macroRow: { flexDirection: "row", justifyContent: "space-between" },
-  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: theme.colors.card },
   macroValue: { fontSize: 16, fontWeight: "800" },
-  macroUnit: { fontSize: 10, color: T.t3 },
-  macroLabel: { fontSize: 10, color: T.t2, fontWeight: "600", marginTop: 2 },
+  macroUnit: { fontSize: 10, color: theme.colors.textMuted },
+  macroLabel: { fontSize: 10, color: theme.colors.textSecondary, fontWeight: "600", marginTop: 2 },
 
-  macroBarsCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: T.border },
-  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t2, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroBarsCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 });
