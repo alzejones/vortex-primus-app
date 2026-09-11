@@ -110,12 +110,14 @@ export default function TermsRequiredScreen() {
               checked={checks.qualification_declaration}
               onToggle={() => toggleCheck('qualification_declaration')}
               text="Declaro que atuarei dentro dos limites legais da minha qualificação profissional e formação. Estou ciente de que prescrição dietética individualizada, prescrição de exercícios físicos individualizados e diagnóstico ou tratamento de condições de saúde são atividades privativas de profissões regulamentadas (nutricionista, educador físico com CREF, e médico, respectivamente), e que não utilizarei a Plataforma para exercer tais atividades caso não possua a habilitação legal correspondente. Estou ciente de que o conteúdo gerado por IA na Plataforma tem natureza educacional e que sua utilização, adaptação e comunicação ao meu aluno é de minha exclusiva responsabilidade."
+              theme={theme}
             />
 
             <CheckItem
               checked={checks.data_processing_ack}
               onToggle={() => toggleCheck('data_processing_ack')}
               text="Declaro que sou responsável por obter o consentimento dos meus alunos para o tratamento de seus dados pessoais, incluindo dados sensíveis de saúde, na forma da LGPD, e que li e concordo com os Termos de Uso completos do Vortex Primus."
+              theme={theme}
             />
           </View>
 
@@ -142,9 +144,11 @@ type CheckItemProps = {
   checked: boolean;
   onToggle: () => void;
   text: string;
+  theme: import('@/contexts/ThemeContext').AppTheme;
 };
 
-function CheckItem({ checked, onToggle, text }: CheckItemProps) {
+function CheckItem({ checked, onToggle, text, theme }: CheckItemProps) {
+  const styles = createStyles(theme);
   return (
     <TouchableOpacity onPress={onToggle} style={styles.checkItem}>
       <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
