@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +20,7 @@ import EnduranceDotMatrixChart from "../../../components/EnduranceDotMatrixChart
 
 export default function ConditioningEvolution() {
   const { client_id } = useLocalSearchParams();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<any[]>([]);
   const [clientName, setClientName] = useState("");
@@ -114,7 +116,7 @@ export default function ConditioningEvolution() {
   };
 
   const getDiffColor = (val: string | number, isTime: boolean = false) => {
-    if (val === "-") return T.t3;
+    if (val === "-") return theme.colors.textMuted;
     const strVal = String(val);
     if (isTime) {
       if (strVal.startsWith("-")) return "#16a34a";
@@ -123,7 +125,7 @@ export default function ConditioningEvolution() {
       if (strVal.startsWith("+")) return "#16a34a";
       if (strVal.startsWith("-")) return "#dc2626";
     }
-    return T.t2;
+    return theme.colors.textSecondary;
   };
 
   const normalizeExerciseName = (name: string) => {
@@ -137,6 +139,7 @@ export default function ConditioningEvolution() {
   };
 
   const renderStrengthCard = (currentAss: any, previousAss: any, initialAss: any) => {
+    const styles = createStyles(theme);
     const condCurr = currentAss.conditioning[0];
     const condPrev = previousAss ? previousAss.conditioning[0] : null;
     const condInit = initialAss ? initialAss.conditioning[0] : null;
@@ -172,7 +175,7 @@ export default function ConditioningEvolution() {
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
                 </View>
               </View>
-              <View style={[styles.headerCell, { width: 100, backgroundColor: T.surfaceAlt }]}>
+              <View style={[styles.headerCell, { width: 100, backgroundColor: theme.colors.background }]}>
                 <Text style={styles.headerLabel}>Avaliação Anterior</Text><Text style={styles.headerDate}>{datePrev}</Text>
                 <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Carga</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>Reps</Text>
@@ -184,8 +187,8 @@ export default function ConditioningEvolution() {
                   <Text style={styles.headerDate}>{daysPrev} Dias</Text><Text style={styles.headerDate}>{daysInit} Dias</Text>
                 </View>
                 <View style={styles.subHeaderArea}>
-                  <Text style={[styles.subHeaderText, { flex: 1, color: T.blue }]}>x Anterior</Text>
-                  <Text style={[styles.subHeaderText, { flex: 1, color: T.blue }]}>x Total</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: theme.colors.primary }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: theme.colors.primary }]}>x Total</Text>
                 </View>
                 <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Cg | Rp</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>Cg | Rp</Text>
@@ -211,21 +214,21 @@ export default function ConditioningEvolution() {
                   <View style={[styles.dataCell, { width: 60 }]}>
                     <Text style={[styles.valueText]}>{item.repetitions || '-'}</Text>
                   </View>
-                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: T.surfaceAlt }]}>
-                    <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevItem?.load_kg || '-'}</Text>
-                    <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevItem?.repetitions || '-'}</Text>
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: theme.colors.background }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: theme.colors.textMuted }]}>{prevItem?.load_kg || '-'}</Text>
+                    <Text style={[styles.valueText, { flex: 1, color: theme.colors.textMuted }]}>{prevItem?.repetitions || '-'}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
                       {diffLoadPrev === "-" && diffRepsPrev === "-" ? (
-                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                        <Text style={[styles.diffText, { color: theme.colors.textMuted }]}>-</Text>
                       ) : (
                         <><Text style={[styles.diffText, { color: getDiffColor(diffLoadPrev) }]}>{diffLoadPrev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsPrev) }]}>{diffRepsPrev}</Text></>
                       )}
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
                       {diffLoadInit === "-" && diffRepsInit === "-" ? (
-                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                        <Text style={[styles.diffText, { color: theme.colors.textMuted }]}>-</Text>
                       ) : (
                         <><Text style={[styles.diffText, { color: getDiffColor(diffLoadInit) }]}>{diffLoadInit}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diffRepsInit) }]}>{diffRepsInit}</Text></>
                       )}
@@ -241,6 +244,7 @@ export default function ConditioningEvolution() {
   };
 
   const renderEnduranceCard = (currentAss: any, previousAss: any, initialAss: any) => {
+    const styles = createStyles(theme);
     const condCurr = currentAss.conditioning[0];
     const condPrev = previousAss ? previousAss.conditioning[0] : null;
     const condInit = initialAss ? initialAss.conditioning[0] : null;
@@ -276,7 +280,7 @@ export default function ConditioningEvolution() {
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Tempo</Text>
                 </View>
               </View>
-              <View style={[styles.headerCell, { width: 100, backgroundColor: T.surfaceAlt }]}>
+              <View style={[styles.headerCell, { width: 100, backgroundColor: theme.colors.background }]}>
                 <Text style={styles.headerLabel}>Avaliação Anterior</Text><Text style={styles.headerDate}>{datePrev}</Text>
                 <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Dist/Reps</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>Tempo</Text>
@@ -288,8 +292,8 @@ export default function ConditioningEvolution() {
                   <Text style={styles.headerDate}>{daysPrev} Dias</Text><Text style={styles.headerDate}>{daysInit} Dias</Text>
                 </View>
                 <View style={styles.subHeaderArea}>
-                  <Text style={[styles.subHeaderText, { flex: 1, color: T.blue }]}>x Anterior</Text>
-                  <Text style={[styles.subHeaderText, { flex: 1, color: T.blue }]}>x Total</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: theme.colors.primary }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: theme.colors.primary }]}>x Total</Text>
                 </View>
                 <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>D/R | Tmp</Text><Text style={[styles.subHeaderText, { flex: 1 }]}>D/R | Tmp</Text>
@@ -321,21 +325,21 @@ export default function ConditioningEvolution() {
                   <View style={[styles.dataCell, { width: 60 }]}>
                     <Text style={[styles.valueText]}>{currVal2}</Text>
                   </View>
-                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: T.surfaceAlt }]}>
-                    <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevVal1}</Text>
-                    <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevVal2}</Text>
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: theme.colors.background }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: theme.colors.textMuted }]}>{prevVal1}</Text>
+                    <Text style={[styles.valueText, { flex: 1, color: theme.colors.textMuted }]}>{prevVal2}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
                       {diff1Prev === "-" && diff2Prev === "-" ? (
-                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                        <Text style={[styles.diffText, { color: theme.colors.textMuted }]}>-</Text>
                       ) : (
                         <><Text style={[styles.diffText, { color: getDiffColor(diff1Prev) }]}>{diff1Prev}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Prev, true) }]}>{diff2Prev}</Text></>
                       )}
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
                       {diff1Init === "-" && diff2Init === "-" ? (
-                        <Text style={[styles.diffText, { color: T.t3 }]}>-</Text>
+                        <Text style={[styles.diffText, { color: theme.colors.textMuted }]}>-</Text>
                       ) : (
                         <><Text style={[styles.diffText, { color: getDiffColor(diff1Init) }]}>{diff1Init}</Text><Text style={styles.divider}>|</Text><Text style={[styles.diffText, { color: getDiffColor(diff2Init, true) }]}>{diff2Init}</Text></>
                       )}
@@ -351,6 +355,7 @@ export default function ConditioningEvolution() {
   };
 
   const renderMobilityCard = (currentAss: any, previousAss: any, initialAss: any) => {
+    const styles = createStyles(theme);
     const condCurr = currentAss.conditioning[0];
     const condPrev = previousAss ? previousAss.conditioning[0] : null;
     const condInit = initialAss ? initialAss.conditioning[0] : null;
@@ -380,7 +385,7 @@ export default function ConditioningEvolution() {
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Resultado</Text>
                 </View>
               </View>
-              <View style={[styles.headerCell, { width: 100, backgroundColor: T.surfaceAlt }]}>
+              <View style={[styles.headerCell, { width: 100, backgroundColor: theme.colors.background }]}>
                 <Text style={styles.headerLabel}>Avaliação Anterior</Text><Text style={styles.headerDate}>{datePrev}</Text>
                 <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Resultado</Text>
@@ -392,8 +397,8 @@ export default function ConditioningEvolution() {
                   <Text style={styles.headerDate}>{daysPrev} Dias</Text><Text style={styles.headerDate}>{daysInit} Dias</Text>
                 </View>
                 <View style={styles.subHeaderArea}>
-                  <Text style={[styles.subHeaderText, { flex: 1, color: T.blue }]}>x Anterior</Text>
-                  <Text style={[styles.subHeaderText, { flex: 1, color: T.blue }]}>x Total</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: theme.colors.primary }]}>x Anterior</Text>
+                  <Text style={[styles.subHeaderText, { flex: 1, color: theme.colors.primary }]}>x Total</Text>
                 </View>
                 <View style={styles.subHeaderArea}>
                   <Text style={[styles.subHeaderText, { flex: 1 }]}>Evolução</Text>
@@ -419,15 +424,15 @@ export default function ConditioningEvolution() {
                   <View style={[styles.dataCell, { width: 120 }]}>
                     <Text style={[styles.valueText]}>{currVal}</Text>
                   </View>
-                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: T.surfaceAlt }]}>
-                    <Text style={[styles.valueText, { flex: 1, color: T.t3 }]}>{prevVal}</Text>
+                  <View style={[styles.dataCell, { width: 100, flexDirection: 'row', backgroundColor: theme.colors.background }]}>
+                    <Text style={[styles.valueText, { flex: 1, color: theme.colors.textMuted }]}>{prevVal}</Text>
                   </View>
                   <View style={[styles.dataCell, { width: 180, flexDirection: 'row' }]}>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: diffPrev === "-" ? T.t3 : getDiffColor(diffPrev) }]}>{diffPrev}</Text>
+                      <Text style={[styles.diffText, { color: diffPrev === "-" ? theme.colors.textMuted : getDiffColor(diffPrev) }]}>{diffPrev}</Text>
                     </View>
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
-                      <Text style={[styles.diffText, { color: diffInit === "-" ? T.t3 : getDiffColor(diffInit) }]}>{diffInit}</Text>
+                      <Text style={[styles.diffText, { color: diffInit === "-" ? theme.colors.textMuted : getDiffColor(diffInit) }]}>{diffInit}</Text>
                     </View>
                   </View>
                 </View>
@@ -439,8 +444,10 @@ export default function ConditioningEvolution() {
     );
   };
 
+  const styles = createStyles(theme);
+
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={T.blue} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
   }
 
   if (history.length === 0) {
@@ -459,10 +466,10 @@ export default function ConditioningEvolution() {
   const initialAss = history.length > 1 ? history[history.length - 1] : null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg, paddingTop: Platform.OS === "android" ? 40 : 0 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background, paddingTop: Platform.OS === "android" ? 40 : 0 }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 16 }}>
-          <Text style={{ color: T.blue, fontWeight: "700" }}>← Voltar para {clientName}</Text>
+          <Text style={{ color: theme.colors.primary, fontWeight: "700" }}>← Voltar para {clientName}</Text>
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={styles.title}>Condicionamento Físico</Text>
@@ -492,7 +499,7 @@ export default function ConditioningEvolution() {
         {history.map((assessment, index) => (
           <View key={assessment.id} style={[styles.historyItem, selectedIndex === index && styles.historyItemActive]}>
             <View>
-              <Text style={[styles.historyDate, selectedIndex === index && { color: T.blue }]}>{formatDate(assessment.date)}</Text>
+              <Text style={[styles.historyDate, selectedIndex === index && { color: theme.colors.primary }]}>{formatDate(assessment.date)}</Text>
               {index === 0 && <Text style={styles.historyTag}>Mais Recente</Text>}
             </View>
 
@@ -523,43 +530,43 @@ export default function ConditioningEvolution() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg, padding: 20 },
-  backBtn: { backgroundColor: T.blue, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, marginTop: 20 },
-  emptyTitle: { fontSize: 20, fontWeight: "bold", color: T.t1 },
-  header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 10, backgroundColor: T.card, borderBottomWidth: 1, borderBottomColor: T.border },
-  title: { fontSize: 24, fontWeight: "900", color: T.t1, letterSpacing: -0.5 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background, padding: 20 },
+  backBtn: { backgroundColor: theme.colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, marginTop: 20 },
+  emptyTitle: { fontSize: 20, fontWeight: "bold", color: theme.colors.textPrimary },
+  header: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 10, backgroundColor: theme.colors.card, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  title: { fontSize: 24, fontWeight: "900", color: theme.colors.textPrimary, letterSpacing: -0.5 },
 
-  card: { backgroundColor: T.card, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: T.border, overflow: "hidden" },
+  card: { backgroundColor: theme.colors.card, borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: theme.colors.border, overflow: "hidden" },
   cardHeader: { backgroundColor: T.bgAlt, padding: 12 },
   cardTitle: { color: T.white, fontSize: 16, fontWeight: "800", textTransform: "uppercase" },
 
   tableContainer: { flexDirection: 'column', minWidth: 460 },
-  headerRow: { flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: T.border, backgroundColor: T.card },
-  headerCell: { padding: 10, borderRightWidth: 1, borderRightColor: T.border },
-  headerLabel: { fontSize: 11, fontWeight: "700", color: T.t3, textTransform: "uppercase", marginBottom: 4 },
-  headerDate: { fontSize: 13, fontWeight: "800", color: T.t1 },
+  headerRow: { flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: theme.colors.border, backgroundColor: theme.colors.card },
+  headerCell: { padding: 10, borderRightWidth: 1, borderRightColor: theme.colors.border },
+  headerLabel: { fontSize: 11, fontWeight: "700", color: theme.colors.textMuted, textTransform: "uppercase", marginBottom: 4 },
+  headerDate: { fontSize: 13, fontWeight: "800", color: theme.colors.textPrimary },
 
   subHeaderArea: { flexDirection: 'row', marginTop: 8, justifyContent: 'space-between' },
-  subHeaderText: { fontSize: 10, fontWeight: "700", color: T.t3, textAlign: 'center' },
+  subHeaderText: { fontSize: 10, fontWeight: "700", color: theme.colors.textMuted, textAlign: 'center' },
 
-  dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: T.border },
+  dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   rowEven: { backgroundColor: T.bgAlt },
-  dataCell: { paddingVertical: 12, paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: T.border, alignItems: 'center' },
+  dataCell: { paddingVertical: 12, paddingHorizontal: 10, borderRightWidth: 1, borderRightColor: theme.colors.border, alignItems: 'center' },
 
-  exerciseText: { fontSize: 13, fontWeight: "700", color: T.t1, textAlign: 'left' },
-  valueText: { fontSize: 13, fontWeight: "600", color: T.t2, textAlign: 'center' },
+  exerciseText: { fontSize: 13, fontWeight: "700", color: theme.colors.textPrimary, textAlign: 'left' },
+  valueText: { fontSize: 13, fontWeight: "600", color: theme.colors.textSecondary, textAlign: 'center' },
   diffText: { fontSize: 12, fontWeight: "800", textAlign: 'center' },
-  divider: { fontSize: 12, color: T.t4, marginHorizontal: 4 },
+  divider: { fontSize: 12, color: theme.colors.textMuted, marginHorizontal: 4 },
 
-  listTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginTop: 10, marginBottom: 12, marginLeft: 4 },
-  historyItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: T.card, padding: 16, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: T.border },
-  historyItemActive: { borderColor: T.blue, backgroundColor: T.blueGlow },
-  historyDate: { fontSize: 16, fontWeight: "800", color: T.t2 },
-  historyTag: { fontSize: 10, color: T.t3, fontWeight: "600", marginTop: 2 },
-  detailsBtn: { backgroundColor: T.surfaceAlt, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
-  detailsBtnActive: { backgroundColor: T.blue },
-  detailsBtnText: { fontSize: 12, fontWeight: "700", color: T.t3 },
-  shareButton: { backgroundColor: T.blue, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
+  listTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginTop: 10, marginBottom: 12, marginLeft: 4 },
+  historyItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: theme.colors.card, padding: 16, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border },
+  historyItemActive: { borderColor: theme.colors.primary, backgroundColor: T.blueGlow },
+  historyDate: { fontSize: 16, fontWeight: "800", color: theme.colors.textSecondary },
+  historyTag: { fontSize: 10, color: theme.colors.textMuted, fontWeight: "600", marginTop: 2 },
+  detailsBtn: { backgroundColor: theme.colors.background, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 },
+  detailsBtnActive: { backgroundColor: theme.colors.primary },
+  detailsBtnText: { fontSize: 12, fontWeight: "700", color: theme.colors.textMuted },
+  shareButton: { backgroundColor: theme.colors.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
   shareButtonText: { color: T.white, fontSize: 11, fontWeight: "800" },
 });
