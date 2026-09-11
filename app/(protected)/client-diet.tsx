@@ -16,6 +16,7 @@ import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import DietPlanPDF from "../../components/DietPlanPDF";
 import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../contexts/ThemeContext";
 import { FeatureGate } from "../../components/FeatureGate";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import {
@@ -78,6 +79,7 @@ export default function ClientDiet() {
   const { id } = useLocalSearchParams();
   const clientId = id as string;
   const { hasFeature } = useLicenseStatus();
+  const { theme } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
@@ -289,6 +291,8 @@ export default function ClientDiet() {
     }
   }
 
+  const styles = createStyles(theme);
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -371,8 +375,8 @@ export default function ClientDiet() {
           </Text>
         </View>
       ) : (
-        <View style={[styles.macroCard, { backgroundColor: "#fef3c7" }]}>
-          <Text style={{ color: "#92400e", fontSize: 13, fontWeight: "600" }}>
+        <View style={[styles.macroCard, styles.warningCard]}>
+          <Text style={styles.warningText}>
             Para calcular as metas, complete o perfil do aluno (objetivo, nível de atividade) e registre uma avaliação física.
           </Text>
         </View>
@@ -402,7 +406,7 @@ export default function ClientDiet() {
           </FeatureGate>
         </View>
       )}
-      <Text style={{ fontSize: 10, color: "#94a3b8", fontStyle: "italic", textAlign: "center", marginTop: -10, marginBottom: 12 }}>
+      <Text style={styles.disclaimerText}>
         O plano gerado é uma sugestão educacional. Revise e adapte antes de enviar ao aluno.
       </Text>
 
@@ -486,37 +490,37 @@ export default function ClientDiet() {
 // ------------------------------------------------------------
 // Estilos
 // ------------------------------------------------------------
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: 16 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   header: { marginBottom: 16 },
-  title: { fontSize: 26, fontWeight: "800", color: "#111827", marginBottom: 6 },
+  title: { fontSize: 26, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 6 },
   badge: { alignSelf: "flex-start", backgroundColor: "#d1fae5", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginBottom: 4 },
   badgeText: { color: "#065f46", fontWeight: "700", fontSize: 12 },
-  subLabel: { color: "#6b7280", fontSize: 12 },
+  subLabel: { color: theme.colors.textMuted, fontSize: 12 },
 
-  macroCard: { backgroundColor: "#fff", borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: "#e5e7eb" },
-  macroCardTitle: { fontSize: 13, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  macroCard: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
+  macroCardTitle: { fontSize: 13, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
   macroRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: "#f9fafb" },
+  macroBox: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: theme.colors.background },
   macroValue: { fontSize: 20, fontWeight: "800" },
-  macroUnit: { fontSize: 11, color: "#6b7280" },
-  macroLabel: { fontSize: 11, color: "#374151", fontWeight: "600", marginTop: 2 },
-  macroSub: { fontSize: 11, color: "#9ca3af", textAlign: "center" },
+  macroUnit: { fontSize: 11, color: theme.colors.textMuted },
+  macroLabel: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: "600", marginTop: 2 },
+  macroSub: { fontSize: 11, color: theme.colors.textMuted, textAlign: "center" },
 
   planHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8 },
   planActions: { flexDirection: "row", alignItems: "center" },
-  planTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
-  planNotes: { fontSize: 12, color: "#6b7280", marginTop: 2 },
-  editBtn: { backgroundColor: "#f3f4f6", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: "#e5e7eb" },
-  editBtnText: { fontWeight: "700", color: "#374151", fontSize: 13 },
+  planTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary },
+  planNotes: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
+  editBtn: { backgroundColor: theme.colors.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: theme.colors.border },
+  editBtnText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 13 },
 
-  macroBarsCard: { backgroundColor: "#fff", borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: "#e5e7eb" },
-  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroBarsCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 
   emptyPlan: { alignItems: "center", padding: 40 },
-  emptyPlanText: { color: "#6b7280", fontSize: 15, marginBottom: 20 },
+  emptyPlanText: { color: theme.colors.textMuted, fontSize: 15, marginBottom: 20 },
   createBtn: { backgroundColor: "#059669", paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14 },
   createBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 
@@ -525,4 +529,8 @@ const styles = StyleSheet.create({
 
   hbBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#4ADE80" },
   hbBtnText: { color: "#4ADE80", fontWeight: "800", fontSize: 15 },
+
+  warningCard: { backgroundColor: "#fef3c7" },
+  warningText: { color: "#92400e", fontSize: 13, fontWeight: "600" },
+  disclaimerText: { fontSize: 10, color: theme.colors.textMuted, fontStyle: "italic", textAlign: "center", marginTop: -10, marginBottom: 12 },
 });
