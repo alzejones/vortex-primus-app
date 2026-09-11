@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Linking, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator, Alert } from "react-native";
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useTheme } from "@/contexts/ThemeContext";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
 
@@ -13,6 +14,8 @@ interface EVSQuickRegisterModalProps {
 }
 
 export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }: EVSQuickRegisterModalProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
@@ -139,7 +142,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
           <TextInput
             style={styles.input}
             placeholder="Nome do visitante"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={name}
             onChangeText={setName}
             editable={!saving}
@@ -149,7 +152,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
           <TextInput
             style={styles.input}
             placeholder="(00) 00000-0000"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={whatsapp}
             onChangeText={(text) => setWhatsapp(formatWhatsApp(text))}
             keyboardType="phone-pad"
@@ -160,7 +163,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
           <TextInput
             style={styles.input}
             placeholder="email@exemplo.com"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -247,7 +250,7 @@ export function EVSQuickRegisterModal({ visible, trainerId, onClose, onSuccess }
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
@@ -258,38 +261,38 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 420,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 24,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   title: {
     fontSize: 20,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 13,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginBottom: 20,
   },
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   input: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 14,
   },
   chipsContainer: {
@@ -302,9 +305,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   chipActive: {
     backgroundColor: T.blue,
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 13,
     fontWeight: "600",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   chipTextActive: {
     color: T.white,
@@ -327,13 +330,13 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: "center",
   },
   cancelText: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontWeight: "700",
     fontSize: 14,
   },
