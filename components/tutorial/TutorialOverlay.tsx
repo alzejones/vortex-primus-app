@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTutorial } from '../../contexts/TutorialContext';
 import { tutorialScripts } from './tutorialScripts';
 import { tutorialAudioMap } from './tutorialAudioMap';
+import { useTheme } from '@/contexts/ThemeContext';
 import { T } from '../../utils/theme';
 
 interface TutorialOverlayProps {
@@ -23,6 +24,8 @@ interface TutorialOverlayProps {
 
 export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {} }) => {
   const { currentTour, currentStep, nextStep, prevStep, closeTour } = useTutorial();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const [spotlight, setSpotlight] = useState<{
     x: number;
@@ -251,7 +254,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
               <Ionicons
                 name={isMuted ? 'volume-mute' : 'volume-high'}
                 size={20}
-                color={T.t1}
+                color={theme.colors.textPrimary}
               />
             </TouchableOpacity>
 
@@ -270,7 +273,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
             </View>
 
             <TouchableOpacity onPress={closeTour} style={styles.iconButton}>
-              <Ionicons name="close" size={20} color={T.t1} />
+              <Ionicons name="close" size={20} color={theme.colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -291,7 +294,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ targetRefs = {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -311,7 +314,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -330,7 +333,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
     borderWidth: 2,
     borderColor: T.blue,
     alignItems: 'center',
@@ -340,7 +343,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '700',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   contentScroll: {
     maxHeight: 200,
@@ -350,7 +353,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -375,7 +378,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   navButtonPrimary: {
     backgroundColor: T.blue,
@@ -383,7 +386,7 @@ const styles = StyleSheet.create({
   navButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   navButtonTextPrimary: {
     color: '#FFF',
@@ -397,7 +400,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: T.border,
+    backgroundColor: theme.colors.border,
   },
   progressDotActive: {
     backgroundColor: T.blue,
