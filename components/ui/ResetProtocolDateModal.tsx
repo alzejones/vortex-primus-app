@@ -95,7 +95,7 @@ export default function ResetProtocolDateModal({
       textAlign: 'center' as const,
     },
     dateTextSelected: {
-      color: theme.mode === 'dark' ? '#000' : '#FFF',
+      color: '#fff',
       fontWeight: '700' as const,
     },
     buttons: {

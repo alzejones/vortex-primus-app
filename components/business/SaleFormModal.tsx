@@ -1246,7 +1246,7 @@ function createStyles(theme: any) {
     toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
     toggleBtnActive: { backgroundColor: theme.colors.primary },
     toggleTxt: { color: theme.colors.textSecondary, fontWeight: '600', fontSize: 13 },
-    toggleTxtActive: { color: '#000' },
+    toggleTxtActive: { color: '#fff' },
     selector: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 10 },
     selectorTxt: { color: theme.colors.textPrimary },
     input: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, color: theme.colors.textPrimary, marginBottom: 10 },

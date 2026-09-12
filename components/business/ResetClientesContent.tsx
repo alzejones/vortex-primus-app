@@ -532,7 +532,7 @@ function createStyles(theme: any) {
       fontWeight: '600',
     },
     monthChipTextActive: {
-      color: '#000',
+      color: '#fff',
       fontWeight: '700',
     },
     dayInput: {

@@ -632,7 +632,7 @@ function createStyles(theme: any) {
     tabBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
     tabBtnActive: { backgroundColor: theme.colors.primary },
     tabTxt: { color: theme.colors.textMuted, fontWeight: '600' },
-    tabTxtActive: { color: '#000' },
+    tabTxtActive: { color: '#fff' },
     headRow: { flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
     hCell: { flex: 0.7, color: theme.colors.textMuted, fontSize: 9, fontWeight: '700', minWidth: 0 },
     row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
@@ -669,6 +669,6 @@ function createStyles(theme: any) {
     monthPickerItem: { padding: 10, borderRadius: 8 },
     monthPickerItemActive: { backgroundColor: theme.colors.primary },
     monthPickerItemText: { color: theme.colors.textMuted, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-    monthPickerItemTextActive: { color: '#000' },
+    monthPickerItemTextActive: { color: '#fff' },
   });
 }

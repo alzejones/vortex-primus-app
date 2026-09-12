@@ -1157,5 +1157,5 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   monthPickerItem: { padding: 10, borderRadius: 8 },
   monthPickerItemActive: { backgroundColor: theme.colors.primary },
   monthPickerItemText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  monthPickerItemTextActive: { color: '#000' },
+  monthPickerItemTextActive: { color: '#fff' },
 });

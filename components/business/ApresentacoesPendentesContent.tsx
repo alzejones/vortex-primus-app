@@ -387,7 +387,7 @@ function createStyles(theme: any) {
     },
     monthChipActive: { backgroundColor: theme.colors.primary },
     monthChipText: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
-    monthChipTextActive: { color: '#000', fontWeight: '700' },
+    monthChipTextActive: { color: '#fff', fontWeight: '700' },
     dayInput: {
       backgroundColor: theme.colors.card,
       borderRadius: 10,

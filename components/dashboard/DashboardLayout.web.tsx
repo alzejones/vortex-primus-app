@@ -876,7 +876,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   sortBtnCompactTextActive: {
-    color: theme.colors.textPrimary,
+    color: '#fff',
   },
 
   columnSearch: {
