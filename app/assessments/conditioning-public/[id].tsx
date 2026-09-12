@@ -95,6 +95,8 @@ export default function PublicConditioningView() {
   }
 
   if (!history || history.length === 0) {
+    const s = styles(theme);
+
     return (
       <View style={s.loadingContainer}>
         <Text style={{ fontSize: 40 }}>😕</Text>

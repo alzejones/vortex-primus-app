@@ -2,6 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LineChart } from "react-native-gifted-charts";
 import EvolutionPanel from "../../components/EvolutionPanel";
 import MeasurementsEvolutionPanel from "../../components/MeasurementsEvolutionPanel";
 import TrunkMeasurementsChart from "../../components/TrunkMeasurementsChart";
