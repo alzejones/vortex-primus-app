@@ -405,8 +405,8 @@ export default function AssessmentDetailsModal({
                     />
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
                   </View>
                 </View>
               </View>
