@@ -1256,7 +1256,7 @@ function createStyles(theme: any) {
     checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: theme.colors.border, marginRight: 8 },
     checkTxt: { color: theme.colors.textPrimary },
     btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
-    btnTxt: { color: '#000', fontWeight: '700' },
+    btnTxt: { color: '#fff', fontWeight: '700' },
     btnGhost: { backgroundColor: theme.colors.card },
     btnGhostTxt: { color: theme.colors.textSecondary, fontWeight: '600' },
     totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },

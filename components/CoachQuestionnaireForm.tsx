@@ -503,7 +503,7 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     color: theme.colors.textSecondary,
   },
   checkboxTextActive: {
-    color: theme.colors.textPrimary,
+    color: '#fff',
   },
   scaleRow: {
     flexDirection: "row",

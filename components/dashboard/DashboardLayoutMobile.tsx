@@ -886,7 +886,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   sortButtonTextActive: {
-    color: theme.colors.textPrimary,
+    color: '#fff',
   },
 
   sectionTitle: { fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 16, letterSpacing: -0.5 },
