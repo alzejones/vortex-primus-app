@@ -21,6 +21,7 @@ import {
   View,
   Image
 } from "react-native";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import AssessmentDetailsModal from '../../components/AssessmentDetailsModal';
@@ -84,26 +85,36 @@ export default function ClientAssessments() {
     return `${d}/${m}/${y} ${h}:${min}`;
   };
 
-  const parseDateBRToISO = (str: string) => {
-    try {
-      const [datePart, timePart] = str.split(' ');
-      const [d, m, y] = datePart.split('/');
-      const [h, min] = timePart.split(':');
-      return new Date(Number(y), Number(m) - 1, Number(d), Number(h), Number(min)).toISOString();
-    } catch (e) {
-      return new Date().toISOString();
+  const [assessmentDateTime, setAssessmentDateTime] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const handleDateConfirm = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setAssessmentDateTime(prev => {
+        const updated = new Date(selectedDate);
+        updated.setHours(prev.getHours(), prev.getMinutes());
+        return updated;
+      });
+      setShowTimePicker(true);
     }
   };
 
-  function handleDateChange(text: string) {
-    let v = text.replace(/\D/g, "");
-    if (v.length > 12) v = v.substring(0, 12);
-    v = v.replace(/^(\d{2})(\d)/, "$1/$2");
-    v = v.replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
-    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4})(\d)/, "$1/$2/$3 $4");
-    v = v.replace(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2})(\d)/, "$1/$2/$3 $4:$5");
-    setForm({ ...form, assessment_date: v });
-  }
+  const handleTimeConfirm = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setAssessmentDateTime(prev => {
+        const updated = new Date(prev);
+        updated.setHours(selectedTime.getHours(), selectedTime.getMinutes());
+        return updated;
+      });
+    }
+  };
+
+  const resetToNow = () => {
+    setAssessmentDateTime(new Date());
+  };
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -212,7 +223,6 @@ export default function ClientAssessments() {
   const [selectedAssessment, setSelectedAssessment] = useState<any>(null);
 
   const [form, setForm] = useState({
-    assessment_date: formatDateBR(new Date()),
     weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "",
     bmi: "",
     water_percent: "",
@@ -396,19 +406,18 @@ export default function ClientAssessments() {
 
     setEditingAssessmentId(assessment.id);
     setEditingAnthropometryId(anthro.id);
-    const dateToSet = assessment.date
-      ? (() => {
-          const [y, m, day] = assessment.date.split('-');
-          return formatDateBR(new Date(Number(y), Number(m) - 1, Number(day)));
-        })()
-      : formatDateBR(new Date());
+    
+    if (assessment.date) {
+      const [y, m, day] = assessment.date.split('-');
+      setAssessmentDateTime(new Date(Number(y), Number(m) - 1, Number(day)));
+    } else {
+      setAssessmentDateTime(new Date());
+    }
 
     setForm((prev: any) => {
-      const newForm = { ...prev, assessment_date: dateToSet };
+      const newForm = { ...prev };
       Object.keys(newForm).forEach((key) => {
-        if (key !== 'assessment_date') {
-          newForm[key] = anthro[key]?.toString() ?? "";
-        }
+        newForm[key] = anthro[key]?.toString() ?? "";
       });
       return newForm;
     });
@@ -713,7 +722,7 @@ export default function ClientAssessments() {
 
   async function handleSaveAssessment() {
     setSaving(true);
-    const isoDate = parseDateBRToISO(form.assessment_date);
+    const isoDate = assessmentDateTime.toISOString();
 
     const payload = {
       weight: form.weight ? Number(form.weight) : null,
@@ -749,7 +758,8 @@ export default function ClientAssessments() {
       await supabase.from("anthropometry").update(payload).eq("id", editingAnthropometryId);
       setEditingAnthropometryId(null);
       setEditingAssessmentId(null);
-      setForm({ assessment_date: formatDateBR(new Date()), weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "", bmi: "", water_percent: "", bone_mass: "", source: "manual" });
+      setAssessmentDateTime(new Date());
+      setForm({ weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", body_fat_index: "", metabolic_age: "", bmi: "", water_percent: "", bone_mass: "", source: "manual" });
       setPendingPhotos([]);
       setPendingSelfie(null);
       setSelfieSignedUrl(null);
@@ -873,6 +883,7 @@ export default function ClientAssessments() {
               <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>{client?.name?.substring(0, 20)}{client?.name?.length > 20 ? '...' : ''}</Text>
               <TouchableOpacity onPress={() => {
                 setFormModalVisible(false);
+                setAssessmentDateTime(new Date());
                 setPendingPhotos([]);
                 setPendingSelfie(null);
                 setSelfieSignedUrl(null);
@@ -885,18 +896,21 @@ export default function ClientAssessments() {
                 <View style={styles.headerRow}>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Altura: </Text>{client?.height_cm}cm</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity
+                    onPress={() => setShowDatePicker(true)}
+                    style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 2 }}
+                  >
                     <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text></Text>
-                    <TextInput
-                      style={{ fontSize: 14, color: theme.colors.textSecondary, borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 0, paddingHorizontal: 2, minWidth: 110 }}
-                      value={form.assessment_date}
-                      onChangeText={handleDateChange}
-                      placeholder="DD/MM/AAAA HH:mm"
-                      placeholderTextColor={theme.colors.textMuted}
-                      keyboardType="numeric"
-                      maxLength={16}
-                    />
-                  </View>
+                    <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginLeft: 2 }}>
+                      {formatDateBR(assessmentDateTime)}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={resetToNow}
+                    style={{ backgroundColor: T.blueGlow, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: T.blue }}
+                  >
+                    <Text style={{ fontSize: 11, color: T.blue, fontWeight: 'bold' }}>Hoje</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
               <View style={{ padding: 16 }}>
@@ -1069,11 +1083,33 @@ export default function ClientAssessments() {
                   />
                 )}
 
-                <TouchableOpacity style={[styles.button, saving && { opacity: 0.7 }]} onPress={() => { handleSaveAssessment(); }} disabled={saving}>
-                  <Text style={{ color: T.white, textAlign: "center", fontWeight: 'bold' }}>{saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}</Text>
+                <TouchableOpacity 
+                  style={[styles.button, saving && { opacity: 0.7 }]} 
+                  onPress={handleSaveAssessment}
+                  disabled={saving}
+                >
+                  <Text style={{ color: T.white, textAlign: "center", fontWeight: 'bold' }}>
+                    {saving ? "Salvando..." : editingAssessmentId ? "Atualizar Avaliação" : "Salvar Avaliação"}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
+            {showDatePicker && (
+              <DateTimePicker
+                value={assessmentDateTime}
+                mode="date"
+                display="default"
+                onChange={handleDateConfirm}
+              />
+            )}
+            {showTimePicker && (
+              <DateTimePicker
+                value={assessmentDateTime}
+                mode="time"
+                display="default"
+                onChange={handleTimeConfirm}
+              />
+            )}
           </View>
         </Modal>
 
