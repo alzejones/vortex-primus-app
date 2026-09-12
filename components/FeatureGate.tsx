@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLicenseStatus } from '../hooks/useLicenseStatus';
+import { useTheme } from '@/contexts/ThemeContext';
 import { T } from '../utils/theme';
 
 interface FeatureGateProps {
@@ -27,6 +28,8 @@ export function FeatureGate({
 }: FeatureGateProps) {
   const { hasFeature } = useLicenseStatus();
   const router = useRouter();
+  const { theme } = useTheme();
+  const s = createStyles(theme);
   const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
 
   const isAllowed = hasFeature(featureKey);
@@ -95,12 +98,12 @@ export function FeatureGate({
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   blockedCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -110,7 +113,7 @@ const s = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -121,13 +124,13 @@ const s = StyleSheet.create({
     flex: 1,
   },
   blockedTitle: {
-    color: T.white,
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 4,
   },
   blockedSubtitle: {
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontSize: 13,
   },
   overlay: {
@@ -140,26 +143,26 @@ const s = StyleSheet.create({
   modalCard: {
     maxWidth: 360,
     width: '100%',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     padding: 20,
   },
   modalTitle: {
-    color: T.white,
+    color: theme.colors.textPrimary,
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 12,
   },
   modalMessage: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 20,
   },
   modalFeature: {
-    color: T.white,
+    color: theme.colors.textPrimary,
     fontWeight: '700',
   },
   modalPlan: {
@@ -174,13 +177,13 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingVertical: 11,
     alignItems: 'center',
   },
   btnCancelTxt: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -218,6 +221,8 @@ export function LockedButton({
   icon = '🔒',
 }: LockedButtonProps) {
   const router = useRouter();
+  const { theme } = useTheme();
+  const s = createStyles(theme);
   const [showUpgradeModal, setShowUpgradeModal] = React.useState(false);
 
   const handleNavigateToUpgrade = () => {

@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 import { Ionicons } from '@expo/vector-icons';
 import { useConsentStatus } from '../hooks/useConsentStatus';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../contexts/ThemeContext';
 import { CURRENT_CONSENT_VERSION } from '../utils/consentVersion';
 import { GradientPrimary } from '../utils/gradients';
 import { T } from '../utils/theme';
@@ -21,6 +22,7 @@ type ConsentChecks = {
 export default function ConsentRequiredScreen() {
   const router = useRouter();
   const consentStatus = useConsentStatus();
+  const { theme } = useTheme();
   const [checks, setChecks] = useState<ConsentChecks>({
     health_declaration: false,
     age_restriction: false,
@@ -90,6 +92,8 @@ export default function ConsentRequiredScreen() {
     }
   };
 
+  const styles = createStyles(theme);
+
   if (consentStatus.loading || saving) {
     return (
       <View style={styles.container}>
@@ -116,36 +120,42 @@ export default function ConsentRequiredScreen() {
               checked={checks.health_declaration}
               onToggle={() => toggleCheck('health_declaration')}
               text="Declaro que consultei um médico e fui liberado(a) para atividades físicas e/ou rotinas alimentares, ou estou em acompanhamento médico compatível. Estou ciente de que devo interromper qualquer atividade em caso de desconforto e buscar avaliação médica antes de retomar."
+              theme={theme}
             />
 
             <CheckItem
               checked={checks.age_restriction}
               onToggle={() => toggleCheck('age_restriction')}
               text="Declaro ter 18 anos ou mais (ou que este cadastro é feito com autorização do meu responsável legal), e que não estou grávida ou amamentando — ou, se estiver, que qualquer sugestão alimentar será validada por médico/nutricionista antes de qualquer adoção."
+              theme={theme}
             />
 
             <CheckItem
               checked={checks.educational_content_ack}
               onToggle={() => toggleCheck('educational_content_ack')}
               text="Estou ciente de que os planos alimentares, sugestões de suplementação e relatórios recebidos têm caráter educacional (podendo ser gerados com apoio de IA) e NÃO substituem consulta, diagnóstico ou prescrição de profissionais de saúde habilitados."
+              theme={theme}
             />
 
             <CheckItem
               checked={checks.data_accuracy}
               onToggle={() => toggleCheck('data_accuracy')}
               text="Declaro que as informações que forneço (peso, altura, medidas, condições de saúde, objetivos) são verdadeiras e atualizadas."
+              theme={theme}
             />
 
             <CheckItem
               checked={checks.lgpd_data_processing}
               onToggle={() => toggleCheck('lgpd_data_processing')}
               text="Autorizo o tratamento dos meus dados pessoais, incluindo dados sensíveis de saúde e composição corporal, pelo Vortex Primus e pelo profissional que me acompanha, para fins de acompanhamento e melhoria do serviço, nos termos da LGPD."
+              theme={theme}
             />
 
             <CheckItem
               checked={checks.ai_external_sharing}
               onToggle={() => toggleCheck('ai_external_sharing')}
               text="Estou ciente de que meu treinador pode usar a funcionalidade 'Relatório para IA', que compartilha um resumo dos meus dados de saúde com ferramentas de IA externas (ex: ChatGPT, Claude), a critério dele, e autorizo esse compartilhamento."
+              theme={theme}
             />
           </View>
 
@@ -156,6 +166,7 @@ export default function ConsentRequiredScreen() {
             onToggle={() => setPhotosConsent(!photosConsent)}
             text="(Opcional) Autorizo o uso de fotos de 'antes e depois' exclusivamente para meu próprio acompanhamento dentro da plataforma. Qualquer divulgação pública dessas imagens exige minha autorização separada."
             optional
+            theme={theme}
           />
 
           <TouchableOpacity
@@ -178,9 +189,11 @@ type CheckItemProps = {
   onToggle: () => void;
   text: string;
   optional?: boolean;
+  theme: import('@/contexts/ThemeContext').AppTheme;
 };
 
-function CheckItem({ checked, onToggle, text, optional }: CheckItemProps) {
+function CheckItem({ checked, onToggle, text, optional, theme }: CheckItemProps) {
+  const styles = createStyles(theme);
   return (
     <TouchableOpacity onPress={onToggle} style={styles.checkItem}>
       <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
@@ -193,10 +206,10 @@ function CheckItem({ checked, onToggle, text, optional }: CheckItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   scrollView: {
     flex: 1,
@@ -206,7 +219,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 24,
     maxWidth: 680,
@@ -216,13 +229,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
@@ -253,16 +266,16 @@ const styles = StyleSheet.create({
   checkText: {
     flex: 1,
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     lineHeight: 20,
   },
   checkTextOptional: {
     fontStyle: 'italic',
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
   separator: {
     height: 1,
-    backgroundColor: T.border,
+    backgroundColor: theme.colors.border,
     marginVertical: 20,
   },
   button: {
@@ -280,7 +293,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },

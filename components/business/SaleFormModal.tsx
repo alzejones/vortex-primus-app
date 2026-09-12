@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { normalizeSearch } from '../../utils/textSearch';
 import ConfirmModal from '../ui/ConfirmModal';
 import ResetProtocolDateModal from '../ui/ResetProtocolDateModal';
@@ -129,6 +129,8 @@ export default function SaleFormModal({
   onClose,
   onSaved,
 }: SaleFormModalProps) {
+  const { theme } = useTheme();
+  const s = createStyles(theme);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selClient, setSelClient] = useState<ClientRow | null>(null);
   const [manualName, setManualName] = useState('');
@@ -925,12 +927,12 @@ export default function SaleFormModal({
                       setIsIndicacao(false);
                     }
                   }}>
-                    <View style={[s.checkbox, isConsumoPessoal && { backgroundColor: T.blue }]} />
+                    <View style={[s.checkbox, isConsumoPessoal && { backgroundColor: theme.colors.primary }]} />
                     <Text style={s.checkTxt}>Consumo Pessoal</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity style={s.checkRow} onPress={() => setIsVendaSiteHerba(!isVendaSiteHerba)}>
-                    <View style={[s.checkbox, isVendaSiteHerba && { backgroundColor: T.blue }]} />
+                    <View style={[s.checkbox, isVendaSiteHerba && { backgroundColor: theme.colors.primary }]} />
                     <Text style={s.checkTxt}>Venda Site Herbalife</Text>
                   </TouchableOpacity>
 
@@ -946,7 +948,7 @@ export default function SaleFormModal({
                           <TextInput
                             style={s.input}
                             placeholder="Nome do Prospecto"
-                            placeholderTextColor="#777"
+                            placeholderTextColor={theme.colors.textMuted}
                             value={manualName}
                             onChangeText={(t) => {
                               setManualName(t);
@@ -956,7 +958,7 @@ export default function SaleFormModal({
                           <TextInput
                             style={s.input}
                             placeholder="Celular do Prospecto (opcional)"
-                            placeholderTextColor="#777"
+                            placeholderTextColor={theme.colors.textMuted}
                             value={manualPhone}
                             onChangeText={(t) => setManualPhone(maskPhone(t))}
                             keyboardType="phone-pad"
@@ -973,7 +975,7 @@ export default function SaleFormModal({
                       )}
 
                       <TouchableOpacity style={s.checkRow} onPress={() => setIsIndicacao(!isIndicacao)}>
-                        <View style={[s.checkbox, isIndicacao && { backgroundColor: T.blue }]} />
+                        <View style={[s.checkbox, isIndicacao && { backgroundColor: theme.colors.primary }]} />
                         <Text style={s.checkTxt}>Veio por indicação</Text>
                       </TouchableOpacity>
                     </>
@@ -1052,7 +1054,7 @@ export default function SaleFormModal({
                 <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={onClose}>
                   <Text style={s.btnGhostTxt}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.btn, { backgroundColor: T.blue }]} onPress={saveSale} disabled={saving}>
+                <TouchableOpacity style={[s.btn, { backgroundColor: theme.colors.primary }]} onPress={saveSale} disabled={saving}>
                   <Text style={s.btnTxt}>
                     {saving ? 'Salvando…' : editingSale ? 'Salvar Alterações' : 'Confirmar Venda'}
                   </Text>
@@ -1078,7 +1080,7 @@ export default function SaleFormModal({
             <TextInput
               style={s.input}
               placeholder="Buscar por nome…"
-              placeholderTextColor="#777"
+              placeholderTextColor={theme.colors.textMuted}
               value={pickerSearch}
               onChangeText={setPickerSearch}
               autoFocus
@@ -1217,7 +1219,7 @@ export default function SaleFormModal({
                     <Text style={s.btnGhostTxt}>Cancelar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[s.btn, { backgroundColor: T.blue }]}
+                    style={[s.btn, { backgroundColor: theme.colors.primary }]}
                     onPress={confirmFlavorSelection}
                     disabled={!flavorChoices[flavorStep].selected}
                   >
@@ -1235,71 +1237,73 @@ export default function SaleFormModal({
   );
 }
 
-const s = StyleSheet.create({
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-  modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
-  modalTitle: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 14 },
-  toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: '#242424', alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: T.blue },
-  toggleTxt: { color: '#AAA', fontWeight: '600', fontSize: 13 },
-  toggleTxtActive: { color: '#000' },
-  selector: { backgroundColor: '#242424', borderRadius: 10, padding: 12, marginBottom: 10 },
-  selectorTxt: { color: '#DDD' },
-  input: { backgroundColor: '#242424', borderRadius: 10, padding: 12, color: '#FFF', marginBottom: 10 },
-  label: { color: '#999', fontSize: 12, marginBottom: 4 },
-  inline: { flexDirection: 'row', marginTop: 4 },
-  checkRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: '#555', marginRight: 8 },
-  checkTxt: { color: '#DDD' },
-  btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
-  btnTxt: { color: '#000', fontWeight: '700' },
-  btnGhost: { backgroundColor: '#242424' },
-  btnGhostTxt: { color: '#AAA', fontWeight: '600' },
-  totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
-  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
-  pickerTxt: { color: '#DDD' },
-  cartItem: { flexDirection: 'row', backgroundColor: '#1A1A1A', borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'flex-start' },
-  cartItemName: { color: '#FFF', fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  cartLabel: { color: '#999', fontSize: 11, marginBottom: 3 },
-  cartInput: { backgroundColor: '#242424', borderRadius: 6, padding: 8, color: '#FFF', fontSize: 13 },
-  cartSubtotal: { color: '#4ADE80', fontSize: 12, fontWeight: '600', marginTop: 4 },
-  removeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FF4444', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
-  removeBtnTxt: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  sectionLabel: { color: T.t1, fontSize: 15, fontWeight: '700', marginBottom: 8, marginTop: 4 },
-  flavorHint: { color: '#999', fontSize: 12, marginBottom: 8 },
-  flavorOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#242424',
-  },
-  flavorOptionSelected: {
-    backgroundColor: T.blue + '22',
-    borderColor: T.blue,
-  },
-  flavorRadio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#555',
-    marginRight: 10,
-  },
-  flavorRadioSelected: {
-    borderColor: T.blue,
-    backgroundColor: T.blue,
-  },
-  flavorOptionTxt: {
-    color: '#DDD',
-    fontSize: 14,
-  },
-  flavorOptionTxtSelected: {
-    color: T.blue,
-    fontWeight: '600',
-  },
-});
+function createStyles(theme: any) {
+  return StyleSheet.create({
+    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
+    modalBox: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, maxHeight: '85%' },
+    modalTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+    toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+    toggleBtn: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center' },
+    toggleBtnActive: { backgroundColor: theme.colors.primary },
+    toggleTxt: { color: theme.colors.textSecondary, fontWeight: '600', fontSize: 13 },
+    toggleTxtActive: { color: '#fff' },
+    selector: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 10 },
+    selectorTxt: { color: theme.colors.textPrimary },
+    input: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, color: theme.colors.textPrimary, marginBottom: 10 },
+    label: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 4 },
+    inline: { flexDirection: 'row', marginTop: 4 },
+    checkRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    checkbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1, borderColor: theme.colors.border, marginRight: 8 },
+    checkTxt: { color: theme.colors.textPrimary },
+    btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center', marginHorizontal: 4 },
+    btnTxt: { color: '#fff', fontWeight: '700' },
+    btnGhost: { backgroundColor: theme.colors.card },
+    btnGhostTxt: { color: theme.colors.textSecondary, fontWeight: '600' },
+    totalPreview: { color: '#4ADE80', fontSize: 14, fontWeight: '700', textAlign: 'right', marginBottom: 12 },
+    pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.card },
+    pickerTxt: { color: theme.colors.textPrimary },
+    cartItem: { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 8, alignItems: 'flex-start' },
+    cartItemName: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: 4 },
+    cartLabel: { color: theme.colors.textSecondary, fontSize: 11, marginBottom: 3 },
+    cartInput: { backgroundColor: theme.colors.card, borderRadius: 6, padding: 8, color: theme.colors.textPrimary, fontSize: 13 },
+    cartSubtotal: { color: '#4ADE80', fontSize: 12, fontWeight: '600', marginTop: 4 },
+    removeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FF4444', justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+    removeBtnTxt: { color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700' },
+    sectionLabel: { color: theme.colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 8, marginTop: 4 },
+    flavorHint: { color: theme.colors.textSecondary, fontSize: 12, marginBottom: 8 },
+    flavorOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+      backgroundColor: theme.colors.card,
+      borderRadius: 8,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.card,
+    },
+    flavorOptionSelected: {
+      backgroundColor: theme.colors.primary + '22',
+      borderColor: theme.colors.primary,
+    },
+    flavorRadio: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: theme.colors.border,
+      marginRight: 10,
+    },
+    flavorRadioSelected: {
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.primary,
+    },
+    flavorOptionTxt: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+    },
+    flavorOptionTxtSelected: {
+      color: theme.colors.primary,
+      fontWeight: '600',
+    },
+  });
+}

@@ -4,7 +4,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import {
   getMetabolicStatus
 } from '../utils/assessmentCalculations';
-import { T } from '../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import EvolutionPanel from './EvolutionPanel';
 import MeasurementsEvolutionPanel from './MeasurementsEvolutionPanel';
 import TrunkMeasurementsChart from './TrunkMeasurementsChart';
@@ -164,6 +164,7 @@ export default function AssessmentDetailsModal({
   scaleProtocol = 'omron'
 }: AssessmentDetailsModalProps) {
 
+  const { theme } = useTheme();
   const [referencesVisible, setReferencesVisible] = useState(false);
 
   const ReferenceLink = () => (
@@ -192,7 +193,7 @@ export default function AssessmentDetailsModal({
             contentContainerStyle={{ flexGrow: 1 }}
             style={{ flex: 1 }}
           >
-            <View ref={viewRef} collapsable={false} style={{ backgroundColor: T.card, padding: 12, borderRadius: 12 }}>
+            <View ref={viewRef} collapsable={false} style={{ backgroundColor: theme.colors.card, padding: 12, borderRadius: 12 }}>
               {/* Avatar de Composição Corporal */}
               {selectedAssessment?.anthropometry?.[0]?.body_fat != null && (
                 <BodyAvatarRow
@@ -205,10 +206,10 @@ export default function AssessmentDetailsModal({
                 />
               )}
 
-                <View style={{ backgroundColor: T.card, borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: T.border, elevation: 2 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: T.border, paddingBottom: 8 }}><Text style={{ fontSize: 16 }}>📊</Text><Text style={{ fontSize: 14, fontWeight: '800', color: T.t1, marginLeft: 6, textTransform: 'uppercase' }}>Composição Corporal</Text></View>
+                <View style={{ backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border, elevation: 2 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingBottom: 8 }}><Text style={{ fontSize: 16 }}>📊</Text><Text style={{ fontSize: 14, fontWeight: '800', color: theme.colors.textPrimary, marginLeft: 6, textTransform: 'uppercase' }}>Composição Corporal</Text></View>
 
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border }}><Text style={{ color: T.t2, fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}><Text style={{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500' }}>Peso Corporal</Text><Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.weight ?? "-"} kg</Text></View>
 
                   {/* 🟢 BARRA DE GORDURA CORPORAL (ATUALIZADA) */}
                   {(() => {
@@ -220,9 +221,9 @@ export default function AssessmentDetailsModal({
                       : null;
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>% Gordura Corporal</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{bfStatus && (<View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text>{gorduraKg && (
-                            <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: '700' }}>% Gordura Corporal</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{bfStatus && (<View style={{ backgroundColor: bfStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: bfStatus.color, fontSize: 10, fontWeight: '900' }}>{bfStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 16 }}>{val} %</Text>{gorduraKg && (
+                            <Text style={{ fontWeight: '500', color: theme.colors.textMuted, fontSize: 12, marginLeft: 6 }}>
                               ({gorduraKg} kg)
                             </Text>
                           )}</View>
@@ -254,9 +255,9 @@ export default function AssessmentDetailsModal({
                       : null;
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>% Massa Muscular</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{mmStatus && (<View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val} %</Text>{musculoKg && (
-                            <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: '700' }}>% Massa Muscular</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{mmStatus && (<View style={{ backgroundColor: mmStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: mmStatus.color, fontSize: 10, fontWeight: '900' }}>{mmStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 16 }}>{val} %</Text>{musculoKg && (
+                            <Text style={{ fontWeight: '500', color: theme.colors.textMuted, fontSize: 12, marginLeft: 6 }}>
                               ({musculoKg} kg)
                             </Text>
                           )}</View>
@@ -280,11 +281,11 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>Idade Metabólica</Text>
+                      <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: '700' }}>Idade Metabólica</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         {getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date)) && (
                           <View style={{ backgroundColor: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.color, fontSize: 10, fontWeight: '800' }}>{getMetabolicStatus(selectedAssessment?.anthropometry?.[0]?.metabolic_age, calculateAge(client?.birth_date))?.label}</Text></View>
-                        )}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.metabolic_age ?? "-"} anos</Text>
+                        )}<Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.metabolic_age ?? "-"} anos</Text>
                       </View>
                     </View>
                     <ReferenceLink />
@@ -297,8 +298,8 @@ export default function AssessmentDetailsModal({
                     const val = selectedAssessment?.anthropometry?.[0]?.body_fat_index ?? "-";
                     return (
                       <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f8fafc' }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>Gordura Visceral</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{vsStatus && (<View style={{ backgroundColor: vsStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: vsStatus.color, fontSize: 10, fontWeight: '900' }}>{vsStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: T.t1, fontSize: 16 }}>{val}</Text></View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}><Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: '700' }}>Gordura Visceral</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>{vsStatus && (<View style={{ backgroundColor: vsStatus.bg, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 }}><Text style={{ color: vsStatus.color, fontSize: 10, fontWeight: '900' }}>{vsStatus.label}</Text></View>)}<Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 16 }}>{val}</Text></View>
                         </View>
                         <View style={{ paddingHorizontal: 4, paddingBottom: 6 }}>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 }}>
@@ -322,8 +323,8 @@ export default function AssessmentDetailsModal({
 
                   <View style={{ paddingVertical: 12 }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ color: T.t1, fontSize: 13, fontWeight: '700' }}>Metabolismo Basal</Text>
-                      <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.basal_metabolic_rate ?? "-"} kcal</Text>
+                      <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: '700' }}>Metabolismo Basal</Text>
+                      <Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 14 }}>{selectedAssessment?.anthropometry?.[0]?.basal_metabolic_rate ?? "-"} kcal</Text>
                     </View>
                     <ReferenceLink />
                   </View>
@@ -337,8 +338,8 @@ export default function AssessmentDetailsModal({
                     if (!peso || peso <= 0) {
                       return (
                         <View style={{ marginTop: 12, backgroundColor: 'rgba(191,61,251,0.12)', borderWidth: 1, borderColor: '#BF3DFB', borderRadius: 12, padding: 14 }}>
-                          <Text style={{ color: T.t2, fontSize: 13, fontWeight: '700' }}>🍗 Meta Diária de Proteína</Text>
-                          <Text style={{ fontWeight: '900', color: T.t1, fontSize: 14, marginTop: 6 }}>-</Text>
+                          <Text style={{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: '700' }}>🍗 Meta Diária de Proteína</Text>
+                          <Text style={{ fontWeight: '900', color: theme.colors.textPrimary, fontSize: 14, marginTop: 6 }}>-</Text>
                         </View>
                       );
                     }
@@ -359,7 +360,7 @@ export default function AssessmentDetailsModal({
                       <View style={{ marginTop: 12, backgroundColor: 'rgba(191,61,251,0.12)', borderWidth: 1, borderColor: '#BF3DFB', borderRadius: 12, padding: 14 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                           <Text style={{ fontSize: 16 }}>🍗</Text>
-                          <Text style={{ color: T.t1, fontSize: 13, fontWeight: '800', marginLeft: 6, textTransform: 'uppercase' }}>Meta Diária de Proteína</Text>
+                          <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: '800', marginLeft: 6, textTransform: 'uppercase' }}>Meta Diária de Proteína</Text>
                         </View>
                         <Text style={{ fontWeight: '900', color: '#BF3DFB', fontSize: 22 }}>{proteinaMin}–{proteinaMax} g/dia</Text>
                         <ReferenceLink />
@@ -367,7 +368,7 @@ export default function AssessmentDetailsModal({
                     );
                   })()}
 
-                  <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginTop: 12 }}>
+                  <Text style={{ fontSize: 10, color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12 }}>
                     Resultado informativo de composição corporal. Não constitui diagnóstico médico.
                   </Text>
 
@@ -404,16 +405,16 @@ export default function AssessmentDetailsModal({
                     />
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: '#e2e8f0', fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 24 }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 8 }} /><Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: '600' }}>% Gordura</Text></View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}><View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', marginRight: 8 }} /><Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: '600' }}>% Músculo</Text></View>
                   </View>
                 </View>
               </View>
 
               <View style={{ marginTop: 16, borderTopWidth: 1, borderTopColor: '#e2e8f0', paddingTop: 16 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1, backgroundColor: T.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#ea580c', marginBottom: 10 }}>📏 TRONCO</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Peitoral</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.chest ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Abdômen</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.abdomen ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Cintura</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.waist ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Quadril</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.hip ?? "-"} cm</Text></View></View>
-                  <View style={{ flex: 1, backgroundColor: T.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Braço</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.arm_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.arm_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Coxa</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.thigh_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.thigh_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: T.t2, fontSize: 12 }}>Pantur.</Text><Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{selectedAssessment?.anthropometry?.[0]?.calf_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.calf_right ?? "-"}</Text></View></View>
+                  <View style={{ flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#ea580c', marginBottom: 10 }}>📏 TRONCO</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Peitoral</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.chest ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Abdômen</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.abdomen ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Cintura</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.waist ?? "-"} cm</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Quadril</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.hip ?? "-"} cm</Text></View></View>
+                  <View style={{ flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border }}><Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Braço</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.arm_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.arm_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Coxa</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.thigh_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.thigh_right ?? "-"}</Text></View><View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}><Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>Pantur.</Text><Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{selectedAssessment?.anthropometry?.[0]?.calf_left ?? "-"}/{selectedAssessment?.anthropometry?.[0]?.calf_right ?? "-"}</Text></View></View>
                 </View>
               </View>
               

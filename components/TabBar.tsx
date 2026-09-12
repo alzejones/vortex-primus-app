@@ -4,6 +4,7 @@
 import { router, usePathname } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from "@/contexts/ThemeContext";
 import { T } from "../utils/theme";
 
 const TABS = [
@@ -28,6 +29,8 @@ function isActive(key: string, pathname: string): boolean {
 export default function TabBar() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   return (
     <View style={[styles.container, { height: 64 + insets.bottom, paddingBottom: insets.bottom + 8 }]}>
@@ -59,12 +62,12 @@ export default function TabBar() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: {
     flexDirection: "row",
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
   },
   tab: {
     flex: 1,
@@ -74,7 +77,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  // Indicador — barrinha azul no topo do item ativo
+  // Indicador — barrinha azul no topo do item ativo (cor fixa - branding)
   indicator: {
     position: "absolute",
     top: 0,
@@ -87,7 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: T.blue,
   },
 
-  icon:       { fontSize: 22, marginBottom: 3, color: T.t2 },
+  icon:       { fontSize: 22, marginBottom: 3, color: theme.colors.textSecondary },
   iconActive: { fontSize: 24, color: T.blue },
 
   label: {
@@ -95,7 +98,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.6,
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   labelActive: {
     color: T.blue,

@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import {
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { brasiliaDate, todayBR } from '../../utils/dateBR';
 
 interface ResetProtocolDateModalProps {
@@ -26,6 +25,7 @@ export default function ResetProtocolDateModal({
   onDefineLater,
 }: ResetProtocolDateModalProps) {
   const [selectedDate, setSelectedDate] = useState<string>(todayBR());
+  const { theme } = useTheme();
 
   const generateDates = () => {
     const dates: string[] = [];
@@ -42,6 +42,89 @@ export default function ResetProtocolDateModal({
   };
 
   const dates = generateDates();
+
+  const s = {
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+      padding: 20,
+    },
+    card: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 16,
+      padding: 20,
+      maxWidth: 400,
+      width: '100%' as const,
+      maxHeight: '80%' as const,
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 20,
+      fontWeight: '700' as const,
+      marginBottom: 8,
+      textAlign: 'center' as const,
+    },
+    subtitle: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      marginBottom: 16,
+      textAlign: 'center' as const,
+    },
+    highlight: {
+      color: theme.colors.primary,
+      fontWeight: '700' as const,
+    },
+    dateList: {
+      maxHeight: 300,
+      marginBottom: 16,
+    },
+    dateRow: {
+      padding: 14,
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+      marginBottom: 8,
+    },
+    dateRowSelected: {
+      backgroundColor: theme.colors.primary,
+    },
+    dateText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center' as const,
+    },
+    dateTextSelected: {
+      color: '#fff',
+      fontWeight: '700' as const,
+    },
+    buttons: {
+      flexDirection: 'row' as const,
+      gap: 8,
+    },
+    btn: {
+      flex: 1,
+      padding: 14,
+      borderRadius: 10,
+      alignItems: 'center' as const,
+    },
+    btnGhost: {
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    btnGhostTxt: {
+      color: theme.colors.textMuted,
+      fontWeight: '600' as const,
+    },
+    btnPrimary: {
+      backgroundColor: theme.colors.primary,
+    },
+    btnPrimaryTxt: {
+      color: theme.mode === 'dark' ? '#000' : '#FFF',
+      fontWeight: '700' as const,
+    },
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -88,86 +171,3 @@ export default function ResetProtocolDateModal({
     </Modal>
   );
 }
-
-const s = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#161616',
-    borderRadius: 16,
-    padding: 20,
-    maxWidth: 400,
-    width: '100%',
-    maxHeight: '80%',
-  },
-  title: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: '#CCC',
-    fontSize: 14,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  highlight: {
-    color: T.blue,
-    fontWeight: '700',
-  },
-  dateList: {
-    maxHeight: 300,
-    marginBottom: 16,
-  },
-  dateRow: {
-    padding: 14,
-    borderRadius: 8,
-    backgroundColor: '#242424',
-    marginBottom: 8,
-  },
-  dateRowSelected: {
-    backgroundColor: T.blue,
-  },
-  dateText: {
-    color: '#DDD',
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  dateTextSelected: {
-    color: '#000',
-    fontWeight: '700',
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  btn: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  btnGhost: {
-    backgroundColor: '#242424',
-    borderWidth: 1,
-    borderColor: '#444',
-  },
-  btnGhostTxt: {
-    color: '#AAA',
-    fontWeight: '600',
-  },
-  btnPrimary: {
-    backgroundColor: T.blue,
-  },
-  btnPrimaryTxt: {
-    color: '#000',
-    fontWeight: '700',
-  },
-});

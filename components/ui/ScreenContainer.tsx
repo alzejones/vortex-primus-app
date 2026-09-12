@@ -6,6 +6,7 @@ import {
   StatusBar,
   View,
 } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface Props {
   children: React.ReactNode;
@@ -16,7 +17,9 @@ export default function ScreenContainer({
   children,
   scroll = true,
 }: Props) {
-  const backgroundColor = "#0F172A"; // Azul profundo tecnológico
+  const { theme } = useTheme();
+  const backgroundColor = theme.colors.background;
+  const barStyle = theme.mode === "dark" ? "light-content" : "dark-content";
 
   if (scroll) {
     return (
@@ -24,7 +27,7 @@ export default function ScreenContainer({
         style={{ flex: 1, backgroundColor }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <StatusBar barStyle="light-content" />
+        <StatusBar barStyle={barStyle} />
         <ScrollView
           contentContainerStyle={{
             padding: 24,
@@ -47,7 +50,7 @@ export default function ScreenContainer({
         backgroundColor,
       }}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={barStyle} />
       {children}
     </View>
   );

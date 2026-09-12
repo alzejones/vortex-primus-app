@@ -28,6 +28,7 @@ import {
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
 import { CoachQuestionnaireForm, CoachQuestionnaireData } from "../../components/CoachQuestionnaireForm";
+import { useTheme } from "@/contexts/ThemeContext";
 
 // --- FUNÇÕES DE UTILIDADE ---
 const formatDateInput = (text: string) => {
@@ -51,6 +52,8 @@ const sqlToDate = (sqlStr: string) => {
 };
 
 export default function ClientDetails() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { id } = useLocalSearchParams();
   const clientId = id as string;
 
@@ -748,16 +751,16 @@ export default function ClientDetails() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
   wrapper: { flex: 1, width: '100%' },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
   scrollContent: { padding: 20 },
 
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
-  title: { fontSize: 28, fontWeight: "800", color: T.t1 },
-  statusRow: { flexDirection: "row", alignItems: "center", backgroundColor: T.surface, padding: 8, borderRadius: 12, borderWidth: 1, borderColor: T.border },
-  statusLabel: { marginRight: 8, fontWeight: "700", color: T.t2, fontSize: 12, textTransform: "uppercase" },
+  title: { fontSize: 28, fontWeight: "800", color: theme.colors.textPrimary },
+  statusRow: { flexDirection: "row", alignItems: "center", backgroundColor: theme.colors.card, padding: 8, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border },
+  statusLabel: { marginRight: 8, fontWeight: "700", color: theme.colors.textSecondary, fontSize: 12, textTransform: "uppercase" },
 
   statusBox: { padding: 14, borderRadius: 10, marginBottom: 20, borderWidth: 1 },
   statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
@@ -770,28 +773,28 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     alignItems: "center",
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  actionBtnText: { color: T.t1, fontSize: 13, fontWeight: "800" },
+  actionBtnText: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: "800" },
 
-  formCard: { backgroundColor: T.card, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: T.border, marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: "800", color: T.t2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 14, fontSize: 16, color: T.t1, marginBottom: 16 },
+  formCard: { backgroundColor: theme.colors.card, padding: 20, borderRadius: 20, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 20 },
+  label: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 14, fontSize: 16, color: theme.colors.textPrimary, marginBottom: 16 },
   row: { flexDirection: "row" },
   textArea: { height: 100, textAlignVertical: "top" },
 
   genderRow: { flexDirection: "row", marginBottom: 16 },
-  genderBtn: { flex: 1, padding: 14, borderWidth: 1, borderColor: T.border, alignItems: "center", borderRadius: 10, marginRight: 5, backgroundColor: T.surface },
+  genderBtn: { flex: 1, padding: 14, borderWidth: 1, borderColor: theme.colors.border, alignItems: "center", borderRadius: 10, marginRight: 5, backgroundColor: theme.colors.card },
   genderBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  genderBtnText: { color: T.t2, fontWeight: "700" },
+  genderBtnText: { color: theme.colors.textSecondary, fontWeight: "700" },
   genderBtnTextActive: { color: T.white },
 
-  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface, marginBottom: 8 },
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, marginBottom: 8 },
   optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  optionBtnText: { color: T.t2, fontWeight: "600", fontSize: 14 },
-  optionBtnTextActive: { color: T.white },
+  optionBtnText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
+  optionBtnTextActive: { color: '#fff' },
 
   saveButton: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
   saveButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
@@ -803,19 +806,19 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 12,
     borderWidth: 2, 
-    borderColor: T.border, 
-    backgroundColor: T.card,
+    borderColor: theme.colors.border, 
+    backgroundColor: theme.colors.card,
     alignItems: "center",
   },
   secondaryButtonText: { 
-    color: T.t1, 
+    color: theme.colors.textPrimary, 
     fontWeight: "700", 
     fontSize: 15 
   },
   questionnaireContainer: {
     marginBottom: 20,
     borderTopWidth: 2,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
     paddingTop: 20,
   },
 
@@ -825,21 +828,21 @@ const styles = StyleSheet.create({
 
   // Modal de seleção de canal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalSheet: { backgroundColor: T.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36, borderTopWidth: 1, borderColor: T.border },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 20, textAlign: "center" },
-  modalOption: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: T.border },
+  modalSheet: { backgroundColor: theme.colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 36, borderTopWidth: 1, borderColor: theme.colors.border },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 20, textAlign: "center" },
+  modalOption: { flexDirection: "row", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   modalOptionIcon: { fontSize: 26, marginRight: 16 },
-  modalOptionLabel: { fontSize: 16, fontWeight: "700", color: T.t1 },
-  modalOptionSub: { fontSize: 13, color: T.t3, marginTop: 2 },
-  modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: T.surface, borderWidth: 1, borderColor: T.border },
-  modalCancelText: { fontSize: 15, fontWeight: "700", color: T.t2 },
+  modalOptionLabel: { fontSize: 16, fontWeight: "700", color: theme.colors.textPrimary },
+  modalOptionSub: { fontSize: 13, color: theme.colors.textMuted, marginTop: 2 },
+  modalCancel: { marginTop: 16, alignItems: "center", padding: 14, borderRadius: 12, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border },
+  modalCancelText: { fontSize: 15, fontWeight: "700", color: theme.colors.textSecondary },
 
   statusField: {
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 14,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -847,12 +850,12 @@ const styles = StyleSheet.create({
   },
   statusFieldText: {
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     flex: 1,
   },
   statusFieldArrow: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
 
   statusModalOverlay: {
@@ -862,14 +865,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statusModalContent: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 8,
     width: "80%",
     maxWidth: 300,
   },
   statusModalOptionText: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontWeight: "600",
     fontSize: 14,
   },
@@ -879,9 +882,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
     paddingHorizontal: 20,
     paddingTop: 14,
   },

@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface ReminderRow {
   id: string;
@@ -43,6 +44,8 @@ function formatDate(dateStr: string): string {
 }
 
 export default function ReposicoesScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -212,10 +215,10 @@ export default function ReposicoesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -223,9 +226,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -234,11 +237,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   counter: {
     fontSize: 16,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
   loadingContainer: {
@@ -255,13 +258,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyHint: {
     fontSize: 14,
-    color: T.t3,
+    color: theme.colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -269,12 +272,12 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 16,
     fontWeight: '600',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   scheduledDate: {
     fontSize: 14,
@@ -295,12 +298,12 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 14,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   messagePreview: {
     fontSize: 13,
-    color: T.t3,
+    color: theme.colors.textMuted,
     lineHeight: 18,
     marginBottom: 12,
   },

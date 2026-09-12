@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type Gender = 'male' | 'female' | 'm' | 'f' | 'M' | 'F' | 'Masculino' | 'Feminino';
 interface Props { bodyFatPercentage: number; gender: Gender; }
@@ -55,6 +56,9 @@ function getActiveTier(pct: number, gender: 'male' | 'female'): number {
 }
 
 export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   const g      = normalizeGender(gender);
   const tiers  = g === 'female' ? TIERS_FEMALE : TIERS_MALE;
   const assets = ASSETS[g];
@@ -114,23 +118,23 @@ export default function BodyAvatarRow({ bodyFatPercentage, gender }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   wrapper:     { marginVertical: 12, marginHorizontal: 0 },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  title:       { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  title:       { fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary },
   badge:       { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   badgeText:   { fontSize: 12, fontWeight: '700' },
   row:         { flexDirection: 'row', alignItems: 'flex-end', gap: 2 },
   cardWrapper: { flex: 1, minWidth: 0 },
-  card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: '#141e2e', borderWidth: 1.5, borderColor: '#1e2d45' },
-  cardInactive:{ borderColor: '#1e2d45' },
+  card:        { width: '100%', borderRadius: 8, overflow: 'hidden', backgroundColor: theme.colors.card, borderWidth: 1.5, borderColor: theme.colors.border },
+  cardInactive:{ borderColor: theme.colors.border },
   imgBox:      { width: '100%', aspectRatio: 0.48, alignItems: 'center', justifyContent: 'flex-end' },
   img:         { width: '100%', height: '100%' },
   imgDim:      { opacity: 0.35 },
   youBadge:    { alignItems: 'center', paddingVertical: 2 },
-  youText:     { color: '#fff', fontSize: 8, fontWeight: '800' },
-  labelBox:    { alignItems: 'center', paddingVertical: 3, paddingHorizontal: 1, borderTopWidth: 1, borderTopColor: '#1e2d45', minHeight: 30, justifyContent: 'center' },
+  youText:     { color: theme.colors.textPrimary, fontSize: 8, fontWeight: '800' },
+  labelBox:    { alignItems: 'center', paddingVertical: 3, paddingHorizontal: 1, borderTopWidth: 1, borderTopColor: theme.colors.border, minHeight: 30, justifyContent: 'center' },
   labelTier:   { fontSize: 7, fontWeight: '600', textAlign: 'center' },
   labelPct:    { fontSize: 8, fontWeight: '700', textAlign: 'center', marginTop: 1 },
-  footer:      { fontSize: 10, color: '#445', textAlign: 'center', marginTop: 6 },
+  footer:      { fontSize: 10, color: theme.colors.textMuted, textAlign: 'center', marginTop: 6 },
 });

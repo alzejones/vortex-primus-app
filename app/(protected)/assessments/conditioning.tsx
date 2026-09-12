@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +24,7 @@ type MobilityTest = { id: string; name: string; notes: string };
 
 export default function ConditioningAssessment() {
   const { client_id, assessment_id } = useLocalSearchParams();
+  const { theme } = useTheme();
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -245,13 +247,15 @@ export default function ConditioningAssessment() {
     setAssessmentDate(formatted);
   };
 
+  const styles = createStyles(theme);
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>
 
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={{ marginBottom: 12 }}>
-            <Text style={{ color: T.blue, fontWeight: "700" }}>← Voltar</Text>
+            <Text style={{ color: theme.colors.primary, fontWeight: "700" }}>← Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Avaliação de Condicionamento</Text>
           <Text style={styles.subtitle}>{clientName}</Text>
@@ -264,7 +268,7 @@ export default function ConditioningAssessment() {
             value={assessmentDate}
             onChangeText={handleDateChange}
             placeholder="DD/MM/AAAA HH:MM"
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             keyboardType="numeric"
             maxLength={16}
           />
@@ -292,10 +296,10 @@ export default function ConditioningAssessment() {
                     <Text style={{ color: T.red, fontWeight: 'bold' }}>X Remover</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput style={[styles.input, { marginBottom: 8 }]} placeholder="Nome do Exercício (ex: Back Squat)" placeholderTextColor={T.t3} value={t.exercise} onChangeText={(val) => updateStrength(t.id, "exercise", val)} />
+                <TextInput style={[styles.input, { marginBottom: 8 }]} placeholder="Nome do Exercício (ex: Back Squat)" placeholderTextColor={theme.colors.textMuted} value={t.exercise} onChangeText={(val) => updateStrength(t.id, "exercise", val)} />
                 <View style={styles.row}>
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Carga (kg)" placeholderTextColor={T.t3} keyboardType="numeric" value={t.load} onChangeText={(val) => updateStrength(t.id, "load", val)} />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Repetições" placeholderTextColor={T.t3} value={t.reps} onChangeText={(val) => updateStrength(t.id, "reps", val)} />
+                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Carga (kg)" placeholderTextColor={theme.colors.textMuted} keyboardType="numeric" value={t.load} onChangeText={(val) => updateStrength(t.id, "load", val)} />
+                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Repetições" placeholderTextColor={theme.colors.textMuted} value={t.reps} onChangeText={(val) => updateStrength(t.id, "reps", val)} />
                 </View>
               </View>
             ))}
@@ -315,12 +319,12 @@ export default function ConditioningAssessment() {
                     <Text style={{ color: T.red, fontWeight: 'bold' }}>X Remover</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput style={[styles.input, { marginBottom: 8 }]} placeholder="Tipo (ex: Corrida, Burpee)" placeholderTextColor={T.t3} value={t.type} onChangeText={(val) => updateEndurance(t.id, "type", val)} />
+                <TextInput style={[styles.input, { marginBottom: 8 }]} placeholder="Tipo (ex: Corrida, Burpee)" placeholderTextColor={theme.colors.textMuted} value={t.type} onChangeText={(val) => updateEndurance(t.id, "type", val)} />
                 <View style={styles.row}>
-                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Distância (m)" placeholderTextColor={T.t3} keyboardType="numeric" value={t.distance} onChangeText={(val) => updateEndurance(t.id, "distance", val)} />
-                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Tempo (segundos)" placeholderTextColor={T.t3} keyboardType="numeric" value={t.time} onChangeText={(val) => updateEndurance(t.id, "time", val)} />
+                  <TextInput style={[styles.input, { flex: 1, marginRight: 8 }]} placeholder="Distância (m)" placeholderTextColor={theme.colors.textMuted} keyboardType="numeric" value={t.distance} onChangeText={(val) => updateEndurance(t.id, "distance", val)} />
+                  <TextInput style={[styles.input, { flex: 1 }]} placeholder="Tempo (segundos)" placeholderTextColor={theme.colors.textMuted} keyboardType="numeric" value={t.time} onChangeText={(val) => updateEndurance(t.id, "time", val)} />
                 </View>
-                <TextInput style={[styles.input, { marginTop: 8 }]} placeholder="Repetições (se houver)" placeholderTextColor={T.t3} value={t.reps} onChangeText={(val) => updateEndurance(t.id, "reps", val)} />
+                <TextInput style={[styles.input, { marginTop: 8 }]} placeholder="Repetições (se houver)" placeholderTextColor={theme.colors.textMuted} value={t.reps} onChangeText={(val) => updateEndurance(t.id, "reps", val)} />
               </View>
             ))}
             <TouchableOpacity style={styles.addButton} onPress={addEnduranceTest}>
@@ -339,8 +343,8 @@ export default function ConditioningAssessment() {
                     <Text style={{ color: T.red, fontWeight: 'bold' }}>X Remover</Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput style={[styles.input, { marginBottom: 8 }]} placeholder="Nome (ex: Toque chão pernas esticadas)" placeholderTextColor={T.t3} value={t.name} onChangeText={(val) => updateMobility(t.id, "name", val)} />
-                <TextInput style={styles.input} placeholder="Resultado / Nota" placeholderTextColor={T.t3} value={t.notes} onChangeText={(val) => updateMobility(t.id, "notes", val)} />
+                <TextInput style={[styles.input, { marginBottom: 8 }]} placeholder="Nome (ex: Toque chão pernas esticadas)" placeholderTextColor={theme.colors.textMuted} value={t.name} onChangeText={(val) => updateMobility(t.id, "name", val)} />
+                <TextInput style={styles.input} placeholder="Resultado / Nota" placeholderTextColor={theme.colors.textMuted} value={t.notes} onChangeText={(val) => updateMobility(t.id, "notes", val)} />
               </View>
             ))}
             <TouchableOpacity style={styles.addButton} onPress={addMobilityTest}>
@@ -374,57 +378,57 @@ export default function ConditioningAssessment() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: 16 },
   header: { marginBottom: 20 },
-  title: { fontSize: 24, fontWeight: "800", color: T.t1 },
-  subtitle: { fontSize: 16, color: T.t3, marginTop: 4 },
+  title: { fontSize: 24, fontWeight: "800", color: theme.colors.textPrimary },
+  subtitle: { fontSize: 16, color: theme.colors.textMuted, marginTop: 4 },
   formGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: "700", color: T.t2, marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary, marginBottom: 6 },
   input: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 48,
     fontSize: 15,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
 
   tabsContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 4,
   },
   tab: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: 6 },
-  activeTab: { backgroundColor: T.surface },
-  tabText: { fontSize: 13, fontWeight: "600", color: T.t3 },
-  activeTabText: { color: T.blue, fontWeight: "800" },
+  activeTab: { backgroundColor: theme.colors.background },
+  tabText: { fontSize: 13, fontWeight: "600", color: theme.colors.textMuted },
+  activeTabText: { color: theme.colors.primary, fontWeight: "800" },
 
   testCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  testCardTitle: { fontSize: 14, fontWeight: "800", color: T.t1, marginBottom: 12 },
+  testCardTitle: { fontSize: 14, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 12 },
   addButton: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.background,
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: T.blue,
+    borderColor: theme.colors.primary,
     borderStyle: "dashed",
     marginBottom: 20,
   },
-  addButtonText: { color: T.blue, fontWeight: "700" },
+  addButtonText: { color: theme.colors.primary, fontWeight: "700" },
 
   saveBtn: { borderRadius: 8, overflow: "hidden", marginTop: 10 },
   saveBtnGradient: { padding: 16, alignItems: "center", borderRadius: 8 },

@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
-import { T } from "../utils/theme";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface LimbMeasurementsChartProps {
   chartAssessments: any[];
@@ -21,6 +21,7 @@ const LOWER_LIMB_COLORS = {
 };
 
 export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: LimbMeasurementsChartProps) {
+  const { theme } = useTheme();
   // Filtro para membros superiores
   const upperLimbAssessments = (chartAssessments || []).filter((a: any) => {
     const t = a.anthropometry?.[0];
@@ -109,16 +110,16 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
         style={{
           marginBottom: 20,
           alignItems: "center",
-          backgroundColor: T.card,
+          backgroundColor: theme.colors.card,
           borderRadius: 10,
           padding: 10,
           borderWidth: 1,
-          borderColor: T.border,
+          borderColor: theme.colors.border,
         }}
       >
         <Text
           style={{
-            color: T.t1,
+            color: theme.colors.textPrimary,
             fontWeight: "bold",
             fontSize: 14,
             marginBottom: 4,
@@ -130,7 +131,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
         </Text>
         <View
           style={{
-            backgroundColor: T.bgAlt,
+            backgroundColor: theme.colors.background,
             paddingVertical: 20,
             paddingHorizontal: 10,
             borderRadius: 16,
@@ -185,7 +186,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: "600" }}>
                 🔵 E. (Esquerdo)
               </Text>
             </View>
@@ -199,7 +200,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: "600" }}>
                 🟢 D. (Direito)
               </Text>
             </View>
@@ -256,16 +257,16 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
         style={{
           marginBottom: 20,
           alignItems: "center",
-          backgroundColor: T.card,
+          backgroundColor: theme.colors.card,
           borderRadius: 10,
           padding: 10,
           borderWidth: 1,
-          borderColor: T.border,
+          borderColor: theme.colors.border,
         }}
       >
         <Text
           style={{
-            color: T.t1,
+            color: theme.colors.textPrimary,
             fontWeight: "bold",
             fontSize: 14,
             marginBottom: 4,
@@ -277,7 +278,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
         </Text>
         <View
           style={{
-            backgroundColor: T.bgAlt,
+            backgroundColor: theme.colors.background,
             paddingVertical: 20,
             paddingHorizontal: 10,
             borderRadius: 16,
@@ -290,7 +291,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
           }}
         >
           {/* Seção COXA */}
-          <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
             COXA
           </Text>
           <BarChart
@@ -322,7 +323,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
           <View style={{ height: 24 }} />
           
           {/* Seção PANTURRILHA */}
-          <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: 13, fontWeight: "bold", marginBottom: 12, textAlign: "center" }}>
             PANTURRILHA
           </Text>
           <BarChart
@@ -370,7 +371,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🔵 Coxa E.
               </Text>
             </View>
@@ -384,7 +385,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🩵 Coxa D.
               </Text>
             </View>
@@ -398,7 +399,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🟠 Pant. E.
               </Text>
             </View>
@@ -412,7 +413,7 @@ export default function LimbMeasurementsChart({ chartAssessments, chartWidth }: 
                   marginRight: 4,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 11, fontWeight: "600" }}>
                 🟡 Pant. D.
               </Text>
             </View>

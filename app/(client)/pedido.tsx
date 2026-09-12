@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { notify } from "../../components/business/SaleFormModal";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
@@ -79,6 +80,8 @@ interface StandaloneProduct {
 
 export default function PedidoEVS() {
   const { session, signOut } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [clientId, setClientId] = useState<string | null>(null);
@@ -395,7 +398,7 @@ export default function PedidoEVS() {
 
   if (loading) {
     return (
-      <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined }]}>
+      <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined, backgroundColor: theme.colors.background }]}>
         <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color={T.blue} />
         </View>
@@ -418,7 +421,7 @@ export default function PedidoEVS() {
   }, {} as Record<string, StandaloneProduct[]>);
 
   return (
-    <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined }]}>
+    <View style={[styles.root, { alignItems: isDesktop ? 'center' : undefined, backgroundColor: theme.colors.background }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={true}>
           <Text style={styles.pageTitle}>Fazer Pedido</Text>
@@ -467,7 +470,7 @@ export default function PedidoEVS() {
           )}
 
           {redemptionBalance > 0 && (
-            <View style={{ backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 14, marginBottom: 16 }}>
+            <View style={{ backgroundColor: theme.colors.card, borderRadius: 12, padding: 14, marginBottom: 16 }}>
               <Text style={{ fontSize: 14, fontWeight: "700", color: T.blue }}>
                 Você tem {redemptionBalance} {redemptionBalance === 1 ? 'ficha' : 'fichas'} de resgate {redemptionBalance === 1 ? 'disponível' : 'disponíveis'}
               </Text>
@@ -611,10 +614,10 @@ export default function PedidoEVS() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("../../contexts/ThemeContext").AppTheme) =>
+  StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: T.bg,
   },
   scrollContent: {
     padding: 20,
@@ -623,12 +626,12 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 24,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 6,
   },
   pageSubtitle: {
     fontSize: 14,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginBottom: 24,
   },
   section: {
@@ -637,13 +640,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   kitCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 2,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
@@ -654,12 +657,12 @@ const styles = StyleSheet.create({
   kitName: {
     fontSize: 16,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 4,
   },
   kitPrice: {
     fontSize: 14,
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   flavorGroup: {
     marginBottom: 16,
@@ -667,7 +670,7 @@ const styles = StyleSheet.create({
   flavorLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
   },
   flavorChips: {
@@ -679,9 +682,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   flavorChipActive: {
     backgroundColor: T.blue,
@@ -690,22 +693,22 @@ const styles = StyleSheet.create({
   flavorChipText: {
     fontSize: 13,
     fontWeight: "600",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   flavorChipTextActive: {
     color: T.white,
   },
   addonCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 14,
     padding: 16,
   },
   addonName: {
     fontSize: 15,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 10,
   },
   removeAddon: {
@@ -715,9 +718,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   addAddonButton: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
@@ -725,7 +728,7 @@ const styles = StyleSheet.create({
   addAddonText: {
     fontSize: 14,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   confirmButton: {
     borderRadius: 14,
@@ -750,7 +753,7 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 14,
     fontWeight: "700",
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
   repeatOrderButton: {
     backgroundColor: T.blue,
@@ -776,9 +779,9 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   cartItemCard: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
@@ -788,12 +791,12 @@ const styles = StyleSheet.create({
   cartItemName: {
     fontSize: 15,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 4,
   },
   cartItemPrice: {
     fontSize: 13,
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   removeCartItem: {
     fontSize: 20,
@@ -808,12 +811,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
   },
   cartTotalLabel: {
     fontSize: 16,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   cartTotalValue: {
     fontSize: 18,
@@ -836,9 +839,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   standaloneHeader: {
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 14,
     flexDirection: 'row',
@@ -848,10 +851,10 @@ const styles = StyleSheet.create({
   standaloneGroupName: {
     fontSize: 14,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   standaloneToggle: {
     fontSize: 14,
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
 });

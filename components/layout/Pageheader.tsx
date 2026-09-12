@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface Props {
   title: string;
@@ -7,10 +8,12 @@ interface Props {
 }
 
 export default function PageHeader({ title, subtitle }: Props) {
+  const { theme } = useTheme();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={[styles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+      {subtitle && <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>{subtitle}</Text>}
     </View>
   );
 }
@@ -22,11 +25,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#0F172A",
   },
   subtitle: {
     fontSize: 16,
-    color: "#475569",
     marginTop: 8,
   },
 });

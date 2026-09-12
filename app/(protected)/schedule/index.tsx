@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../../../contexts/ThemeContext";
 import { supabase } from "../../../lib/supabase";
 import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
@@ -37,6 +38,8 @@ interface Appointment {
 }
 
 export default function ScheduleIndex() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -234,8 +237,8 @@ export default function ScheduleIndex() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg }}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -255,13 +258,13 @@ export default function ScheduleIndex() {
 
       {/* MODAL DE SELEÇÃO DE ALUNO */}
       <Modal visible={clientModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setClientModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: T.bg }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
           <View style={styles.modalHeaderSec}>
             <View style={styles.modalHeaderTop}>
               <Text style={styles.modalTitle}>Novo Agendamento</Text>
               <TouchableOpacity onPress={() => setClientModalVisible(false)}><Text style={styles.modalCloseBtn}>Fechar</Text></TouchableOpacity>
             </View>
-            <TextInput style={styles.modalInput} placeholder="Qual aluno será avaliado?" placeholderTextColor={T.t3} value={clientSearchQuery} onChangeText={setClientSearchQuery} autoFocus />
+            <TextInput style={styles.modalInput} placeholder="Qual aluno será avaliado?" placeholderTextColor={theme.colors.textMuted} value={clientSearchQuery} onChangeText={setClientSearchQuery} autoFocus />
           </View>
           <FlatList
             data={scheduleFilteredClients}
@@ -282,7 +285,7 @@ export default function ScheduleIndex() {
               </TouchableOpacity>
             )}
             ListEmptyComponent={
-              <Text style={{ textAlign: "center", color: T.t3, marginTop: 20, marginBottom: 8 }}>
+              <Text style={{ textAlign: "center", color: theme.colors.textMuted, marginTop: 20, marginBottom: 8 }}>
                 {clientSearchQuery.trim()
                   ? `Nenhum aluno encontrado para "${clientSearchQuery}".`
                   : "Nenhum aluno cadastrado ainda."}
@@ -306,18 +309,18 @@ export default function ScheduleIndex() {
 
       {/* MODAL DE REAGENDAMENTO */}
       <Modal visible={editModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: T.bg }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
           <View style={styles.modalHeaderSec}>
             <View style={styles.modalHeaderTop}>
               <Text style={styles.modalTitle}>Alterar Horário</Text>
               <TouchableOpacity onPress={() => setEditModalVisible(false)}><Text style={styles.modalCloseBtn}>Cancelar</Text></TouchableOpacity>
             </View>
-            <Text style={{ fontSize: 14, color: T.t3, marginBottom: 10 }}>
-              Reagendando avaliação de <Text style={{ fontWeight: 'bold', color: T.t1 }}>{editingAppt?.clients?.name}</Text>
+            <Text style={{ fontSize: 14, color: theme.colors.textMuted, marginBottom: 10 }}>
+              Reagendando avaliação de <Text style={{ fontWeight: 'bold', color: theme.colors.textPrimary }}>{editingAppt?.clients?.name}</Text>
             </Text>
           </View>
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
-            <Text style={{ fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 12 }}>Nova Data</Text>
+            <Text style={{ fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 12 }}>Nova Data</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20, marginBottom: 24 }}>
               {upcomingDays.map((date, index) => {
                 const isSelected = editDate && isSameDay(date, editDate);
@@ -330,7 +333,7 @@ export default function ScheduleIndex() {
               })}
             </ScrollView>
 
-            <Text style={{ fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 12 }}>Novo Horário</Text>
+            <Text style={{ fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 12 }}>Novo Horário</Text>
             <View style={styles.timeGrid}>
               {availableTimes.map((time) => (
                 <TouchableOpacity key={time} style={[styles.timeBox, editTime === time && styles.timeBoxActive]} onPress={() => setEditTime(time)}>
@@ -351,13 +354,13 @@ export default function ScheduleIndex() {
       {/* MODAL DE EXCLUSÃO */}
       <Modal visible={!!appointmentToDelete} transparent={true} animationType="fade" onRequestClose={() => setAppointmentToDelete(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View style={{ backgroundColor: T.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: T.border, width: '100%', maxWidth: 400, alignItems: 'center' }}>
+          <View style={{ backgroundColor: theme.colors.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, width: '100%', maxWidth: 400, alignItems: 'center' }}>
             <Text style={{ fontSize: 40, marginBottom: 12 }}>⚠️</Text>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: T.t1, marginBottom: 8, textAlign: 'center' }}>Cancelar Agendamento?</Text>
-            <Text style={{ fontSize: 15, color: T.t3, textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar este horário da sua agenda?</Text>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>Cancelar Agendamento?</Text>
+            <Text style={{ fontSize: 15, color: theme.colors.textMuted, textAlign: 'center', marginBottom: 24 }}>Tem certeza que deseja apagar este horário da sua agenda?</Text>
             <View style={{ flexDirection: 'row', width: '100%', gap: 12 }}>
-              <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: T.surfaceAlt, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: T.border }} onPress={() => setAppointmentToDelete(null)} disabled={isDeleting}>
-                <Text style={{ color: T.t2, fontWeight: 'bold', fontSize: 15 }}>Voltar</Text>
+              <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: theme.colors.card, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }} onPress={() => setAppointmentToDelete(null)} disabled={isDeleting}>
+                <Text style={{ color: theme.colors.textSecondary, fontWeight: 'bold', fontSize: 15 }}>Voltar</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flex: 1, padding: 14, backgroundColor: T.red, borderRadius: 10, alignItems: 'center' }} onPress={executeDelete} disabled={isDeleting}>
                 {isDeleting ? <ActivityIndicator color={T.white} /> : <Text style={{ color: T.white, fontWeight: 'bold', fontSize: 15 }}>Excluir</Text>}
@@ -370,8 +373,8 @@ export default function ScheduleIndex() {
       {groupedData.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={{ fontSize: 50, marginBottom: 16 }}>☕</Text>
-          <Text style={{ fontSize: 20, fontWeight: "bold", color: T.t1, marginBottom: 8 }}>Agenda Livre</Text>
-          <Text style={{ color: T.t3, textAlign: "center" }}>Você não possui avaliações agendadas para os próximos dias.</Text>
+          <Text style={{ fontSize: 20, fontWeight: "bold", color: theme.colors.textPrimary, marginBottom: 8 }}>Agenda Livre</Text>
+          <Text style={{ color: theme.colors.textMuted, textAlign: "center" }}>Você não possui avaliações agendadas para os próximos dias.</Text>
         </View>
       ) : (
         <FlatList
@@ -383,7 +386,7 @@ export default function ScheduleIndex() {
             <View style={{ marginBottom: 24 }}>
               <View style={styles.dateHeaderContainer}>
                 <Text style={styles.dateHeader}>{formatHeaderDate(item.title)}</Text>
-                <View style={{ height: 1, backgroundColor: T.border, flex: 1, marginLeft: 16 }} />
+                <View style={{ height: 1, backgroundColor: theme.colors.border, flex: 1, marginLeft: 16 }} />
               </View>
 
               {item.data.map((appt) => (
@@ -403,16 +406,16 @@ export default function ScheduleIndex() {
 
                   <View style={styles.actionRow}>
                     <TouchableOpacity
-                      style={[styles.actionBtn, { flex: 1.5, backgroundColor: appt.whatsapp_sent ? T.surfaceAlt : "#22c55e", borderColor: appt.whatsapp_sent ? T.border : "#22c55e" }]}
+                      style={[styles.actionBtn, { flex: 1.5, backgroundColor: appt.whatsapp_sent ? theme.colors.card : "#22c55e", borderColor: appt.whatsapp_sent ? theme.colors.border : "#22c55e" }]}
                       onPress={() => handleWhatsApp(appt)}
                     >
                       <Text style={{ fontSize: 15, marginRight: 6 }}>{appt.whatsapp_sent ? "✓" : "💬"}</Text>
-                      <Text style={[styles.actionBtnText, { color: appt.whatsapp_sent ? T.t3 : T.white }]}>WhatsApp</Text>
+                      <Text style={[styles.actionBtnText, { color: appt.whatsapp_sent ? theme.colors.textMuted : T.white }]}>WhatsApp</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.actionBtn, { flex: 1, backgroundColor: T.surfaceAlt, borderColor: T.border }]} onPress={() => openEditModal(appt)}>
+                    <TouchableOpacity style={[styles.actionBtn, { flex: 1, backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} onPress={() => openEditModal(appt)}>
                       <Text style={{ fontSize: 13, marginRight: 4 }}>✏️</Text>
-                      <Text style={[styles.actionBtnText, { color: T.t2 }]}>Alterar</Text>
+                      <Text style={[styles.actionBtnText, { color: theme.colors.textSecondary }]}>Alterar</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={[styles.actionBtn, { flex: 1, backgroundColor: "rgba(239,68,68,0.1)", borderColor: T.red }]} onPress={() => setAppointmentToDelete(appt.id)}>
@@ -431,12 +434,12 @@ export default function ScheduleIndex() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: Platform.OS === "ios" ? 60 : 40, backgroundColor: T.card, borderBottomWidth: 1, borderBottomColor: T.border },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: Platform.OS === "ios" ? 60 : 40, backgroundColor: theme.colors.card, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   backBtn: { padding: 5 },
-  backBtnText: { color: T.blue, fontWeight: "700", fontSize: 16 },
-  title: { fontSize: 20, fontWeight: "900", color: T.t1 },
+  backBtnText: { color: theme.colors.primary, fontWeight: "700", fontSize: 16 },
+  title: { fontSize: 20, fontWeight: "900", color: theme.colors.textPrimary },
   headerBtn: { backgroundColor: T.blueGlow, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: T.borderActive },
   headerBtnText: { color: T.blue, fontWeight: "800", fontSize: 14 },
 
@@ -444,45 +447,45 @@ const styles = StyleSheet.create({
 
   listContent: { padding: 20 },
   dateHeaderContainer: { flexDirection: "row", alignItems: "center", marginBottom: 16, marginTop: 8 },
-  dateHeader: { fontSize: 16, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5 },
+  dateHeader: { fontSize: 16, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5 },
 
-  card: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
+  card: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  clientName: { fontSize: 18, fontWeight: "bold", color: T.t1, flex: 1 },
-  badge: { backgroundColor: T.surfaceAlt, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: T.border, flexShrink: 1, marginLeft: 8 },
-  badgeText: { fontSize: 11, fontWeight: "800", color: T.t2, textAlign: "right" },
+  clientName: { fontSize: 18, fontWeight: "bold", color: theme.colors.textPrimary, flex: 1 },
+  badge: { backgroundColor: theme.colors.card, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, flexShrink: 1, marginLeft: 8 },
+  badgeText: { fontSize: 11, fontWeight: "800", color: theme.colors.textSecondary, textAlign: "right" },
 
   dateTimeRow: { flexDirection: "row", marginBottom: 16 },
-  dateTimeText: { fontSize: 14, color: T.t3, fontWeight: "700", marginRight: 16 },
+  dateTimeText: { fontSize: 14, color: theme.colors.textMuted, fontWeight: "700", marginRight: 16 },
 
   actionRow: { flexDirection: "row", gap: 8, marginTop: 4 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
   actionBtnText: { fontWeight: '800', fontSize: 13 },
 
-  modalHeaderSec: { padding: 20, backgroundColor: T.card, borderBottomWidth: 1, borderColor: T.border, paddingTop: Platform.OS === "android" ? 40 : 20 },
+  modalHeaderSec: { padding: 20, backgroundColor: theme.colors.card, borderBottomWidth: 1, borderColor: theme.colors.border, paddingTop: Platform.OS === "android" ? 40 : 20 },
   modalHeaderTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: "900", color: T.t1 },
+  modalTitle: { fontSize: 20, fontWeight: "900", color: theme.colors.textPrimary },
   modalCloseBtn: { color: T.red, fontWeight: "800", fontSize: 16 },
-  modalInput: { backgroundColor: T.surface, padding: 16, borderRadius: 12, fontSize: 16, color: T.t1, borderWidth: 1, borderColor: T.border },
-  modalClientItem: { padding: 16, backgroundColor: T.card, borderBottomWidth: 1, borderColor: T.border, flexDirection: "row", alignItems: "center" },
-  addClientFixedFooter: { backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border, padding: 12 },
-  addClientFooterBtn: { flexDirection: "row", alignItems: "center", padding: 14, backgroundColor: T.card, borderRadius: 12, borderWidth: 1, borderColor: T.border },
-  addClientFooterIcon: { fontSize: 18, color: T.blue, marginRight: 10, fontWeight: "800" },
-  addClientFooterText: { fontSize: 15, color: T.blue, fontWeight: "700" },
+  modalInput: { backgroundColor: theme.colors.card, padding: 16, borderRadius: 12, fontSize: 16, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.border },
+  modalClientItem: { padding: 16, backgroundColor: theme.colors.card, borderBottomWidth: 1, borderColor: theme.colors.border, flexDirection: "row", alignItems: "center" },
+  addClientFixedFooter: { backgroundColor: theme.colors.card, borderTopWidth: 1, borderTopColor: theme.colors.border, padding: 12 },
+  addClientFooterBtn: { flexDirection: "row", alignItems: "center", padding: 14, backgroundColor: theme.colors.card, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border },
+  addClientFooterIcon: { fontSize: 18, color: theme.colors.primary, marginRight: 10, fontWeight: "800" },
+  addClientFooterText: { fontSize: 15, color: theme.colors.primary, fontWeight: "700" },
   modalClientEmoji: { fontSize: 24, marginRight: 16 },
-  modalClientName: { fontSize: 16, fontWeight: "700", color: T.t2, flex: 1 },
-  modalArrow: { fontSize: 18, color: T.t4 },
+  modalClientName: { fontSize: 16, fontWeight: "700", color: theme.colors.textSecondary, flex: 1 },
+  modalArrow: { fontSize: 18, color: theme.colors.textMuted },
 
-  dateBox: { backgroundColor: T.card, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: T.border, alignItems: "center", minWidth: 70 },
-  dateBoxActive: { backgroundColor: T.surface, borderColor: T.blue },
-  dateDay: { fontSize: 12, fontWeight: "700", color: T.t3, textTransform: "uppercase", marginBottom: 4 },
-  dateNumber: { fontSize: 20, fontWeight: "800", color: T.t1 },
-  dateTextActive: { color: T.blue },
+  dateBox: { backgroundColor: theme.colors.card, paddingVertical: 14, paddingHorizontal: 20, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, alignItems: "center", minWidth: 70 },
+  dateBoxActive: { backgroundColor: theme.colors.card, borderColor: theme.colors.primary },
+  dateDay: { fontSize: 12, fontWeight: "700", color: theme.colors.textMuted, textTransform: "uppercase", marginBottom: 4 },
+  dateNumber: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary },
+  dateTextActive: { color: theme.colors.primary },
 
   timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 30 },
-  timeBox: { width: "22%", backgroundColor: T.card, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: T.border, alignItems: "center" },
+  timeBox: { width: "22%", backgroundColor: theme.colors.card, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, alignItems: "center" },
   timeBoxActive: { backgroundColor: T.blue, borderColor: T.blue },
-  timeText: { fontSize: 15, fontWeight: "700", color: T.t2 },
+  timeText: { fontSize: 15, fontWeight: "700", color: theme.colors.textSecondary },
   timeTextActive: { color: T.white },
 
   saveBtn: { borderRadius: 16, overflow: "hidden" },

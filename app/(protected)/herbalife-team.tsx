@@ -27,6 +27,8 @@ import { FeatureGate } from '../../components/FeatureGate';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import { computeTrend } from '../../utils/goalCalculations';
 import TeamSparkline from '../../components/TeamSparkline';
+import { useTheme } from '../../contexts/ThemeContext';
+import type { AppTheme } from '../../contexts/ThemeContext';
 
 interface DownlineData {
   downline_trainer_id: string;
@@ -109,6 +111,8 @@ type Tab = 'produtividade' | 'relatorios';
 export default function HerbalifeTeam() {
   const router = useRouter();
   const { hasFeature } = useLicenseStatus();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const [tab, setTab] = useState<Tab>('produtividade');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -312,7 +316,7 @@ export default function HerbalifeTeam() {
 
   if (!hasFeature('downline_stats')) {
     return (
-      <View style={{ flex: 1, backgroundColor: T.bg, padding: 16 }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, padding: 16 }}>
         <FeatureGate
           featureKey="downline_stats"
           featureName="Painel de Downlines"
@@ -507,10 +511,10 @@ export default function HerbalifeTeam() {
                   const initials = downline.name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
 
                   let atividadeLabel = '';
-                  let atividadeColor = T.t3;
+                  let atividadeColor = theme.colors.textMuted;
                   if (downline.diasSemAvaliar === null) {
                     atividadeLabel = 'Sem avaliações';
-                    atividadeColor = T.t3;
+                    atividadeColor = theme.colors.textMuted;
                   } else if (downline.diasSemAvaliar <= 7) {
                     atividadeLabel = 'Ativo';
                     atividadeColor = T.green;
@@ -569,7 +573,7 @@ export default function HerbalifeTeam() {
                             </View>
                             <View style={styles.miniStatCol}>
                               <Text style={styles.miniStatLabel}>Tendência</Text>
-                              <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : T.t3 }]}>
+                              <Text style={[styles.miniStatNum, { color: downline.trendAgend ? downline.trendAgend.color : theme.colors.textMuted }]}>
                                 {downline.trendAgend ? downline.trendAgend.projection : '—'}
                               </Text>
                             </View>
@@ -608,7 +612,7 @@ export default function HerbalifeTeam() {
                             </View>
                             <View style={styles.miniStatCol}>
                               <Text style={styles.miniStatLabel}>Tendência</Text>
-                              <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : T.t3 }]}>
+                              <Text style={[styles.miniStatNum, { color: downline.trendAval ? downline.trendAval.color : theme.colors.textMuted }]}>
                                 {downline.trendAval ? downline.trendAval.projection : '—'}
                               </Text>
                             </View>
@@ -662,6 +666,7 @@ export default function HerbalifeTeam() {
             downlines={downlines}
             selectedDownlineId={selectedDownlineId}
             setSelectedDownlineId={setSelectedDownlineId}
+            theme={theme}
           />
         )}
       </ScrollView>
@@ -677,6 +682,7 @@ function RelatoriosTab({
   downlines,
   selectedDownlineId,
   setSelectedDownlineId,
+  theme,
 }: {
   businessReports: BusinessReportRow[];
   weeklyReports: WeeklyReportRow[];
@@ -685,7 +691,9 @@ function RelatoriosTab({
   downlines: ProcessedDownline[];
   selectedDownlineId: string | null;
   setSelectedDownlineId: (id: string | null) => void;
+  theme: import("@/contexts/ThemeContext").AppTheme;
 }) {
+  const styles = createStyles(theme);
   const brl = (v: number) => `R$ ${Number(v || 0).toFixed(2).replace('.', ',')}`;
   const fmtDate = (d: string) => {
     const [y, m, day] = d.split('-');
@@ -716,7 +724,7 @@ function RelatoriosTab({
   if (businessReports.length === 0) {
     return (
       <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-        <Text style={{ fontSize: 16, color: T.t2 }}>Nenhum dado de relatório disponível</Text>
+        <Text style={{ fontSize: 16, color: theme.colors.textSecondary }}>Nenhum dado de relatório disponível</Text>
       </View>
     );
   }
@@ -910,7 +918,7 @@ function RelatoriosTab({
             </View>
             {dailyWithAllDays.map((row, idx) => (
               <View key={`${row.report_date}-${idx}`} style={styles.reportRow}>
-                <Text style={[styles.reportCell, { flex: 0.5, color: '#FFF' }]}>{row.report_date.slice(8, 10)}</Text>
+                <Text style={[styles.reportCell, { flex: 0.5, color: theme.colors.textPrimary }]}>{row.report_date.slice(8, 10)}</Text>
                 <Text style={styles.reportCell}>{row.convites}</Text>
                 <Text style={styles.reportCell}>{row.apresentacoes}</Text>
                 <Text style={styles.reportCell}>{row.resets}</Text>
@@ -923,7 +931,7 @@ function RelatoriosTab({
               </View>
             ))}
             {dailyWithAllDays.length === 0 && (
-              <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados neste mês.</Text>
+              <Text style={{ color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados neste mês.</Text>
             )}
           </View>
         </>
@@ -935,14 +943,14 @@ function RelatoriosTab({
       {viewMode === 'semanal' && (
         <>
           {filteredWeekly.length === 0 && (
-            <Text style={{ color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: 12 }}>Sem dados semanais.</Text>
+            <Text style={{ color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginTop: 12 }}>Sem dados semanais.</Text>
           )}
           {filteredWeekly.slice(0, 12).map((r, idx) => (
             <View key={`${r.trainer_id}-${r.week_start}-${idx}`} style={styles.weekCard}>
               <Text style={styles.weekTitle}>
                 {fmtDate(r.week_start)} a {fmtDate(r.week_end)}
                 {selectedDownlineId === null && (
-                  <Text style={{ color: T.t3, fontWeight: '600' }}> · {r.trainer_name}</Text>
+                  <Text style={{ color: theme.colors.textMuted, fontWeight: '600' }}> · {r.trainer_name}</Text>
                 )}
               </Text>
               <View style={styles.weekLine}>
@@ -977,7 +985,7 @@ function RelatoriosTab({
           </View>
           {filteredMonthly.slice(0, 12).map((r, idx) => (
             <View key={`${r.trainer_id}-${r.month_start}-${idx}`} style={styles.reportRow}>
-              <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+              <Text style={[styles.reportCell, { flex: 1, color: theme.colors.textPrimary }]}>
                 {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
               </Text>
               {selectedDownlineId === null && (
@@ -989,12 +997,12 @@ function RelatoriosTab({
             </View>
           ))}
           {filteredMonthly.length === 0 && (
-            <Text style={{ color: T.t3, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados mensais.</Text>
+            <Text style={{ color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12, textAlign: 'center' }}>Sem dados mensais.</Text>
           )}
 
           {filteredMonthly.length > 0 && (
             <>
-              <Text style={{ color: T.t1, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 }}>— Tendências —</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontWeight: '700', fontSize: 14, marginTop: 20, marginBottom: 8 }}>— Tendências —</Text>
               <View style={styles.reportHeaderRow}>
                 <Text style={[styles.reportHeaderCell, { flex: 1 }]}>Mês</Text>
                 {selectedDownlineId === null && (
@@ -1007,7 +1015,7 @@ function RelatoriosTab({
                 .filter((r) => r.month_start.slice(0, 7) === new Date().toISOString().slice(0, 7))
                 .map((r, idx) => (
                   <View key={`tend-${r.trainer_id}-${r.month_start}-${idx}`} style={styles.reportRow}>
-                    <Text style={[styles.reportCell, { flex: 1, color: T.t1 }]}>
+                    <Text style={[styles.reportCell, { flex: 1, color: theme.colors.textPrimary }]}>
                       {r.month_start.slice(5, 7)}/{r.month_start.slice(2, 4)}
                     </Text>
                     {selectedDownlineId === null && (
@@ -1025,50 +1033,50 @@ function RelatoriosTab({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background },
   header: { paddingHorizontal: 20, paddingTop: 20 },
   scrollView: { flex: 1 },
   content: { padding: 20, paddingBottom: 60, maxWidth: 900, alignSelf: 'center', width: '100%' },
 
   tabsContainer: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, marginTop: 12, marginBottom: 16 },
-  tabBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: T.card, alignItems: 'center', borderWidth: 1, borderColor: T.border },
-  tabBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  tabText: { fontSize: 14, fontWeight: '700', color: T.t2 },
+  tabBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, backgroundColor: theme.colors.card, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border },
+  tabBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  tabText: { fontSize: 14, fontWeight: '700', color: theme.colors.textSecondary },
   tabTextActive: { color: '#fff' },
 
-  filterBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, backgroundColor: T.card, borderWidth: 1, borderColor: T.border },
-  filterBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  filterBtnText: { fontSize: 12, fontWeight: '700', color: T.t2 },
+  filterBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border },
+  filterBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  filterBtnText: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
   filterBtnTextActive: { color: '#fff' },
 
-  viewModeBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: T.card, alignItems: 'center', borderWidth: 1, borderColor: T.border },
-  viewModeBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  viewModeBtnText: { fontSize: 13, fontWeight: '700', color: T.t2 },
+  viewModeBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: theme.colors.card, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border },
+  viewModeBtnActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
+  viewModeBtnText: { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary },
   viewModeBtnTextActive: { color: '#fff' },
 
-  reportTable: { backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border },
-  weekCard: { backgroundColor: T.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: T.border },
-  weekTitle: { color: T.t1, fontWeight: '700', marginBottom: 8 },
+  reportTable: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border },
+  weekCard: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.border },
+  weekTitle: { color: theme.colors.textPrimary, fontWeight: '700', marginBottom: 8 },
   weekLine: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  weekLabel: { color: T.t2, fontSize: 13 },
-  weekValue: { color: T.t1, fontWeight: '600', fontSize: 13 },
-  reportHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: T.border },
-  reportHeaderCell: { flex: 0.7, fontSize: 10, fontWeight: '800', color: T.t3, textTransform: 'uppercase' },
-  reportRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: T.surface },
-  reportCell: { flex: 0.7, fontSize: 12, color: T.t2, fontWeight: '600' },
+  weekLabel: { color: theme.colors.textSecondary, fontSize: 13 },
+  weekValue: { color: theme.colors.textPrimary, fontWeight: '600', fontSize: 13 },
+  reportHeaderRow: { flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  reportHeaderCell: { flex: 0.7, fontSize: 10, fontWeight: '800', color: theme.colors.textMuted, textTransform: 'uppercase' },
+  reportRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  reportCell: { flex: 0.7, fontSize: 12, color: theme.colors.textSecondary, fontWeight: '600' },
 
-  eyebrow: { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 4 },
-  title: { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 4 },
-  subtitle: { fontSize: 14, color: T.t2, marginBottom: 8 },
-  helperNote: { fontSize: 12, color: T.t3, fontStyle: 'italic', marginTop: 4, marginBottom: 20 },
+  eyebrow: { fontSize: 11, fontWeight: '700', color: theme.colors.textMuted, letterSpacing: 1.5, marginBottom: 4 },
+  title: { fontSize: 28, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 4 },
+  subtitle: { fontSize: 14, color: theme.colors.textSecondary, marginBottom: 8 },
+  helperNote: { fontSize: 12, color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 4, marginBottom: 20 },
 
   emptyContainer: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 20 },
   emptyIcon: { fontSize: 64, opacity: 0.3, marginBottom: 16 },
-  emptyTitle: { fontSize: 20, fontWeight: '800', color: T.t1, marginBottom: 8, textAlign: 'center' },
-  emptyText: { fontSize: 14, color: T.t2, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
-  shareBtn: { backgroundColor: T.blue, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 12 },
+  emptyTitle: { fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 8, textAlign: 'center' },
+  emptyText: { fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  shareBtn: { backgroundColor: theme.colors.primary, paddingVertical: 14, paddingHorizontal: 28, borderRadius: 12 },
   shareBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
 
   heroCard: { borderRadius: 20, padding: 24, marginBottom: 24 },
@@ -1088,25 +1096,25 @@ const styles = StyleSheet.create({
   heroChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 99 },
 
   destaquesContainer: { marginBottom: 24 },
-  destaquesTitle: { fontSize: 16, fontWeight: '800', color: T.t1, marginBottom: 12 },
+  destaquesTitle: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 12 },
   destaquesRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   destaqueCard: {
     flex: 1,
     minWidth: 150,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   destaqueIcon: { fontSize: 28, marginBottom: 8 },
-  destaqueLabel: { fontSize: 10, fontWeight: '700', color: T.t3, textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' },
-  destaqueValue: { fontSize: 13, fontWeight: '800', color: T.t1, textAlign: 'center' },
+  destaqueLabel: { fontSize: 10, fontWeight: '700', color: theme.colors.textMuted, textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' },
+  destaqueValue: { fontSize: 13, fontWeight: '800', color: theme.colors.textPrimary, textAlign: 'center' },
 
-  rankingTitle: { fontSize: 18, fontWeight: '800', color: T.t1, marginBottom: 16 },
+  rankingTitle: { fontSize: 18, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 16 },
 
-  rankCard: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
+  rankCard: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
   rankHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   rankMedal: { fontSize: 20, marginRight: 12, width: 28 },
   rankAvatar: {
@@ -1119,35 +1127,35 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   rankAvatarText: { fontSize: 14, fontWeight: '900', color: T.blue },
-  rankName: { fontSize: 16, fontWeight: '800', color: T.t1, marginBottom: 4 },
+  rankName: { fontSize: 16, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 4 },
   statusChip: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
 
   metricsRow: { flexDirection: 'row', marginBottom: 14 },
-  metricLabel: { fontSize: 12, fontWeight: '700', color: T.t2, marginBottom: 6 },
-  miniStatCaption: { fontSize: 10, fontWeight: '800', color: T.t3, letterSpacing: 0.4, marginBottom: 6, textTransform: 'uppercase' },
+  metricLabel: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 6 },
+  miniStatCaption: { fontSize: 10, fontWeight: '800', color: theme.colors.textMuted, letterSpacing: 0.4, marginBottom: 6, textTransform: 'uppercase' },
   miniStatGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   miniStatCol: { alignItems: 'center' },
-  miniStatLabel: { fontSize: 8, fontWeight: '700', color: T.t3, marginBottom: 1 },
-  miniStatNum: { fontSize: 13, fontWeight: '900', color: T.t1 },
-  miniProgressBar: { height: 6, backgroundColor: T.surface, borderRadius: 3, overflow: 'hidden' },
+  miniStatLabel: { fontSize: 8, fontWeight: '700', color: theme.colors.textMuted, marginBottom: 1 },
+  miniStatNum: { fontSize: 13, fontWeight: '900', color: theme.colors.textPrimary },
+  miniProgressBar: { height: 6, backgroundColor: theme.colors.card, borderRadius: 3, overflow: 'hidden' },
   miniProgressFill: { height: 6, borderRadius: 3 },
 
   sparklineRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  sparklineLabel: { fontSize: 11, color: T.t3, fontWeight: '600' },
+  sparklineLabel: { fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' },
 
-  rankFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: T.border, marginBottom: 12 },
-  footerText: { fontSize: 12, fontWeight: '700', color: T.t2 },
+  rankFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTopWidth: 1, borderTopColor: theme.colors.border, marginBottom: 12 },
+  footerText: { fontSize: 12, fontWeight: '700', color: theme.colors.textSecondary },
   atividadeBolinha: { width: 6, height: 6, borderRadius: 3 },
 
-  whatsappBtn: { backgroundColor: T.blue, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  whatsappBtn: { backgroundColor: theme.colors.primary, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   whatsappBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
 
-  monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: T.card, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: T.border },
-  monthSelectorText: { color: T.t1, fontSize: 16, fontWeight: '700', marginRight: 8 },
-  monthSelectorArrow: { color: T.blue, fontSize: 14, fontWeight: '700' },
-  monthPickerContainer: { backgroundColor: T.card, borderRadius: 10, padding: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border },
+  monthSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
+  monthSelectorText: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', marginRight: 8 },
+  monthSelectorArrow: { color: theme.colors.primary, fontSize: 14, fontWeight: '700' },
+  monthPickerContainer: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 8, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border },
   monthPickerItem: { padding: 10, borderRadius: 8 },
-  monthPickerItemActive: { backgroundColor: T.blue },
-  monthPickerItemText: { color: T.t2, fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  monthPickerItemTextActive: { color: '#000' },
+  monthPickerItemActive: { backgroundColor: theme.colors.primary },
+  monthPickerItemText: { color: theme.colors.textSecondary, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  monthPickerItemTextActive: { color: '#fff' },
 });

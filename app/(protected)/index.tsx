@@ -8,6 +8,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
 import { todayBR } from '../../utils/dateBR';
 import { getEffectiveRegistrationDate } from '../../utils/clientSort';
@@ -58,6 +59,7 @@ async function fetchAllActiveClients(
 }
 
 export default function Index() {
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -291,8 +293,8 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }

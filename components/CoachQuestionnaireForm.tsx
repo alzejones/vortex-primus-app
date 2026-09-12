@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { T } from "../utils/theme";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export interface CoachQuestionnaireData {
   grupo: string;
@@ -48,6 +48,9 @@ export function CoachQuestionnaireForm({
   onChange,
   onGoToAssessment,
 }: CoachQuestionnaireFormProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
+
   const handleChange = (field: keyof CoachQuestionnaireData, val: any) => {
     onChange({ ...value, [field]: val });
   };
@@ -90,7 +93,7 @@ export function CoachQuestionnaireForm({
           value={value.grupo}
           onChangeText={(v) => handleChange("grupo", v)}
           placeholder="Ex: Emagrecimento & Transformação corporal"
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
         />
       </View>
@@ -128,7 +131,7 @@ export function CoachQuestionnaireForm({
           value={value.objetivos_outros}
           onChangeText={(v) => handleChange("objetivos_outros", v)}
           placeholder="Descreva outros objetivos..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
         />
       </View>
@@ -143,7 +146,7 @@ export function CoachQuestionnaireForm({
           value={value.peso_bem_estar}
           onChangeText={(v) => handleChange("peso_bem_estar", v)}
           placeholder="Ex: 70kg"
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         <Text style={styles.label}>Qual foi o momento que começou a perceber que estava se afastando desse peso?</Text>
@@ -152,7 +155,7 @@ export function CoachQuestionnaireForm({
           value={value.momento_afastamento}
           onChangeText={(v) => handleChange("momento_afastamento", v)}
           placeholder="Descreva o momento..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
         />
@@ -163,7 +166,7 @@ export function CoachQuestionnaireForm({
           value={value.tamanho_roupa_feliz}
           onChangeText={(v) => handleChange("tamanho_roupa_feliz", v)}
           placeholder="Ex: M, 42, etc."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         <Text style={styles.label}>Quais as 3 partes do seu corpo que gostaria de melhorar? (E por quê?)</Text>
@@ -172,7 +175,7 @@ export function CoachQuestionnaireForm({
           value={value.partes_corpo_melhorar}
           onChangeText={(v) => handleChange("partes_corpo_melhorar", v)}
           placeholder="Ex: Barriga (porque quero usar roupas mais justas)..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
         />
@@ -183,7 +186,7 @@ export function CoachQuestionnaireForm({
           value={value.evento_planejado}
           onChangeText={(v) => handleChange("evento_planejado", v)}
           placeholder="Ex: Casamento, viagem, formatura..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
         <Text style={styles.label}>Tem alguma peça no seu guarda-roupa que você gostaria de usar novamente? (Por quê? Qual a cor? Qual o tamanho?)</Text>
@@ -192,7 +195,7 @@ export function CoachQuestionnaireForm({
           value={value.peca_guarda_roupa}
           onChangeText={(v) => handleChange("peca_guarda_roupa", v)}
           placeholder="Ex: Vestido preto tamanho 38, porque me sentia linda..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
         />
@@ -203,7 +206,7 @@ export function CoachQuestionnaireForm({
           value={value.maior_desafio_comida}
           onChangeText={(v) => handleChange("maior_desafio_comida", v)}
           placeholder="Ex: Não consigo resistir a doces..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
         />
@@ -222,7 +225,7 @@ export function CoachQuestionnaireForm({
           value={value.como_se_sentiria}
           onChangeText={(v) => handleChange("como_se_sentiria", v)}
           placeholder="Descreva como se sentiria..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
         />
@@ -233,7 +236,7 @@ export function CoachQuestionnaireForm({
           value={value.motivacao_atual}
           onChangeText={(v) => handleChange("motivacao_atual", v)}
           placeholder="Descreva sua motivação..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={3}
         />
@@ -356,7 +359,7 @@ export function CoachQuestionnaireForm({
               value={value.indicacoes[index]?.nome || ""}
               onChangeText={(v) => updateIndicacao(index, "nome", v)}
               placeholder="Nome completo"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <Text style={styles.indicacaoLabel}>Parentesco:</Text>
             <TextInput
@@ -364,7 +367,7 @@ export function CoachQuestionnaireForm({
               value={value.indicacoes[index]?.parentesco || ""}
               onChangeText={(v) => updateIndicacao(index, "parentesco", v)}
               placeholder="Ex: Amigo, irmã, primo..."
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <Text style={styles.indicacaoLabel}>WhatsApp:</Text>
             <TextInput
@@ -372,7 +375,7 @@ export function CoachQuestionnaireForm({
               value={value.indicacoes[index]?.whatsapp || ""}
               onChangeText={(v) => updateIndicacao(index, "whatsapp", v)}
               placeholder="(__) _____-____"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="phone-pad"
             />
           </View>
@@ -387,7 +390,7 @@ export function CoachQuestionnaireForm({
           value={value.notas}
           onChangeText={(v) => handleChange("notas", v)}
           placeholder="Anotações adicionais do coach..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           multiline
           numberOfLines={6}
           textAlignVertical="top"
@@ -397,23 +400,23 @@ export function CoachQuestionnaireForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   section: {
     marginBottom: 24,
     padding: 16,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "800",
-    color: T.white,
+    color: "#FFFFFF",
     backgroundColor: "#2E7D32",
     padding: 12,
     marginBottom: 16,
@@ -424,35 +427,35 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 8,
     marginTop: 4,
   },
   infoText: {
     fontSize: 14,
     lineHeight: 22,
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 12,
   },
   bold: {
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   hintText: {
     fontSize: 12,
     lineHeight: 18,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginBottom: 12,
     fontStyle: "italic",
   },
   input: {
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     padding: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     fontSize: 15,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   textArea: {
@@ -465,31 +468,31 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: T.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
     marginBottom: 8,
   },
   checkboxBtnActive: {
     backgroundColor: "rgba(33,150,243,0.08)",
-    borderColor: T.blue,
+    borderColor: theme.colors.primary,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: T.border,
-    backgroundColor: T.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
     marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   checkboxActive: {
-    backgroundColor: T.blue,
-    borderColor: T.blue,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   checkboxCheck: {
-    color: T.white,
+    color: '#fff',
     fontSize: 16,
     fontWeight: "700",
   },
@@ -497,10 +500,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   checkboxTextActive: {
-    color: T.t1,
+    color: '#fff',
   },
   scaleRow: {
     flexDirection: "row",
@@ -513,53 +516,53 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: T.border,
-    backgroundColor: T.surface,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.card,
     alignItems: "center",
     justifyContent: "center",
   },
   scaleBtnActive: {
-    backgroundColor: T.blue,
-    borderColor: T.blue,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   scaleBtnText: {
     fontSize: 16,
     fontWeight: "700",
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   scaleBtnTextActive: {
-    color: T.white,
+    color: '#fff',
   },
   assessmentBtn: {
-    backgroundColor: T.blue,
+    backgroundColor: theme.colors.primary,
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 8,
   },
   assessmentBtnText: {
-    color: T.white,
+    color: theme.colors.textPrimary,
     fontSize: 16,
     fontWeight: "800",
   },
   indicacaoCard: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     padding: 12,
     borderRadius: 10,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   indicacaoTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   indicacaoLabel: {
     fontSize: 11,
     fontWeight: "600",
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginBottom: 4,
     marginTop: 4,
   },

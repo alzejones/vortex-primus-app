@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -21,6 +22,7 @@ import BluetoothScaleConnector from "../../components/BluetoothScaleConnector";
 export default function AnthropometryForm() {
   const { assessment_id, client_id } = useLocalSearchParams();
   const router = useRouter();
+  const { theme } = useTheme();
 
   const assessmentId = assessment_id as string;
   const clientId = client_id as string;
@@ -235,28 +237,31 @@ export default function AnthropometryForm() {
   }
 
   function renderInput(label: string, key: keyof typeof form) {
+    const styles = createStyles(theme);
     return (
       <View style={{ marginBottom: 14 }}>
-        <Text style={{ marginBottom: 4, fontWeight: "600", color: T.t2 }}>{label}</Text>
+        <Text style={{ marginBottom: 4, fontWeight: "600", color: theme.colors.textSecondary }}>{label}</Text>
         <TextInput
           style={styles.input}
           keyboardType="numeric"
           value={form[key]}
           onChangeText={(text) => setForm({ ...form, [key]: text })}
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
         />
       </View>
     );
   }
 
+  const styles = createStyles(theme);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
 
-          <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: T.border }}>
-            <Text style={{ fontSize: 24, fontWeight: "900", color: T.t1 }}>Avaliação Corporal</Text>
-            <Text style={{ fontSize: 14, color: T.t3, marginTop: 4 }}>Preencha os dados da bioimpedância ou fita métrica.</Text>
+          <View style={{ marginBottom: 24, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+            <Text style={{ fontSize: 24, fontWeight: "900", color: theme.colors.textPrimary }}>Avaliação Corporal</Text>
+            <Text style={{ fontSize: 14, color: theme.colors.textMuted, marginTop: 4 }}>Preencha os dados da bioimpedância ou fita métrica.</Text>
           </View>
 
           <BluetoothScaleConnector 
@@ -329,32 +334,32 @@ export default function AnthropometryForm() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 16,
     borderRadius: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: "800",
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 16,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   row: { flexDirection: "row", justifyContent: "space-between" },
   input: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     padding: 12,
     borderRadius: 8,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   aiBtn: { borderRadius: 12, overflow: "hidden", marginBottom: 24 },
   aiBtnGradient: {

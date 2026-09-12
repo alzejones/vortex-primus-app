@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -61,6 +62,8 @@ interface KitItem {
 }
 
 export default function HerbalifeKits() {
+  const { theme } = useTheme();
+  const s = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -366,14 +369,14 @@ export default function HerbalifeKits() {
 
   if (loading) {
     return (
-      <View style={[s.center, { backgroundColor: T.bg }]}>
+      <View style={[s.center, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={T.blue} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <View style={{ padding: 16, paddingBottom: 0 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -704,20 +707,21 @@ export default function HerbalifeKits() {
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => {
+  const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  pageTitle: { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 12 },
-  empty: { color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
+  pageTitle: { fontSize: 28, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 12 },
+  empty: { color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
   kitCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
   },
-  kitName: { color: T.t1, fontWeight: '700', fontSize: 15 },
-  kitPrice: { color: T.t2, fontSize: 13, marginTop: 2 },
+  kitName: { color: theme.colors.textPrimary, fontWeight: '700', fontSize: 15 },
+  kitPrice: { color: theme.colors.textSecondary, fontSize: 13, marginTop: 2 },
   badgeGlobal: {
     backgroundColor: 'rgba(59,130,246,0.15)',
     paddingHorizontal: 8,
@@ -726,18 +730,18 @@ const s = StyleSheet.create({
   },
   badgeGlobalTxt: { color: T.blue, fontSize: 10, fontWeight: '800' },
   toggleBtn: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   toggleBtnActive: {
     backgroundColor: T.blue + '22',
     borderColor: T.blue,
   },
-  toggleTxt: { color: T.t2, fontSize: 12, fontWeight: '700' },
+  toggleTxt: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700' },
   toggleTxtActive: { color: T.blue },
   fabContainer: {
     position: 'absolute',
@@ -768,50 +772,52 @@ const s = StyleSheet.create({
     borderColor: '#ef4444',
   },
   editIconBtn: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     width: 36,
     height: 36,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-  modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
-  modalTitle: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 14 },
-  label: { color: '#999', fontSize: 12, marginBottom: 4, marginTop: 8 },
-  input: { backgroundColor: '#242424', borderRadius: 10, padding: 12, color: '#FFF', marginBottom: 10 },
-  emptyProducts: { color: '#777', fontStyle: 'italic', fontSize: 12, marginBottom: 8 },
+  modalBox: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, maxHeight: '85%', borderWidth: 1, borderColor: theme.colors.border },
+  modalTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+  label: { color: theme.colors.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 },
+  input: { backgroundColor: theme.colors.background, borderRadius: 10, padding: 12, color: theme.colors.textPrimary, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.border },
+  emptyProducts: { color: theme.colors.textMuted, fontStyle: 'italic', fontSize: 12, marginBottom: 8 },
   productRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#242424',
+    backgroundColor: theme.colors.background,
     borderRadius: 8,
     padding: 10,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  productName: { color: '#DDD', fontSize: 13, fontWeight: '600' },
+  productName: { color: theme.colors.textPrimary, fontSize: 13, fontWeight: '600' },
   dosesInput: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.colors.card,
     borderRadius: 6,
     padding: 8,
-    color: '#FFF',
+    color: theme.colors.textPrimary,
     width: 60,
     textAlign: 'center',
     borderWidth: 1,
-    borderColor: '#444',
+    borderColor: theme.colors.border,
   },
-  addProductBtn: { backgroundColor: '#242424', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4 },
+  addProductBtn: { backgroundColor: theme.colors.background, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4, borderWidth: 1, borderColor: theme.colors.border },
   addProductTxt: { color: T.blue, fontWeight: '700' },
   inline: { flexDirection: 'row', marginTop: 16, gap: 8 },
   btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center' },
   btnTxt: { color: '#000', fontWeight: '700' },
-  btnGhost: { backgroundColor: '#242424' },
-  btnGhostTxt: { color: '#AAA', fontWeight: '600' },
-  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
-  pickerTxt: { color: '#DDD' },
+  btnGhost: { backgroundColor: theme.colors.background, borderWidth: 1, borderColor: theme.colors.border },
+  btnGhostTxt: { color: theme.colors.textSecondary, fontWeight: '600' },
+  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  pickerTxt: { color: theme.colors.textPrimary },
   typeSelector: {
     flexDirection: 'row',
     gap: 8,
@@ -819,19 +825,19 @@ const s = StyleSheet.create({
   },
   typeOption: {
     flex: 1,
-    backgroundColor: '#242424',
+    backgroundColor: theme.colors.background,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#242424',
+    borderColor: theme.colors.border,
   },
   typeOptionActive: {
     backgroundColor: T.blue + '22',
     borderColor: T.blue,
   },
   typeOptionTxt: {
-    color: '#AAA',
+    color: theme.colors.textMuted,
     fontWeight: '600',
     fontSize: 13,
   },
@@ -857,24 +863,24 @@ const s = StyleSheet.create({
     height: 20,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: theme.colors.border,
     marginRight: 8,
   },
   checkTxt: {
-    color: '#DDD',
+    color: theme.colors.textPrimary,
     fontSize: 13,
   },
   inputDisabled: {
     opacity: 0.5,
   },
   sectionTitle: {
-    color: T.t1,
+    color: theme.colors.textPrimary,
     fontSize: 20,
     fontWeight: '800',
     marginBottom: 12,
   },
   extraIngredients: {
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontSize: 11,
     fontStyle: 'italic',
     marginTop: 2,
@@ -889,11 +895,13 @@ const s = StyleSheet.create({
     height: 16,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: theme.colors.border,
     marginRight: 6,
   },
   flavorCheckTxt: {
-    color: '#AAA',
+    color: theme.colors.textMuted,
     fontSize: 11,
   },
 });
+  return s;
+};

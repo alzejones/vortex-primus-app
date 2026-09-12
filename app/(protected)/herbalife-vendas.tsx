@@ -5,13 +5,14 @@
 import { useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { T } from '../../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import VendasContent from '../../components/business/VendasContent';
 
 export default function HerbalifeVendasRoute() {
   const { client_id } = useLocalSearchParams();
+  const { theme } = useTheme();
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }} edges={['top']}>
       <VendasContent prefillClientId={client_id as string} />
     </SafeAreaView>
   );

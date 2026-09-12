@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Dimensions } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { T } from "../utils/theme";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface Props {
   chartAssessments: any[];
@@ -24,6 +24,7 @@ const TRUNK_LABELS = {
 };
 
 export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, chartWidth }: Props) {
+  const { theme } = useTheme();
   const trunkAssessments = (chartAssessments || []).filter((a: any) => {
     const t = a.anthropometry?.[0];
     if (!t) return false;
@@ -77,16 +78,16 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
       style={{
         marginBottom: 20,
         alignItems: "center",
-        backgroundColor: T.card,
+        backgroundColor: theme.colors.card,
         borderRadius: 10,
         padding: 10,
         borderWidth: 1,
-        borderColor: T.border,
+        borderColor: theme.colors.border,
       }}
     >
       <Text
         style={{
-          color: T.t1,
+          color: theme.colors.textPrimary,
           fontWeight: "bold",
           fontSize: 14,
           marginBottom: 4,
@@ -98,7 +99,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
       </Text>
       <View
         style={{
-          backgroundColor: T.bgAlt,
+          backgroundColor: theme.colors.background,
           paddingVertical: 20,
           paddingHorizontal: 10,
           borderRadius: 16,
@@ -160,7 +161,7 @@ export default function TrunkMeasurementsChart({ chartAssessments, chartLabels, 
                   marginRight: 6,
                 }}
               />
-              <Text style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "600" }}>
+              <Text style={{ color: theme.colors.textPrimary, fontSize: 12, fontWeight: "600" }}>
                 {TRUNK_LABELS[key]}
               </Text>
             </View>

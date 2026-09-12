@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import MacroBar from "../../components/MacroBar";
 import MealCard, { MealItem } from "../../components/MealCard";
 import AIDietPDF from "../../components/AIDietPDF";
@@ -21,7 +22,6 @@ import DietPlanPDF from "../../components/DietPlanPDF";
 import ScienceReferencesModal from "../../components/ScienceReferencesModal";
 import { supabase } from "../../lib/supabase";
 import { GradientSuccess } from "../../utils/gradients";
-import { T } from "../../utils/theme";
 import {
   ACTIVITY_LABELS,
   ActivityLevel,
@@ -69,6 +69,7 @@ function sumMacros(foods: { calories: number | null; protein: number | null; car
 }
 
 export default function ClientDietView() {
+  const { theme } = useTheme();
   const { session, signOut } = useAuth();
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
@@ -301,10 +302,12 @@ export default function ClientDietView() {
     }
   }
 
+  const s = styles(theme);
+
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={T.green} />
+      <View style={s.center}>
+        <ActivityIndicator size="large" color="#22c55e" />
       </View>
     );
   }
@@ -313,40 +316,40 @@ export default function ClientDietView() {
   const planTotals = sumMacros(allFoods);
 
   return (
-    <View style={[{ flex: 1, backgroundColor: T.bg }, { alignItems: isDesktop ? 'center' : undefined }]}>
+    <View style={[{ flex: 1, backgroundColor: theme.colors.background }, { alignItems: isDesktop ? 'center' : undefined }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
         <ScrollView 
-          style={styles.container} 
+          style={s.container} 
           contentContainerStyle={{ paddingBottom: isDesktop ? 100 : 160 }}
           showsVerticalScrollIndicator={true}
         >
 
       {/* Cabeçalho */}
-      <View style={styles.header}>
+      <View style={s.header}>
         <View>
-          <Text style={styles.greeting}>Olá,</Text>
-          <Text style={styles.name}>{clientName || "Aluno"}</Text>
+          <Text style={s.greeting}>Olá,</Text>
+          <Text style={s.name}>{clientName || "Aluno"}</Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
-          <Text style={styles.logoutText}>Sair</Text>
+        <TouchableOpacity style={s.logoutBtn} onPress={signOut}>
+          <Text style={s.logoutText}>Sair</Text>
         </TouchableOpacity>
       </View>
 
       {/* Botão Fazer Pedido */}
       <TouchableOpacity
-        style={styles.orderBtn}
+        style={s.orderBtn}
         onPress={() => router.push("/pedido" as any)}
         activeOpacity={0.85}
       >
-        <LinearGradient {...GradientSuccess} style={styles.orderBtnGradient}>
-          <Text style={styles.orderBtnText}>🥤 Fazer Pedido</Text>
+        <LinearGradient {...GradientSuccess} style={s.orderBtnGradient}>
+          <Text style={s.orderBtnText}>🥤 Fazer Pedido</Text>
         </LinearGradient>
       </TouchableOpacity>
 
       {/* Mensagem de status */}
       {statusMsg.text !== "" && (
-        <View style={[styles.statusBox, statusMsg.type === "error" ? styles.statusError : styles.statusSuccess]}>
-          <Text style={[styles.statusText, statusMsg.type === "error" ? styles.statusTextError : styles.statusTextSuccess]}>
+        <View style={[s.statusBox, statusMsg.type === "error" ? s.statusError : s.statusSuccess]}>
+          <Text style={[s.statusText, statusMsg.type === "error" ? s.statusTextError : s.statusTextSuccess]}>
             {statusMsg.type === "error" ? "⚠️ " : "✅ "}{statusMsg.text}
           </Text>
         </View>
@@ -354,34 +357,34 @@ export default function ClientDietView() {
 
       {/* Card Última Avaliação Corporal */}
       {lastBio !== null ? (
-        <View style={styles.macroCard}>
-          <Text style={styles.macroCardTitle}>Última Avaliação Corporal</Text>
-          <View style={styles.macroRow}>
+        <View style={s.macroCard}>
+          <Text style={s.macroCardTitle}>Última Avaliação Corporal</Text>
+          <View style={s.macroRow}>
             {[
               { label: "Peso",         value: Number(lastBio.weight).toFixed(1),
-                unit: "kg",   color: T.t2 },
+                unit: "kg",   color: theme.colors.textSecondary },
               { label: "% Gordura",    value: Number(lastBio.body_fat).toFixed(1),
-                unit: "%",    color: T.red },
+                unit: "%",    color: "#ef4444" },
               { label: "% Músculo",    value: lastBio.muscle_mass_percentage != null
                                                ? Number(lastBio.muscle_mass_percentage).toFixed(1) : "—",
                 unit: lastBio.muscle_mass_percentage != null ? "%" : "",
-                color: T.blue },
+                color: "#3b82f6" },
               { label: "Metab. Basal", value: lastBio.basal_metabolic_rate != null
                                                ? Number(lastBio.basal_metabolic_rate).toFixed(1) : "—",
                 unit: lastBio.basal_metabolic_rate != null ? "kcal" : "",
-                color: T.green },
+                color: "#22c55e" },
             ].map((item) => (
-              <View key={item.label} style={[styles.macroChip, { borderTopColor: item.color }]}>
-                <Text style={[styles.macroChipValue, { color: item.color }]}>{item.value}</Text>
-                <Text style={styles.macroChipUnit}>{item.unit}</Text>
-                <Text style={styles.macroChipLabel}>{item.label}</Text>
+              <View key={item.label} style={[s.macroChip, { borderTopColor: item.color }]}>
+                <Text style={[s.macroChipValue, { color: item.color }]}>{item.value}</Text>
+                <Text style={s.macroChipUnit}>{item.unit}</Text>
+                <Text style={s.macroChipLabel}>{item.label}</Text>
               </View>
             ))}
           </View>
         </View>
       ) : (
-        <View style={[styles.macroCard, { backgroundColor: T.blueGlow, borderColor: T.borderActive }]}>
-          <Text style={{ color: T.blue, fontSize: 13, fontWeight: "600", lineHeight: 20, textAlign: "center" }}>
+        <View style={[s.macroCard, { backgroundColor: "rgba(59,130,246,0.1)", borderColor: "#3b82f6" }]}>
+          <Text style={{ color: "#3b82f6", fontSize: 13, fontWeight: "600", lineHeight: 20, textAlign: "center" }}>
             Entre em contato com seu treinador para fazer sua avaliação de Composição Corporal.
           </Text>
         </View>
@@ -389,29 +392,29 @@ export default function ClientDietView() {
 
       {/* Card de Macros */}
       {dietResult ? (
-        <View style={styles.macroCard}>
-          <Text style={styles.macroCardTitle}>Suas Metas Diárias</Text>
-          <View style={styles.macroRow}>
+        <View style={s.macroCard}>
+          <Text style={s.macroCardTitle}>Suas Metas Diárias</Text>
+          <View style={s.macroRow}>
             {[
-              { label: "Calorias", value: dietResult.macros.calories, unit: "kcal", color: T.green },
-              { label: "Proteína", value: dietResult.macros.protein,  unit: "g",    color: T.blue },
-              { label: "Carbs",    value: dietResult.macros.carbs,    unit: "g",    color: T.orange },
-              { label: "Gordura",  value: dietResult.macros.fat,      unit: "g",    color: T.red },
+              { label: "Calorias", value: dietResult.macros.calories, unit: "kcal", color: "#22c55e" },
+              { label: "Proteína", value: dietResult.macros.protein,  unit: "g",    color: "#3b82f6" },
+              { label: "Carbs",    value: dietResult.macros.carbs,    unit: "g",    color: "#fb923c" },
+              { label: "Gordura",  value: dietResult.macros.fat,      unit: "g",    color: "#ef4444" },
             ].map((m) => (
-              <View key={m.label} style={[styles.macroChip, { borderTopColor: m.color }]}>
-                <Text style={[styles.macroChipValue, { color: m.color }]}>{Number(m.value).toFixed(1)}</Text>
-                <Text style={styles.macroChipUnit}>{m.unit}</Text>
-                <Text style={styles.macroChipLabel}>{m.label}</Text>
+              <View key={m.label} style={[s.macroChip, { borderTopColor: m.color }]}>
+                <Text style={[s.macroChipValue, { color: m.color }]}>{Number(m.value).toFixed(1)}</Text>
+                <Text style={s.macroChipUnit}>{m.unit}</Text>
+                <Text style={s.macroChipLabel}>{m.label}</Text>
               </View>
             ))}
           </View>
-          <Text style={styles.macroSub}>
+          <Text style={s.macroSub}>
             BMR {Number(dietResult.bmr).toFixed(1)} kcal · TDEE {Number(dietResult.tdee).toFixed(1)} kcal · Objetivo: {OBJECTIVE_LABELS[objective as Objective] ?? "—"}
           </Text>
         </View>
       ) : (
-        <View style={[styles.macroCard, { backgroundColor: T.bgAlt, borderColor: T.border }]}>
-          <Text style={{ color: T.orange, fontSize: 13, fontWeight: "600", lineHeight: 20 }}>
+        <View style={[s.macroCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <Text style={{ color: "#fb923c", fontSize: 13, fontWeight: "600", lineHeight: 20 }}>
             Configure seu objetivo e nível de atividade abaixo para ver suas metas calóricas.
           </Text>
         </View>
@@ -423,43 +426,43 @@ export default function ClientDietView() {
       {lastBio !== null && (
         <>
           {aiError !== "" && (
-            <View style={[styles.macroCard, { backgroundColor: "rgba(239,68,68,0.1)", borderColor: T.red, marginBottom: 12 }]}>
-              <Text style={{ color: T.red, fontSize: 13, fontWeight: "600" }}>⚠️ {aiError}</Text>
+            <View style={[s.macroCard, { backgroundColor: "rgba(239,68,68,0.1)", borderColor: "#ef4444", marginBottom: 12 }]}>
+              <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "600" }}>⚠️ {aiError}</Text>
             </View>
           )}
           <TouchableOpacity
-            style={[styles.aiBtn, (!dietResult || generatingAI) && { opacity: 0.5 }]}
+            style={[s.aiBtn, (!dietResult || generatingAI) && { opacity: 0.5 }]}
             onPress={handleGenerateAI}
             disabled={!dietResult || generatingAI}
           >
-            <Text style={styles.aiBtnText}>✨ Gerar Plano com IA</Text>
+            <Text style={s.aiBtnText}>✨ Gerar Plano com IA</Text>
           </TouchableOpacity>
         </>
       )}
 
       {/* Modal IA */}
       <Modal visible={showAIModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalBox}>
             {!aiResult ? (
-              <View style={styles.modalLoadingBox}>
+              <View style={s.modalLoadingBox}>
                 <ActivityIndicator size="large" color="#D4AF37" />
-                <Text style={styles.modalLoadingText}>A IA está criando seu plano personalizado...</Text>
-                <Text style={styles.modalLoadingSub}>Isso pode levar alguns segundos</Text>
+                <Text style={s.modalLoadingText}>A IA está criando seu plano personalizado...</Text>
+                <Text style={s.modalLoadingSub}>Isso pode levar alguns segundos</Text>
               </View>
             ) : (
               <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={styles.modalTitle}>✨ Seu Plano Gerado pela IA</Text>
+                <Text style={s.modalTitle}>✨ Seu Plano Gerado pela IA</Text>
                 {aiResult.plan.observations ? (
-                  <View style={styles.modalObsBox}>
-                    <Text style={styles.modalObsText}>{aiResult.plan.observations}</Text>
+                  <View style={s.modalObsBox}>
+                    <Text style={s.modalObsText}>{aiResult.plan.observations}</Text>
                   </View>
                 ) : null}
-                <Text style={styles.modalDaysTitle}>Resumo por dia</Text>
+                <Text style={s.modalDaysTitle}>Resumo por dia</Text>
                 {aiResult.plan.days.map((day) => (
-                  <View key={day.day} style={styles.modalDayRow}>
-                    <Text style={styles.modalDayLabel}>{day.label}</Text>
-                    <Text style={styles.modalDayKcal}>{day.total_calories} kcal</Text>
+                  <View key={day.day} style={s.modalDayRow}>
+                    <Text style={s.modalDayLabel}>{day.label}</Text>
+                    <Text style={s.modalDayKcal}>{day.total_calories} kcal</Text>
                   </View>
                 ))}
                 <View style={{ marginTop: 16 }}>
@@ -476,8 +479,8 @@ export default function ClientDietView() {
                     }}
                   />
                 </View>
-                <Pressable style={styles.modalCloseBtn} onPress={() => setShowAIModal(false)}>
-                  <Text style={styles.modalCloseBtnText}>Fechar</Text>
+                <Pressable style={s.modalCloseBtn} onPress={() => setShowAIModal(false)}>
+                  <Text style={s.modalCloseBtnText}>Fechar</Text>
                 </Pressable>
               </ScrollView>
             )}
@@ -488,31 +491,31 @@ export default function ClientDietView() {
       {/* Plano Alimentar */}
       {lastBio !== null && mealPlan ? (
         <View style={{ marginBottom: 8 }}>
-          <View style={styles.planHeader}>
-            <Text style={styles.planTitle}>{mealPlan.title}</Text>
+          <View style={s.planHeader}>
+            <Text style={s.planTitle}>{mealPlan.title}</Text>
           </View>
           {mealPlan.notes ? (
-            <Text style={styles.planNotes}>{mealPlan.notes}</Text>
+            <Text style={s.planNotes}>{mealPlan.notes}</Text>
           ) : null}
-          <Text style={{ fontSize: 10, color: T.t3, fontStyle: "italic", marginBottom: 10 }}>
+          <Text style={{ fontSize: 10, color: theme.colors.textMuted, fontStyle: "italic", marginBottom: 10 }}>
             Conteúdo gerado com apoio de IA, com finalidade educacional. Não substitui consulta com nutricionista.
           </Text>
 
           {allFoods.length > 0 && dietResult && (
-            <View style={styles.macroBarsCard}>
-              <Text style={styles.macroBarsTitle}>Plano vs Meta</Text>
-              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color={T.green} />
-              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color={T.blue} />
-              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color={T.orange} />
-              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color={T.red} />
+            <View style={s.macroBarsCard}>
+              <Text style={s.macroBarsTitle}>Plano vs Meta</Text>
+              <MacroBar label="Calorias" current={planTotals.calories} target={dietResult.macros.calories} unit="kcal" color="#22c55e" />
+              <MacroBar label="Proteína" current={planTotals.protein}  target={dietResult.macros.protein}  unit="g"    color="#3b82f6" />
+              <MacroBar label="Carbs"    current={planTotals.carbs}    target={dietResult.macros.carbs}    unit="g"    color="#fb923c" />
+              <MacroBar label="Gordura"  current={planTotals.fat}      target={dietResult.macros.fat}      unit="g"    color="#ef4444" />
             </View>
           )}
 
           <TouchableOpacity
-            style={styles.editBtn}
+            style={s.editBtn}
             onPress={() => router.push(`/(client)/diet-plan-form?plan_id=${mealPlan.id}` as any)}
           >
-            <Text style={styles.editBtnText}>✏️ Editar Plano Alimentar</Text>
+            <Text style={s.editBtnText}>✏️ Editar Plano Alimentar</Text>
           </TouchableOpacity>
           <DietPlanPDF
             data={{
@@ -528,14 +531,14 @@ export default function ClientDietView() {
           ))}
         </View>
       ) : lastBio !== null ? (
-        <View style={styles.emptyPlan}>
-          <Text style={styles.emptyPlanText}>Nenhum plano disponível ainda.</Text>
+        <View style={s.emptyPlan}>
+          <Text style={s.emptyPlanText}>Nenhum plano disponível ainda.</Text>
           <TouchableOpacity
-            style={styles.createBtn}
+            style={s.createBtn}
             onPress={() => router.push("/(client)/diet-plan-form" as any)}
           >
-            <LinearGradient {...GradientSuccess} style={styles.createBtnGradient}>
-              <Text style={styles.createBtnText}>+ Criar Plano Alimentar</Text>
+            <LinearGradient {...GradientSuccess} style={s.createBtnGradient}>
+              <Text style={s.createBtnText}>+ Criar Plano Alimentar</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -543,23 +546,23 @@ export default function ClientDietView() {
 
       {/* Histórico de Refeições Registradas */}
       {mealLogs.length > 0 && (
-        <View style={[styles.prefCard, { marginTop: 16 }]}>
-          <Text style={styles.prefTitle}>📖 Diário Alimentar</Text>
-          <Text style={styles.prefSub}>Últimas 10 refeições analisadas por foto.</Text>
+        <View style={[s.prefCard, { marginTop: 16 }]}>
+          <Text style={s.prefTitle}>📖 Diário Alimentar</Text>
+          <Text style={s.prefSub}>Últimas 10 refeições analisadas por foto.</Text>
           {mealLogs.map((log) => {
             const dt = new Date(log.consumed_at);
             const dateStr = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
             const timeStr = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
             return (
-              <View key={log.id} style={styles.mealLogCard}>
-                <View style={styles.mealLogHeader}>
-                  <Text style={styles.mealLogDate}>{dateStr} {timeStr}</Text>
-                  {log.meal_type ? <Text style={styles.mealLogType}>{log.meal_type}</Text> : null}
+              <View key={log.id} style={s.mealLogCard}>
+                <View style={s.mealLogHeader}>
+                  <Text style={s.mealLogDate}>{dateStr} {timeStr}</Text>
+                  {log.meal_type ? <Text style={s.mealLogType}>{log.meal_type}</Text> : null}
                 </View>
-                <Text style={styles.mealLogMacros}>
+                <Text style={s.mealLogMacros}>
                   {Number(log.total_calories ?? 0).toFixed(0)} kcal · P {Number(log.total_protein ?? 0).toFixed(1)}g · C {Number(log.total_carbs ?? 0).toFixed(1)}g · G {Number(log.total_fat ?? 0).toFixed(1)}g
                 </Text>
-                {log.notes ? <Text style={styles.mealLogNotes}>{log.notes}</Text> : null}
+                {log.notes ? <Text style={s.mealLogNotes}>{log.notes}</Text> : null}
               </View>
             );
           })}
@@ -567,52 +570,52 @@ export default function ClientDietView() {
       )}
 
       {/* Seção de Preferências */}
-      <View style={styles.prefCard}>
-        <Text style={styles.prefTitle}>Minhas Preferências</Text>
-        <Text style={styles.prefSub}>Atualize seu objetivo e estilo de vida para recalcular suas metas.</Text>
+      <View style={s.prefCard}>
+        <Text style={s.prefTitle}>Minhas Preferências</Text>
+        <Text style={s.prefSub}>Atualize seu objetivo e estilo de vida para recalcular suas metas.</Text>
 
-        <Text style={styles.label}>Objetivo</Text>
+        <Text style={s.label}>Objetivo</Text>
         {(Object.keys(OBJECTIVE_LABELS) as Objective[]).map((key) => (
           <TouchableOpacity
             key={key}
-            style={[styles.optionBtn, objective === key && styles.optionBtnActive]}
+            style={[s.optionBtn, objective === key && s.optionBtnActive]}
             onPress={() => setObjective(key)}
           >
-            <Text style={[styles.optionBtnText, objective === key && styles.optionBtnTextActive]}>
+            <Text style={[s.optionBtnText, objective === key && s.optionBtnTextActive]}>
               {OBJECTIVE_LABELS[key]}
             </Text>
           </TouchableOpacity>
         ))}
 
-        <Text style={[styles.label, { marginTop: 12 }]}>Nível de Atividade</Text>
+        <Text style={[s.label, { marginTop: 12 }]}>Nível de Atividade</Text>
         {(Object.keys(ACTIVITY_LABELS) as ActivityLevel[]).map((key) => (
           <TouchableOpacity
             key={key}
-            style={[styles.optionBtn, activityLevel === key && styles.optionBtnActive]}
+            style={[s.optionBtn, activityLevel === key && s.optionBtnActive]}
             onPress={() => setActivityLevel(key)}
           >
-            <Text style={[styles.optionBtnText, activityLevel === key && styles.optionBtnTextActive]}>
+            <Text style={[s.optionBtnText, activityLevel === key && s.optionBtnTextActive]}>
               {ACTIVITY_LABELS[key]}
             </Text>
           </TouchableOpacity>
         ))}
 
-        <Text style={[styles.label, { marginTop: 12 }]}>Restrições Alimentares</Text>
+        <Text style={[s.label, { marginTop: 12 }]}>Restrições Alimentares</Text>
         <TextInput
-          style={[styles.input, { height: 80, textAlignVertical: "top" }]}
+          style={[s.input, { height: 80, textAlignVertical: "top" }]}
           value={foodRestrictions}
           onChangeText={setFoodRestrictions}
           multiline
           numberOfLines={3}
           placeholder="Ex: intolerância à lactose, alergia a amendoim..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
         />
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSavePreferences} disabled={saving}>
-          <LinearGradient {...GradientSuccess} style={styles.saveBtnGradient}>
+        <TouchableOpacity style={s.saveBtn} onPress={handleSavePreferences} disabled={saving}>
+          <LinearGradient {...GradientSuccess} style={s.saveBtnGradient}>
             {saving
-              ? <ActivityIndicator color={T.white} />
-              : <Text style={styles.saveBtnText}>SALVAR PREFERÊNCIAS</Text>
+              ? <ActivityIndicator color="#ffffff" />
+              : <Text style={s.saveBtnText}>SALVAR PREFERÊNCIAS</Text>
             }
           </LinearGradient>
         </TouchableOpacity>
@@ -623,12 +626,12 @@ export default function ClientDietView() {
         {/* FAB de câmera — só aparece se lastBio existir */}
         {lastBio !== null && (
           <TouchableOpacity
-            style={[styles.fab, isDesktop && styles.fabDesktop]}
+            style={[s.fab, isDesktop && s.fabDesktop]}
             onPress={() => router.push("/(client)/meal-capture" as any)}
             activeOpacity={0.85}
           >
-            <LinearGradient {...GradientSuccess} style={styles.fabGradient}>
-              <Text style={styles.fabIcon}>📷</Text>
+            <LinearGradient {...GradientSuccess} style={s.fabGradient}>
+              <Text style={s.fabIcon}>📷</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
@@ -637,97 +640,95 @@ export default function ClientDietView() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 16 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
 
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  greeting: { fontSize: 14, color: T.t3, fontWeight: "600" },
-  name: { fontSize: 26, fontWeight: "800", color: T.t1 },
-  logoutBtn: { backgroundColor: T.surfaceAlt, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: T.border },
-  logoutText: { fontWeight: "700", color: T.t2, fontSize: 13 },
+  greeting: { fontSize: 14, color: theme.colors.textMuted, fontWeight: "600" },
+  name: { fontSize: 26, fontWeight: "800", color: theme.colors.textPrimary },
+  logoutBtn: { backgroundColor: theme.colors.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: theme.colors.border },
+  logoutText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 13 },
 
   orderBtn: { borderRadius: 14, overflow: "hidden", marginBottom: 16 },
   orderBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
-  orderBtnText: { color: T.white, fontWeight: "800", fontSize: 16 },
+  orderBtnText: { color: "#ffffff", fontWeight: "800", fontSize: 16 },
 
   statusBox: { padding: 12, borderRadius: 10, marginBottom: 14, borderWidth: 1 },
-  statusError: { backgroundColor: "rgba(239,68,68,0.1)", borderColor: T.red },
-  statusSuccess: { backgroundColor: "rgba(16,185,129,0.1)", borderColor: T.green },
+  statusError: { backgroundColor: "rgba(239,68,68,0.1)", borderColor: "#ef4444" },
+  statusSuccess: { backgroundColor: "rgba(16,185,129,0.1)", borderColor: "#22c55e" },
   statusText: { fontWeight: "bold", fontSize: 14 },
-  statusTextError: { color: T.red },
-  statusTextSuccess: { color: T.green },
+  statusTextError: { color: "#ef4444" },
+  statusTextSuccess: { color: "#22c55e" },
 
-  macroCard: { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
-  macroCardTitle: { fontSize: 13, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  macroCard: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
+  macroCardTitle: { fontSize: 13, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
   macroRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },
-  macroChip: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: T.surfaceAlt },
+  macroChip: { flex: 1, alignItems: "center", borderTopWidth: 3, paddingTop: 8, marginHorizontal: 3, borderRadius: 8, backgroundColor: theme.colors.card },
   macroChipValue: { fontSize: 20, fontWeight: "800" },
-  macroChipUnit: { fontSize: 11, color: T.t3 },
-  macroChipLabel: { fontSize: 11, color: T.t2, fontWeight: "600", marginTop: 2 },
-  macroSub: { fontSize: 11, color: T.t3, textAlign: "center" },
+  macroChipUnit: { fontSize: 11, color: theme.colors.textMuted },
+  macroChipLabel: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: "600", marginTop: 2 },
+  macroSub: { fontSize: 11, color: theme.colors.textMuted, textAlign: "center" },
 
   planHeader: { marginBottom: 4 },
-  planTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  planNotes: { fontSize: 12, color: T.t3, marginBottom: 10 },
+  planTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  planNotes: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 10 },
 
-  macroBarsCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: T.border },
-  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  macroBarsCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.border },
+  macroBarsTitle: { fontSize: 11, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
 
-  emptyPlan: { alignItems: "center", padding: 32, backgroundColor: T.card, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: T.border },
-  emptyPlanText: { color: T.t2, fontSize: 15, fontWeight: "700", marginBottom: 6 },
+  emptyPlan: { alignItems: "center", padding: 32, backgroundColor: theme.colors.card, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
+  emptyPlanText: { color: theme.colors.textSecondary, fontSize: 15, fontWeight: "700", marginBottom: 6 },
 
   createBtn: { borderRadius: 14, overflow: "hidden", marginTop: 12 },
   createBtnGradient: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 14, alignItems: "center" },
-  createBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+  createBtnText: { color: "#ffffff", fontWeight: "800", fontSize: 15 },
 
-  editBtn: { backgroundColor: T.green, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginBottom: 10, alignItems: "center", opacity: 0.9 },
-  editBtnText: { color: T.white, fontWeight: "800", fontSize: 14 },
+  editBtn: { backgroundColor: "#22c55e", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12, marginBottom: 10, alignItems: "center", opacity: 0.9 },
+  editBtnText: { color: "#ffffff", fontWeight: "800", fontSize: 14 },
 
-  prefCard: { backgroundColor: T.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: T.border },
-  prefTitle: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  prefSub: { fontSize: 12, color: T.t3, marginBottom: 16 },
+  prefCard: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: theme.colors.border },
+  prefTitle: { fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  prefSub: { fontSize: 12, color: theme.colors.textMuted, marginBottom: 16 },
 
-  label: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
-  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: T.border, backgroundColor: T.surfaceAlt, marginBottom: 6 },
-  optionBtnActive: { backgroundColor: T.blue, borderColor: T.blue },
-  optionBtnText: { color: T.t2, fontWeight: "600", fontSize: 14 },
-  optionBtnTextActive: { color: T.white },
-  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 10, padding: 12, fontSize: 15, color: T.t1, marginBottom: 12 },
+  label: { fontSize: 11, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  optionBtn: { padding: 12, borderRadius: 10, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, marginBottom: 6 },
+  optionBtnActive: { backgroundColor: "#3b82f6", borderColor: "#3b82f6" },
+  optionBtnText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
+  optionBtnTextActive: { color: "#ffffff" },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 10, padding: 12, fontSize: 15, color: theme.colors.textPrimary, marginBottom: 12 },
 
   saveBtn: { borderRadius: 14, overflow: "hidden", marginTop: 4 },
   saveBtnGradient: { padding: 16, alignItems: "center", borderRadius: 14 },
-  saveBtnText: { color: T.white, fontWeight: "800", fontSize: 15 },
+  saveBtnText: { color: "#ffffff", fontWeight: "800", fontSize: 15 },
 
   aiBtn: { backgroundColor: "#0a0a0a", borderRadius: 14, paddingVertical: 14, alignItems: "center", marginBottom: 16, borderWidth: 1.5, borderColor: "#D4AF37" },
   aiBtnText: { color: "#D4AF37", fontWeight: "800", fontSize: 15 },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
-  modalBox: { backgroundColor: T.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85%", minHeight: 200 },
+  modalBox: { backgroundColor: theme.colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85%", minHeight: 200 },
   modalLoadingBox: { alignItems: "center", paddingVertical: 40 },
-  modalLoadingText: { marginTop: 20, fontSize: 16, fontWeight: "700", color: T.t1, textAlign: "center" },
-  modalLoadingSub: { marginTop: 8, fontSize: 13, color: T.t3, textAlign: "center" },
-  modalTitle: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 12 },
-  modalObsBox: { backgroundColor: T.bgAlt, borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, borderRadius: 8, marginBottom: 16 },
-  modalObsText: { fontSize: 13, color: T.t2, lineHeight: 20, fontStyle: "italic" },
-  modalDaysTitle: { fontSize: 12, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
-  modalDayRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: T.border },
-  modalDayLabel: { fontSize: 14, fontWeight: "600", color: T.t2 },
-  modalDayKcal: { fontSize: 14, fontWeight: "700", color: T.green },
-  modalCloseBtn: { marginTop: 20, padding: 14, alignItems: "center", backgroundColor: T.surfaceAlt, borderRadius: 12 },
-  modalCloseBtnText: { fontWeight: "700", color: T.t2, fontSize: 15 },
+  modalLoadingText: { marginTop: 20, fontSize: 16, fontWeight: "700", color: theme.colors.textPrimary, textAlign: "center" },
+  modalLoadingSub: { marginTop: 8, fontSize: 13, color: theme.colors.textMuted, textAlign: "center" },
+  modalTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 12 },
+  modalObsBox: { backgroundColor: theme.colors.card, borderLeftWidth: 3, borderLeftColor: "#D4AF37", padding: 12, borderRadius: 8, marginBottom: 16 },
+  modalObsText: { fontSize: 13, color: theme.colors.textSecondary, lineHeight: 20, fontStyle: "italic" },
+  modalDaysTitle: { fontSize: 12, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  modalDayRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  modalDayLabel: { fontSize: 14, fontWeight: "600", color: theme.colors.textSecondary },
+  modalDayKcal: { fontSize: 14, fontWeight: "700", color: "#22c55e" },
+  modalCloseBtn: { marginTop: 20, padding: 14, alignItems: "center", backgroundColor: theme.colors.card, borderRadius: 12 },
+  modalCloseBtnText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 15 },
 
-  // FAB câmera
-  fab: { position: "absolute", bottom: 84, right: 20, width: 60, height: 60, borderRadius: 30, overflow: "hidden", shadowColor: T.green, shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
+  fab: { position: "absolute", bottom: 84, right: 20, width: 60, height: 60, borderRadius: 30, overflow: "hidden", shadowColor: "#22c55e", shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 8 },
   fabDesktop: { bottom: 24, right: 24 },
   fabGradient: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
   fabIcon: { fontSize: 28 },
 
-  // Histórico de refeições
-  mealLogCard: { backgroundColor: T.surfaceAlt, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: T.border },
+  mealLogCard: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: theme.colors.border },
   mealLogHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  mealLogDate: { fontSize: 12, color: T.t2, fontWeight: "600" },
-  mealLogType: { fontSize: 11, color: T.green, fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  mealLogMacros: { fontSize: 13, color: T.t1, fontWeight: "700" },
-  mealLogNotes: { fontSize: 11, color: T.t3, fontStyle: "italic", marginTop: 4 },
+  mealLogDate: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: "600" },
+  mealLogType: { fontSize: 11, color: "#22c55e", fontWeight: "700", backgroundColor: "rgba(16,185,129,0.1)", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  mealLogMacros: { fontSize: 13, color: theme.colors.textPrimary, fontWeight: "700" },
+  mealLogNotes: { fontSize: 11, color: theme.colors.textMuted, fontStyle: "italic", marginTop: 4 },
 });

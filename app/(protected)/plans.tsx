@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from "../../contexts/ThemeContext";
 import { useStripeProxy } from "../../hooks/useStripeProxy";
 import { useTrainer } from "../../hooks/useTrainer";
 import { supabase } from "../../lib/supabase";
@@ -27,6 +28,8 @@ interface Plan {
 }
 
 export default function PlansScreen() {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const { trainerId, plan: currentPlan, subscription, loadingTrainer } = useTrainer();
   const { initPaymentSheet, presentPaymentSheet } = useStripeProxy();
 
@@ -145,7 +148,7 @@ export default function PlansScreen() {
   if (loadingTrainer || loadingPlans) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={T.blue} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -217,28 +220,28 @@ export default function PlansScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
-  title: { fontSize: 26, fontWeight: "800", color: T.t1, marginBottom: 20 },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
+  title: { fontSize: 26, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 20 },
   card: {
     padding: 20,
     borderRadius: 16,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   currentCard: { borderColor: T.green, borderWidth: 2 },
-  planName: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  price: { color: T.t2, marginTop: 4, fontSize: 15 },
-  limit: { color: T.t3, marginTop: 4, fontSize: 13 },
+  planName: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  price: { color: theme.colors.textSecondary, marginTop: 4, fontSize: 15 },
+  limit: { color: theme.colors.textMuted, marginTop: 4, fontSize: 13 },
   currentBadge: { marginTop: 15, backgroundColor: T.green, padding: 8, borderRadius: 8, alignItems: "center" },
   currentText: { color: T.white, fontWeight: "700", textAlign: "center" },
   upgradeButton: { marginTop: 15, borderRadius: 10, overflow: "hidden" },
   upgradeButtonGradient: { padding: 12, alignItems: "center", borderRadius: 10 },
   upgradeText: { color: T.white, textAlign: "center", fontWeight: "800" },
-  blockedText: { marginTop: 15, color: T.t4, fontSize: 13 },
+  blockedText: { marginTop: 15, color: theme.colors.textMuted, fontSize: 13 },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
@@ -246,14 +249,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalBox: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     padding: 24,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 10 },
-  modalText: { marginBottom: 20, color: T.t2, fontSize: 15 },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 10 },
+  modalText: { marginBottom: 20, color: theme.colors.textSecondary, fontSize: 15 },
   confirmButton: { borderRadius: 10, overflow: "hidden", marginBottom: 4 },
   confirmGradient: { padding: 14, alignItems: "center", borderRadius: 10 },
   confirmText: { color: T.white, textAlign: "center", fontWeight: "800", fontSize: 15 },

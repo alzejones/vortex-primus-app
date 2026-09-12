@@ -1,8 +1,8 @@
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { LineChart } from "react-native-gifted-charts";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LineChart } from "react-native-gifted-charts";
 import EvolutionPanel from "../../components/EvolutionPanel";
 import MeasurementsEvolutionPanel from "../../components/MeasurementsEvolutionPanel";
 import TrunkMeasurementsChart from "../../components/TrunkMeasurementsChart";
@@ -11,7 +11,7 @@ import BodyAvatarRow from "../../components/BodyAvatarRow";
 import { supabase } from "../../lib/supabase";
 import { FeatureGate } from "../../components/FeatureGate";
 import { getMetabolicStatus } from "../../utils/assessmentCalculations";
-import { T } from "../../utils/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const screenWidth = Dimensions.get("window").width;
 const CONTENT_WIDTH = Platform.OS === 'web' ? Math.min(480, screenWidth) - 32 : screenWidth;
@@ -134,6 +134,7 @@ const getLocalVisceralStatus = (value: any) => {
 };
 
 export default function PublicAssessmentView() {
+  const { theme } = useTheme();
   const { id } = useLocalSearchParams();
   const clientId = id as string;
 
@@ -147,7 +148,6 @@ export default function PublicAssessmentView() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [referencesVisible, setReferencesVisible] = useState(false);
 
-  // Fix scroll on web — this page is standalone (no tab bar)
   useEffect(() => {
     if (Platform.OS === 'web') {
       const body = document.body as HTMLElement;
@@ -220,11 +220,13 @@ export default function PublicAssessmentView() {
     }
   }
 
-  if (loading) return <View style={styles.loadingContainer}><ActivityIndicator size="large" color={T.blue} /></View>;
+  const s = styles(theme);
+
+  if (loading) return <View style={s.loadingContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>;
   if (!currentAssessment) return (
-    <View style={styles.loadingContainer}>
+    <View style={s.loadingContainer}>
       <Text style={{ fontSize: 40 }}>😕</Text>
-      <Text style={{ fontWeight: 'bold', marginTop: 10, color: T.t1 }}>{errorMsg || "Avaliação indisponível"}</Text>
+      <Text style={{ fontWeight: 'bold', marginTop: 10, color: theme.colors.textPrimary }}>{errorMsg || "Avaliação indisponível"}</Text>
     </View>
   );
 
@@ -242,29 +244,29 @@ export default function PublicAssessmentView() {
 
   const ReferenceLink = () => (
     <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-start' }} onPress={() => setReferencesVisible(true)}>
-      <Text style={{ color: T.t3, fontSize: 11, fontWeight: '600' }}>ℹ️ Referência Científica</Text>
+      <Text style={{ color: theme.colors.textMuted, fontSize: 11, fontWeight: '600' }}>ℹ️ Referência Científica</Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={s.container}>
       
       <ScrollView
         contentContainerStyle={[
-          styles.scrollContent,
-          Platform.OS === 'web' && styles.scrollContentWeb
+          s.scrollContent,
+          Platform.OS === 'web' && s.scrollContentWeb
         ]}
         showsVerticalScrollIndicator={false}
         style={undefined}
       >
-        <View style={styles.brandHeader}>
-          <Text style={styles.brandTitle}>VORTEX PRIMUS</Text>
-          <Text style={styles.brandSubtitle}>Relatório Oficial de Evolução</Text>
+        <View style={s.brandHeader}>
+          <Text style={s.brandTitle}>VORTEX PRIMUS</Text>
+          <Text style={s.brandSubtitle}>Relatório Oficial de Evolução</Text>
         </View>
 
-        <View style={styles.clientCard}>
-          <Text style={styles.clientName}>{client?.name}</Text>
-          <Text style={styles.clientInfo}>Última Avaliação: {formatDateBR(currentAssessment.date)}</Text>
+        <View style={s.clientCard}>
+          <Text style={s.clientName}>{client?.name}</Text>
+          <Text style={s.clientInfo}>Última Avaliação: {formatDateBR(currentAssessment.date)}</Text>
         </View>
 
         {currentAssessment?.anthropometry?.[0]?.body_fat != null && (
@@ -286,17 +288,17 @@ export default function PublicAssessmentView() {
           )
         )}
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
+        <View style={s.card}>
+          <View style={s.cardHeader}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
               <Text style={{ fontSize: 16 }}>📊</Text>
-              <Text style={{ fontSize: 14, fontWeight: '900', color: T.t1, marginLeft: 6, textTransform: 'uppercase', flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Composição Corporal</Text>
+              <Text style={{ fontSize: 14, fontWeight: '900', color: theme.colors.textPrimary, marginLeft: 6, textTransform: 'uppercase', flex: 1 }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>Composição Corporal</Text>
             </View>
           </View>
 
-          <View style={styles.diagRow}>
-            <Text style={styles.diagLabel}>Peso Corporal</Text>
-            <Text style={styles.diagValueLarge}>{anthro?.weight ?? "-"} kg</Text>
+          <View style={s.diagRow}>
+            <Text style={s.diagLabel}>Peso Corporal</Text>
+            <Text style={s.diagValueLarge}>{anthro?.weight ?? "-"} kg</Text>
           </View>
 
           {(() => {
@@ -307,20 +309,20 @@ export default function PublicAssessmentView() {
               ? (Number(val) / 100 * peso).toFixed(1)
               : null;
             return (
-              <View style={styles.barContainer}>
-                <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Gordura Corporal</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{gorduraKg && (
-                    <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+              <View style={s.barContainer}>
+                <View style={s.rowBetween}><Text style={s.diagLabel}>% Gordura Corporal</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[s.badge, { backgroundColor: status.bg }]}><Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={s.diagValueLarge}>{val} %</Text>{gorduraKg && (
+                    <Text style={{ fontWeight: '500', color: theme.colors.textMuted, fontSize: 12, marginLeft: 6 }}>
                       ({gorduraKg} kg)
                     </Text>
                   )}</View>
                 </View>
-                <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
-                <View style={styles.track}>
-                  <View style={[styles.segment, { backgroundColor: '#38bdf8', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#22c55e' }]} /><View style={[styles.segment, { backgroundColor: '#eab308' }]} /><View style={[styles.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
-                  {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
+                <View style={s.ruler}><Text style={s.rulerText}>{status?.limits[0]}</Text><Text style={s.rulerText}>{status?.limits[1]}</Text><Text style={s.rulerText}>{status?.limits[2]}</Text></View>
+                <View style={s.track}>
+                  <View style={[s.segment, { backgroundColor: '#38bdf8', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[s.segment, { backgroundColor: '#22c55e' }]} /><View style={[s.segment, { backgroundColor: '#eab308' }]} /><View style={[s.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
+                  {status && <View style={[s.pointer, { left: `${status.pos}%` }]} />}
                 </View>
-                <View style={styles.labelsRow}><Text style={styles.miniLabel}>BAIXO</Text><Text style={styles.miniLabel}>NORMAL</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>M. ALTO</Text></View>
+                <View style={s.labelsRow}><Text style={s.miniLabel}>BAIXO</Text><Text style={s.miniLabel}>NORMAL</Text><Text style={s.miniLabel}>ALTO</Text><Text style={s.miniLabel}>M. ALTO</Text></View>
                 <ReferenceLink />
               </View>
             );
@@ -334,31 +336,31 @@ export default function PublicAssessmentView() {
               ? (Number(val) / 100 * peso).toFixed(1)
               : null;
             return (
-              <View style={styles.barContainer}>
-                <View style={styles.rowBetween}><Text style={styles.diagLabel}>% Massa Muscular</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{val} %</Text>{musculoKg && (
-                    <Text style={{ fontWeight: '500', color: T.t3, fontSize: 12, marginLeft: 6 }}>
+              <View style={s.barContainer}>
+                <View style={s.rowBetween}><Text style={s.diagLabel}>% Massa Muscular</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[s.badge, { backgroundColor: status.bg }]}><Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={s.diagValueLarge}>{val} %</Text>{musculoKg && (
+                    <Text style={{ fontWeight: '500', color: theme.colors.textMuted, fontSize: 12, marginLeft: 6 }}>
                       ({musculoKg} kg)
                     </Text>
                   )}</View>
                 </View>
-                <View style={styles.ruler}><Text style={styles.rulerText}>{status?.limits[0]}</Text><Text style={styles.rulerText}>{status?.limits[1]}</Text><Text style={styles.rulerText}>{status?.limits[2]}</Text></View>
-                <View style={styles.track}>
-                  <View style={[styles.segment, { backgroundColor: '#ef4444', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#84cc16' }]} /><View style={[styles.segment, { backgroundColor: '#22c55e' }]} /><View style={[styles.segment, { backgroundColor: '#38bdf8', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
-                  {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
+                <View style={s.ruler}><Text style={s.rulerText}>{status?.limits[0]}</Text><Text style={s.rulerText}>{status?.limits[1]}</Text><Text style={s.rulerText}>{status?.limits[2]}</Text></View>
+                <View style={s.track}>
+                  <View style={[s.segment, { backgroundColor: '#ef4444', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[s.segment, { backgroundColor: '#84cc16' }]} /><View style={[s.segment, { backgroundColor: '#22c55e' }]} /><View style={[s.segment, { backgroundColor: '#38bdf8', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
+                  {status && <View style={[s.pointer, { left: `${status.pos}%` }]} />}
                 </View>
-                <View style={styles.labelsRow}><Text style={styles.miniLabel}>BAIXO</Text><Text style={styles.miniLabel}>NORMAL</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>M. ALTO</Text></View>
+                <View style={s.labelsRow}><Text style={s.miniLabel}>BAIXO</Text><Text style={s.miniLabel}>NORMAL</Text><Text style={s.miniLabel}>ALTO</Text><Text style={s.miniLabel}>M. ALTO</Text></View>
                 <ReferenceLink />
               </View>
             );
           })()}
 
-          <View style={styles.barContainer}>
-            <View style={styles.rowBetween}><Text style={styles.diagLabel}>Idade Metabólica</Text>
+          <View style={s.barContainer}>
+            <View style={s.rowBetween}><Text style={s.diagLabel}>Idade Metabólica</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {getMetabolicStatus(anthro?.metabolic_age, age) && (
-                  <View style={[styles.badge, { backgroundColor: getMetabolicStatus(anthro?.metabolic_age, age)?.bg }]}><Text style={[styles.badgeText, { color: getMetabolicStatus(anthro?.metabolic_age, age)?.color }]}>{getMetabolicStatus(anthro?.metabolic_age, age)?.label}</Text></View>
-                )}<Text style={styles.diagValueLarge}>{anthro?.metabolic_age ?? "-"} anos</Text>
+                  <View style={[s.badge, { backgroundColor: getMetabolicStatus(anthro?.metabolic_age, age)?.bg }]}><Text style={[s.badgeText, { color: getMetabolicStatus(anthro?.metabolic_age, age)?.color }]}>{getMetabolicStatus(anthro?.metabolic_age, age)?.label}</Text></View>
+                )}<Text style={s.diagValueLarge}>{anthro?.metabolic_age ?? "-"} anos</Text>
               </View>
             </View>
             <ReferenceLink />
@@ -367,27 +369,27 @@ export default function PublicAssessmentView() {
           {(() => {
             const status = getLocalVisceralStatus(anthro?.body_fat_index);
             return (
-              <View style={styles.barContainer}>
-                <View style={styles.rowBetween}><Text style={styles.diagLabel}>Gordura Visceral</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[styles.badge, { backgroundColor: status.bg }]}><Text style={[styles.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={styles.diagValueLarge}>{anthro?.body_fat_index ?? "-"}</Text></View>
+              <View style={s.barContainer}>
+                <View style={s.rowBetween}><Text style={s.diagLabel}>Gordura Visceral</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>{status && (<View style={[s.badge, { backgroundColor: status.bg }]}><Text style={[s.badgeText, { color: status.color }]}>{status.label}</Text></View>)}<Text style={s.diagValueLarge}>{anthro?.body_fat_index ?? "-"}</Text></View>
                 </View>
-                <View style={styles.ruler}><Text style={styles.rulerText}>4</Text><Text style={styles.rulerText}>9</Text><Text style={styles.rulerText}>13</Text></View>
-                <View style={styles.track}>
-                  <View style={[styles.segment, { backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[styles.segment, { backgroundColor: '#eab308' }]} /><View style={[styles.segment, { backgroundColor: '#f97316' }]} /><View style={[styles.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
-                  {status && <View style={[styles.pointer, { left: `${status.pos}%` }]} />}
+                <View style={s.ruler}><Text style={s.rulerText}>4</Text><Text style={s.rulerText}>9</Text><Text style={s.rulerText}>13</Text></View>
+                <View style={s.track}>
+                  <View style={[s.segment, { backgroundColor: '#22c55e', borderTopLeftRadius: 5, borderBottomLeftRadius: 5 }]} /><View style={[s.segment, { backgroundColor: '#eab308' }]} /><View style={[s.segment, { backgroundColor: '#f97316' }]} /><View style={[s.segment, { backgroundColor: '#ef4444', borderTopRightRadius: 5, borderBottomRightRadius: 5 }]} />
+                  {status && <View style={[s.pointer, { left: `${status.pos}%` }]} />}
                 </View>
-                <View style={styles.labelsRow}><Text style={styles.miniLabel}>IDEAL</Text><Text style={styles.miniLabel}>ATENÇÃO</Text><Text style={styles.miniLabel}>ALTO</Text><Text style={styles.miniLabel}>CRÍTICO</Text></View>
+                <View style={s.labelsRow}><Text style={s.miniLabel}>IDEAL</Text><Text style={s.miniLabel}>ATENÇÃO</Text><Text style={s.miniLabel}>ALTO</Text><Text style={s.miniLabel}>CRÍTICO</Text></View>
                 <ReferenceLink />
               </View>
             );
           })()}
 
-          <View style={[styles.diagRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-            <Text style={styles.diagLabel}>Metabolismo Basal</Text>
-            <Text style={styles.diagValueLarge}>{anthro?.basal_metabolic_rate ?? "-"} kcal</Text>
+          <View style={[s.diagRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+            <Text style={s.diagLabel}>Metabolismo Basal</Text>
+            <Text style={s.diagValueLarge}>{anthro?.basal_metabolic_rate ?? "-"} kcal</Text>
           </View>
 
-          <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic', marginTop: 12 }}>
+          <Text style={{ fontSize: 10, color: theme.colors.textMuted, fontStyle: 'italic', marginTop: 12 }}>
             Resultado informativo de composição corporal. Não constitui diagnóstico médico.
           </Text>
         </View>
@@ -407,49 +409,49 @@ export default function PublicAssessmentView() {
           firstAssessment={firstAssessment}
         />
 
-        <View style={styles.diagnosisSection}>
+        <View style={s.diagnosisSection}>
 
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-            <View style={{ flex: 1, backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}>
+            <View style={{ flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border }}>
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#ea580c', marginBottom: 10 }}>📏 TRONCO</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Peitoral</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.chest)} cm</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Peitoral</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.chest)} cm</Text>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Abdômen</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.abdomen)} cm</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Abdômen</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.abdomen)} cm</Text>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Cintura</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.waist)} cm</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Cintura</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.waist)} cm</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Quadril</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.hip)} cm</Text>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Quadril</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.hip)} cm</Text>
               </View>
             </View>
 
-            <View style={{ flex: 1, backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border }}>
+            <View style={{ flex: 1, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border }}>
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#16a34a', marginBottom: 10 }}>🦵 MEMBROS (E/D)</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Braço</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.arm_left)}/{formatValue(anthro?.arm_right)}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Braço</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.arm_left)}/{formatValue(anthro?.arm_right)}</Text>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: T.border, paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Coxa</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.thigh_left)}/{formatValue(anthro?.thigh_right)}</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 4 }}>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Coxa</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.thigh_left)}/{formatValue(anthro?.thigh_right)}</Text>
               </View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 }}>
-                <Text style={{ color: T.t3, fontSize: 12 }}>Pantur.</Text>
-                <Text style={{ fontWeight: '800', fontSize: 12, color: T.t1 }}>{formatValue(anthro?.calf_left)}/{formatValue(anthro?.calf_right)}</Text>
+                <Text style={{ color: theme.colors.textMuted, fontSize: 12 }}>Pantur.</Text>
+                <Text style={{ fontWeight: '800', fontSize: 12, color: theme.colors.textPrimary }}>{formatValue(anthro?.calf_left)}/{formatValue(anthro?.calf_right)}</Text>
               </View>
             </View>
           </View>
         </View>
 
         {fatData.length > 0 && (
-          <View style={{ backgroundColor: T.bgAlt, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24, elevation: 4, borderWidth: 1, borderColor: T.border }}>
+          <View style={{ backgroundColor: theme.colors.background, paddingVertical: 20, paddingHorizontal: 10, borderRadius: 16, marginBottom: 24, elevation: 4, borderWidth: 1, borderColor: theme.colors.border }}>
             <LineChart
               data={fatData.map((val, index) => ({
                 value: Number(val) || 0,
@@ -472,8 +474,8 @@ export default function PublicAssessmentView() {
               rulesColor="rgba(255,255,255,0.25)" hideRules={false} showVerticalLines={true} verticalLinesColor="rgba(255,255,255,0.15)"
             />
             <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 24 }}>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#ef4444' }]} /><Text style={styles.legendText}>% Gordura</Text></View>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#22c55e' }]} /><Text style={styles.legendText}>% Músculo</Text></View>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: '#ef4444' }]} /><Text style={s.legendText}>% Gordura</Text></View>
+              <View style={s.legendItem}><View style={[s.dot, { backgroundColor: '#22c55e' }]} /><Text style={s.legendText}>% Músculo</Text></View>
             </View>
           </View>
         )}
@@ -498,22 +500,22 @@ export default function PublicAssessmentView() {
           chartWidth={Platform.OS === 'web' ? CONTENT_WIDTH - 20 : screenWidth - 60}
         />
 
-        <View style={{ marginTop: 24, paddingVertical: 14, backgroundColor: T.bgAlt, borderRadius: 12, borderWidth: 1, borderColor: T.border }}>
+        <View style={{ marginTop: 24, paddingVertical: 14, backgroundColor: theme.colors.background, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border }}>
           <Text style={{ color: '#fbbf24', textAlign: 'center', fontSize: 13, fontWeight: '900', letterSpacing: 1 }}>FOCO NO PROCESSO. OS RESULTADOS VIRÃO! 🔥</Text>
         </View>
 
-        <View style={styles.footer}><Text style={styles.footerText}>Gerado por Vortex Primus App</Text></View>
+        <View style={s.footer}><Text style={s.footerText}>Gerado por Vortex Primus App</Text></View>
       </ScrollView>
 
       <Modal visible={referencesVisible} animationType="fade" transparent>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Referências Científicas 📚</Text>
+        <View style={s.modalBackdrop}>
+          <View style={s.modalCard}>
+            <Text style={s.modalTitle}>Referências Científicas 📚</Text>
             <ScrollView>
-              <Text style={styles.refText}>As classificações padrão do Cross utilizam as diretrizes da Omron Healthcare e estudos de Gallagher et al. (American Journal of Clinical Nutrition). Avaliações à distância utilizam o protocolo RFM e Mifflin-St Jeor.</Text>
+              <Text style={s.refText}>As classificações padrão do Cross utilizam as diretrizes da Omron Healthcare e estudos de Gallagher et al. (American Journal of Clinical Nutrition). Avaliações à distância utilizam o protocolo RFM e Mifflin-St Jeor.</Text>
             </ScrollView>
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setReferencesVisible(false)}>
-              <Text style={{ color: T.white, fontWeight: 'bold' }}>Entendido</Text>
+            <TouchableOpacity style={s.closeBtn} onPress={() => setReferencesVisible(false)}>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Entendido</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -522,37 +524,37 @@ export default function PublicAssessmentView() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
   scrollContent: { padding: 16, paddingBottom: 40 },
   brandHeader: { alignItems: 'center', marginBottom: 24, marginTop: 20 },
-  brandTitle: { fontSize: 24, fontWeight: '900', color: T.t1, letterSpacing: 2 },
-  brandSubtitle: { fontSize: 12, color: T.blue, fontWeight: '700', textTransform: 'uppercase', marginTop: 4 },
-  clientCard: { backgroundColor: T.card, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: T.border, marginBottom: 24, alignItems: 'center' },
-  clientName: { fontSize: 18, fontWeight: '900', color: T.t1 },
-  clientInfo: { fontSize: 13, color: T.t3, marginTop: 4 },
+  brandTitle: { fontSize: 24, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: 2 },
+  brandSubtitle: { fontSize: 12, color: theme.colors.primary, fontWeight: '700', textTransform: 'uppercase', marginTop: 4 },
+  clientCard: { backgroundColor: theme.colors.card, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 24, alignItems: 'center' },
+  clientName: { fontSize: 18, fontWeight: '900', color: theme.colors.textPrimary },
+  clientInfo: { fontSize: 13, color: theme.colors.textMuted, marginTop: 4 },
   legendItem: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 12 },
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
-  legendText: { color: T.t1, fontSize: 12, fontWeight: '600' },
-  diagnosisSection: { marginTop: 24, borderTopWidth: 1, borderTopColor: T.border, paddingTop: 20 },
-  sectionTitle: { fontSize: 15, fontWeight: '900', color: T.t1, marginBottom: 16, textTransform: 'uppercase' },
-  card: { backgroundColor: T.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: T.border },
-  cardHeader: { marginBottom: 12, borderBottomWidth: 1, borderBottomColor: T.border, paddingBottom: 8 },
-  diagRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: T.border },
-  diagLabel: { color: T.t3, fontSize: 13, fontWeight: '500' },
-  diagValueLarge: { fontWeight: '900', color: T.t1, fontSize: 16 },
-  barContainer: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: T.border },
+  legendText: { color: theme.colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  diagnosisSection: { marginTop: 24, borderTopWidth: 1, borderTopColor: theme.colors.border, paddingTop: 20 },
+  sectionTitle: { fontSize: 15, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 16, textTransform: 'uppercase' },
+  card: { backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border },
+  cardHeader: { marginBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingBottom: 8 },
+  diagRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  diagLabel: { color: theme.colors.textMuted, fontSize: 13, fontWeight: '500' },
+  diagValueLarge: { fontWeight: '900', color: theme.colors.textPrimary, fontSize: 16 },
+  barContainer: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, marginRight: 8 },
   badgeText: { fontSize: 10, fontWeight: '900' },
   ruler: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: '22%', marginBottom: 2 },
-  rulerText: { fontSize: 10, color: T.t3, fontWeight: '800' },
-  track: { flexDirection: 'row', height: 10, borderRadius: 5, backgroundColor: T.surface, position: 'relative' },
+  rulerText: { fontSize: 10, color: theme.colors.textMuted, fontWeight: '800' },
+  track: { flexDirection: 'row', height: 10, borderRadius: 5, backgroundColor: theme.colors.card, position: 'relative' },
   segment: { flex: 1 },
-  pointer: { position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: T.surface, borderWidth: 4, borderColor: T.t1, marginLeft: -10 },
+  pointer: { position: 'absolute', top: -5, width: 20, height: 20, borderRadius: 10, backgroundColor: theme.colors.card, borderWidth: 4, borderColor: theme.colors.textPrimary, marginLeft: -10 },
   labelsRow: { flexDirection: 'row', marginTop: 6 },
-  miniLabel: { flex: 1, textAlign: 'center', fontSize: 9, color: T.t3, fontWeight: 'bold' },
+  miniLabel: { flex: 1, textAlign: 'center', fontSize: 9, color: theme.colors.textMuted, fontWeight: 'bold' },
   footer: { marginTop: 40, alignItems: 'center' },
   scrollWeb: {},
   scrollContentWeb: {
@@ -562,10 +564,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 40,
   },
-  footerText: { color: T.t3, fontSize: 12, fontWeight: '600' },
+  footerText: { color: theme.colors.textMuted, fontSize: 12, fontWeight: '600' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  modalCard: { backgroundColor: T.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: T.border, width: '100%' },
-  modalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 15, color: T.t1 },
-  refText: { fontSize: 13, color: T.t3, lineHeight: 20 },
-  closeBtn: { backgroundColor: T.bgAlt, padding: 14, borderRadius: 10, marginTop: 20, alignItems: 'center', borderWidth: 1, borderColor: T.border }
+  modalCard: { backgroundColor: theme.colors.card, padding: 24, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, width: '100%' },
+  modalTitle: { fontSize: 18, fontWeight: '900', marginBottom: 15, color: theme.colors.textPrimary },
+  refText: { fontSize: 13, color: theme.colors.textMuted, lineHeight: 20 },
+  closeBtn: { backgroundColor: theme.colors.background, padding: 14, borderRadius: 10, marginTop: 20, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border }
 });

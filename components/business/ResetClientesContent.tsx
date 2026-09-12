@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { normalizeSearch } from '../../utils/textSearch';
 import { todayBR } from '../../utils/dateBR';
 import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow } from './SaleFormModal';
@@ -33,6 +33,7 @@ interface ResetClient {
 }
 
 export default function ResetClientesContent() {
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [trainerId, setTrainerId] = useState<string | null>(null);
   const [clients, setClients] = useState<ResetClient[]>([]);
@@ -220,13 +221,13 @@ export default function ResetClientesContent() {
 
   const getProtocolDayInfo = (startDate: string | null, status: string) => {
     if (status === 'aguardando_data' || !startDate) {
-      return { label: '—', color: T.t3, bgColor: 'transparent' };
+      return { label: '—', color: theme.colors.textMuted, bgColor: 'transparent' };
     }
     if (status === 'concluido') {
-      return { label: 'Concluído', color: T.green, bgColor: 'rgba(16,185,129,0.15)' };
+      return { label: 'Concluído', color: '#10b981', bgColor: 'rgba(16,185,129,0.15)' };
     }
     if (status === 'cancelado') {
-      return { label: 'Cancelado', color: T.red, bgColor: 'rgba(239,68,68,0.15)' };
+      return { label: 'Cancelado', color: '#ef4444', bgColor: 'rgba(239,68,68,0.15)' };
     }
 
     const today = todayBR();
@@ -238,20 +239,20 @@ export default function ResetClientesContent() {
     if (dia < 1) {
       const diasRestantes = Math.abs(dia - 1);
       if (diasRestantes === 1) {
-        return { label: 'Inicia amanhã', color: T.t3, bgColor: 'transparent' };
+        return { label: 'Inicia amanhã', color: theme.colors.textMuted, bgColor: 'transparent' };
       }
-      return { label: `Inicia em ${diasRestantes} dias`, color: T.t3, bgColor: 'transparent' };
+      return { label: `Inicia em ${diasRestantes} dias`, color: theme.colors.textMuted, bgColor: 'transparent' };
     }
     if (dia === 1 || dia === 2) {
-      return { label: `Dia ${dia}`, color: T.cyan, bgColor: 'rgba(6,182,212,0.15)' };
+      return { label: `Dia ${dia}`, color: '#06b6d4', bgColor: 'rgba(6,182,212,0.15)' };
     }
     if (dia === 3 || dia === 4) {
-      return { label: `Dia ${dia}`, color: T.blue, bgColor: T.bluePale };
+      return { label: `Dia ${dia}`, color: theme.colors.primary, bgColor: 'rgba(59,130,246,0.15)' };
     }
     if (dia === 5) {
-      return { label: 'Dia 5', color: T.orange, bgColor: 'rgba(245,158,11,0.15)' };
+      return { label: 'Dia 5', color: '#f59e0b', bgColor: 'rgba(245,158,11,0.15)' };
     }
-    return { label: 'Dia 6', color: T.purple, bgColor: 'rgba(139,92,246,0.15)' };
+    return { label: 'Dia 6', color: '#a855f7', bgColor: 'rgba(139,92,246,0.15)' };
   };
 
   const formatPV = (pv: number | null) => {
@@ -311,10 +312,12 @@ export default function ResetClientesContent() {
     '12': 'Dezembro',
   };
 
+  const s = createStyles(theme);
+  
   if (loading) {
     return (
       <View style={s.container}>
-        <ActivityIndicator size="large" color={T.blue} style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 40 }} />
       </View>
     );
   }
@@ -331,7 +334,7 @@ export default function ResetClientesContent() {
         <TextInput
           style={s.searchInput}
           placeholder="Buscar por nome..."
-          placeholderTextColor={T.t3}
+          placeholderTextColor={theme.colors.textMuted}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
@@ -372,7 +375,7 @@ export default function ResetClientesContent() {
             <TextInput
               style={s.dayInput}
               placeholder="1-31"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="number-pad"
               value={filterDay}
               onChangeText={(text) => {
@@ -470,168 +473,170 @@ export default function ResetClientesContent() {
   );
 }
 
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: T.bg,
-  },
-  header: {
-    padding: 20,
-    paddingBottom: 16,
-  },
-  title: {
-    color: '#FFF',
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  subtitle: {
-    color: T.t2,
-    fontSize: 14,
-  },
-  filtersContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  searchInput: {
-    backgroundColor: '#242424',
-    borderRadius: 10,
-    padding: 12,
-    color: '#FFF',
-    fontSize: 15,
-    marginBottom: 16,
-  },
-  dateFilters: {
-    gap: 12,
-  },
-  dateFilterGroup: {
-    gap: 8,
-  },
-  filterLabel: {
-    color: T.t2,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  monthChip: {
-    backgroundColor: '#242424',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  monthChipActive: {
-    backgroundColor: T.blue,
-  },
-  monthChipText: {
-    color: T.t2,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  monthChipTextActive: {
-    color: '#000',
-    fontWeight: '700',
-  },
-  dayInput: {
-    backgroundColor: '#242424',
-    borderRadius: 10,
-    padding: 12,
-    color: '#FFF',
-    fontSize: 15,
-    width: 100,
-  },
-  table: {
-    paddingHorizontal: 20,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#242424',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-  },
-  headerCell: {
-    color: T.t2,
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  headerCellCenter: {
-    textAlign: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    backgroundColor: '#161616',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 8,
-    alignItems: 'center',
-  },
-  cell: {
-    color: '#FFF',
-    fontSize: 12,
-  },
-  cellNum: {
-    width: 28,
-  },
-  cellName: {
-    flex: 1,
-    fontWeight: '600',
-  },
-  cellDate: {
-    width: 40,
-  },
-  cellDay: {
-    width: 50,
-    alignItems: 'center',
-  },
-  cellPV: {
-    width: 42,
-    textAlign: 'center',
-  },
-  cellPhone: {
-    width: 90,
-  },
-  dayBadge: {
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  dayBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  phoneText: {
-    color: T.blue,
-    fontSize: 11,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  phoneDisabled: {
-    color: T.t3,
-    textDecorationLine: 'none',
-  },
-  saleHint: {
-    fontSize: 10,
-    color: T.t3,
-    fontStyle: 'italic',
-    textAlign: 'left',
-    marginBottom: 2,
-    paddingHorizontal: 4,
-  },
-  whatsappHint: {
-    fontSize: 10,
-    color: T.t3,
-    fontStyle: 'italic',
-    textAlign: 'right',
-    marginBottom: 6,
-    paddingHorizontal: 4,
-  },
-  emptyState: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: T.t2,
-    fontSize: 14,
-  },
-});
+function createStyles(theme: any) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      padding: 20,
+      paddingBottom: 16,
+    },
+    title: {
+      color: theme.colors.textPrimary,
+      fontSize: 24,
+      fontWeight: '700',
+      marginBottom: 4,
+    },
+    subtitle: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+    filtersContainer: {
+      paddingHorizontal: 20,
+      marginBottom: 20,
+    },
+    searchInput: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 10,
+      padding: 12,
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      marginBottom: 16,
+    },
+    dateFilters: {
+      gap: 12,
+    },
+    dateFilterGroup: {
+      gap: 8,
+    },
+    filterLabel: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    monthChip: {
+      backgroundColor: theme.colors.card,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 8,
+      marginRight: 8,
+    },
+    monthChipActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    monthChipText: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    monthChipTextActive: {
+      color: '#fff',
+      fontWeight: '700',
+    },
+    dayInput: {
+      backgroundColor: theme.colors.card,
+      borderRadius: 10,
+      padding: 12,
+      color: theme.colors.textPrimary,
+      fontSize: 15,
+      width: 100,
+    },
+    table: {
+      paddingHorizontal: 20,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.card,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 8,
+    },
+    headerCell: {
+      color: theme.colors.textSecondary,
+      fontSize: 10,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+    },
+    headerCellCenter: {
+      textAlign: 'center',
+    },
+    tableRow: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.card,
+      borderRadius: 8,
+      padding: 10,
+      marginBottom: 8,
+      alignItems: 'center',
+    },
+    cell: {
+      color: theme.colors.textPrimary,
+      fontSize: 12,
+    },
+    cellNum: {
+      width: 28,
+    },
+    cellName: {
+      flex: 1,
+      fontWeight: '600',
+    },
+    cellDate: {
+      width: 40,
+    },
+    cellDay: {
+      width: 50,
+      alignItems: 'center',
+    },
+    cellPV: {
+      width: 42,
+      textAlign: 'center',
+    },
+    cellPhone: {
+      width: 90,
+    },
+    dayBadge: {
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+    },
+    dayBadgeText: {
+      fontSize: 10,
+      fontWeight: '700',
+    },
+    phoneText: {
+      color: theme.colors.primary,
+      fontSize: 11,
+      fontWeight: '600',
+      textDecorationLine: 'underline',
+    },
+    phoneDisabled: {
+      color: theme.colors.textMuted,
+      textDecorationLine: 'none',
+    },
+    saleHint: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      fontStyle: 'italic',
+      textAlign: 'left',
+      marginBottom: 2,
+      paddingHorizontal: 4,
+    },
+    whatsappHint: {
+      fontSize: 10,
+      color: theme.colors.textMuted,
+      fontStyle: 'italic',
+      textAlign: 'right',
+      marginBottom: 6,
+      paddingHorizontal: 4,
+    },
+    emptyState: {
+      padding: 40,
+      alignItems: 'center',
+    },
+    emptyText: {
+      color: theme.colors.textSecondary,
+      fontSize: 14,
+    },
+  });
+}

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
 import { T } from '../../utils/theme';
 
 interface ConfirmModalProps {
@@ -27,6 +28,8 @@ export default function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const { theme } = useTheme();
+  const s = createStyles(theme);
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={s.overlay}>
@@ -47,7 +50,7 @@ export default function ConfirmModal({
   );
 }
 
-const s = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -58,20 +61,20 @@ const s = StyleSheet.create({
   card: {
     maxWidth: 320,
     width: '100%',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     padding: 20,
   },
   title: {
-    color: T.white,
+    color: theme.colors.textPrimary,
     fontSize: 17,
     fontWeight: '700',
     marginBottom: 12,
   },
   message: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 20,
@@ -84,13 +87,13 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     paddingVertical: 11,
     alignItems: 'center',
   },
   btnCancelTxt: {
-    color: T.t2,
+    color: theme.colors.textSecondary,
     fontSize: 14,
     fontWeight: '600',
   },

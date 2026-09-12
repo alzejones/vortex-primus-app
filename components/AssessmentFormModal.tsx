@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface AssessmentFormModalProps {
   visible: boolean;
@@ -26,6 +27,7 @@ interface AssessmentFormModalProps {
   editingAssessment: any | null;
   onSuccess: () => void;
 }
+  const { theme } = useTheme();
 
 export default function AssessmentFormModal({
   visible,
@@ -259,7 +261,7 @@ export default function AssessmentFormModal({
 
   const renderGridInput = (label: string, key: keyof typeof form) => (
     <View style={{ flex: 1, paddingHorizontal: 4, marginBottom: 12 }}>
-      <Text style={{ fontSize: 11, fontWeight: "bold", color: "#666", marginBottom: 4, textTransform: 'uppercase' }}>{label}</Text>
+      <Text style={{ fontSize: 11, fontWeight: "bold", color: theme.colors.textMuted, marginBottom: 4, textTransform: 'uppercase' }}>{label}</Text>
       <TextInput
         style={styles.gridInput}
         keyboardType="numeric"
@@ -273,7 +275,7 @@ export default function AssessmentFormModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#fff" }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.colors.background }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.header}>
           <Text style={{ fontSize: 18, fontWeight: "bold" }}>{editingAssessment ? "Editar Avaliação" : "Nova Avaliação"}</Text>
           <TouchableOpacity onPress={onClose}><Text style={{ fontSize: 16, color: "#ef4444", fontWeight: "bold" }}>Cancelar</Text></TouchableOpacity>
@@ -281,7 +283,7 @@ export default function AssessmentFormModal({
         
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
           <View style={{ marginBottom: 16, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 12, fontWeight: "bold", color: "#666", marginBottom: 4, textTransform: 'uppercase' }}>Data da Avaliação</Text>
+            <Text style={{ fontSize: 12, fontWeight: "bold", color: theme.colors.textMuted, marginBottom: 4, textTransform: 'uppercase' }}>Data da Avaliação</Text>
             <TextInput style={[styles.gridInput, { textAlign: 'left', fontSize: 16 }]} value={form.date} onChangeText={handleDateChange} placeholder="DD/MM/AAAA" keyboardType="numeric" maxLength={10} />
           </View>
 
@@ -291,8 +293,8 @@ export default function AssessmentFormModal({
           <TouchableOpacity activeOpacity={0.7} style={styles.aiButton} onPress={calculateRemoteAssessment}>
             <Text style={{ fontSize: 24, marginRight: 12 }}>🪄</Text>
             <View>
-              <Text style={{ color: '#0f172a', fontWeight: '900', fontSize: 13, textTransform: 'uppercase' }}>Auto-Preencher via IA</Text>
-              <Text style={{ color: '#64748b', fontSize: 11, marginTop: 2 }}>Calcula composição com Peso, Altura e Cintura</Text>
+              <Text style={{ color: theme.colors.textPrimary, fontWeight: '900', fontSize: 13, textTransform: 'uppercase' }}>Auto-Preencher via IA</Text>
+              <Text style={{ color: theme.colors.textMuted, fontSize: 11, marginTop: 2 }}>Calcula composição com Peso, Altura e Cintura</Text>
             </View>
           </TouchableOpacity>
 
@@ -313,7 +315,7 @@ export default function AssessmentFormModal({
               🪄 Calcular Avaliação à Distância (IA)
             </Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 10, color: '#64748b', fontStyle: 'italic', textAlign: 'center', marginHorizontal: 4, marginTop: -10, marginBottom: 12 }}>
+          <Text style={{ fontSize: 10, color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginHorizontal: 4, marginTop: -10, marginBottom: 12 }}>
             Estimativa por IA — pode ter margem de erro em relação à medição direta.
           </Text>
 
@@ -329,8 +331,8 @@ export default function AssessmentFormModal({
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee', marginTop: Platform.OS === "android" ? 20 : 0 },
   row: { flexDirection: "row", justifyContent: "space-between" },
-  gridInput: { borderWidth: 1, borderColor: "#ccc", padding: 8, borderRadius: 6, backgroundColor: '#fafafa', textAlign: 'center', fontSize: 14, color: '#000' },
+  gridInput: { borderWidth: 1, borderColor: theme.colors.border, padding: 8, borderRadius: 6, backgroundColor: theme.colors.card, textAlign: 'center', fontSize: 14, color: theme.colors.textPrimary },
   aiButton: { backgroundColor: '#f8fafc', padding: 14, borderRadius: 12, borderWidth: 1, borderColor: '#cbd5e1', marginHorizontal: 4, marginTop: 4, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  button: { backgroundColor: "#000", padding: 16, borderRadius: 8, marginTop: 10, marginHorizontal: 4 },
+  button: { backgroundColor: theme.colors.primary, padding: 16, borderRadius: 8, marginTop: 10, marginHorizontal: 4 },
 });
 

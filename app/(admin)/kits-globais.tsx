@@ -19,7 +19,7 @@ import {
   View,
 } from 'react-native';
 import { supabase } from '../../lib/supabase';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 function notify(title: string, msg: string) {
@@ -58,6 +58,7 @@ interface KitItem {
 }
 
 export default function AdminKitsGlobais() {
+  const { theme } = useTheme();
   const { isAdmin: authIsAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -363,24 +364,26 @@ export default function AdminKitsGlobais() {
     }
   }
 
+  const s = styles(theme);
+
   if (!authIsAdmin) {
     return null;
   }
 
   if (loading) {
     return (
-      <View style={[s.center, { backgroundColor: T.bg }]}>
-        <ActivityIndicator size="large" color={T.blue} />
+      <View style={[s.center, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <View style={{ padding: 16, paddingBottom: 0 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={{ color: T.blue, fontWeight: '700', fontSize: 13 }}>← Voltar</Text>
+            <Text style={{ color: theme.colors.primary, fontWeight: '700', fontSize: 13 }}>← Voltar</Text>
           </TouchableOpacity>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -397,7 +400,7 @@ export default function AdminKitsGlobais() {
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={T.blue} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={theme.colors.primary} />
         }
       >
         {kits.length === 0 && (
@@ -488,17 +491,17 @@ export default function AdminKitsGlobais() {
                 setIsRedemptionOnly(newVal);
                 if (newVal) setKitPrice('0');
               }}>
-                <View style={[s.checkbox, isRedemptionOnly && { backgroundColor: T.blue }]} />
+                <View style={[s.checkbox, isRedemptionOnly && { backgroundColor: theme.colors.primary }]} />
                 <Text style={s.checkTxt}>Kit de Resgate (sem cobrança)</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={s.checkRowBox} onPress={() => setIsAccessKit(!isAccessKit)}>
-                <View style={[s.checkbox, isAccessKit && { backgroundColor: T.blue }]} />
+                <View style={[s.checkbox, isAccessKit && { backgroundColor: theme.colors.primary }]} />
                 <Text style={s.checkTxt}>Kit de Acesso</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={s.checkRowBox} onPress={() => setIsResetKit(!isResetKit)}>
-                <View style={[s.checkbox, isResetKit && { backgroundColor: T.blue }]} />
+                <View style={[s.checkbox, isResetKit && { backgroundColor: theme.colors.primary }]} />
                 <Text style={s.checkTxt}>Kit Reset (dispara Protocolo Reset)</Text>
               </TouchableOpacity>
 
@@ -561,7 +564,7 @@ export default function AdminKitsGlobais() {
                 <TouchableOpacity style={[s.btn, s.btnGhost]} onPress={() => setModalOpen(false)}>
                   <Text style={s.btnGhostTxt}>Cancelar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[s.btn, { backgroundColor: T.blue }]} onPress={saveKit} disabled={saving}>
+                <TouchableOpacity style={[s.btn, { backgroundColor: theme.colors.primary }]} onPress={saveKit} disabled={saving}>
                   <Text style={s.btnTxt}>{saving ? 'Salvando…' : 'Salvar Kit'}</Text>
                 </TouchableOpacity>
               </View>
@@ -612,22 +615,22 @@ export default function AdminKitsGlobais() {
   );
 }
 
-const s = StyleSheet.create({
+const styles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  pageTitle: { fontSize: 28, fontWeight: '900', color: T.t1 },
-  subtitle: { fontSize: 13, color: T.t3, marginBottom: 12 },
-  empty: { color: T.t3, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
+  pageTitle: { fontSize: 28, fontWeight: '900', color: theme.colors.textPrimary },
+  subtitle: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 12 },
+  empty: { color: theme.colors.textMuted, fontStyle: 'italic', textAlign: 'center', marginTop: 20 },
   kitCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
   },
-  kitName: { color: T.t1, fontWeight: '700', fontSize: 15 },
-  kitPrice: { color: T.t2, fontSize: 13, marginTop: 2 },
-  kitType: { color: T.t3, fontSize: 11, marginTop: 2 },
+  kitName: { color: theme.colors.textPrimary, fontWeight: '700', fontSize: 15 },
+  kitPrice: { color: theme.colors.textSecondary, fontSize: 13, marginTop: 2 },
+  kitType: { color: theme.colors.textMuted, fontSize: 11, marginTop: 2 },
   badgeAdmin: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
     paddingHorizontal: 8,
@@ -643,19 +646,19 @@ const s = StyleSheet.create({
   },
   badgeRedemptionTxt: { color: '#A855F7', fontSize: 10, fontWeight: '800' },
   toggleBtn: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   toggleBtnActive: {
-    backgroundColor: T.blue + '22',
-    borderColor: T.blue,
+    backgroundColor: '#3b82f6' + '22',
+    borderColor: '#3b82f6',
   },
-  toggleTxt: { color: T.t2, fontSize: 12, fontWeight: '700' },
-  toggleTxtActive: { color: T.blue },
+  toggleTxt: { color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  toggleTxtActive: { color: '#3b82f6' },
   fabContainer: {
     position: 'absolute',
     bottom: 20,
@@ -663,7 +666,7 @@ const s = StyleSheet.create({
     right: 16,
   },
   fab: {
-    backgroundColor: T.blue,
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -685,48 +688,48 @@ const s = StyleSheet.create({
     borderColor: '#ef4444',
   },
   editIconBtn: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     width: 36,
     height: 36,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', padding: 20 },
-  modalBox: { backgroundColor: '#161616', borderRadius: 16, padding: 18, maxHeight: '85%' },
-  modalTitle: { color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 14 },
-  label: { color: '#999', fontSize: 12, marginBottom: 4, marginTop: 8 },
-  input: { backgroundColor: '#242424', borderRadius: 10, padding: 12, color: '#FFF', marginBottom: 10 },
-  emptyProducts: { color: '#777', fontStyle: 'italic', fontSize: 12, marginBottom: 8 },
+  modalBox: { backgroundColor: theme.colors.card, borderRadius: 16, padding: 18, maxHeight: '85%' },
+  modalTitle: { color: theme.colors.textPrimary, fontSize: 18, fontWeight: '700', marginBottom: 14 },
+  label: { color: theme.colors.textMuted, fontSize: 12, marginBottom: 4, marginTop: 8 },
+  input: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, color: theme.colors.textPrimary, marginBottom: 10 },
+  emptyProducts: { color: theme.colors.textMuted, fontStyle: 'italic', fontSize: 12, marginBottom: 8 },
   productRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#242424',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 10,
     marginBottom: 8,
   },
-  productName: { color: '#DDD', fontSize: 13, fontWeight: '600' },
+  productName: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600' },
   dosesInput: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: theme.colors.card,
     borderRadius: 6,
     padding: 8,
-    color: '#FFF',
+    color: theme.colors.textPrimary,
     width: 60,
     textAlign: 'center',
   },
-  addProductBtn: { backgroundColor: '#242424', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4 },
-  addProductTxt: { color: T.blue, fontWeight: '700' },
+  addProductBtn: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 4 },
+  addProductTxt: { color: theme.colors.primary, fontWeight: '700' },
   inline: { flexDirection: 'row', marginTop: 16, gap: 8 },
   btn: { flex: 1, padding: 13, borderRadius: 10, alignItems: 'center' },
   btnTxt: { color: '#000', fontWeight: '700' },
-  btnGhost: { backgroundColor: '#242424' },
-  btnGhostTxt: { color: '#AAA', fontWeight: '600' },
-  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#242424' },
-  pickerTxt: { color: '#DDD' },
+  btnGhost: { backgroundColor: theme.colors.card },
+  btnGhostTxt: { color: theme.colors.textMuted, fontWeight: '600' },
+  pickerRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  pickerTxt: { color: theme.colors.textSecondary },
   typeSelector: {
     flexDirection: 'row',
     gap: 8,
@@ -734,28 +737,28 @@ const s = StyleSheet.create({
   },
   typeOption: {
     flex: 1,
-    backgroundColor: '#242424',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#242424',
+    borderColor: theme.colors.border,
   },
   typeOptionActive: {
-    backgroundColor: T.blue + '22',
-    borderColor: T.blue,
+    backgroundColor: '#3b82f6' + '22',
+    borderColor: '#3b82f6',
   },
   typeOptionTxt: {
-    color: '#AAA',
+    color: theme.colors.textMuted,
     fontWeight: '600',
     fontSize: 13,
   },
   typeOptionTxtActive: {
-    color: T.blue,
+    color: '#3b82f6',
     fontWeight: '700',
   },
   suggestedPrice: {
-    color: T.blue,
+    color: theme.colors.primary,
     fontSize: 12,
     fontWeight: '600',
     marginTop: -6,
@@ -772,11 +775,11 @@ const s = StyleSheet.create({
     height: 20,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#555',
+    borderColor: theme.colors.border,
     marginRight: 8,
   },
   checkTxt: {
-    color: '#DDD',
+    color: theme.colors.textSecondary,
     fontSize: 13,
   },
   inputDisabled: {

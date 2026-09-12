@@ -7,6 +7,7 @@ import {
   ScrollView, StyleSheet, Text, TextInput,
   TouchableOpacity, View,
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
@@ -82,6 +83,8 @@ export default function DashboardLayoutMobile({
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
   const licenseStatus = useLicenseStatus();
   const { hasFeature } = licenseStatus;
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const isSearching = searchQuery.trim().length > 0;
   const usagePercentage = maxClients > 0 ? (currentClients / maxClients) * 100 : 0;
@@ -149,7 +152,7 @@ export default function DashboardLayoutMobile({
           <Text style={styles.title}>Meu Dashboard</Text>
         </View>
         <TouchableOpacity
-          style={{ width: 48, height: 48, backgroundColor: T.surfaceAlt, borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}
+          style={{ width: 48, height: 48, backgroundColor: theme.colors.card, borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}
           onPress={() => router.push('/(protected)/trainer-profile' as any)}
         >
           <Text style={{ fontSize: 22 }}>⚙️</Text>
@@ -159,13 +162,13 @@ export default function DashboardLayoutMobile({
       {/* Widget Metas do Mês */}
       {goalsWidget && (goalsWidget.scheduledGoal > 0 || goalsWidget.completedGoal > 0) && (
         <TouchableOpacity
-          style={{ backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: T.border }}
+          style={{ backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: theme.colors.border }}
           onPress={() => router.push('/(protected)/business-goals' as any)}
           activeOpacity={0.8}
         >
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: T.t1 }}>🎯 Metas do Mês</Text>
-            <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>Ver detalhes →</Text>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: theme.colors.textPrimary }}>🎯 Metas do Mês</Text>
+            <Text style={{ fontSize: 11, color: theme.colors.primary, fontWeight: '700' }}>Ver detalhes →</Text>
           </View>
           {/* Barra agendamentos */}
           {goalsWidget.scheduledGoal > 0 && (() => {
@@ -173,10 +176,10 @@ export default function DashboardLayoutMobile({
             return (
               <View style={{ marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>📅 Agendamentos</Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>📅 Agendamentos</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#3b82f6' }}>{goalsWidget.scheduledActual}/{goalsWidget.scheduledGoal} · {pct}%</Text>
                 </View>
-                <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
+                <View style={{ height: 6, backgroundColor: theme.colors.border, borderRadius: 3, overflow: 'hidden' }}>
                   <View style={{ height: 6, width: `${pct}%` as any, backgroundColor: '#3b82f6', borderRadius: 3 }} />
                 </View>
               </View>
@@ -188,10 +191,10 @@ export default function DashboardLayoutMobile({
             return (
               <View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 12, color: T.t2 }}>✅ Avaliações Feitas</Text>
+                  <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>✅ Avaliações Feitas</Text>
                   <Text style={{ fontSize: 12, fontWeight: '800', color: '#22c55e' }}>{goalsWidget.completedActual}/{goalsWidget.completedGoal} · {pct}%</Text>
                 </View>
-                <View style={{ height: 6, backgroundColor: T.border, borderRadius: 3, overflow: 'hidden' }}>
+                <View style={{ height: 6, backgroundColor: theme.colors.border, borderRadius: 3, overflow: 'hidden' }}>
                   <View style={{ height: 6, width: `${pct}%` as any, backgroundColor: '#22c55e', borderRadius: 3 }} />
                 </View>
               </View>
@@ -216,9 +219,9 @@ export default function DashboardLayoutMobile({
             onPress={() => router.push('/(protected)/schedule/' as any)}
             activeOpacity={0.7}
           >
-            <Text style={{ color: T.t2, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
               Nenhum agendamento.{'\n'}
-              <Text style={{ color: T.blue, fontWeight: '700' }}>Toque para agendar avaliações →</Text>
+              <Text style={{ color: theme.colors.primary, fontWeight: '700' }}>Toque para agendar avaliações →</Text>
             </Text>
           </TouchableOpacity>
         ) : (
@@ -289,7 +292,7 @@ export default function DashboardLayoutMobile({
           ))}
           {overdueClients.length > 3 && (
             <TouchableOpacity onPress={() => setOverdueModalVisible(true)}>
-              <Text style={[styles.alertMore, { color: T.blue, textDecorationLine: 'underline' }]}>
+              <Text style={[styles.alertMore, { color: theme.colors.primary, textDecorationLine: 'underline' }]}>
                 +{overdueClients.length - 3} mais — ver todos
               </Text>
             </TouchableOpacity>
@@ -345,7 +348,7 @@ export default function DashboardLayoutMobile({
           })}
           {birthdayClients.length > 3 && (
             <TouchableOpacity onPress={() => setBirthdayModalVisible(true)}>
-              <Text style={[styles.alertMore, { color: T.blue, textDecorationLine: 'underline' }]}>
+              <Text style={[styles.alertMore, { color: theme.colors.primary, textDecorationLine: 'underline' }]}>
                 +{birthdayClients.length - 3} mais — ver todos
               </Text>
             </TouchableOpacity>
@@ -363,16 +366,16 @@ export default function DashboardLayoutMobile({
 
       <View style={{ marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' }}>
             Alunos ativos{licenseStatus.status === 'trial' ? ` · ${getDaysRemaining()} dia${getDaysRemaining() !== 1 ? 's' : ''} de trial` : ''}
           </Text>
-          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>{currentClients}/{maxClients}</Text>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' }}>{currentClients}/{maxClients}</Text>
         </View>
-        <View style={{ height: 4, backgroundColor: T.border, borderRadius: 99, overflow: 'hidden' }}>
+        <View style={{ height: 4, backgroundColor: theme.colors.border, borderRadius: 99, overflow: 'hidden' }}>
           <View style={{
             height: '100%',
             borderRadius: 99,
-            backgroundColor: maxClients > 0 && (currentClients / maxClients) >= 0.8 ? T.orange : T.blue,
+            backgroundColor: maxClients > 0 && (currentClients / maxClients) >= 0.8 ? '#f97316' : theme.colors.primary,
             width: `${Math.min(maxClients > 0 ? (currentClients / maxClients) * 100 : 0, 100)}%` as any
           }} />
         </View>
@@ -384,7 +387,7 @@ export default function DashboardLayoutMobile({
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar aluno..."
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
             value={searchQuery}
             onChangeText={onSearchChange}
             autoCorrect={false}
@@ -462,14 +465,14 @@ export default function DashboardLayoutMobile({
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Buscar aluno..."
-                  placeholderTextColor={T.t3}
+                  placeholderTextColor={theme.colors.textMuted}
                   value={searchQuery}
                   onChangeText={onSearchChange}
                   autoFocus
                   autoCorrect={false}
                 />
                 <TouchableOpacity onPress={() => onSearchChange('')}>
-                  <Text style={{ fontSize: 18, color: T.t3, paddingHorizontal: 8 }}>✕</Text>
+                  <Text style={{ fontSize: 18, color: theme.colors.textMuted, paddingHorizontal: 8 }}>✕</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -555,7 +558,7 @@ export default function DashboardLayoutMobile({
             data={filteredClients}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={renderHeader}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.blue} />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="none"
@@ -625,8 +628,8 @@ export default function DashboardLayoutMobile({
         transparent={false}
         onRequestClose={onCloseScheduleModal}
       >
-        <View style={{ flex: 1, backgroundColor: T.bg }}>
-          <View style={{ flex: 1, backgroundColor: T.bg }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+          <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderTop}>
                 <Text style={styles.modalTitle}>Agendar Sessão</Text>
@@ -637,7 +640,7 @@ export default function DashboardLayoutMobile({
               <TextInput
                 style={styles.modalInput}
                 placeholder="Buscar aluno..."
-                placeholderTextColor={T.t3}
+                placeholderTextColor={theme.colors.textMuted}
                 value={scheduleSearchQuery}
                 onChangeText={onScheduleSearchChange}
               />
@@ -684,13 +687,13 @@ export default function DashboardLayoutMobile({
         onRequestClose={() => setOverdueModalVisible(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
-            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: T.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
+          <View style={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: theme.colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary }}>
                 🔴 Reavaliações Pendentes ({overdueClients.length})
               </Text>
               <TouchableOpacity onPress={() => setOverdueModalVisible(false)}>
-                <Text style={{ fontSize: 22, color: T.t3 }}>✕</Text>
+                <Text style={{ fontSize: 22, color: theme.colors.textMuted }}>✕</Text>
               </TouchableOpacity>
             </View>
             <FlatList
@@ -700,7 +703,7 @@ export default function DashboardLayoutMobile({
               contentContainerStyle={{ padding: 16 }}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: T.border }}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}
                   onPress={() => {
                     setOverdueModalVisible(false);
                     router.push(`/(protected)/client-details?id=${item.id}` as any);
@@ -711,7 +714,7 @@ export default function DashboardLayoutMobile({
                     <Text style={{ color: '#ff9a6c', fontWeight: '800', fontSize: 13 }}>{getInitials(item.name)}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: T.t1 }}>{item.name}</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary }}>{item.name}</Text>
                     <Text style={{ fontSize: 12, color: '#ff9a6c', marginTop: 2 }}>
                       {item.lastAssessmentDate
                         ? `Última: ${Math.floor((new Date().getTime() - new Date(item.lastAssessmentDate).getTime()) / (1000 * 60 * 60 * 24))} dias atrás`
@@ -742,13 +745,13 @@ export default function DashboardLayoutMobile({
         onRequestClose={() => setBirthdayModalVisible(false)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: T.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
-            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: T.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 17, fontWeight: '800', color: T.t1 }}>
+          <View style={{ backgroundColor: theme.colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' }}>
+            <View style={{ padding: 20, borderBottomWidth: 1, borderBottomColor: theme.colors.border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: theme.colors.textPrimary }}>
                 🎂 Aniversariantes ({birthdayClients.length})
               </Text>
               <TouchableOpacity onPress={() => setBirthdayModalVisible(false)}>
-                <Text style={{ fontSize: 22, color: T.t3 }}>✕</Text>
+                <Text style={{ fontSize: 22, color: theme.colors.textMuted }}>✕</Text>
               </TouchableOpacity>
             </View>
             <FlatList
@@ -770,11 +773,11 @@ export default function DashboardLayoutMobile({
                       activeOpacity={0.75}
                     >
                       <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(59,130,246,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                        <Text style={{ color: T.blue, fontWeight: '800', fontSize: 13 }}>{String(day).padStart(2, '0')}</Text>
+                        <Text style={{ color: theme.colors.primary, fontWeight: '800', fontSize: 13 }}>{String(day).padStart(2, '0')}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: T.t1 }}>{item.name}</Text>
-                        {isToday && <Text style={{ fontSize: 12, color: T.blue, marginTop: 2 }}>🎉 Hoje!</Text>}
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: theme.colors.textPrimary }}>{item.name}</Text>
+                        {isToday && <Text style={{ fontSize: 12, color: theme.colors.primary, marginTop: 2 }}>🎉 Hoje!</Text>}
                       </View>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -794,16 +797,16 @@ export default function DashboardLayoutMobile({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   outerWrapper: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
 
   // ─── Trial Banner ───────────────────────────────────────────────
@@ -829,36 +832,36 @@ const styles = StyleSheet.create({
 
   // ─── Header ─────────────────────────────────────────────────────
   headerTopArea: { marginBottom: 24, marginTop: 10 },
-  greetingText: { fontSize: 14, fontWeight: '600', color: T.t3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
-  title: { fontSize: 22, fontWeight: '900', color: T.t1, letterSpacing: -0.5 },
+  greetingText: { fontSize: 14, fontWeight: '600', color: theme.colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 },
+  title: { fontSize: 22, fontWeight: '900', color: theme.colors.textPrimary, letterSpacing: -0.5 },
 
 
   // ─── Widget de sessões ──────────────────────────────────────────
-  planWidget: { backgroundColor: T.card, padding: 24, borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: T.border },
+  planWidget: { backgroundColor: theme.colors.card, padding: 24, borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: theme.colors.border },
   widgetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  widgetTitle: { fontSize: 18, fontWeight: '800', color: T.t1 },
-  widgetLink: { fontSize: 12, fontWeight: '700', color: T.blue },
+  widgetTitle: { fontSize: 18, fontWeight: '800', color: theme.colors.textPrimary },
+  widgetLink: { fontSize: 12, fontWeight: '700', color: theme.colors.primary },
   widgetEmpty: { paddingVertical: 10, alignItems: 'center' },
-  agendaItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: T.border },
-  agendaDateBox: { backgroundColor: T.surfaceAlt, padding: 10, borderRadius: 12, alignItems: 'center', width: 65, marginRight: 14 },
-  agendaDateText: { fontSize: 13, fontWeight: '800', color: T.blue },
-  agendaTimeText: { fontSize: 11, color: T.blue, fontWeight: '600', marginTop: 2 },
+  agendaItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  agendaDateBox: { backgroundColor: theme.colors.card, padding: 10, borderRadius: 12, alignItems: 'center', width: 65, marginRight: 14 },
+  agendaDateText: { fontSize: 13, fontWeight: '800', color: theme.colors.primary },
+  agendaTimeText: { fontSize: 11, color: theme.colors.primary, fontWeight: '600', marginTop: 2 },
   agendaInfo: { flex: 1 },
-  agendaClientName: { fontSize: 16, fontWeight: '700', color: T.t1 },
-  agendaTypes: { fontSize: 13, color: T.t2, marginTop: 2 },
+  agendaClientName: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary },
+  agendaTypes: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 2 },
 
   // ─── Botões de ação ─────────────────────────────────────────────
-  mainScheduleBtn: { backgroundColor: T.card, flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: T.border },
+  mainScheduleBtn: { backgroundColor: theme.colors.card, flexDirection: 'row', alignItems: 'center', padding: 20, borderRadius: 20, marginBottom: 24, borderWidth: 1, borderColor: theme.colors.border },
   mainScheduleBtnIcon: { fontSize: 36, marginRight: 16 },
-  mainScheduleBtnTitle: { fontSize: 18, fontWeight: '800', color: T.t1 },
-  mainScheduleBtnSub: { fontSize: 13, color: T.t2, marginTop: 4, paddingRight: 30 },
-  buttonText: { color: T.white, fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
+  mainScheduleBtnTitle: { fontSize: 18, fontWeight: '800', color: theme.colors.textPrimary },
+  mainScheduleBtnSub: { fontSize: 13, color: theme.colors.textSecondary, marginTop: 4, paddingRight: 30 },
+  buttonText: { color: '#fff', fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
 
   // ─── Busca ──────────────────────────────────────────────────────
   searchContainer: { marginBottom: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, borderRadius: 14, paddingHorizontal: 16, height: 54, borderWidth: 1, borderColor: T.border },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.card, borderRadius: 14, paddingHorizontal: 16, height: 54, borderWidth: 1, borderColor: theme.colors.border },
   searchIcon: { fontSize: 16, marginRight: 10, opacity: 0.6 },
-  searchInput: { flex: 1, fontSize: 16, color: T.white, height: '100%' },
+  searchInput: { flex: 1, fontSize: 16, color: theme.colors.textPrimary, height: '100%' },
 
   // ─── Ordenação ──────────────────────────────────────────────────
   sortContainer: { marginBottom: 24, gap: 8 },
@@ -868,64 +871,64 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.card,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     alignItems: 'center',
   },
   sortButtonActive: {
-    backgroundColor: T.blue,
-    borderColor: T.blue,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   sortButtonText: {
     fontSize: 13,
     fontWeight: '700',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   sortButtonTextActive: {
-    color: T.white,
+    color: '#fff',
   },
 
-  sectionTitle: { fontSize: 20, fontWeight: '800', color: T.t1, marginBottom: 16, letterSpacing: -0.5 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 16, letterSpacing: -0.5 },
 
   // ─── Cards de aluno ─────────────────────────────────────────────
-  clientCard: { backgroundColor: T.card, borderRadius: 20, marginBottom: 16, borderWidth: 1, borderColor: T.border },
+  clientCard: { backgroundColor: theme.colors.card, borderRadius: 20, marginBottom: 16, borderWidth: 1, borderColor: theme.colors.border },
   clientInfoArea: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   clientProfileGroup: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: T.surfaceAlt, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
-  avatarText: { color: T.blue, fontWeight: 'bold', fontSize: 16, letterSpacing: 1 },
-  clientName: { fontSize: 17, fontWeight: '700', color: T.t1, marginBottom: 2 },
-  clientSubText: { fontSize: 13, color: T.t2, fontWeight: '500' },
-  viewsBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: T.surface, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 10 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: theme.colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
+  avatarText: { color: theme.colors.primary, fontWeight: 'bold', fontSize: 16, letterSpacing: 1 },
+  clientName: { fontSize: 17, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 2 },
+  clientSubText: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: '500' },
+  viewsBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.card, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, marginRight: 10 },
   viewsEmoji: { fontSize: 10, marginRight: 4 },
-  viewsText: { fontSize: 11, fontWeight: '700', color: T.t2 },
-  arrowIcon: { fontSize: 24, color: T.t3 },
-  clientActionsArea: { borderTopWidth: 1, borderTopColor: T.border, backgroundColor: T.bg, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  viewsText: { fontSize: 11, fontWeight: '700', color: theme.colors.textSecondary },
+  arrowIcon: { fontSize: 24, color: theme.colors.textMuted },
+  clientActionsArea: { borderTopWidth: 1, borderTopColor: theme.colors.border, backgroundColor: theme.colors.background, borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
   actionButtonScroll: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 18 },
   actionEmoji: { fontSize: 16, marginRight: 8 },
-  actionLabel: { fontSize: 12, color: T.t2, fontWeight: '700' },
-  verticalDivider: { width: 1, backgroundColor: T.border, marginVertical: 10 },
+  actionLabel: { fontSize: 12, color: theme.colors.textSecondary, fontWeight: '700' },
+  verticalDivider: { width: 1, backgroundColor: theme.colors.border, marginVertical: 10 },
 
   // ─── Estado vazio ───────────────────────────────────────────────
-  emptyContainer: { padding: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: T.card, borderRadius: 20, marginTop: 10, borderWidth: 1, borderColor: T.border },
+  emptyContainer: { padding: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.card, borderRadius: 20, marginTop: 10, borderWidth: 1, borderColor: theme.colors.border },
   emptyEmoji: { fontSize: 40, marginBottom: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: T.t1, marginBottom: 8 },
-  emptyText: { color: T.t2, fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  emptyTitle: { fontSize: 18, fontWeight: 'bold', color: theme.colors.textPrimary, marginBottom: 8 },
+  emptyText: { color: theme.colors.textSecondary, fontSize: 15, textAlign: 'center', lineHeight: 22 },
 
   // ─── Modal ──────────────────────────────────────────────────────
-  modalHeader: { padding: 20, backgroundColor: T.card, borderBottomWidth: 1, borderColor: T.border, paddingTop: Platform.OS === 'android' ? 40 : 20 },
+  modalHeader: { padding: 20, backgroundColor: theme.colors.card, borderBottomWidth: 1, borderColor: theme.colors.border, paddingTop: Platform.OS === 'android' ? 40 : 20 },
   modalHeaderTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: '900', color: T.t1 },
-  modalCloseBtn: { color: T.red, fontWeight: '800', fontSize: 16 },
-  modalInput: { backgroundColor: T.surface, padding: 16, borderRadius: 12, fontSize: 16, color: T.white, borderWidth: 1, borderColor: T.border },
-  modalClientItem: { padding: 16, backgroundColor: T.card, borderBottomWidth: 1, borderColor: T.border, flexDirection: 'row', alignItems: 'center' },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: theme.colors.textPrimary },
+  modalCloseBtn: { color: '#ef4444', fontWeight: '800', fontSize: 16 },
+  modalInput: { backgroundColor: theme.colors.card, padding: 16, borderRadius: 12, fontSize: 16, color: theme.colors.textPrimary, borderWidth: 1, borderColor: theme.colors.border },
+  modalClientItem: { padding: 16, backgroundColor: theme.colors.card, borderBottomWidth: 1, borderColor: theme.colors.border, flexDirection: 'row', alignItems: 'center' },
   modalClientEmoji: { fontSize: 24, marginRight: 16 },
-  modalClientName: { fontSize: 16, fontWeight: '700', color: T.t1, flex: 1 },
-  modalArrow: { fontSize: 18, color: T.t3 },
-  addClientFixedFooter: { backgroundColor: T.surface, borderTopWidth: 1, borderTopColor: T.border, padding: 12 },
-  addClientFooterBtn: { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: T.card, borderRadius: 12, borderWidth: 1, borderColor: T.border },
-  addClientFooterIcon: { fontSize: 18, color: T.blue, marginRight: 10, fontWeight: '800' },
-  addClientFooterText: { fontSize: 15, color: T.blue, fontWeight: '700' },
+  modalClientName: { fontSize: 16, fontWeight: '700', color: theme.colors.textPrimary, flex: 1 },
+  modalArrow: { fontSize: 18, color: theme.colors.textMuted },
+  addClientFixedFooter: { backgroundColor: theme.colors.card, borderTopWidth: 1, borderTopColor: theme.colors.border, padding: 12 },
+  addClientFooterBtn: { flexDirection: 'row', alignItems: 'center', padding: 14, backgroundColor: theme.colors.card, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border },
+  addClientFooterIcon: { fontSize: 18, color: theme.colors.primary, marginRight: 10, fontWeight: '800' },
+  addClientFooterText: { fontSize: 15, color: theme.colors.primary, fontWeight: '700' },
 
   // ─── Widget Reavaliações ───────────────────────────────────────────
   alertWidget: {
@@ -949,7 +952,7 @@ const styles = StyleSheet.create({
   },
   alertCount: {
     backgroundColor: '#ff6b35',
-    color: T.white,
+    color: '#fff',
     fontWeight: '900',
     fontSize: 13,
     paddingHorizontal: 10,
@@ -987,7 +990,7 @@ const styles = StyleSheet.create({
   alertClientName: {
     fontSize: 14,
     fontWeight: '700',
-    color: T.t1,
+    color: '#fff',
   },
   alertClientSub: {
     fontSize: 12,
@@ -1031,7 +1034,7 @@ const styles = StyleSheet.create({
   birthdayWidgetTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: T.t1,
+    color: '#fff',
   },
   birthdayMonth: {
     fontSize: 12,
@@ -1077,7 +1080,7 @@ const styles = StyleSheet.create({
   birthdayName: {
     fontSize: 14,
     fontWeight: '700',
-    color: T.t1,
+    color: '#fff',
   },
   birthdayNameToday: {
     color: '#4fc3f7',

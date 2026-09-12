@@ -13,11 +13,14 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../lib/supabase";
+import { useTheme } from "../contexts/ThemeContext";
 import { GradientPrimary } from "../utils/gradients";
 import { T } from "../utils/theme";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function SetPassword() {
+  const { theme } = useTheme();
+
   // ─── Responsividade ───────────────────────────────
   const [screenWidth, setScreenWidth] = useState(
     () => Dimensions.get('window').width || 375
@@ -196,9 +199,11 @@ export default function SetPassword() {
     }
   }
 
+  const styles = createStyles(theme);
+
   if (invalidLink) {
     return (
-      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: isDesktop ? 'center' : undefined }}>
         {message ? (
           <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError, { left: toastSide, right: toastSide }]}>
             <Text style={[styles.toastText, isSuccess ? styles.toastTextSuccess : styles.toastTextError]}>
@@ -213,7 +218,7 @@ export default function SetPassword() {
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={true}
             >
-              <Branding />
+              <Branding theme={theme} />
               <View style={styles.card}>
                 <Text style={styles.title}>Link inválido</Text>
                 <Text style={styles.subtitle}>
@@ -235,15 +240,15 @@ export default function SetPassword() {
 
   if (!ready) {
     return (
-      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: isDesktop ? 'center' : undefined }}>
         <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? CARD_MAX_WIDTH : undefined }}>
           <KeyboardAvoidingView style={styles.root}>
             <ScrollView 
               contentContainerStyle={[styles.scrollContent, { justifyContent: "center" }]}
               showsVerticalScrollIndicator={true}
             >
-              <Branding />
-              <Text style={{ textAlign: "center", color: T.t3, fontSize: 14 }}>
+              <Branding theme={theme} />
+              <Text style={{ textAlign: "center", color: theme.colors.textMuted, fontSize: 14 }}>
                 Validando convite...
               </Text>
             </ScrollView>
@@ -254,7 +259,7 @@ export default function SetPassword() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg, alignItems: isDesktop ? 'center' : undefined }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: isDesktop ? 'center' : undefined }}>
       {message ? (
         <View style={[styles.toast, isSuccess ? styles.toastSuccess : styles.toastError, { left: toastSide, right: toastSide }]}>
           <Text style={[styles.toastText, isSuccess ? styles.toastTextSuccess : styles.toastTextError]}>
@@ -273,7 +278,7 @@ export default function SetPassword() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={true}
           >
-            <Branding />
+            <Branding theme={theme} />
 
             <View style={styles.card}>
               <Text style={styles.title}>Bem-vindo!</Text>
@@ -341,7 +346,8 @@ export default function SetPassword() {
   );
 }
 
-function Branding() {
+function Branding({ theme }: { theme: import("@/contexts/ThemeContext").AppTheme }) {
+  const styles = createStyles(theme);
   return (
     <View style={styles.brandingContainer}>
       <LinearGradient {...GradientPrimary} style={styles.logoBox}>
@@ -355,8 +361,8 @@ function Branding() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.background },
 
   toast: {
     position: "absolute",
@@ -365,10 +371,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     zIndex: 10,
     elevation: 6,
+    backgroundColor: theme.colors.card,
+    borderLeftWidth: 4,
   },
-  toastError:       { backgroundColor: "rgba(239,68,68,0.1)", borderLeftWidth: 4, borderLeftColor: T.red },
-  toastSuccess:     { backgroundColor: "rgba(16,185,129,0.1)", borderLeftWidth: 4, borderLeftColor: T.green },
-  toastText:        { fontSize: 14, fontWeight: "700", textAlign: "center" },
+  toastError:       { borderLeftColor: T.red },
+  toastSuccess:     { borderLeftColor: T.green },
+  toastText:        { fontSize: 14, fontWeight: "700", textAlign: "center", color: theme.colors.textPrimary },
   toastTextError:   { color: T.red },
   toastTextSuccess: { color: T.green },
 
@@ -383,36 +391,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
-  logoLetter:   { fontSize: 32, fontWeight: "900", color: T.white },
-  appName:      { fontSize: 30, fontWeight: "900", color: T.t1 },
+  logoLetter:   { fontSize: 32, fontWeight: "900", color: "#FFFFFF" },
+  appName:      { fontSize: 30, fontWeight: "900", color: theme.colors.textPrimary },
   appTitleBlue: { color: T.blue },
-  appSubtitle:  { fontSize: 12, color: T.t3, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" },
+  appSubtitle:  { fontSize: 12, color: theme.colors.textMuted, fontWeight: "700", letterSpacing: 2, textTransform: "uppercase" },
 
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
-  title:    { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 6, textAlign: "center" },
-  subtitle: { fontSize: 14, color: T.t3, textAlign: "center", marginBottom: 24, lineHeight: 20 },
+  title:    { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 6, textAlign: "center" },
+  subtitle: { fontSize: 14, color: theme.colors.textMuted, textAlign: "center", marginBottom: 24, lineHeight: 20 },
 
   inputGroup: { marginBottom: 16 },
-  label:      { fontSize: 13, fontWeight: "700", color: T.t2, marginBottom: 8 },
+  label:      { fontSize: 13, fontWeight: "700", color: theme.colors.textSecondary, marginBottom: 8 },
   input: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.background,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 50,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
-  inputReadOnly: { color: T.t3 },
+  inputReadOnly: { color: theme.colors.textMuted },
 
   primaryButton:         { borderRadius: 14, overflow: "hidden", marginTop: 8 },
   primaryButtonGradient: { height: 54, alignItems: "center", justifyContent: "center", borderRadius: 14 },
-  primaryButtonText:     { color: T.white, fontWeight: "700", fontSize: 16 },
+  primaryButtonText:     { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
 });

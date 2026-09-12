@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
 import { T } from "../utils/theme";
 
 // ------------------------------------------------------------
@@ -52,6 +53,8 @@ function sumMacros(foods: FoodItem[]) {
 // Componente
 // ------------------------------------------------------------
 export default function MealCard({ meal }: MealCardProps) {
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const totals = sumMacros(meal.meal_plan_foods);
 
   return (
@@ -112,14 +115,14 @@ export default function MealCard({ meal }: MealCardProps) {
 // ------------------------------------------------------------
 // Estilos
 // ------------------------------------------------------------
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   header: {
     flexDirection: "row",
@@ -127,27 +130,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  mealName: { fontSize: 15, fontWeight: "800", color: T.t1 },
+  mealName: { fontSize: 15, fontWeight: "800", color: theme.colors.textPrimary },
   mealTime: { fontSize: 12, color: T.green, fontWeight: "700" },
-  empty: { color: T.t3, fontSize: 13, fontStyle: "italic" },
+  empty: { color: theme.colors.textMuted, fontSize: 13, fontStyle: "italic" },
   foodRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 6,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
-  foodName: { fontSize: 14, color: T.t1, fontWeight: "600" },
-  foodQty: { fontSize: 12, color: T.t3 },
-  foodMacros: { fontSize: 12, color: T.t3 },
-  foodCal: { fontSize: 13, color: T.t2, fontWeight: "700" },
+  foodName: { fontSize: 14, color: theme.colors.textPrimary, fontWeight: "600" },
+  foodQty: { fontSize: 12, color: theme.colors.textMuted },
+  foodMacros: { fontSize: 12, color: theme.colors.textMuted },
+  foodCal: { fontSize: 13, color: theme.colors.textSecondary, fontWeight: "700" },
   totalsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 10,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: T.border,
+    borderTopColor: theme.colors.border,
   },
-  total: { fontSize: 11, color: T.t2, fontWeight: "700" },
+  total: { fontSize: 11, color: theme.colors.textSecondary, fontWeight: "700" },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { T } from '../utils/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface MeasurementsEvolutionPanelProps {
   currentAssessment: any;
@@ -13,6 +13,7 @@ export default function MeasurementsEvolutionPanel({
   prevAssessment,
   firstAssessment
 }: MeasurementsEvolutionPanelProps) {
+  const { theme } = useTheme();
 
   const currAnthro = currentAssessment?.anthropometry?.[0];
   const prevAnthro = prevAssessment?.anthropometry?.[0];
@@ -77,8 +78,8 @@ export default function MeasurementsEvolutionPanel({
 
   const MeasureRow = ({ label, diffValue }: { label: string, diffValue: number | null }) => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-      <Text style={{ fontSize: 12, color: T.t3, fontWeight: '500' }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontWeight: '900', color: diffValue === null ? T.t3 : T.t1 }}>
+      <Text style={{ fontSize: 12, color: theme.colors.textMuted, fontWeight: '500' }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '900', color: diffValue === null ? theme.colors.textMuted : theme.colors.textPrimary }}>
         {formatDiff(diffValue)}
       </Text>
     </View>
@@ -86,8 +87,8 @@ export default function MeasurementsEvolutionPanel({
 
   const LimbRow = ({ label, diffLeft, diffRight }: { label: string, diffLeft: number | null, diffRight: number | null }) => (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
-      <Text style={{ fontSize: 12, color: T.t3, fontWeight: '500' }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontWeight: '900', color: (diffLeft === null && diffRight === null) ? T.t3 : T.t1 }}>
+      <Text style={{ fontSize: 12, color: theme.colors.textMuted, fontWeight: '500' }}>{label}</Text>
+      <Text style={{ fontSize: 12, fontWeight: '900', color: (diffLeft === null && diffRight === null) ? theme.colors.textMuted : theme.colors.textPrimary }}>
         {formatLimbDiff(diffLeft, diffRight)}
       </Text>
     </View>
@@ -95,19 +96,19 @@ export default function MeasurementsEvolutionPanel({
 
   return (
     <View style={{ marginBottom: 24 }}>
-      <Text style={{ fontSize: 15, fontWeight: '800', color: T.t1, marginBottom: 16, textTransform: 'uppercase', textAlign: 'center', letterSpacing: 0.5 }}>
+      <Text style={{ fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 16, textTransform: 'uppercase', textAlign: 'center', letterSpacing: 0.5 }}>
         📏 Evolução de Medidas Corporais
       </Text>
 
       <View style={{ flexDirection: 'row', gap: 12 }}>
 
         {/* Cartão 1: Última vs Anterior */}
-        <View style={{ flex: 1, backgroundColor: T.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: T.border }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border }}>
           <Text style={{ fontSize: 12, fontWeight: '900', color: '#ea580c', marginBottom: 10, textAlign: 'center' }}>ÚLTIMA VS ANTERIOR</Text>
 
-          <View style={{ backgroundColor: T.surface, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: T.t3 }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{currDate}</Text></View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: T.t3 }}>Anterior:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{prevDate}</Text></View>
+          <View style={{ backgroundColor: theme.colors.card, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: theme.colors.textMuted }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.colors.textPrimary }}>{currDate}</Text></View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: theme.colors.textMuted }}>Anterior:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.colors.textPrimary }}>{prevDate}</Text></View>
             {calcInterval(currentAssessment?.date, prevAssessment?.date) ? (
               <View style={{ marginTop: 6, alignItems: 'center' }}>
                 <View style={{ backgroundColor: 'rgba(234,88,12,0.12)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
@@ -119,7 +120,7 @@ export default function MeasurementsEvolutionPanel({
             ) : null}
           </View>
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>TRONCO</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 6 }}>TRONCO</Text>
           <MeasureRow label="Peitoral" diffValue={calcDiff(currAnthro?.chest, prevAnthro?.chest)} />
           <MeasureRow label="Abdômen" diffValue={calcDiff(currAnthro?.abdomen, prevAnthro?.abdomen)} />
           <MeasureRow label="Cintura" diffValue={calcDiff(currAnthro?.waist, prevAnthro?.waist)} />
@@ -134,11 +135,11 @@ export default function MeasurementsEvolutionPanel({
             ].filter(v => v !== null) as number[];
             if (vals.length === 0) return null;
             const total = vals.reduce((a, b) => a + b, 0);
-            const color = total < 0 ? '#22c55e' : total > 0 ? '#ef4444' : T.t3;
+            const color = total < 0 ? '#22c55e' : total > 0 ? '#ef4444' : theme.colors.textMuted;
             return (
-              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: T.border }}>
+              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 11, color: T.t3, fontWeight: '700', flex: 1 }}>
+                  <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: '700', flex: 1 }}>
                     {total <= 0 ? '✅ Total Eliminado' : '📈 Total Ganho'}
                   </Text>
                   <Text style={{ fontSize: 13, fontWeight: '900', color }}>
@@ -149,21 +150,21 @@ export default function MeasurementsEvolutionPanel({
             );
           })()}
 
-          <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+          <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 8 }} />
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>MEMBROS (E/D)</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 6 }}>MEMBROS (E/D)</Text>
           <LimbRow label="Braço" diffLeft={calcDiff(currAnthro?.arm_left, prevAnthro?.arm_left)} diffRight={calcDiff(currAnthro?.arm_right, prevAnthro?.arm_right)} />
           <LimbRow label="Coxa" diffLeft={calcDiff(currAnthro?.thigh_left, prevAnthro?.thigh_left)} diffRight={calcDiff(currAnthro?.thigh_right, prevAnthro?.thigh_right)} />
           <LimbRow label="Panturrilha" diffLeft={calcDiff(currAnthro?.calf_left, prevAnthro?.calf_left)} diffRight={calcDiff(currAnthro?.calf_right, prevAnthro?.calf_right)} />
         </View>
 
         {/* Cartão 2: Evolução Total */}
-        <View style={{ flex: 1, backgroundColor: T.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: T.border }}>
+        <View style={{ flex: 1, backgroundColor: theme.colors.card, padding: 12, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border }}>
           <Text style={{ fontSize: 12, fontWeight: '900', color: '#ea580c', marginBottom: 10, textAlign: 'center' }}>EVOLUÇÃO TOTAL</Text>
 
-          <View style={{ backgroundColor: T.surface, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: T.border }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: T.t3 }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{currDate}</Text></View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: T.t3 }}>Início:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: T.t1 }}>{firstDate}</Text></View>
+          <View style={{ backgroundColor: theme.colors.card, padding: 8, borderRadius: 8, marginBottom: 12, borderWidth: 1, borderColor: theme.colors.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}><Text style={{ fontSize: 10, color: theme.colors.textMuted }}>Atual:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.colors.textPrimary }}>{currDate}</Text></View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}><Text style={{ fontSize: 10, color: theme.colors.textMuted }}>Início:</Text><Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.colors.textPrimary }}>{firstDate}</Text></View>
             {calcInterval(currentAssessment?.date, firstAssessment?.date) ? (
               <View style={{ marginTop: 6, alignItems: 'center' }}>
                 <View style={{ backgroundColor: 'rgba(234,88,12,0.12)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 99 }}>
@@ -175,7 +176,7 @@ export default function MeasurementsEvolutionPanel({
             ) : null}
           </View>
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>TRONCO</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 6 }}>TRONCO</Text>
           <MeasureRow label="Peitoral" diffValue={calcDiff(currAnthro?.chest, firstAnthro?.chest)} />
           <MeasureRow label="Abdômen" diffValue={calcDiff(currAnthro?.abdomen, firstAnthro?.abdomen)} />
           <MeasureRow label="Cintura" diffValue={calcDiff(currAnthro?.waist, firstAnthro?.waist)} />
@@ -190,11 +191,11 @@ export default function MeasurementsEvolutionPanel({
             ].filter(v => v !== null) as number[];
             if (vals.length === 0) return null;
             const total = vals.reduce((a, b) => a + b, 0);
-            const color = total < 0 ? '#22c55e' : total > 0 ? '#ef4444' : T.t3;
+            const color = total < 0 ? '#22c55e' : total > 0 ? '#ef4444' : theme.colors.textMuted;
             return (
-              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: T.border }}>
+              <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: theme.colors.border }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 11, color: T.t3, fontWeight: '700', flex: 1 }}>
+                  <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: '700', flex: 1 }}>
                     {total <= 0 ? '✅ Total Eliminado' : '📈 Total Ganho'}
                   </Text>
                   <Text style={{ fontSize: 13, fontWeight: '900', color }}>
@@ -205,9 +206,9 @@ export default function MeasurementsEvolutionPanel({
             );
           })()}
 
-          <View style={{ height: 1, backgroundColor: T.border, marginVertical: 8 }} />
+          <View style={{ height: 1, backgroundColor: theme.colors.border, marginVertical: 8 }} />
 
-          <Text style={{ fontSize: 11, fontWeight: '800', color: T.t2, marginBottom: 6 }}>MEMBROS (E/D)</Text>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 6 }}>MEMBROS (E/D)</Text>
           <LimbRow label="Braço" diffLeft={calcDiff(currAnthro?.arm_left, firstAnthro?.arm_left)} diffRight={calcDiff(currAnthro?.arm_right, firstAnthro?.arm_right)} />
           <LimbRow label="Coxa" diffLeft={calcDiff(currAnthro?.thigh_left, firstAnthro?.thigh_left)} diffRight={calcDiff(currAnthro?.thigh_right, firstAnthro?.thigh_right)} />
           <LimbRow label="Panturrilha" diffLeft={calcDiff(currAnthro?.calf_left, firstAnthro?.calf_left)} diffRight={calcDiff(currAnthro?.calf_right, firstAnthro?.calf_right)} />

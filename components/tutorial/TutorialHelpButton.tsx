@@ -3,6 +3,7 @@ import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTutorial } from '../../contexts/TutorialContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { T } from '../../utils/theme';
 
 interface TutorialHelpButtonProps {
@@ -11,6 +12,8 @@ interface TutorialHelpButtonProps {
 
 export const TutorialHelpButton: React.FC<TutorialHelpButtonProps> = ({ screenId }) => {
   const { tutorialEnabled, tutorialProgress, startTour } = useTutorial();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
   const insets = useSafeAreaInsets();
 
   if (!tutorialEnabled || tutorialProgress[screenId]) {
@@ -28,7 +31,7 @@ export const TutorialHelpButton: React.FC<TutorialHelpButtonProps> = ({ screenId
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import('@/contexts/ThemeContext').AppTheme) => StyleSheet.create({
   button: {
     position: Platform.OS === 'web' ? 'fixed' : 'absolute',
     left: 18,

@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface Supplement {
   id: string;
@@ -67,6 +68,7 @@ const initialFormData: FormData = {
 
 export default function SupplementsScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const [supplements, setSupplements] = useState<Supplement[]>([]);
   const [filteredSupplements, setFilteredSupplements] = useState<Supplement[]>([]);
   const [searchText, setSearchText] = useState('');
@@ -282,6 +284,8 @@ export default function SupplementsScreen() {
     </View>
   );
 
+  const styles = createStyles(theme);
+
   return (
     <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -495,10 +499,10 @@ export default function SupplementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
 
   // Header
@@ -508,9 +512,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   titleContainer: {
     flexDirection: 'row',
@@ -519,11 +523,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   counter: {
     fontSize: 16,
-    color: T.t3,
+    color: theme.colors.textMuted,
     marginLeft: 8,
   },
   addButton: {
@@ -542,17 +546,17 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
   },
   searchInput: {
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
 
   // Lista
@@ -562,12 +566,12 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -581,7 +585,7 @@ const styles = StyleSheet.create({
     color: T.blue,
   },
   skuBadge: {
-    backgroundColor: T.bgAlt,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -589,12 +593,12 @@ const styles = StyleSheet.create({
   skuText: {
     fontSize: 12,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   nameText: {
     fontSize: 16,
     fontWeight: '600',
-    color: T.t1,
+    color: theme.colors.textPrimary,
     marginBottom: 12,
   },
   macrosContainer: {
@@ -603,7 +607,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pill: {
-    backgroundColor: T.bgAlt,
+    backgroundColor: theme.colors.card,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -613,11 +617,11 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
   },
   notesText: {
     fontSize: 14,
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     marginTop: 8,
     marginBottom: 8,
@@ -637,7 +641,7 @@ const styles = StyleSheet.create({
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: T.bg,
+    backgroundColor: theme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -645,9 +649,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: T.border,
+    borderBottomColor: theme.colors.border,
   },
   cancelText: {
     color: T.red,
@@ -657,7 +661,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: T.t1,
+    color: theme.colors.textPrimary,
   },
   saveText: {
     color: T.blue,
@@ -665,7 +669,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveTextDisabled: {
-    color: T.t3,
+    color: theme.colors.textMuted,
   },
   modalContent: {
     flex: 1,
@@ -687,18 +691,18 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: T.t2,
+    color: theme.colors.textSecondary,
     marginBottom: 6,
   },
   fieldInput: {
-    backgroundColor: T.surface,
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: T.t1,
+    color: theme.colors.textPrimary,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
   },
   notesInput: {
     height: 80,
@@ -706,7 +710,7 @@ const styles = StyleSheet.create({
   },
   fieldHint: {
     fontSize: 12,
-    color: T.t3,
+    color: theme.colors.textMuted,
     fontStyle: 'italic',
     marginTop: 4,
   },

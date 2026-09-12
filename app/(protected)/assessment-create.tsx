@@ -4,9 +4,11 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import { useTrainer } from "../../hooks/useTrainer";
 import { supabase } from "../../lib/supabase";
 import { T } from "../../utils/theme";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function AssessmentCreate() {
   const { trainerId, loadingTrainer } = useTrainer();
+  const { theme } = useTheme();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,10 +52,12 @@ export default function AssessmentCreate() {
     });
   }
 
+  const styles = createStyles(theme);
+
   if (loadingTrainer || loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={T.blue} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -94,37 +98,37 @@ export default function AssessmentCreate() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg, padding: 20 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background, padding: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
 
-  title: { fontSize: 26, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  subtitle: { fontSize: 13, color: T.t3, marginBottom: 20 },
+  title: { fontSize: 26, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  subtitle: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 20 },
 
   card: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderWidth: 1,
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     borderRadius: 16,
     marginBottom: 10,
-    backgroundColor: T.card,
+    backgroundColor: theme.colors.card,
     gap: 12,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: T.surfaceAlt,
+    backgroundColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarText: { fontSize: 16, fontWeight: "800", color: T.blue },
-  clientName: { fontWeight: "800", color: T.t1, fontSize: 15 },
-  clientEmail: { color: T.t3, fontSize: 12, marginTop: 2 },
-  arrow: { fontSize: 24, color: T.t3, fontWeight: "300" },
+  avatarText: { fontSize: 16, fontWeight: "800", color: theme.colors.primary },
+  clientName: { fontWeight: "800", color: theme.colors.textPrimary, fontSize: 15 },
+  clientEmail: { color: theme.colors.textMuted, fontSize: 12, marginTop: 2 },
+  arrow: { fontSize: 24, color: theme.colors.textMuted, fontWeight: "300" },
 
   empty: { alignItems: "center", paddingTop: 60 },
-  emptyText: { color: T.t3, fontSize: 14 },
+  emptyText: { color: theme.colors.textMuted, fontSize: 14 },
 });

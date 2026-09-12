@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import FoodSearchModal, { SelectedFood } from "../../components/FoodSearchModal";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import { supabase } from "../../lib/supabase";
 import { GradientPrimary, GradientSuccess } from "../../utils/gradients";
 import { T } from "../../utils/theme";
@@ -67,6 +68,8 @@ function scaleMacros(food: AnalysisFood, newGrams: number): AnalysisFood {
 // ─── Tela principal ────────────────────────────────────────────
 export default function MealCapture() {
   const { session } = useAuth();
+  const { theme } = useTheme();
+  const styles = createStyles(theme);
 
   const [screenWidth, setScreenWidth] = useState(() => Dimensions.get('window').width || 375);
   useEffect(() => {
@@ -585,7 +588,7 @@ export default function MealCapture() {
   }
 
   return (
-    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined }]}>
+    <View style={[styles.container, { alignItems: isDesktop ? 'center' : undefined, backgroundColor: theme.colors.background }]}>
       <View style={{ flex: 1, width: '100%', maxWidth: isDesktop ? 900 : undefined }}>
       {step === "capture"   && renderCapture()}
       {step === "analyzing" && renderAnalyzing()}
@@ -613,7 +616,7 @@ export default function MealCapture() {
                   <Text style={styles.mealSelectText}>{item.name}</Text>
                 </TouchableOpacity>
               )}
-              ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: T.border }} />}
+              ItemSeparatorComponent={() => <View style={{ height: 1, backgroundColor: theme.colors.border }} />}
             />
             <Pressable style={styles.modalCancelBtn} onPress={() => setShowMealSelect(false)}>
               <Text style={styles.modalCancelText}>Cancelar</Text>
@@ -627,20 +630,21 @@ export default function MealCapture() {
 }
 
 // ─── Estilos ──────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
+const createStyles = (theme: import("../../contexts/ThemeContext").AppTheme) =>
+  StyleSheet.create({
+  container: { flex: 1 },
 
   // Capture
   captureContainer: { flex: 1, padding: 24, justifyContent: "center" },
   backBtn: { position: "absolute", top: 52, right: 20 },
-  backBtnText: { color: T.t3, fontWeight: "700", fontSize: 14 },
-  captureTitle: { fontSize: 28, fontWeight: "800", color: T.t1, marginBottom: 8 },
-  captureSub: { fontSize: 14, color: T.t3, marginBottom: 28, lineHeight: 20 },
-  mealTypeLabel: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+  backBtnText: { color: theme.colors.textMuted, fontWeight: "700", fontSize: 14 },
+  captureTitle: { fontSize: 28, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 8 },
+  captureSub: { fontSize: 14, color: theme.colors.textMuted, marginBottom: 28, lineHeight: 20 },
+  mealTypeLabel: { fontSize: 11, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
   mealTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 28 },
-  mealTypeChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: T.border, backgroundColor: T.surface },
+  mealTypeChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card },
   mealTypeChipActive: { backgroundColor: T.green, borderColor: T.green },
-  mealTypeText: { color: T.t2, fontWeight: "600", fontSize: 14 },
+  mealTypeText: { color: theme.colors.textSecondary, fontWeight: "600", fontSize: 14 },
   mealTypeTextActive: { color: T.white },
   captureBtn: { borderRadius: 16, overflow: "hidden", marginBottom: 14 },
   captureBtnGradient: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 18, borderRadius: 16, gap: 10 },
@@ -650,8 +654,8 @@ const styles = StyleSheet.create({
   // Analyzing
   analyzingContainer: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   analyzeThumb: { width: 120, height: 120, borderRadius: 16, marginBottom: 8 },
-  analyzingText: { marginTop: 20, fontSize: 18, fontWeight: "700", color: T.t1, textAlign: "center" },
-  analyzingSub: { marginTop: 8, fontSize: 13, color: T.t3, textAlign: "center" },
+  analyzingText: { marginTop: 20, fontSize: 18, fontWeight: "700", color: theme.colors.textPrimary, textAlign: "center" },
+  analyzingSub: { marginTop: 8, fontSize: 13, color: theme.colors.textMuted, textAlign: "center" },
 
   // Review
   reviewHeader: { padding: 16, gap: 12 },
@@ -664,27 +668,27 @@ const styles = StyleSheet.create({
   totalChipUnit: { fontSize: 11, color: "rgba(255,255,255,0.7)" },
   totalChipLabel: { fontSize: 11, color: "rgba(255,255,255,0.8)", fontWeight: "600", marginTop: 2 },
 
-  sectionLabel: { fontSize: 11, fontWeight: "800", color: T.t3, textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, marginBottom: 8 },
+  sectionLabel: { fontSize: 11, fontWeight: "800", color: theme.colors.textMuted, textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, marginBottom: 8 },
 
-  foodCard: { backgroundColor: T.card, borderRadius: 14, padding: 14, marginHorizontal: 16, marginBottom: 10, borderWidth: 1, borderColor: T.border },
+  foodCard: { backgroundColor: theme.colors.card, borderRadius: 14, padding: 14, marginHorizontal: 16, marginBottom: 10, borderWidth: 1, borderColor: theme.colors.border },
   foodCardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  foodName: { fontSize: 15, fontWeight: "700", color: T.t1, flex: 1 },
-  foodNameInput: { flex: 1, fontSize: 15, fontWeight: "700", color: T.t1, borderBottomWidth: 1, borderBottomColor: T.blue, paddingVertical: 2 },
+  foodName: { fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary, flex: 1 },
+  foodNameInput: { flex: 1, fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary, borderBottomWidth: 1, borderBottomColor: T.blue, paddingVertical: 2 },
   removeBtn: { paddingLeft: 12 },
   removeBtnText: { color: T.red, fontSize: 16, fontWeight: "700" },
   foodQtyRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  foodQtyLabel: { fontSize: 12, color: T.t3 },
+  foodQtyLabel: { fontSize: 12, color: theme.colors.textMuted },
   foodQtyValue: { fontSize: 13, fontWeight: "700", color: T.blue, textDecorationLine: "underline" },
   foodQtyInput: { fontSize: 14, fontWeight: "700", color: T.blue, borderBottomWidth: 1, borderBottomColor: T.blue, minWidth: 60, paddingVertical: 0 },
   foodMacrosRow: { flexDirection: "row", gap: 6 },
-  foodMacroChip: { flex: 1, alignItems: "center", backgroundColor: T.surfaceAlt, borderRadius: 8, paddingVertical: 6 },
+  foodMacroChip: { flex: 1, alignItems: "center", backgroundColor: theme.colors.card, borderRadius: 8, paddingVertical: 6 },
   foodMacroValue: { fontSize: 14, fontWeight: "800" },
-  foodMacroLabel: { fontSize: 10, color: T.t3 },
+  foodMacroLabel: { fontSize: 10, color: theme.colors.textMuted },
 
   addFoodBtn: { marginHorizontal: 16, marginTop: 4, marginBottom: 12, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: T.blue, alignItems: "center" },
   addFoodBtnText: { color: T.blue, fontWeight: "700", fontSize: 14 },
 
-  notesText: { fontSize: 12, color: T.t3, fontStyle: "italic", paddingHorizontal: 16, marginBottom: 16, lineHeight: 18 },
+  notesText: { fontSize: 12, color: theme.colors.textMuted, fontStyle: "italic", paddingHorizontal: 16, marginBottom: 16, lineHeight: 18 },
 
   actionRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginTop: 8 },
   actionBtn: { flex: 1, borderRadius: 14, overflow: "hidden" },
@@ -693,10 +697,10 @@ const styles = StyleSheet.create({
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-  modalBox: { backgroundColor: T.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "60%" },
-  modalTitle: { fontSize: 18, fontWeight: "800", color: T.t1, marginBottom: 16 },
+  modalBox: { backgroundColor: theme.colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "60%" },
+  modalTitle: { fontSize: 18, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 16 },
   mealSelectRow: { paddingVertical: 16 },
-  mealSelectText: { fontSize: 16, fontWeight: "600", color: T.t1 },
-  modalCancelBtn: { marginTop: 16, padding: 14, alignItems: "center", backgroundColor: T.surfaceAlt, borderRadius: 12 },
-  modalCancelText: { fontWeight: "700", color: T.t2, fontSize: 15 },
+  mealSelectText: { fontSize: 16, fontWeight: "600", color: theme.colors.textPrimary },
+  modalCancelBtn: { marginTop: 16, padding: 14, alignItems: "center", backgroundColor: theme.colors.card, borderRadius: 12 },
+  modalCancelText: { fontWeight: "700", color: theme.colors.textSecondary, fontSize: 15 },
 });

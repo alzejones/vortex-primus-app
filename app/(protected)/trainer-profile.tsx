@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import TrainerScalesManager from "../../components/TrainerScalesManager";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
+import type { AppTheme } from "../../contexts/ThemeContext";
 import { useTutorial } from "../../contexts/TutorialContext";
 import { useLicenseStatus } from "../../hooks/useLicenseStatus";
 import { supabase } from "../../lib/supabase";
@@ -24,8 +26,10 @@ import { T } from "../../utils/theme";
 export default function TrainerProfile() {
   const router = useRouter();
   const { signOut, signingOut, debugMessages, isAdmin } = useAuth();
+  const { mode: themeMode, setThemeMode, theme } = useTheme();
   const { tutorialEnabled, toggleTutorialEnabled } = useTutorial();
   const licenseStatus = useLicenseStatus();
+  const styles = createStyles(theme);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [trainerId, setTrainerId] = useState<string | null>(null);
@@ -216,7 +220,7 @@ export default function TrainerProfile() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={T.blue} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -253,7 +257,7 @@ export default function TrainerProfile() {
               value={name}
               onChangeText={(t) => { setName(t); setStatusMsg({ text: "", type: "" }); }}
               placeholder="Seu nome"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
           </View>
 
@@ -275,7 +279,7 @@ export default function TrainerProfile() {
               value={phone}
               onChangeText={(t) => { setPhone(formatPhoneInput(t)); setStatusMsg({ text: "", type: "" }); }}
               placeholder="(00) 00000-0000"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="phone-pad"
               maxLength={15}
             />
@@ -289,7 +293,7 @@ export default function TrainerProfile() {
               value={spaceName}
               onChangeText={(t) => { setSpaceName(t); setStatusMsg({ text: "", type: "" }); }}
               placeholder="Ex: MyBox Irajá"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <Text style={styles.helperText}>Aparece no cabeçalho e rodapé dos planos alimentares em PDF gerados por IA.</Text>
           </View>
@@ -302,14 +306,14 @@ export default function TrainerProfile() {
               value={professionalCouncil}
               onChangeText={(t) => { setProfessionalCouncil(t); setStatusMsg({ text: "", type: "" }); }}
               placeholder="Ex: CREF, CRN, CFM"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <TextInput
               style={[styles.input, { marginTop: 8 }]}
               value={professionalCouncilNumber}
               onChangeText={(t) => { setProfessionalCouncilNumber(t); setStatusMsg({ text: "", type: "" }); }}
               placeholder="Ex: 012345-G/SP"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
           </View>
 
@@ -320,7 +324,7 @@ export default function TrainerProfile() {
               value={spaceAddress}
               onChangeText={(t) => { setSpaceAddress(t); setStatusMsg({ text: "", type: "" }); }}
               placeholder="Ex: Jardim Irajá, Ribeirão Preto, SP"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
             />
             <Text style={styles.helperText}>Aparece no rodapé dos planos alimentares em PDF gerados por IA.</Text>
           </View>
@@ -332,7 +336,7 @@ export default function TrainerProfile() {
               value={pdfDiscountPercent}
               onChangeText={(t) => { setPdfDiscountPercent(t.replace(/[^0-9,.]/g, "")); setStatusMsg({ text: "", type: "" }); }}
               placeholder="15"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="decimal-pad"
               maxLength={5}
             />
@@ -346,7 +350,7 @@ export default function TrainerProfile() {
               value={pixKey}
               onChangeText={(t) => { setPixKey(t); setStatusMsg({ text: "", type: "" }); }}
               placeholder="CPF/CNPJ, e-mail, celular ou chave aleatória"
-              placeholderTextColor={T.t3}
+              placeholderTextColor={theme.colors.textMuted}
               autoCapitalize="none"
             />
             <Text style={styles.helperText}>Aparece na seção "Condições de Pagamento" dos planos alimentares em PDF gerados por IA.</Text>
@@ -414,8 +418,8 @@ export default function TrainerProfile() {
                 setIsHerbalifeConsultant(val);
                 setStatusMsg({ text: "", type: "" });
               }}
-              trackColor={{ false: T.border, true: T.green }}
-              thumbColor={isHerbalifeConsultant ? T.white : T.t3}
+              trackColor={{ false: theme.colors.border, true: T.green }}
+              thumbColor={isHerbalifeConsultant ? T.white : theme.colors.textMuted}
             />
           </View>
 
@@ -431,7 +435,7 @@ export default function TrainerProfile() {
                     setStatusMsg({ text: "", type: "" });
                   }}
                   placeholder="Nome completo do Presidente"
-                  placeholderTextColor={T.t3}
+                  placeholderTextColor={theme.colors.textMuted}
                 />
               </View>
 
@@ -445,7 +449,7 @@ export default function TrainerProfile() {
                     setStatusMsg({ text: "", type: "" });
                   }}
                   placeholder="(00) 00000-0000"
-                  placeholderTextColor={T.t3}
+                  placeholderTextColor={theme.colors.textMuted}
                   keyboardType="phone-pad"
                   maxLength={15}
                 />
@@ -479,6 +483,41 @@ export default function TrainerProfile() {
           <Text style={styles.configSectionTitle}>Configurações</Text>
           
           <View style={styles.formCard}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>🎨 Aparência</Text>
+              <View style={styles.themeOptions}>
+                <TouchableOpacity
+                  style={[styles.themeOption, themeMode === 'light' && styles.themeOptionActive]}
+                  onPress={() => setThemeMode('light')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.themeOptionText, themeMode === 'light' && styles.themeOptionTextActive]}>
+                    ☀️ Claro
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.themeOption, themeMode === 'dark' && styles.themeOptionActive]}
+                  onPress={() => setThemeMode('dark')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.themeOptionText, themeMode === 'dark' && styles.themeOptionTextActive]}>
+                    🌙 Escuro
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.themeOption, themeMode === 'system' && styles.themeOptionActive]}
+                  onPress={() => setThemeMode('system')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.themeOptionText, themeMode === 'system' && styles.themeOptionTextActive]}>
+                    🔄 Automático
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <View style={styles.switchRow}>
               <View style={{ flex: 1, marginRight: 12 }}>
                 <Text style={styles.switchLabel}>🤖 Assistente de Ajuda</Text>
@@ -487,8 +526,8 @@ export default function TrainerProfile() {
               <Switch
                 value={tutorialEnabled}
                 onValueChange={() => toggleTutorialEnabled(trainerId || undefined)}
-                trackColor={{ false: T.border, true: T.green }}
-                thumbColor={tutorialEnabled ? T.white : T.t3}
+                trackColor={{ false: theme.colors.border, true: T.green }}
+                thumbColor={tutorialEnabled ? T.white : theme.colors.textMuted}
               />
             </View>
             
@@ -503,8 +542,8 @@ export default function TrainerProfile() {
                   setHerbalifeStockControlEnabled(val);
                   setStatusMsg({ text: "", type: "" });
                 }}
-                trackColor={{ false: T.border, true: T.green }}
-                thumbColor={herbalifeStockControlEnabled ? T.white : T.t3}
+                trackColor={{ false: theme.colors.border, true: T.green }}
+                thumbColor={herbalifeStockControlEnabled ? T.white : theme.colors.textMuted}
               />
             </View>
           </View>
@@ -644,14 +683,14 @@ export default function TrainerProfile() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: T.bg },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: T.bg },
+const createStyles = (theme: AppTheme) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: theme.colors.background },
   scrollContent: { padding: 24, paddingBottom: 60, paddingTop: Platform.OS === "ios" ? 60 : 40 },
 
   header: { marginBottom: 24 },
-  title: { fontSize: 32, fontWeight: "900", color: T.t1, marginBottom: 8, letterSpacing: -0.5 },
-  subtitle: { fontSize: 15, color: T.t3, lineHeight: 22 },
+  title: { fontSize: 32, fontWeight: "900", color: theme.colors.textPrimary, marginBottom: 8, letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: theme.colors.textMuted, lineHeight: 22 },
 
   statusBox: { padding: 16, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
   statusError: { backgroundColor: "rgba(239,68,68,0.08)", borderColor: T.red },
@@ -660,17 +699,17 @@ const styles = StyleSheet.create({
   statusTextError: { color: T.red },
   statusTextSuccess: { color: T.green },
 
-  formCard: { backgroundColor: T.card, padding: 24, borderRadius: 24, borderWidth: 1, borderColor: T.border, marginBottom: 24 },
+  formCard: { backgroundColor: theme.colors.card, padding: 24, borderRadius: 24, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 24 },
 
   avatarContainer: { alignItems: "center", marginBottom: 24 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: T.surfaceAlt, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: T.borderActive },
-  avatarText: { fontSize: 28, fontWeight: "900", color: T.blue, letterSpacing: 1 },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.card, justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: theme.colors.border },
+  avatarText: { fontSize: 28, fontWeight: "900", color: theme.colors.primary, letterSpacing: 1 },
 
   inputGroup: { marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: "800", color: T.t2, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
-  input: { backgroundColor: T.surface, borderWidth: 1, borderColor: T.border, borderRadius: 12, padding: 16, fontSize: 16, color: T.t1 },
-  inputDisabled: { backgroundColor: T.bg, color: T.t3 },
-  helperText: { fontSize: 12, color: T.t3, marginTop: 6 },
+  label: { fontSize: 12, fontWeight: "800", color: theme.colors.textSecondary, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 },
+  input: { backgroundColor: theme.colors.card, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 12, padding: 16, fontSize: 16, color: theme.colors.textPrimary },
+  inputDisabled: { backgroundColor: theme.colors.background, color: theme.colors.textMuted },
+  helperText: { fontSize: 12, color: theme.colors.textMuted, marginTop: 6 },
 
 
   saveButton: { borderRadius: 16, overflow: "hidden", marginBottom: 24 },
@@ -680,19 +719,19 @@ const styles = StyleSheet.create({
   signOutBtn: { alignItems: "center", paddingVertical: 12 },
   signOutText: { color: T.t4, fontSize: 13, fontWeight: "500" },
 
-  debugContainer: { backgroundColor: T.surfaceAlt, padding: 12, borderRadius: 8, marginBottom: 16, maxHeight: 200 },
+  debugContainer: { backgroundColor: theme.colors.card, padding: 12, borderRadius: 8, marginBottom: 16, maxHeight: 200 },
   debugTitle: { color: T.orange, fontSize: 12, fontWeight: "800", marginBottom: 8 },
   debugScroll: { maxHeight: 160 },
   debugText: { color: T.orange, fontSize: 10, fontWeight: "500", marginBottom: 2, fontFamily: 'monospace' },
 
   configSection: { marginBottom: 24 },
-  configSectionTitle: { fontSize: 20, fontWeight: "800", color: T.t1, marginBottom: 16, letterSpacing: -0.5 },
+  configSectionTitle: { fontSize: 20, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 16, letterSpacing: -0.5 },
   configButton: { 
-    backgroundColor: T.card, 
+    backgroundColor: theme.colors.card, 
     padding: 20, 
     borderRadius: 16, 
     borderWidth: 1, 
-    borderColor: T.border,
+    borderColor: theme.colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -703,21 +742,45 @@ const styles = StyleSheet.create({
     width: 48, 
     height: 48, 
     borderRadius: 12, 
-    backgroundColor: T.surfaceAlt, 
+    backgroundColor: theme.colors.background, 
     justifyContent: 'center', 
     alignItems: 'center',
     marginRight: 16
   },
-  configButtonTitle: { fontSize: 16, fontWeight: "700", color: T.t1, marginBottom: 2 },
-  configButtonSubtitle: { fontSize: 13, color: T.t3 },
-  configButtonArrow: { fontSize: 24, color: T.t3 },
+  configButtonTitle: { fontSize: 16, fontWeight: "700", color: theme.colors.textPrimary, marginBottom: 2 },
+  configButtonSubtitle: { fontSize: 13, color: theme.colors.textMuted },
+  configButtonArrow: { fontSize: 24, color: theme.colors.textMuted },
 
-  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: T.border },
-  switchLabel: { fontSize: 15, fontWeight: "700", color: T.t1, flex: 1, marginRight: 12 },
+  switchRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
+  switchLabel: { fontSize: 15, fontWeight: "700", color: theme.colors.textPrimary, flex: 1, marginRight: 12 },
 
-  teamCard: { backgroundColor: T.card, borderRadius: 16, borderWidth: 1, borderColor: T.border, marginBottom: 24 },
+  teamCard: { backgroundColor: theme.colors.card, borderRadius: 16, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 24 },
   teamCardContent: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20 },
-  teamCardTitle: { fontSize: 16, fontWeight: "800", color: T.t1, marginBottom: 4 },
-  teamCardSubtitle: { fontSize: 13, color: T.t3, fontWeight: "600" },
-  teamCardArrow: { fontSize: 24, color: T.t3 },
+  teamCardTitle: { fontSize: 16, fontWeight: "800", color: theme.colors.textPrimary, marginBottom: 4 },
+  teamCardSubtitle: { fontSize: 13, color: theme.colors.textMuted, fontWeight: "600" },
+  teamCardArrow: { fontSize: 24, color: theme.colors.textMuted },
+
+  themeOptions: { flexDirection: "row", gap: 8 },
+  themeOption: { 
+    flex: 1, 
+    backgroundColor: theme.colors.card, 
+    borderWidth: 1, 
+    borderColor: theme.colors.border, 
+    borderRadius: 12, 
+    paddingVertical: 14, 
+    alignItems: "center", 
+    justifyContent: "center" 
+  },
+  themeOptionActive: { 
+    backgroundColor: theme.colors.primary, 
+    borderColor: theme.colors.primary 
+  },
+  themeOptionText: { 
+    fontSize: 14, 
+    fontWeight: "700", 
+    color: theme.colors.textSecondary 
+  },
+  themeOptionTextActive: { 
+    color: T.white 
+  },
 });

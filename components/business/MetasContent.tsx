@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '../../lib/supabase';
-import { T } from '../../utils/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import { getWorkingDays, computeTrend } from '../../utils/goalCalculations';
 import { todayBR, daysAgoBR, brasiliaDate } from '../../utils/dateBR';
 import { TutorialOverlay } from '../tutorial/TutorialOverlay';
@@ -216,17 +216,17 @@ async function fetchSelfiesRealizadas(tid: string, start: string, end: string): 
   return uniqueAssessments.size;
 }
 
-function ProgressBar({ value, goal, color, isCurrency }: { value: number; goal: number; color: string; isCurrency?: boolean }) {
+function ProgressBar({ value, goal, color, isCurrency, theme }: { value: number; goal: number; color: string; isCurrency?: boolean; theme: any }) {
   const pct = goal > 0 ? Math.min((value / goal) * 100, 100) : 0;
   return (
     <View style={{ marginTop: 6 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-        <Text style={{ color: T.t2, fontSize: 12 }}>
-          {formatValue(value, isCurrency)} <Text style={{ color: T.t3 }}>de {formatValue(goal, isCurrency)}</Text>
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
+          {formatValue(value, isCurrency)} <Text style={{ color: theme.colors.textMuted }}>de {formatValue(goal, isCurrency)}</Text>
         </Text>
         <Text style={{ color, fontSize: 12, fontWeight: '800' }}>{Math.round(pct)}%</Text>
       </View>
-      <View style={{ height: 8, backgroundColor: T.border, borderRadius: 4, overflow: 'hidden' }}>
+      <View style={{ height: 8, backgroundColor: theme.colors.border, borderRadius: 4, overflow: 'hidden' }}>
         <View style={{ height: 8, width: `${pct}%` as any, backgroundColor: color, borderRadius: 4 }} />
       </View>
     </View>
@@ -234,39 +234,41 @@ function ProgressBar({ value, goal, color, isCurrency }: { value: number; goal: 
 }
 
 function MetricCard({
-  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency, editBtnRef, selfiesData,
+  label, icon, value, goal, color, onEdit, isComputed, trend, isCurrency, editBtnRef, selfiesData, theme,
 }: {
   label: string; icon: string; value: number; goal: number;
   color: string; onEdit?: () => void; isComputed?: boolean; isCurrency?: boolean;
   trend?: { projection: number; pct: number; color: string; label: string } | null;
   editBtnRef?: any;
   selfiesData?: { realizadas: number; total: number };
+  theme: any;
 }) {
+  const styles = createStyles(theme);
   return (
     <View style={[styles.card, { borderLeftColor: color, borderLeftWidth: 4 }]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text style={{ fontSize: 20 }}>{icon}</Text>
-          <Text style={{ color: T.t1, fontSize: 14, fontWeight: '700' }}>{label}</Text>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: '700' }}>{label}</Text>
         </View>
         {onEdit && !isComputed ? (
           <TouchableOpacity ref={editBtnRef} onPress={onEdit} style={styles.editBtn}>
-            <Text style={{ fontSize: 11, color: T.blue, fontWeight: '700' }}>✏️ Meta</Text>
+            <Text style={{ fontSize: 11, color: theme.colors.primary, fontWeight: '700' }}>✏️ Meta</Text>
           </TouchableOpacity>
         ) : isComputed ? (
           <View style={[styles.editBtn, { backgroundColor: 'transparent' }]}>
-            <Text style={{ fontSize: 10, color: T.t3, fontStyle: 'italic' }}>ajustada</Text>
+            <Text style={{ fontSize: 10, color: theme.colors.textMuted, fontStyle: 'italic' }}>ajustada</Text>
           </View>
         ) : null}
       </View>
-      <ProgressBar value={value} goal={goal} color={color} isCurrency={isCurrency} />
+      <ProgressBar value={value} goal={goal} color={color} isCurrency={isCurrency} theme={theme} />
       {selfiesData && selfiesData.total > 0 && (
         <View style={{
           flexDirection: 'row', justifyContent: 'space-between',
           alignItems: 'center', marginTop: 10,
-          paddingTop: 10, borderTopWidth: 1, borderTopColor: T.border,
+          paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.colors.border,
         }}>
-          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' }}>
             📸 Selfies postadas
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -288,9 +290,9 @@ function MetricCard({
         <View style={{
           flexDirection: 'row', justifyContent: 'space-between',
           alignItems: 'center', marginTop: 10,
-          paddingTop: 10, borderTopWidth: 1, borderTopColor: T.border,
+          paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.colors.border,
         }}>
-          <Text style={{ fontSize: 11, color: T.t3, fontWeight: '600' }}>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted, fontWeight: '600' }}>
             Tendência fim do mês
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -313,6 +315,7 @@ function MetricCard({
 }
 
 export default function MetasContent() {
+  const { theme } = useTheme();
   const [loading, setLoading]     = useState(true);
   const [category, setCategory]   = useState<Category>('atendimento');
   const [period, setPeriod]       = useState<Period>('monthly');
@@ -399,9 +402,11 @@ export default function MetasContent() {
   const periodLabels: Record<Period, string> = { monthly: 'Mensal', weekly: 'Semanal', daily: 'Diário' };
   const isComputed = period !== 'monthly';
 
+  const styles = createStyles(theme);
+  
   if (loading) return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.bg }}>
-      <ActivityIndicator size="large" color={T.blue} />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+      <ActivityIndicator size="large" color={theme.colors.primary} />
     </View>
   );
 
@@ -414,7 +419,7 @@ export default function MetasContent() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: T.bg }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <TutorialOverlay targetRefs={targetRefs} />
       <TutorialHelpButton screenId="metas" />
       
@@ -455,8 +460,8 @@ export default function MetasContent() {
 
       {/* Nota de meta ajustada */}
       {isComputed && visibleGoals.some((g) => goals[g.type] > 0) && (
-        <View style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderRadius: 10, padding: 10, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: T.blue }}>
-          <Text style={{ fontSize: 12, color: T.t2, lineHeight: 18 }}>
+        <View style={{ backgroundColor: 'rgba(59,130,246,0.08)', borderRadius: 10, padding: 10, marginBottom: 16, borderLeftWidth: 3, borderLeftColor: theme.colors.primary }}>
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, lineHeight: 18 }}>
             📊 Metas {periodLabels[period].toLowerCase()}s calculadas automaticamente redistribuindo o déficit nos dias úteis restantes do mês.
           </Text>
         </View>
@@ -489,6 +494,7 @@ export default function MetasContent() {
             isCurrency={cfg.isCurrency}
             trend={trend}
             selfiesData={selfiesData}
+            theme={theme}
             onEdit={() => { setEditingField(cfg.type); setEditValue(String(goals[cfg.type])); }}
             editBtnRef={index === 0 ? botao_editar_metaRef : undefined}
           />
@@ -504,7 +510,7 @@ export default function MetasContent() {
               <Text style={styles.summaryValue}>{Math.round(actuals.agendamentos)}</Text>
               <Text style={styles.summaryLabel}>Agendados</Text>
             </View>
-            <View style={[styles.summaryItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: T.border }]}>
+            <View style={[styles.summaryItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: theme.colors.border }]}>
               <Text style={[styles.summaryValue, { color: '#22c55e' }]}>{Math.round(actuals.avaliacoes)}</Text>
               <Text style={styles.summaryLabel}>Realizados</Text>
             </View>
@@ -526,7 +532,7 @@ export default function MetasContent() {
           <Text style={styles.editTitle}>
             {GOAL_CONFIG.find((g) => g.type === editingField)?.icon} Meta Mensal — {GOAL_CONFIG.find((g) => g.type === editingField)?.label}
           </Text>
-          <Text style={{ fontSize: 12, color: T.t3, marginBottom: 12 }}>
+          <Text style={{ fontSize: 12, color: theme.colors.textMuted, marginBottom: 12 }}>
             As metas semanal e diária serão recalculadas automaticamente.
           </Text>
           <TextInput
@@ -536,11 +542,11 @@ export default function MetasContent() {
             keyboardType={GOAL_CONFIG.find((g) => g.type === editingField)?.isCurrency ? 'decimal-pad' : 'number-pad'}
             autoFocus
             placeholder={GOAL_CONFIG.find((g) => g.type === editingField)?.isCurrency ? 'Ex: 3000.00' : 'Ex: 100'}
-            placeholderTextColor={T.t3}
+            placeholderTextColor={theme.colors.textMuted}
           />
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
             <TouchableOpacity
-              style={[styles.editActionBtn, { backgroundColor: T.blue }]}
+              style={[styles.editActionBtn, { backgroundColor: theme.colors.primary }]}
               onPress={() => {
                 const isCurrency = GOAL_CONFIG.find((g) => g.type === editingField)?.isCurrency;
                 const parsed = isCurrency ? parseFloat(editValue.replace(',', '.')) : parseInt(editValue, 10);
@@ -550,10 +556,10 @@ export default function MetasContent() {
               <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>Salvar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.editActionBtn, { backgroundColor: T.card }]}
+              style={[styles.editActionBtn, { backgroundColor: theme.colors.card }]}
               onPress={() => setEditingField(null)}
             >
-              <Text style={{ color: T.t2, fontWeight: '700', fontSize: 14 }}>Cancelar</Text>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: '700', fontSize: 14 }}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -563,25 +569,27 @@ export default function MetasContent() {
   );
 }
 
-const styles = StyleSheet.create({
-  container:         { padding: 20, paddingBottom: 40 },
-  pageLabel:         { fontSize: 11, fontWeight: '700', color: T.t3, letterSpacing: 1.5, marginBottom: 4 },
-  pageTitle:         { fontSize: 28, fontWeight: '900', color: T.t1, marginBottom: 24 },
-  periodRow:         { flexDirection: 'row', backgroundColor: T.card, borderRadius: 12, padding: 4, marginBottom: 12, gap: 4 },
-  periodBtn:         { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
-  periodBtnActive:   { backgroundColor: T.blue },
-  periodLabel:       { fontSize: 13, fontWeight: '700', color: T.t2 },
-  periodLabelActive: { color: '#fff' },
-  card:              { backgroundColor: T.card, borderRadius: 16, padding: 16, marginBottom: 16 },
-  editBtn:           { backgroundColor: T.surface, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  summaryCard:       { backgroundColor: T.card, borderRadius: 16, padding: 16, marginTop: 8 },
-  summaryTitle:      { fontSize: 13, fontWeight: '700', color: T.t2, marginBottom: 16, textAlign: 'center' },
-  summaryRow:        { flexDirection: 'row' },
-  summaryItem:       { flex: 1, alignItems: 'center' },
-  summaryValue:      { fontSize: 28, fontWeight: '900', color: T.t1 },
-  summaryLabel:      { fontSize: 11, color: T.t3, marginTop: 4, fontWeight: '600' },
-  editCard:          { backgroundColor: T.card, borderRadius: 16, padding: 20, marginTop: 16, borderWidth: 1.5, borderColor: T.blue },
-  editTitle:         { fontSize: 15, fontWeight: '800', color: T.t1, marginBottom: 6 },
-  editInput:         { backgroundColor: T.surface, borderRadius: 10, padding: 14, fontSize: 24, fontWeight: '900', color: T.t1, textAlign: 'center', borderWidth: 1, borderColor: T.border },
-  editActionBtn:     { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
-});
+function createStyles(theme: any) {
+  return StyleSheet.create({
+    container:         { padding: 20, paddingBottom: 40 },
+    pageLabel:         { fontSize: 11, fontWeight: '700', color: theme.colors.textMuted, letterSpacing: 1.5, marginBottom: 4 },
+    pageTitle:         { fontSize: 28, fontWeight: '900', color: theme.colors.textPrimary, marginBottom: 24 },
+    periodRow:         { flexDirection: 'row', backgroundColor: theme.colors.card, borderRadius: 12, padding: 4, marginBottom: 12, gap: 4 },
+    periodBtn:         { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
+    periodBtnActive:   { backgroundColor: theme.colors.primary },
+    periodLabel:       { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary },
+    periodLabelActive: { color: '#fff' },
+    card:              { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginBottom: 16 },
+    editBtn:           { backgroundColor: theme.colors.card, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+    summaryCard:       { backgroundColor: theme.colors.card, borderRadius: 16, padding: 16, marginTop: 8 },
+    summaryTitle:      { fontSize: 13, fontWeight: '700', color: theme.colors.textSecondary, marginBottom: 16, textAlign: 'center' },
+    summaryRow:        { flexDirection: 'row' },
+    summaryItem:       { flex: 1, alignItems: 'center' },
+    summaryValue:      { fontSize: 28, fontWeight: '900', color: theme.colors.textPrimary },
+    summaryLabel:      { fontSize: 11, color: theme.colors.textMuted, marginTop: 4, fontWeight: '600' },
+    editCard:          { backgroundColor: theme.colors.card, borderRadius: 16, padding: 20, marginTop: 16, borderWidth: 1.5, borderColor: theme.colors.primary },
+    editTitle:         { fontSize: 15, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 6 },
+    editInput:         { backgroundColor: theme.colors.card, borderRadius: 10, padding: 14, fontSize: 24, fontWeight: '900', color: theme.colors.textPrimary, textAlign: 'center', borderWidth: 1, borderColor: theme.colors.border },
+    editActionBtn:     { flex: 1, padding: 14, borderRadius: 10, alignItems: 'center' },
+  });
+}
