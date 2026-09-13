@@ -912,8 +912,8 @@ export default function ClientAssessments() {
             <View style={{ backgroundColor: theme.colors.card, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 0 }}>
                 <View style={{ flex: 1, marginRight: 12 }}>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', lineHeight: 22, marginBottom: 2 }} numberOfLines={2}>{client?.name}</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 4 }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: 17, fontWeight: '800', lineHeight: 22, marginBottom: 2 }} numberOfLines={2}>{client?.name}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
                   const hasData = Object.values(form).some(v => v !== "") || pendingPhotos.length > 0 || pendingSelfie !== null;
