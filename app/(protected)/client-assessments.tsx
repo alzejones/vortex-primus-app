@@ -30,6 +30,7 @@ import AIReportModal from '../../components/AIReportModal';
 import { T } from "../../utils/theme";
 import BluetoothScaleConnector from "../../components/BluetoothScaleConnector";
 import { useTheme } from "@/contexts/ThemeContext";
+import ConfirmModal from '../../components/ui/ConfirmModal';
 
 export default function ClientAssessments() {
   const { theme } = useTheme();
@@ -76,6 +77,7 @@ export default function ClientAssessments() {
   const [existingPhotos, setExistingPhotos] = useState<{ id: string; storagePath: string; signedUrl: string | null }[]>([]);
   const [photosToDelete, setPhotosToDelete] = useState<string[]>([]);
   const [scaleAccordionOpen, setScaleAccordionOpen] = useState(false);
+  const [confirmCancelVisible, setConfirmCancelVisible] = useState(false);
 
   const formatDateBR = (date: Date) => {
     const d = date.getDate().toString().padStart(2, '0');
@@ -916,33 +918,7 @@ export default function ClientAssessments() {
                 <TouchableOpacity onPress={() => {
                   const hasData = Object.values(form).some(v => v !== "") || pendingPhotos.length > 0 || pendingSelfie !== null;
                   if (hasData) {
-                    Alert.alert(
-                      "Descartar avaliação?",
-                      "Todos os dados preenchidos serão perdidos.",
-                      [
-                        { text: "Continuar editando", style: "cancel" },
-                        {
-                          text: "Descartar",
-                          style: "destructive",
-                          onPress: () => {
-                            setFormModalVisible(false);
-                            setAssessmentDateTime(new Date());
-                            setPendingPhotos([]);
-                            setPendingSelfie(null);
-                            setSelfieSignedUrl(null);
-                            setExistingPhotos([]);
-                            setPhotosToDelete([]);
-                            setForm({ 
-                              weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", 
-                              abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", 
-                              calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", 
-                              body_fat_index: "", metabolic_age: "", bmi: "", water_percent: "", bone_mass: "", 
-                              source: "manual" 
-                            });
-                          }
-                        }
-                      ]
-                    );
+                    setConfirmCancelVisible(true);
                   } else {
                     setFormModalVisible(false);
                     setAssessmentDateTime(new Date());
@@ -1340,6 +1316,31 @@ export default function ClientAssessments() {
           onClose={() => { setAiReportVisible(false); setAssessmentForReport(null); }}
           client={client}
           assessment={assessmentForReport ?? assessments[0]}
+        />
+        <ConfirmModal
+          visible={confirmCancelVisible}
+          title="Descartar avaliação?"
+          message="Todos os dados preenchidos serão perdidos."
+          confirmLabel="Descartar"
+          cancelLabel="Continuar editando"
+          onConfirm={() => {
+            setConfirmCancelVisible(false);
+            setFormModalVisible(false);
+            setAssessmentDateTime(new Date());
+            setPendingPhotos([]);
+            setPendingSelfie(null);
+            setSelfieSignedUrl(null);
+            setExistingPhotos([]);
+            setPhotosToDelete([]);
+            setForm({ 
+              weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", 
+              abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", 
+              calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", 
+              body_fat_index: "", metabolic_age: "", bmi: "", water_percent: "", bone_mass: "", 
+              source: "manual" 
+            });
+          }}
+          onCancel={() => setConfirmCancelVisible(false)}
         />
       </View>
     </View>
