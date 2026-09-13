@@ -88,6 +88,7 @@ export default function ClientAssessments() {
   const [assessmentDateTime, setAssessmentDateTime] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showTimeInput, setShowTimeInput] = useState(false);
 
   const handleDateConfirm = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -97,7 +98,6 @@ export default function ClientAssessments() {
         updated.setHours(prev.getHours(), prev.getMinutes());
         return updated;
       });
-      setShowTimePicker(true);
     }
   };
 
@@ -135,6 +135,14 @@ export default function ClientAssessments() {
   const resetToNow = () => {
     setAssessmentDateTime(new Date());
   };
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate();
+  };
+
+  const isToday = isSameDay(assessmentDateTime, new Date());
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -955,54 +963,82 @@ export default function ClientAssessments() {
                   <Text style={{ fontSize: 13, color: theme.colors.textMuted }}>·</Text>
                   <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{client?.height_cm}cm</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                  {Platform.OS === 'web' ? (
-                    <>
-                      <input
-                        type="date"
-                        value={assessmentDateTime.toISOString().split('T')[0]}
-                        onChange={(e: any) => handleWebDateChange(e.target.value)}
-                        style={{
-                          flex: 1,
-                          fontSize: 14,
-                          color: theme.colors.textSecondary,
-                          backgroundColor: theme.colors.card,
-                          border: `1px solid ${theme.colors.border}`,
-                          borderRadius: 4,
-                          padding: '4px 6px',
-                        }}
-                      />
-                      <input
-                        type="time"
-                        value={`${String(assessmentDateTime.getHours()).padStart(2, '0')}:${String(assessmentDateTime.getMinutes()).padStart(2, '0')}`}
-                        onChange={(e: any) => handleWebTimeChange(e.target.value)}
-                        style={{
-                          flex: 1,
-                          fontSize: 14,
-                          color: theme.colors.textSecondary,
-                          backgroundColor: theme.colors.card,
-                          border: `1px solid ${theme.colors.border}`,
-                          borderRadius: 4,
-                          padding: '4px 6px',
-                        }}
-                      />
-                    </>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => setShowDatePicker(true)}
-                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 6 }}
-                    >
-                      <Text style={{ fontSize: 14, color: theme.colors.textSecondary }}>
-                        {formatDateBR(assessmentDateTime)}
-                      </Text>
+                <View style={{ marginTop: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    {Platform.OS === 'web' ? (
+                      <>
+                        <input
+                          type="date"
+                          value={assessmentDateTime.toISOString().split('T')[0]}
+                          onChange={(e: any) => handleWebDateChange(e.target.value)}
+                          style={{
+                            flex: 1,
+                            fontSize: 14,
+                            color: theme.colors.textSecondary,
+                            backgroundColor: theme.colors.card,
+                            border: `1px solid ${theme.colors.border}`,
+                            borderRadius: 4,
+                            padding: '4px 6px',
+                          }}
+                        />
+                        {showTimeInput && (
+                          <input
+                            type="time"
+                            value={`${String(assessmentDateTime.getHours()).padStart(2, '0')}:${String(assessmentDateTime.getMinutes()).padStart(2, '0')}`}
+                            onChange={(e: any) => handleWebTimeChange(e.target.value)}
+                            style={{
+                              flex: 1,
+                              fontSize: 14,
+                              color: theme.colors.textSecondary,
+                              backgroundColor: theme.colors.card,
+                              border: `1px solid ${theme.colors.border}`,
+                              borderRadius: 4,
+                              padding: '4px 6px',
+                            }}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => setShowDatePicker(true)}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+                      >
+                        <Text style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+                          {assessmentDateTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                    {!isToday && (
+                      <TouchableOpacity
+                        onPress={resetToNow}
+                        style={{ backgroundColor: T.blueGlow, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: T.blue }}
+                      >
+                        <Text style={{ fontSize: 12, color: T.blue, fontWeight: 'bold' }}>Hoje</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {Platform.OS === 'web' && !showTimeInput && (
+                    <TouchableOpacity onPress={() => setShowTimeInput(true)} style={{ marginTop: 4 }}>
+                      <Text style={{ fontSize: 11, color: theme.colors.textMuted }}>alterar hora</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity
-                    onPress={resetToNow}
-                    style={{ backgroundColor: T.blueGlow, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: T.blue }}
-                  >
-                    <Text style={{ fontSize: 12, color: T.blue, fontWeight: 'bold' }}>Hoje</Text>
-                  </TouchableOpacity>
+                  {Platform.OS !== 'web' && showTimeInput && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <TouchableOpacity
+                        onPress={() => setShowTimePicker(true)}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 6 }}
+                      >
+                        <Text style={{ fontSize: 14, color: theme.colors.textSecondary }}>
+                          {`${String(assessmentDateTime.getHours()).padStart(2, '0')}:${String(assessmentDateTime.getMinutes()).padStart(2, '0')}`}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {Platform.OS !== 'web' && !showTimeInput && (
+                    <TouchableOpacity onPress={() => setShowTimeInput(true)} style={{ marginTop: 4 }}>
+                      <Text style={{ fontSize: 11, color: theme.colors.textMuted }}>alterar hora</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
               <View style={{ padding: 16 }}>
