@@ -75,6 +75,7 @@ export default function ClientAssessments() {
   const [selectedScale, setSelectedScale] = useState<any>(null);
   const [existingPhotos, setExistingPhotos] = useState<{ id: string; storagePath: string; signedUrl: string | null }[]>([]);
   const [photosToDelete, setPhotosToDelete] = useState<string[]>([]);
+  const [scaleAccordionOpen, setScaleAccordionOpen] = useState(false);
 
   const formatDateBR = (date: Date) => {
     const d = date.getDate().toString().padStart(2, '0');
@@ -1042,8 +1043,57 @@ export default function ClientAssessments() {
                 </View>
               </View>
               <View style={{ padding: 16 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'flex-end', marginTop: 10, marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-                  {/* Botão Salvar Foto — canto superior esquerdo do formulário */}
+                {/* Bloco 1: Bioimpedância — tarefa principal */}
+                <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
+
+                {/* Bloco 2: Balança Bluetooth — accordion recolhível, iniciando fechado */}
+                <View style={{ marginBottom: 16 }}>
+                  <TouchableOpacity
+                    onPress={() => setScaleAccordionOpen(prev => !prev)}
+                    style={{
+                      backgroundColor: theme.colors.card,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                      borderRadius: 10,
+                      padding: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: theme.colors.textSecondary }}>⚖️ Balança Bluetooth</Text>
+                    <Text style={{ fontSize: 18, color: theme.colors.textMuted }}>{scaleAccordionOpen ? '▲' : '▼'}</Text>
+                  </TouchableOpacity>
+                  {scaleAccordionOpen && (
+                    <View style={{ marginTop: 8 }}>
+                      {hasFeature('bluetooth_scale') ? (
+                        <BluetoothScaleConnector
+                          onDataReceived={handleScaleData}
+                          disabled={saving}
+                          trainerId={trainerId}
+                          clientAge={clientAge}
+                          clientHeightCm={clientHeightCm}
+                          clientIsMale={clientIsMale}
+                          onScaleSelected={setSelectedScale}
+                        />
+                      ) : (
+                        <LockedButton
+                          featureKey="bluetooth_scale"
+                          featureName="Balança Bluetooth"
+                          requiredPlan="Avançado"
+                          buttonStyle={{ backgroundColor: theme.colors.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 16 }}
+                          textStyle={{ textAlign: 'center', color: theme.colors.textMuted, fontWeight: '700', fontSize: 14 }}
+                          label="Conectar Balança Bluetooth"
+                        />
+                      )}
+                    </View>
+                  )}
+                </View>
+                <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
+                <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
+
+                {/* Bloco 3: Botões Salvar Foto e Post com Cliente — movidos para cá */}
+                <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'flex-end', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                   <TouchableOpacity
                     onPress={handlePickPhoto}
                     disabled={uploadingPhoto}
@@ -1062,7 +1112,6 @@ export default function ClientAssessments() {
                     </View>
                   </TouchableOpacity>
 
-                  {/* Botão Post com Cliente */}
                   <TouchableOpacity
                     onPress={handlePickSelfie}
                     disabled={uploadingPhoto}
@@ -1161,30 +1210,8 @@ export default function ClientAssessments() {
                     )}
                   </View>
                 )}
-                {hasFeature('bluetooth_scale') ? (
-                  <BluetoothScaleConnector
-                    onDataReceived={handleScaleData}
-                    disabled={saving}
-                    trainerId={trainerId}
-                    clientAge={clientAge}
-                    clientHeightCm={clientHeightCm}
-                    clientIsMale={clientIsMale}
-                    onScaleSelected={setSelectedScale}
-                  />
-                ) : (
-                  <LockedButton
-                    featureKey="bluetooth_scale"
-                    featureName="Balança Bluetooth"
-                    requiredPlan="Avançado"
-                    buttonStyle={{ backgroundColor: theme.colors.card, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: theme.colors.border, marginBottom: 16 }}
-                    textStyle={{ textAlign: 'center', color: theme.colors.textMuted, fontWeight: '700', fontSize: 14 }}
-                    label="Conectar Balança Bluetooth"
-                  />
-                )}
-                <View style={styles.card}><Text style={styles.cardTitle}>Bioimpedância</Text><View style={styles.row}>{renderGridInput("Peso", "weight")}{renderGridInput("% Gordura", "body_fat")}{renderGridInput("% M. Muscular", "muscle_mass_percentage")}</View><View style={styles.row}>{renderGridInput("Idade Metabólica", "metabolic_age")}{renderGridInput("Metabolismo Basal", "basal_metabolic_rate")}{renderGridInput("Gordura Visceral", "body_fat_index")}</View></View>
-                <View style={styles.card}><Text style={styles.cardTitle}>Medidas do Tronco</Text><View style={styles.row}>{renderGridInput("Peitoral", "chest")}{renderGridInput("Abdômen", "abdomen")}</View><View style={styles.row}>{renderGridInput("Cintura", "waist")}{renderGridInput("Quadril", "hip")}</View></View>
-                <View style={styles.card}><Text style={styles.cardTitle}>Medidas dos Membros</Text><View style={styles.row}>{renderGridInput("Braço Esquerdo", "arm_left")}{renderGridInput("Braço Direito", "arm_right")}</View><View style={styles.row}>{renderGridInput("Panturrilha Esquerda", "calf_left")}{renderGridInput("Panturrilha Direita", "calf_right")}</View><View style={styles.row}>{renderGridInput("Coxa Esquerda", "thigh_left")}{renderGridInput("Coxa Direita", "thigh_right")}</View></View>
 
+                {/* Bloco 4: Como usar (Avaliação à Distância) — mantido como accordion */}
                 {hasFeature('remote_assessment') ? (
                   <>
                     <TouchableOpacity
