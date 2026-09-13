@@ -899,7 +899,7 @@ export default function ClientAssessments() {
         <Modal visible={formModalVisible} animationType="slide" onRequestClose={() => setFormModalVisible(false)}>
           <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
             <View style={{ backgroundColor: theme.colors.card, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 0 }}>
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
                   <Text style={{ color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', lineHeight: 22, marginBottom: 2 }} numberOfLines={2}>{client?.name}</Text>
@@ -1280,7 +1280,7 @@ export default function ClientAssessments() {
 }
 
 const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => StyleSheet.create({
-  stickyHeader: { backgroundColor: theme.colors.card, paddingVertical: 10, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border, elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2 },
+  stickyHeader: { backgroundColor: theme.colors.card, paddingTop: 4, paddingBottom: 10, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.border, elevation: 3, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 2 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   headerItem: { fontSize: 14, color: theme.colors.textSecondary },
   bold: { fontWeight: "bold" },
