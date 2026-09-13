@@ -902,7 +902,7 @@ export default function ClientAssessments() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <View style={{ flex: 1, marginRight: 12 }}>
                   <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-                  <Text style={{ color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', lineHeight: 22 }} numberOfLines={2}>{client?.name}</Text>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', lineHeight: 22, marginBottom: 2 }} numberOfLines={2}>{client?.name}</Text>
                 </View>
                 <TouchableOpacity onPress={() => {
                   const hasData = Object.values(form).some(v => v !== "") || pendingPhotos.length > 0 || pendingSelfie !== null;
@@ -944,13 +944,13 @@ export default function ClientAssessments() {
                     setPhotosToDelete([]);
                   }
                 }}>
-                  <Text style={{ color: theme.colors.textSecondary, fontSize: 15 }}>Cancelar</Text>
+                  <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>Cancelar</Text>
                 </TouchableOpacity>
               </View>
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
               <View style={styles.stickyHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{calculateAge(client?.birth_date)} anos</Text>
                   <Text style={{ fontSize: 13, color: theme.colors.textMuted }}>·</Text>
                   <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{client?.height_cm}cm</Text>
