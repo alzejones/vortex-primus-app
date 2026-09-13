@@ -916,20 +916,22 @@ export default function ClientAssessments() {
                 <View style={styles.headerRow}>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
                   <Text style={styles.headerItem}><Text style={styles.bold}>Altura: </Text>{client?.height_cm}cm</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
                   {Platform.OS === 'web' ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text></Text>
+                    <>
                       <input
                         type="date"
                         value={assessmentDateTime.toISOString().split('T')[0]}
                         onChange={(e: any) => handleWebDateChange(e.target.value)}
                         style={{
+                          flex: 1,
                           fontSize: 14,
                           color: theme.colors.textSecondary,
                           backgroundColor: theme.colors.card,
                           border: `1px solid ${theme.colors.border}`,
                           borderRadius: 4,
-                          padding: '2px 4px',
+                          padding: '4px 6px',
                         }}
                       />
                       <input
@@ -937,31 +939,31 @@ export default function ClientAssessments() {
                         value={`${String(assessmentDateTime.getHours()).padStart(2, '0')}:${String(assessmentDateTime.getMinutes()).padStart(2, '0')}`}
                         onChange={(e: any) => handleWebTimeChange(e.target.value)}
                         style={{
+                          flex: 1,
                           fontSize: 14,
                           color: theme.colors.textSecondary,
                           backgroundColor: theme.colors.card,
                           border: `1px solid ${theme.colors.border}`,
                           borderRadius: 4,
-                          padding: '2px 4px',
+                          padding: '4px 6px',
                         }}
                       />
-                    </View>
+                    </>
                   ) : (
                     <TouchableOpacity
                       onPress={() => setShowDatePicker(true)}
-                      style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: theme.colors.border, paddingVertical: 2 }}
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: theme.colors.border, borderRadius: 4, paddingVertical: 4, paddingHorizontal: 6 }}
                     >
-                      <Text style={styles.headerItem}><Text style={styles.bold}>Data: </Text></Text>
-                      <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginLeft: 2 }}>
+                      <Text style={{ fontSize: 14, color: theme.colors.textSecondary }}>
                         {formatDateBR(assessmentDateTime)}
                       </Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity
                     onPress={resetToNow}
-                    style={{ backgroundColor: T.blueGlow, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: T.blue }}
+                    style={{ backgroundColor: T.blueGlow, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: T.blue }}
                   >
-                    <Text style={{ fontSize: 11, color: T.blue, fontWeight: 'bold' }}>Hoje</Text>
+                    <Text style={{ fontSize: 12, color: T.blue, fontWeight: 'bold' }}>Hoje</Text>
                   </TouchableOpacity>
                 </View>
               </View>
