@@ -122,7 +122,8 @@ export default function AssessmentHistoryCard({
                 color: getSmartWeightColor(
                   anthro?.weight, previousAnthro?.weight,
                   anthro?.body_fat, previousAnthro?.body_fat,
-                  anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage
+                  anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage,
+                  theme.colors.textPrimary
                 ) 
               }}>
                 {formatNum(anthro?.weight)}
@@ -135,7 +136,7 @@ export default function AssessmentHistoryCard({
           <View style={{ flex: 1, alignItems: 'center', borderLeftWidth: 1, borderRightWidth: 1, borderColor: theme.colors.border }}>
             <Text style={{ fontSize: 10, color: theme.colors.textMuted, textTransform: 'uppercase', fontWeight: '700' }}>Gordura</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat') }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.body_fat, previousAnthro?.body_fat, 'fat', theme.colors.textPrimary) }}>
                 {formatNum(anthro?.body_fat)}
               </Text>
               <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginLeft: 2 }}>%</Text>
@@ -146,7 +147,7 @@ export default function AssessmentHistoryCard({
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={{ fontSize: 10, color: theme.colors.textMuted, textTransform: 'uppercase', fontWeight: '700' }}>Músculo</Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle') }}>
+              <Text style={{ fontSize: 18, fontWeight: '800', color: getHistoryColor(anthro?.muscle_mass_percentage, previousAnthro?.muscle_mass_percentage, 'muscle', theme.colors.textPrimary) }}>
                 {formatNum(anthro?.muscle_mass_percentage)}
               </Text>
               <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginLeft: 2 }}>%</Text>
