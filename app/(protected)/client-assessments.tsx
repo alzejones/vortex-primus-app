@@ -1293,4 +1293,4 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, backgroundColor: theme.colors.card },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: theme.colors.card, borderRadius: 15, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90%', borderWidth: 1, borderColor: theme.colors.border, alignSelf: 'center' }
-}));
+});
