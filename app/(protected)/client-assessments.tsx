@@ -963,6 +963,10 @@ export default function ClientAssessments() {
                   <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{calculateAge(client?.birth_date)} anos</Text>
                   <Text style={{ fontSize: 13, color: theme.colors.textMuted }}>·</Text>
                   <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{client?.height_cm}cm</Text>
+                  <Text style={{ fontSize: 13, color: theme.colors.textMuted }}>·</Text>
+                  <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>
+                    {client?.gender === 'M' ? 'Masculino' : client?.gender === 'F' ? 'Feminino' : '-'}
+                  </Text>
                 </View>
                 <View style={{ marginTop: 8 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
