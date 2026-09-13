@@ -898,24 +898,62 @@ export default function ClientAssessments() {
         {/* MODAL DE FORMULÁRIO */}
         <Modal visible={formModalVisible} animationType="slide" onRequestClose={() => setFormModalVisible(false)}>
           <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.card, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: theme.colors.border, flexWrap: 'wrap', gap: 8 }}>
-              <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: 'bold' }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
-              <Text style={{ color: theme.colors.textSecondary, fontSize: 13 }}>{client?.name?.substring(0, 20)}{client?.name?.length > 20 ? '...' : ''}</Text>
-              <TouchableOpacity onPress={() => {
-                setFormModalVisible(false);
-                setAssessmentDateTime(new Date());
-                setPendingPhotos([]);
-                setPendingSelfie(null);
-                setSelfieSignedUrl(null);
-                setExistingPhotos([]);
-                setPhotosToDelete([]);
-              }}><Text style={{ color: T.red, fontSize: 16, fontWeight: 'bold' }}>Cancelar</Text></TouchableOpacity>
+            <View style={{ backgroundColor: theme.colors.card, padding: 16, paddingTop: 50, borderBottomWidth: 1, borderBottomColor: theme.colors.border }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: 14, fontWeight: 'bold', marginBottom: 4 }}>{editingAssessmentId ? "✏️ Editar Avaliação" : "➕ Nova Avaliação"}</Text>
+                  <Text style={{ color: theme.colors.textPrimary, fontSize: 16, fontWeight: '600', lineHeight: 22 }} numberOfLines={2}>{client?.name}</Text>
+                </View>
+                <TouchableOpacity onPress={() => {
+                  const hasData = Object.values(form).some(v => v !== "") || pendingPhotos.length > 0 || pendingSelfie !== null;
+                  if (hasData) {
+                    Alert.alert(
+                      "Descartar avaliação?",
+                      "Todos os dados preenchidos serão perdidos.",
+                      [
+                        { text: "Continuar editando", style: "cancel" },
+                        {
+                          text: "Descartar",
+                          style: "destructive",
+                          onPress: () => {
+                            setFormModalVisible(false);
+                            setAssessmentDateTime(new Date());
+                            setPendingPhotos([]);
+                            setPendingSelfie(null);
+                            setSelfieSignedUrl(null);
+                            setExistingPhotos([]);
+                            setPhotosToDelete([]);
+                            setForm({ 
+                              weight: "", height: "", body_fat: "", waist: "", hip: "", chest: "", 
+                              abdomen: "", arm_right: "", arm_left: "", thigh_right: "", thigh_left: "", 
+                              calf_right: "", calf_left: "", muscle_mass_percentage: "", basal_metabolic_rate: "", 
+                              body_fat_index: "", metabolic_age: "", bmi: "", water_percent: "", bone_mass: "", 
+                              source: "manual" 
+                            });
+                          }
+                        }
+                      ]
+                    );
+                  } else {
+                    setFormModalVisible(false);
+                    setAssessmentDateTime(new Date());
+                    setPendingPhotos([]);
+                    setPendingSelfie(null);
+                    setSelfieSignedUrl(null);
+                    setExistingPhotos([]);
+                    setPhotosToDelete([]);
+                  }
+                }}>
+                  <Text style={{ color: theme.colors.textSecondary, fontSize: 15 }}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
             </View>
             <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
               <View style={styles.stickyHeader}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.headerItem}><Text style={styles.bold}>Idade: </Text>{calculateAge(client?.birth_date)}</Text>
-                  <Text style={styles.headerItem}><Text style={styles.bold}>Altura: </Text>{client?.height_cm}cm</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{calculateAge(client?.birth_date)} anos</Text>
+                  <Text style={{ fontSize: 13, color: theme.colors.textMuted }}>·</Text>
+                  <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{client?.height_cm}cm</Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
                   {Platform.OS === 'web' ? (
@@ -1255,4 +1293,4 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
   historyCard: { marginBottom: 12, padding: 12, borderWidth: 1, borderColor: theme.colors.border, borderRadius: 8, backgroundColor: theme.colors.card },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: theme.colors.card, borderRadius: 15, padding: 20, width: '100%', maxWidth: 480, maxHeight: '90%', borderWidth: 1, borderColor: theme.colors.border, alignSelf: 'center' }
-});
+}));
