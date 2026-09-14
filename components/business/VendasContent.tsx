@@ -27,6 +27,7 @@ import SaleFormModal, { Kit, KitItem, Pricing, ClientRow, SaleRow, maskPhone } f
 import SaleActionsModal from './SaleActionsModal';
 import { deleteSaleWithConfirm } from '../../utils/salesActions';
 import { normalizeSearch } from '../../utils/textSearch';
+import VoiceSearchButton from '../VoiceSearchButton.web';
 
 // ---------- helpers ----------
 const brl = (v: number) =>
@@ -569,14 +570,17 @@ export default function VendasContent({ prefillClientId, onGoToReports }: { pref
         <View style={s.modalBg}>
           <View style={[s.modalBox, { maxHeight: '70%' }]}>
             <Text style={s.modalTitle}>Clientes</Text>
-            <TextInput
-              style={s.input}
-              placeholder="Buscar por nome…"
-              placeholderTextColor={theme.colors.textMuted}
-              value={pickerSearch}
-              onChangeText={setPickerSearch}
-              autoFocus
-            />
+            <View style={s.searchRow}>
+              <TextInput
+                style={[s.input, { flex: 1 }]}
+                placeholder="Buscar por nome…"
+                placeholderTextColor={theme.colors.textMuted}
+                value={pickerSearch}
+                onChangeText={setPickerSearch}
+                autoFocus
+              />
+              <VoiceSearchButton onResult={setPickerSearch} />
+            </View>
             <FlatList
               data={clients.filter((c) =>
                 normalizeSearch(c.name).includes(normalizeSearch(pickerSearch))
@@ -646,6 +650,7 @@ function createStyles(theme: any) {
     selectorTxt: { color: theme.colors.textPrimary, fontSize: 15 },
     label: { color: theme.colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 8 },
     input: { backgroundColor: theme.colors.card, borderRadius: 10, padding: 14, color: theme.colors.textPrimary, fontSize: 15, marginBottom: 12 },
+    searchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     inline: { flexDirection: 'row', gap: 10, marginTop: 10 },
     btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' },
     btnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.border },

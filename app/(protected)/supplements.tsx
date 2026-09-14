@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { useTheme } from '../../contexts/ThemeContext';
 import VoiceSearchButton from '../../components/VoiceSearchButton.web';
+import { matchesSearchTokens } from '../../utils/textSearch';
 
 interface Supplement {
   id: string;
@@ -115,7 +116,7 @@ export default function SupplementsScreen() {
     }
 
     const filtered = supplements.filter(item =>
-      item.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      matchesSearchTokens(item.name, searchText) ||
       item.brand.toLowerCase().includes(searchText.toLowerCase()) ||
       (item.sku && item.sku.toLowerCase().includes(searchText.toLowerCase()))
     );
