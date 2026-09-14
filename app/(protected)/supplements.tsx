@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { useTheme } from '../../contexts/ThemeContext';
+import VoiceSearchButton from '../../components/VoiceSearchButton.web';
 
 interface Supplement {
   id: string;
@@ -309,6 +310,7 @@ export default function SupplementsScreen() {
           onChangeText={setSearchText}
           placeholderTextColor={T.t3}
         />
+        <VoiceSearchButton onResult={setSearchText} />
       </View>
 
       {/* Lista */}
@@ -544,11 +546,14 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
 
   // Busca
   searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: theme.colors.card,
   },
   searchInput: {
+    flex: 1,
     backgroundColor: theme.colors.background,
     borderRadius: 8,
     paddingHorizontal: 12,
