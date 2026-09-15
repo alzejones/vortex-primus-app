@@ -18,6 +18,7 @@ import { GradientPrimary } from "../../utils/gradients";
 import { T } from "../../utils/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import { EVSQuickRegisterModal } from "../../components/EVSQuickRegisterModal";
+import VoiceSearchButton from "../../components/VoiceSearchButton.web";
 
 export default function Clients() {
   const insets = useSafeAreaInsets();
@@ -241,6 +242,7 @@ export default function Clients() {
               autoCapitalize="none"
               autoCorrect={false}
             />
+            <VoiceSearchButton onResult={setSearchQuery} />
           </View>
 
           <FlatList
@@ -386,8 +388,13 @@ const createStyles = (theme: import("@/contexts/ThemeContext").AppTheme) => Styl
     color: '#fff',
   },
 
-  searchContainer: { marginBottom: 16 },
+  searchContainer: { 
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   searchInput: {
+    flex: 1,
     backgroundColor: theme.colors.card,
     borderWidth: 1,
     borderColor: theme.colors.border,
