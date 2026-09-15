@@ -13,6 +13,7 @@ import { GradientPrimary, GradientSuccess } from '../../utils/gradients';
 import { T } from '../../utils/theme';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import ResetProtocolWidget from '../business/ResetProtocolWidget';
+import VoiceSearchButton from '../VoiceSearchButton.web';
 
 export interface Client {
   id: string;
@@ -385,13 +386,14 @@ export default function DashboardLayoutMobile({
         <View style={styles.searchBar}>
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { flex: 1 }]}
             placeholder="Buscar aluno..."
             placeholderTextColor={theme.colors.textMuted}
             value={searchQuery}
             onChangeText={onSearchChange}
             autoCorrect={false}
           />
+          <VoiceSearchButton onResult={onSearchChange} />
         </View>
       </View>
 
@@ -637,13 +639,16 @@ export default function DashboardLayoutMobile({
                   <Text style={styles.modalCloseBtn}>Fechar</Text>
                 </TouchableOpacity>
               </View>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Buscar aluno..."
-                placeholderTextColor={theme.colors.textMuted}
-                value={scheduleSearchQuery}
-                onChangeText={onScheduleSearchChange}
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 16 }}>
+                <TextInput
+                  style={[styles.modalInput, { flex: 1, margin: 0 }]}
+                  placeholder="Buscar aluno..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={scheduleSearchQuery}
+                  onChangeText={onScheduleSearchChange}
+                />
+                <VoiceSearchButton onResult={onScheduleSearchChange} />
+              </View>
             </View>
             <FlatList
               style={{ flex: 1 }}

@@ -25,6 +25,7 @@ import MobileLayout from './DashboardLayoutMobile';
 import { useLicenseStatus } from '../../hooks/useLicenseStatus';
 import { useAuth } from '../../contexts/AuthContext';
 import ResetProtocolWidget from '../business/ResetProtocolWidget';
+import VoiceSearchButton from '../VoiceSearchButton.web';
 
 // ─── Itens de navegação da sidebar ───────────────────────────
 const NAV_ITEMS = [
@@ -514,13 +515,16 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
             <Text style={styles.pageGreeting}>Visão Geral</Text>
             <Text style={styles.pageTitle}>Meu Dashboard</Text>
           </View>
-          <TextInput
-            style={styles.topSearch}
-            placeholder="🔍  Buscar aluno..."
-            placeholderTextColor={theme.colors.textMuted}
-            value={searchQuery}
-            onChangeText={onSearchChange}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput
+              style={[styles.topSearch, { flex: 1 }]}
+              placeholder="🔍  Buscar aluno..."
+              placeholderTextColor={theme.colors.textMuted}
+              value={searchQuery}
+              onChangeText={onSearchChange}
+            />
+            <VoiceSearchButton onResult={onSearchChange} />
+          </View>
         </View>
 
 
@@ -597,13 +601,16 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                     </Text>
                   </TouchableOpacity>
                 </View>
-                <TextInput
-                  style={styles.columnSearch}
-                  placeholder="Buscar Aluno..."
-                  placeholderTextColor={theme.colors.textMuted}
-                  value={searchQuery}
-                  onChangeText={onSearchChange}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    style={[styles.columnSearch, { flex: 1 }]}
+                    placeholder="Buscar Aluno..."
+                    placeholderTextColor={theme.colors.textMuted}
+                    value={searchQuery}
+                    onChangeText={onSearchChange}
+                  />
+                  <VoiceSearchButton onResult={onSearchChange} />
+                </View>
               </View>
             </View>
 
@@ -646,14 +653,17 @@ export default function DashboardLayout(props: DashboardLayoutProps) {
                 <Text style={styles.modalClose}>✕</Text>
               </TouchableOpacity>
             </View>
-            <TextInput
-              style={styles.modalSearch}
-              placeholder="Buscar aluno..."
-              placeholderTextColor={theme.colors.textMuted}
-              value={scheduleSearchQuery}
-              onChangeText={onScheduleSearchChange}
-              autoFocus
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', margin: 16 }}>
+              <TextInput
+                style={[styles.modalSearch, { flex: 1, margin: 0 }]}
+                placeholder="Buscar aluno..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={scheduleSearchQuery}
+                onChangeText={onScheduleSearchChange}
+                autoFocus
+              />
+              <VoiceSearchButton onResult={onScheduleSearchChange} />
+            </View>
             <FlatList
               data={scheduleFilteredClients}
               keyExtractor={(item) => item.id}
