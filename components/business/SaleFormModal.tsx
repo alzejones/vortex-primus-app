@@ -17,6 +17,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { normalizeSearch } from '../../utils/textSearch';
 import ConfirmModal from '../ui/ConfirmModal';
 import ResetProtocolDateModal from '../ui/ResetProtocolDateModal';
+import VoiceSearchButton from '../VoiceSearchButton.web';
 
 export function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -1077,14 +1078,17 @@ export default function SaleFormModal({
                 ? 'Apresentações de hoje'
                 : 'Clientes'}
             </Text>
-            <TextInput
-              style={s.input}
-              placeholder="Buscar por nome…"
-              placeholderTextColor={theme.colors.textMuted}
-              value={pickerSearch}
-              onChangeText={setPickerSearch}
-              autoFocus
-            />
+            <View style={s.searchRow}>
+              <TextInput
+                style={[s.input, { flex: 1 }]}
+                placeholder="Buscar por nome…"
+                placeholderTextColor={theme.colors.textMuted}
+                value={pickerSearch}
+                onChangeText={setPickerSearch}
+                autoFocus
+              />
+              <VoiceSearchButton onResult={setPickerSearch} />
+            </View>
             {pickerOpen === 'kit' ? (
               <ScrollView>
                 {kits.filter((k) => !k.is_recipe && normalizeSearch(k.name).includes(normalizeSearch(pickerSearch))).length > 0 && (
@@ -1305,5 +1309,6 @@ function createStyles(theme: any) {
       color: theme.colors.primary,
       fontWeight: '600',
     },
+    searchRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   });
 }
