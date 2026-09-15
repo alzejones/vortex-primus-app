@@ -22,6 +22,7 @@ import { supabase } from "../../../lib/supabase";
 import { GradientPrimary } from "../../../utils/gradients";
 import { T } from "../../../utils/theme";
 import { todayBR } from "../../../utils/dateBR";
+import VoiceSearchButton from "../../../components/VoiceSearchButton.web";
 
 interface Appointment {
   id: string;
@@ -264,7 +265,10 @@ export default function ScheduleIndex() {
               <Text style={styles.modalTitle}>Novo Agendamento</Text>
               <TouchableOpacity onPress={() => setClientModalVisible(false)}><Text style={styles.modalCloseBtn}>Fechar</Text></TouchableOpacity>
             </View>
-            <TextInput style={styles.modalInput} placeholder="Qual aluno será avaliado?" placeholderTextColor={theme.colors.textMuted} value={clientSearchQuery} onChangeText={setClientSearchQuery} autoFocus />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Qual aluno será avaliado?" placeholderTextColor={theme.colors.textMuted} value={clientSearchQuery} onChangeText={setClientSearchQuery} autoFocus />
+              <VoiceSearchButton onResult={setClientSearchQuery} />
+            </View>
           </View>
           <FlatList
             data={scheduleFilteredClients}
