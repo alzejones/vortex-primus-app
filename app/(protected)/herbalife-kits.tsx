@@ -21,6 +21,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { T } from '../../utils/theme';
 import { useTheme } from '@/contexts/ThemeContext';
+import VoiceSearchButton from '../../components/VoiceSearchButton.web';
 
 function notify(title: string, msg: string) {
   if (Platform.OS === 'web') window.alert(`${title}\n\n${msg}`);
@@ -670,14 +671,17 @@ export default function HerbalifeKits() {
         <View style={s.modalBg}>
           <View style={[s.modalBox, { maxHeight: '70%' }]}>
             <Text style={s.modalTitle}>Selecionar Produto</Text>
-            <TextInput
-              style={s.input}
-              placeholder="Buscar por nome…"
-              placeholderTextColor="#777"
-              value={productSearch}
-              onChangeText={setProductSearch}
-              autoFocus
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <TextInput
+                style={[s.input, { flex: 1, marginBottom: 0 }]}
+                placeholder="Buscar por nome…"
+                placeholderTextColor="#777"
+                value={productSearch}
+                onChangeText={setProductSearch}
+                autoFocus
+              />
+              <VoiceSearchButton onResult={setProductSearch} />
+            </View>
             <FlatList
               data={supplements.filter((s) =>
                 s.name.toLowerCase().includes(productSearch.trim().toLowerCase())
